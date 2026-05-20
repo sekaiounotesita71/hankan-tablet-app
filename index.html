@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>オーダー管理 P1/P2</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -44,6 +45,12 @@ header{
 .btn:active,.np-key:active,.unit-preset:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn-primary:disabled{opacity:.42;cursor:not-allowed}
+.sync-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left));background:#eef7f1;border-bottom:1px solid #cfe7d9;color:#24513d}
+.sync-status{font-size:13px;font-weight:800;margin-right:auto}
+.sync-input{height:38px;min-width:180px;border:1px solid #bad9c8;border-radius:8px;background:#fff;padding:0 10px;color:var(--text)}
+.sync-btn{height:38px;border:1px solid #98c4ac;border-radius:8px;background:#fff;color:#24513d;font-weight:900;padding:0 12px;cursor:pointer}
+.sync-btn.primary{background:#1c7a55;color:#fff;border-color:#1c7a55}
+.sync-user{font-size:13px;font-weight:800}
 main{width:min(1280px,100%);margin:0 auto;padding:18px max(14px,env(safe-area-inset-left)) 28px max(14px,env(safe-area-inset-right))}
 .view{display:none}.view.active{display:block}
 .import-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}
@@ -135,6 +142,24 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     <button class="btn btn-primary" id="export-btn" disabled onclick="exportExcel()">Excel出力</button>
   </div>
 </header>
+<div class="sync-bar">
+  <div class="sync-status" id="sync-status">Supabase: 未接続</div>
+  <input class="sync-input" id="login-email" type="email" placeholder="メール">
+  <input class="sync-input" id="login-password" type="password" placeholder="パスワード">
+  <button class="sync-btn primary" onclick="signInSupabase()">ログイン</button>
+  <button class="sync-btn" onclick="signOutSupabase()">ログアウト</button>
+  <button class="sync-btn" onclick="loadSessionList()">作業一覧</button>
+  <div class="sync-user" id="sync-user"></div>
+</div>
+<div class="export-bg" id="session-bg" onclick="closeSessionPicker()">
+  <div class="export-panel" onclick="event.stopPropagation()">
+    <div class="export-head">
+      <div class="export-head-title">保存済み作業を開く</div>
+      <button class="export-close" onclick="closeSessionPicker()">×</button>
+    </div>
+    <div class="export-options" id="session-options"></div>
+  </div>
+</div>
 <main>
   <div class="view active" id="view-p1">
     <div class="import-grid">
@@ -150,6 +175,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       </div>
     </div>
     <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="mergeAndRender()">データを結合して表示</button></div>
+    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><button class="btn btn-primary" onclick="saveCurrentSessionToSupabase()">Supabaseに保存</button></div>
     <div class="tabs-wrap" id="p1-tabs-wrap" style="display:none"><div class="country-tabs" id="p1-country-tabs"></div><div id="p1-country-panels"></div></div>
   </div>
   <div class="view" id="view-p2">
@@ -179,6 +205,12 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 <script>
 let orderRows=[],masterMap={},rows=[];
 let activeCountry=null,activeCustomer={},activeImporter=null,boxMap={},currentPhase=1;
+const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2Z2pzY3h5am9zanFxaHh1dHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMTc3ODgsImV4cCI6MjA5NDc5Mzc4OH0.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
+let supabaseClient=null,currentUser=null;
+let currentSessionId=null,currentSessionName="";
+let realtimeChannels=[];
+let saveStateTimer=null;
 const ORDER_MAP={
   "商品ID":"product_id","商品名":"product_name","単位":"unit","数量":"csv_qty",
   "発注者ID":"orderer_id","エンドユーザーの店名":"customer","輸入社ID":"importer_id",
@@ -227,21 +259,21 @@ function showUnitInput(){document.getElementById("np-disp-wrap").style.display="
 function selectUnit(u){document.getElementById("unit-text-input").value=u;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===u))}
 function onUnitTextInput(){const v=document.getElementById("unit-text-input").value;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===v))}
 function saveUnitCur(){if(curRow!==null)rows[curRow]._unit=document.getElementById("unit-text-input").value.trim()}
-function confirmUnit(){saveUnitCur();closeNP();toast("単位を保存しました")}
+function confirmUnit(){saveUnitCur();closeNP();if(currentSessionId&&curRow!==null)saveOrderLineToSupabase(rows[curRow]);toast("単位を保存しました")}
 let pendingStockoutIdx=null;
 function confirmStockout(i){pendingStockoutIdx=i;document.getElementById("confirm-product-name").textContent=rows[i].product_name;document.getElementById("confirm-bg").classList.add("open")}
 function cancelStockout(){pendingStockoutIdx=null;document.getElementById("confirm-bg").classList.remove("open")}
-function executeStockout(){if(pendingStockoutIdx===null)return;const r=rows[pendingStockoutIdx];r._stockout=true;r._qty="";r._net="";r._box="";r._unit=r.unit||"";document.getElementById("confirm-bg").classList.remove("open");renderP1Cell(r.country,r.customer);updateP1CountryBadge(r.country);pendingStockoutIdx=null;toast("欠品として登録しました")}
-function undoStockout(i){rows[i]._stockout=false;renderP1Cell(rows[i].country,rows[i].customer);updateP1CountryBadge(rows[i].country);toast("欠品を取り消しました")}
+function executeStockout(){if(pendingStockoutIdx===null)return;const r=rows[pendingStockoutIdx];r._stockout=true;r._qty="";r._net="";r._box="";r._unit=r.unit||"";document.getElementById("confirm-bg").classList.remove("open");renderP1Cell(r.country,r.customer);updateP1CountryBadge(r.country);saveOrderLineToSupabase(r);pendingStockoutIdx=null;toast("欠品として登録しました")}
+function undoStockout(i){rows[i]._stockout=false;renderP1Cell(rows[i].country,rows[i].customer);updateP1CountryBadge(rows[i].country);saveOrderLineToSupabase(rows[i]);toast("欠品を取り消しました")}
 function showMemo(){document.getElementById("np-disp-wrap").style.display="none";document.getElementById("np-grid").style.display="none";document.getElementById("np-next").style.display="none";document.getElementById("unit-input-wrap").classList.remove("show");document.getElementById("memo-input-wrap").classList.add("show");const ta=document.getElementById("memo-textarea");ta.value=rows[curRow]?._memo||"";updateMemoCount();document.querySelectorAll(".np-tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-memo")?.classList.add("active");setTimeout(()=>ta.focus(),100)}
 function nk(v){if(v==="."&&npVal.includes("."))return;npVal=(npVal===""||npVal==="0")&&v!=="."?v:npVal+v;document.getElementById("np-val").textContent=npVal}
 function ndel(){npVal=npVal.slice(0,-1);document.getElementById("np-val").textContent=npVal||"0"}
 function saveNP(){if(npMode==="p1"){if(curRow===null)return;if(P1_KEY[curF])rows[curRow][P1_KEY[curF]]=npVal}else{if(!curP2Imp||!curP2Box)return;if(boxMap[curP2Imp]?.[curP2Box])boxMap[curP2Imp][curP2Box][curF]=npVal}}
 function saveMemoCur(){if(curRow!==null)rows[curRow]._memo=document.getElementById("memo-textarea").value.trim()}
 function confirmF(){saveNP();if(npMode==="p1"){const idx=P1_FIELDS.indexOf(curF);if(idx<P1_FIELDS.length-1){curF=P1_FIELDS[idx+1];npVal=rows[curRow]?.[P1_KEY[curF]]||"";updateP1NP()}else{closeNP();toast("入力を保存しました")}}else{closeNP();toast("箱情報を保存しました")}}
-function confirmMemo(){saveMemoCur();closeNP();toast("メモを保存しました")}
+function confirmMemo(){saveMemoCur();closeNP();if(currentSessionId&&curRow!==null)saveOrderLineToSupabase(rows[curRow]);toast("メモを保存しました")}
 function updateMemoCount(){document.getElementById("memo-count").textContent=document.getElementById("memo-textarea").value.length}
-function closeNP(){if(curF==="memo")saveMemoCur();else if(curF==="unit")saveUnitCur();else saveNP();document.getElementById("modal-bg").classList.remove("open");showNumpad();if(npMode==="p1"&&curRow!==null){renderP1Cell(rows[curRow].country,rows[curRow].customer);updateP1CountryBadge(rows[curRow].country)}if(npMode==="p2"&&curP2Imp)renderP2Importer(curP2Imp);curRow=null;curP2Imp=null;curP2Box=null;npVal=""}
+function closeNP(){const savedRowIndex=curRow,savedP2Imp=curP2Imp,savedP2Box=curP2Box;if(curF==="memo")saveMemoCur();else if(curF==="unit")saveUnitCur();else saveNP();document.getElementById("modal-bg").classList.remove("open");showNumpad();if(npMode==="p1"&&savedRowIndex!==null){renderP1Cell(rows[savedRowIndex].country,rows[savedRowIndex].customer);updateP1CountryBadge(rows[savedRowIndex].country);saveOrderLineToSupabase(rows[savedRowIndex])}if(npMode==="p2"&&savedP2Imp){renderP2Importer(savedP2Imp);if(savedP2Box)saveBoxToSupabase(savedP2Imp,savedP2Box)}curRow=null;curP2Imp=null;curP2Box=null;npVal=""}
 function exportExcel(){const countries=getCountries();document.getElementById("export-options").innerHTML=countries.map(c=>{const cRows=rows.filter(r=>r.country===c),done=cRows.filter(r=>r._stockout||(r._qty&&r._net&&r._box)).length,total=cRows.length,pct=total?Math.round(done/total*100):0;return`<div class="export-option" onclick="doExport('${esc(c)}')"><div class="export-option-left"><span class="export-option-code">${esc(c)}</span><span class="export-option-meta">${total}件 / ${done}件完了</span></div><span class="cbadge ${pct===100?"all-done":pct===0?"has-pending":"partial"}">${pct}%</span></div>`}).join("");document.getElementById("export-bg").classList.add("open")}
 function closeExportPicker(){document.getElementById("export-bg").classList.remove("open")}
 function doExport(country){closeExportPicker();if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}const targetRows=country?rows.filter(r=>r.country===country):rows,wb=XLSX.utils.book_new(),d=new Date().toISOString().slice(0,10).replace(/-/g,"");const headers=["商品コード","エンドユーザー店名","ケース番号","温度帯","商品名","英名・学術名","packing","産地","No of BOX","現場入力数量","現場入力単位","NET重量","グロス重量","単価","金額","メモ","欠品"];const seenBoxes={};const p1data=targetRows.map(r=>{const imp=importerCode(r.importer_id),boxKey=`${imp}_${r._box}`,isFirst=r._box&&!seenBoxes[boxKey];if(r._box)seenBoxes[boxKey]=true;const gross=isFirst?(boxMap[imp]?.[r._box]?.gross||""):"",enSci=[r.en_name,r.sci_name].filter(Boolean).join(" / ");return{"商品コード":r.product_id,"エンドユーザー店名":r.customer,"ケース番号":r._stockout?"":r._box,"温度帯":"","商品名":r.product_name,"英名・学術名":enSci,"packing":"","産地":r.origin||"","No of BOX":"","現場入力数量":r._stockout||r._qty===""?"":Number(r._qty),"現場入力単位":r._stockout?"":r._unit,"NET重量":r._stockout||r._net===""?"":Number(r._net),"グロス重量":r._stockout?"":(gross===""?"":Number(gross)),"単価":r.unit_price===""?"":Number(r.unit_price),"金額":"","メモ":r._memo,"欠品":r._stockout?"欠品":""}});const ws1=XLSX.utils.json_to_sheet(p1data,{header:headers});p1data.forEach((_,i)=>{ws1[`O${i+2}`]={f:`J${i+2}*N${i+2}`}});ws1["!cols"]=[{wch:12},{wch:22},{wch:10},{wch:8},{wch:20},{wch:30},{wch:10},{wch:12},{wch:10},{wch:13},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:24},{wch:8}];XLSX.utils.book_append_sheet(wb,ws1,"Invoice Data");const targetImporters=[...new Set(targetRows.map(r=>importerCode(r.importer_id)))].sort();targetImporters.forEach(imp=>{const bm=boxMap[imp]||{},boxNos=Object.keys(bm).sort();if(!boxNos.length)return;const p2data=boxNos.map(bn=>{const b=bm[bn],contents=rows.filter(r=>importerCode(r.importer_id)===imp&&r._box===bn),netTotal=contents.reduce((sum,r)=>sum+(parseFloat(r._net)||0),0);return{"箱番号":bn,"NET重量合計(kg)":netTotal?Number(netTotal.toFixed(2)):"","グロス重量(kg)":b.gross===""?"":Number(b.gross),"ドライアイス重量(kg)":b.dry_ice_enabled&&b.dry_ice!==""?Number(b.dry_ice):(b.dry_ice_enabled?"入力待ち":"")}});const ws2=XLSX.utils.json_to_sheet(p2data,{header:["箱番号","NET重量合計(kg)","グロス重量(kg)","ドライアイス重量(kg)"]});ws2["!cols"]=[{wch:10},{wch:18},{wch:16},{wch:20}];XLSX.utils.book_append_sheet(wb,ws2,`箱一覧_${imp}`.slice(0,31))});XLSX.writeFile(wb,country?`invoice_${country}_${d}.xlsx`:`invoice_all_${d}.xlsx`);toast("Excelを出力しました")}
@@ -301,7 +333,13 @@ function renderExportPreview(country){
   const boxCount=payload.p2Sheets.reduce((sum,s)=>sum+s.data.length,0);
   body.innerHTML=`<div class="export-preview-summary"><span class="export-preview-pill">明細 ${payload.p1data.length}行</span><span class="export-preview-pill">箱 ${boxCount}件</span><span class="export-preview-pill">シート ${payload.p2Sheets.length+1}枚</span></div><div class="export-preview-note">作成シート: ${esc(sheetNames)}</div><table class="export-preview-table"><thead><tr><th>商品コード</th><th>商品名</th><th>ケース</th><th>数量</th><th>単位</th><th>NET</th><th>グロス</th><th>金額</th><th>欠品</th></tr></thead><tbody>${rowsHtml||'<tr><td colspan="9">出力対象データがありません</td></tr>'}</tbody></table><div class="export-preview-note">表示は先頭6行です。Excelには全行を出力します。金額は「数量 × 単価」です。</div><button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="doExport(window.__exportPreviewCountry)">この内容でExcel出力</button>`;
 }
-function exportExcel(){
+async function exportExcel(){
+  if(currentSessionId&&supabaseClient){
+    setSaveState("Supabase: 最新データ確認中...");
+    const ok=await refreshCurrentSessionFromSupabase();
+    if(!ok){setSaveState("Supabase: 最新取得失敗",true);return}
+    setSaveState("Supabase: 最新データ反映済み");
+  }
   const countries=getCountries();
   ensureExportPreviewUI();
   document.getElementById("export-options").innerHTML=countries.map(c=>{
@@ -311,9 +349,15 @@ function exportExcel(){
   renderExportPreview(null);
   document.getElementById("export-bg").classList.add("open");
 }
-function doExport(country){
+async function doExport(country){
   closeExportPicker();
   if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}
+  if(currentSessionId&&supabaseClient){
+    setSaveState("Supabase: 出力前に最新確認中...");
+    const ok=await refreshCurrentSessionFromSupabase();
+    if(!ok){setSaveState("Supabase: 最新取得失敗",true);return}
+    setSaveState("Supabase: 最新データで出力");
+  }
   const payload=buildExportPayload(country),wb=XLSX.utils.book_new();
   const ws1=XLSX.utils.json_to_sheet(payload.p1data,{header:payload.headers});
   payload.p1data.forEach((row,i)=>{const v=row["金額"];ws1[`O${i+2}`]={f:`J${i+2}*N${i+2}`,v:v===""?undefined:v,t:v===""?"z":"n"}});
@@ -378,12 +422,14 @@ function updateBoxSize(imp,bn,size){
   if(!boxMap[imp]||!boxMap[imp][bn])return;
   boxMap[imp][bn].box_size=size;
   renderP2Importer(imp);
+  saveBoxToSupabase(imp,bn);
 }
 function toggleDI(imp,bn,checked){
   if(!boxMap[imp]||!boxMap[imp][bn])return;
   boxMap[imp][bn].dry_ice_enabled=checked;
   if(!checked)boxMap[imp][bn].dry_ice="";
   renderP2Importer(imp);
+  saveBoxToSupabase(imp,bn);
   if(checked)openP2NP(imp,bn,"dry_ice");
 }
 function buildExportPayload(country){
@@ -629,9 +675,378 @@ function mergeAndRender(){
   activeCustomer={};
   buildP1Tabs();
   document.getElementById("merge-bar").style.display="none";
+  document.getElementById("cloud-save-bar").style.display="flex";
   document.getElementById("p1-tabs-wrap").style.display="";
   document.getElementById("export-btn").disabled=false;
 }
+function initSupabase(){
+  const status=document.getElementById("sync-status");
+  if(!window.supabase){
+    if(status)status.textContent="Supabase: ライブラリ読込待ち";
+    return;
+  }
+  supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  supabaseClient.auth.getSession().then(({data})=>{
+    currentUser=data.session?.user||null;
+    updateSupabaseStatus();
+  });
+  supabaseClient.auth.onAuthStateChange((_event,session)=>{
+    currentUser=session?.user||null;
+    updateSupabaseStatus();
+  });
+}
+function updateSupabaseStatus(){
+  const status=document.getElementById("sync-status");
+  const userEl=document.getElementById("sync-user");
+  if(!supabaseClient){
+    if(status)status.textContent="Supabase: 未接続";
+    return;
+  }
+  if(currentUser){
+    if(status)status.textContent="Supabase: ログイン済み";
+    if(userEl)userEl.textContent=currentUser.email||"";
+  }else{
+    if(status)status.textContent="Supabase: 未ログイン";
+    if(userEl)userEl.textContent="";
+  }
+}
+function setSaveState(message,isError){
+  const status=document.getElementById("sync-status");
+  if(!status)return;
+  status.textContent=message;
+  status.style.color=isError?"#b8322a":"#24513d";
+  if(saveStateTimer)clearTimeout(saveStateTimer);
+  if(!isError){
+    saveStateTimer=setTimeout(()=>updateSupabaseStatus(),1800);
+  }
+}
+async function signInSupabase(){
+  if(!supabaseClient)initSupabase();
+  if(!supabaseClient){toast("Supabaseを読み込めませんでした");return}
+  const email=document.getElementById("login-email").value.trim();
+  const password=document.getElementById("login-password").value;
+  if(!email||!password){toast("メールとパスワードを入力してください");return}
+  const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){toast("ログインできません: "+error.message);return}
+  toast("ログインしました");
+}
+async function signOutSupabase(){
+  if(!supabaseClient)return;
+  await supabaseClient.auth.signOut();
+  toast("ログアウトしました");
+}
+function numberOrNull(v){
+  if(v===undefined||v===null||String(v).trim()==="")return null;
+  const n=Number(v);
+  return Number.isFinite(n)?n:null;
+}
+function importerCodeFromRow(r){
+  return importerCode(r.importer_id);
+}
+function rowToOrderLinePayload(r){
+  return{
+    session_id:currentSessionId,
+    source_row_no:r._idx+1,
+    country_code:r.country||null,
+    importer_id:r.importer_id||null,
+    importer_code:importerCodeFromRow(r)||null,
+    store_name:r.customer||"UNKNOWN_STORE",
+    product_id:r.product_id||null,
+    product_name:r.product_name||null,
+    ordered_qty:numberOrNull(r.csv_qty),
+    ordered_unit:r.unit||null,
+    unit_price:numberOrNull(r.unit_price),
+    english_name:r.en_name||null,
+    scientific_name:r.sci_name||null,
+    origin:r.origin||null,
+    input_qty:numberOrNull(r._qty),
+    input_unit:r._unit||null,
+    net_weight:numberOrNull(r._net),
+    box_no:r._box||null,
+    memo:r._memo||null,
+    is_stockout:!!r._stockout,
+    updated_by:currentUser?.id||null
+  };
+}
+function boxToPayload(imp,bn,b){
+  return{
+    session_id:currentSessionId,
+    importer_code:imp,
+    box_no:bn,
+    gross_weight:numberOrNull(b.gross),
+    dry_ice_enabled:!!b.dry_ice_enabled,
+    dry_ice_weight:numberOrNull(b.dry_ice),
+    box_size:b.box_size||null,
+    updated_by:currentUser?.id||null
+  };
+}
+async function requireSupabaseLogin(){
+  if(!supabaseClient)initSupabase();
+  if(!supabaseClient){toast("Supabaseを読み込めませんでした");return false}
+  const {data}=await supabaseClient.auth.getSession();
+  currentUser=data.session?.user||null;
+  updateSupabaseStatus();
+  if(!currentUser){toast("先にSupabaseへログインしてください");return false}
+  return true;
+}
+async function saveCurrentSessionToSupabase(){
+  if(!rows.length){toast("先にCSVを読み込んで表示してください");return}
+  if(!(await requireSupabaseLogin()))return;
+  setSaveState("Supabase: 保存中...");
+  const today=new Date().toISOString().slice(0,10);
+  currentSessionName=currentSessionName||`Hankan ${today} ${new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})}`;
+  const {data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({
+    name:currentSessionName,
+    status:"active",
+    created_by:currentUser.id
+  }).select("id,name").single();
+  if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業作成エラー: "+sessionError.message);return}
+  currentSessionId=session.id;
+  const payloads=rows.map(rowToOrderLinePayload);
+  const chunkSize=500;
+  for(let i=0;i<payloads.length;i+=chunkSize){
+    const {error}=await supabaseClient.from("order_lines").upsert(payloads.slice(i,i+chunkSize),{onConflict:"session_id,source_row_no"});
+    if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return}
+  }
+  await saveAllBoxesToSupabase();
+  document.getElementById("cloud-save-info").textContent=`Supabase保存済み: ${currentSessionName}`;
+  subscribeCurrentSession();
+  setSaveState("Supabase: 保存済み");
+  toast("Supabaseに保存しました");
+}
+async function saveOrderLineToSupabase(row){
+  if(!currentSessionId||!currentUser||!supabaseClient)return;
+  setSaveState("Supabase: 保存中...");
+  const {error}=await supabaseClient.from("order_lines").upsert(rowToOrderLinePayload(row),{onConflict:"session_id,source_row_no"});
+  if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return}
+  setSaveState("Supabase: 保存済み");
+}
+async function saveBoxToSupabase(imp,bn){
+  if(!currentSessionId||!currentUser||!supabaseClient||!boxMap[imp]?.[bn])return;
+  setSaveState("Supabase: 保存中...");
+  const {error}=await supabaseClient.from("boxes").upsert(boxToPayload(imp,bn,boxMap[imp][bn]),{onConflict:"session_id,importer_code,box_no"});
+  if(error){setSaveState("Supabase: 保存失敗",true);toast("箱保存エラー: "+error.message);return}
+  setSaveState("Supabase: 保存済み");
+}
+async function saveAllBoxesToSupabase(){
+  if(!currentSessionId||!currentUser||!supabaseClient)return;
+  const payloads=[];
+  Object.entries(boxMap).forEach(([imp,boxes])=>Object.entries(boxes).forEach(([bn,b])=>payloads.push(boxToPayload(imp,bn,b))));
+  if(!payloads.length)return;
+  const {error}=await supabaseClient.from("boxes").upsert(payloads,{onConflict:"session_id,importer_code,box_no"});
+  if(error){setSaveState("Supabase: 保存失敗",true);toast("箱保存エラー: "+error.message);}
+}
+function closeSessionPicker(){
+  document.getElementById("session-bg").classList.remove("open");
+}
+async function loadSessionList(){
+  if(!(await requireSupabaseLogin()))return;
+  const {data,error}=await supabaseClient.from("work_sessions").select("id,name,status,created_at,updated_at").order("updated_at",{ascending:false}).limit(20);
+  if(error){toast("作業一覧エラー: "+error.message);return}
+  const wrap=document.getElementById("session-options");
+  wrap.innerHTML=(data||[]).map(s=>`<div class="export-option" onclick="openSavedSession('${s.id}')"><div class="export-option-left"><span class="export-option-code">${esc(s.name)}</span><span class="export-option-meta">${new Date(s.updated_at||s.created_at).toLocaleString("ja-JP")}</span></div><span class="export-option-badge partial">${esc(s.status)}</span></div>`).join("")||`<div class="export-option"><div class="export-option-meta">保存済み作業はまだありません</div></div>`;
+  document.getElementById("session-bg").classList.add("open");
+}
+function resetLocalStateForSession(){
+  orderRows=[];
+  masterMap={};
+  rows=[];
+  boxMap={};
+  activeCountry=null;
+  activeCustomer={};
+  activeImporter=null;
+  document.getElementById("merge-bar").style.display="none";
+  document.getElementById("cloud-save-bar").style.display="flex";
+  document.getElementById("p1-tabs-wrap").style.display="none";
+  document.getElementById("p2-tabs-wrap").style.display="none";
+  document.getElementById("p2-empty").style.display="none";
+}
+async function openSavedSession(sessionId){
+  if(!(await requireSupabaseLogin()))return;
+  closeSessionPicker();
+  const {data:session,error:sessionError}=await supabaseClient.from("work_sessions").select("*").eq("id",sessionId).single();
+  if(sessionError){toast("作業読込エラー: "+sessionError.message);return}
+  const {data:lineData,error:lineError}=await supabaseClient.from("order_lines").select("*").eq("session_id",sessionId).order("source_row_no",{ascending:true});
+  if(lineError){toast("明細読込エラー: "+lineError.message);return}
+  const {data:boxData,error:boxError}=await supabaseClient.from("boxes").select("*").eq("session_id",sessionId);
+  if(boxError){toast("箱読込エラー: "+boxError.message);return}
+  resetLocalStateForSession();
+  currentSessionId=session.id;
+  currentSessionName=session.name;
+  rows=(lineData||[]).map((r,i)=>({
+    _idx:(r.source_row_no||i+1)-1,
+    _qty:r.input_qty??"",
+    _net:r.net_weight??"",
+    _box:r.box_no||"",
+    _memo:r.memo||"",
+    _unit:r.input_unit||r.ordered_unit||"",
+    _stockout:!!r.is_stockout,
+    customer:r.store_name||"UNKNOWN_STORE",
+    product_id:r.product_id||"",
+    product_name:r.product_name||"-",
+    unit:r.ordered_unit||"",
+    csv_qty:r.ordered_qty??"",
+    en_name:r.english_name||"",
+    sci_name:r.scientific_name||"",
+    origin:r.origin||"",
+    unit_price:r.unit_price??"",
+    importer_id:r.importer_id||"",
+    country:r.country_code||countryCode(r.importer_id)
+  }));
+  boxMap={};
+  (boxData||[]).forEach(b=>{
+    if(!boxMap[b.importer_code])boxMap[b.importer_code]={};
+    boxMap[b.importer_code][b.box_no]={gross:b.gross_weight??"",dry_ice:b.dry_ice_weight??"",dry_ice_enabled:!!b.dry_ice_enabled,box_size:b.box_size||""};
+  });
+  buildP1Tabs();
+  document.getElementById("p1-tabs-wrap").style.display="";
+  document.getElementById("export-btn").disabled=false;
+  document.getElementById("cloud-save-info").textContent=`Supabase読込済み: ${currentSessionName}`;
+  subscribeCurrentSession();
+  toast("保存済み作業を開きました");
+}
+async function refreshCurrentSessionFromSupabase(){
+  if(!currentSessionId||!supabaseClient)return true;
+  const {data:lineData,error:lineError}=await supabaseClient.from("order_lines").select("*").eq("session_id",currentSessionId).order("source_row_no",{ascending:true});
+  if(lineError){toast("最新明細の取得エラー: "+lineError.message);return false}
+  const {data:boxData,error:boxError}=await supabaseClient.from("boxes").select("*").eq("session_id",currentSessionId);
+  if(boxError){toast("最新箱情報の取得エラー: "+boxError.message);return false}
+  const lineBySource=new Map((lineData||[]).map(r=>[r.source_row_no,r]));
+  rows.forEach(r=>{
+    const dbRow=lineBySource.get(r._idx+1);
+    if(!dbRow)return;
+    r._qty=dbRow.input_qty??"";
+    r._unit=dbRow.input_unit||dbRow.ordered_unit||"";
+    r._net=dbRow.net_weight??"";
+    r._box=dbRow.box_no||"";
+    r._memo=dbRow.memo||"";
+    r._stockout=!!dbRow.is_stockout;
+  });
+  boxMap={};
+  (boxData||[]).forEach(b=>{
+    if(!boxMap[b.importer_code])boxMap[b.importer_code]={};
+    boxMap[b.importer_code][b.box_no]={gross:b.gross_weight??"",dry_ice:b.dry_ice_weight??"",dry_ice_enabled:!!b.dry_ice_enabled,box_size:b.box_size||""};
+  });
+  buildP1Tabs();
+  if(currentPhase===2)buildP2();
+  return true;
+}
+function unsubscribeRealtime(){
+  if(!supabaseClient)return;
+  realtimeChannels.forEach(ch=>supabaseClient.removeChannel(ch));
+  realtimeChannels=[];
+}
+function subscribeCurrentSession(){
+  if(!supabaseClient||!currentSessionId)return;
+  unsubscribeRealtime();
+  const lineChannel=supabaseClient.channel(`order-lines-${currentSessionId}`).on("postgres_changes",{event:"UPDATE",schema:"public",table:"order_lines",filter:`session_id=eq.${currentSessionId}`},payload=>applyRemoteOrderLine(payload.new)).subscribe();
+  const boxChannel=supabaseClient.channel(`boxes-${currentSessionId}`).on("postgres_changes",{event:"*",schema:"public",table:"boxes",filter:`session_id=eq.${currentSessionId}`},payload=>applyRemoteBox(payload.new)).subscribe();
+  realtimeChannels=[lineChannel,boxChannel];
+}
+function applyRemoteOrderLine(dbRow){
+  if(!dbRow||!rows.length)return;
+  const idx=rows.findIndex(r=>r._idx===(dbRow.source_row_no-1));
+  if(idx<0)return;
+  const r=rows[idx];
+  r._qty=dbRow.input_qty??"";
+  r._unit=dbRow.input_unit||dbRow.ordered_unit||"";
+  r._net=dbRow.net_weight??"";
+  r._box=dbRow.box_no||"";
+  r._memo=dbRow.memo||"";
+  r._stockout=!!dbRow.is_stockout;
+  renderP1Cell(r.country,r.customer);
+  updateP1CountryBadge(r.country);
+  if(currentPhase===2)buildP2();
+}
+function applyRemoteBox(dbRow){
+  if(!dbRow)return;
+  const imp=dbRow.importer_code,bn=dbRow.box_no;
+  if(!boxMap[imp])boxMap[imp]={};
+  boxMap[imp][bn]={gross:dbRow.gross_weight??"",dry_ice:dbRow.dry_ice_weight??"",dry_ice_enabled:!!dbRow.dry_ice_enabled,box_size:dbRow.box_size||""};
+  if(currentPhase===2)renderP2Importer(imp);
+}
+function markRemoteUpdate(label){
+  setSaveState(`Supabase: 他端末から更新 ${label||""}`.trim());
+}
+function switchPhase(n){
+  currentPhase=n;
+  document.getElementById("view-p1").classList.toggle("active",n===1);
+  document.getElementById("view-p2").classList.toggle("active",n===2);
+  document.getElementById("btn-p1").classList.toggle("active",n===1);
+  document.getElementById("btn-p2").classList.toggle("active",n===2);
+  if(n===2){
+    buildP2();
+    saveAllBoxesToSupabase();
+  }
+}
+async function saveCurrentSessionToSupabase(){
+  if(!rows.length){toast("先にCSVを読み込んで表示してください");return}
+  if(!(await requireSupabaseLogin()))return;
+  setSaveState("Supabase: 保存中...");
+  const today=new Date().toISOString().slice(0,10);
+  currentSessionName=currentSessionName||`Hankan ${today} ${new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})}`;
+  if(!currentSessionId){
+    const {data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({name:currentSessionName,status:"active",created_by:currentUser.id}).select("id,name").single();
+    if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業作成エラー: "+sessionError.message);return}
+    currentSessionId=session.id;
+  }else{
+    const {error:sessionError}=await supabaseClient.from("work_sessions").update({name:currentSessionName,status:"active"}).eq("id",currentSessionId);
+    if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業更新エラー: "+sessionError.message);return}
+  }
+  const payloads=rows.map(rowToOrderLinePayload);
+  const chunkSize=500;
+  for(let i=0;i<payloads.length;i+=chunkSize){
+    const {error}=await supabaseClient.from("order_lines").upsert(payloads.slice(i,i+chunkSize),{onConflict:"session_id,source_row_no"});
+    if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return}
+  }
+  await saveAllBoxesToSupabase();
+  document.getElementById("cloud-save-info").textContent=`Supabase保存済み: ${currentSessionName}`;
+  subscribeCurrentSession();
+  setSaveState("Supabase: 保存済み");
+  toast("Supabaseに保存しました");
+}
+function subscribeCurrentSession(){
+  if(!supabaseClient||!currentSessionId)return;
+  unsubscribeRealtime();
+  const lineChannel=supabaseClient.channel(`order-lines-${currentSessionId}`).on("postgres_changes",{event:"*",schema:"public",table:"order_lines",filter:`session_id=eq.${currentSessionId}`},payload=>{
+    if(payload.new?.updated_by&&currentUser?.id&&payload.new.updated_by===currentUser.id)return;
+    applyRemoteOrderLine(payload.new);
+    markRemoteUpdate("明細");
+  }).subscribe();
+  const boxChannel=supabaseClient.channel(`boxes-${currentSessionId}`).on("postgres_changes",{event:"*",schema:"public",table:"boxes",filter:`session_id=eq.${currentSessionId}`},payload=>{
+    if(payload.new?.updated_by&&currentUser?.id&&payload.new.updated_by===currentUser.id)return;
+    applyRemoteBox(payload.new);
+    markRemoteUpdate("箱");
+  }).subscribe();
+  realtimeChannels=[lineChannel,boxChannel];
+}
+function applyRemoteOrderLine(dbRow){
+  if(!dbRow||!rows.length)return;
+  const idx=rows.findIndex(r=>r._idx===(dbRow.source_row_no-1));
+  if(idx<0)return;
+  const r=rows[idx],oldCountry=r.country,oldCustomer=r.customer;
+  r._qty=dbRow.input_qty??"";
+  r._unit=dbRow.input_unit||dbRow.ordered_unit||"";
+  r._net=dbRow.net_weight??"";
+  r._box=dbRow.box_no||"";
+  r._memo=dbRow.memo||"";
+  r._stockout=!!dbRow.is_stockout;
+  r.customer=dbRow.store_name||r.customer;
+  r.country=dbRow.country_code||r.country;
+  if(oldCountry!==r.country||oldCustomer!==r.customer)buildP1Tabs();
+  else{renderP1Cell(r.country,r.customer);updateP1CountryBadge(r.country)}
+  if(currentPhase===2)buildP2();
+}
+function applyRemoteBox(dbRow){
+  if(!dbRow)return;
+  const imp=dbRow.importer_code,bn=dbRow.box_no;
+  if(!boxMap[imp])boxMap[imp]={};
+  boxMap[imp][bn]={gross:dbRow.gross_weight??"",dry_ice:dbRow.dry_ice_weight??"",dry_ice_enabled:!!dbRow.dry_ice_enabled,box_size:dbRow.box_size||""};
+  if(currentPhase===2)renderP2Importer(imp);
+}
+window.addEventListener("online",()=>setSaveState("Supabase: オンライン"));
+window.addEventListener("offline",()=>setSaveState("Supabase: オフライン",true));
+window.addEventListener("DOMContentLoaded",initSupabase);
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
