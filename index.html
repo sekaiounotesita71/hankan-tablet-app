@@ -135,6 +135,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .memo-textarea,.unit-text-input{width:100%;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);padding:12px;font-size:16px}.memo-textarea{height:130px;resize:none;line-height:1.55}.memo-char-count{text-align:right;color:var(--muted);font-size:12px}
 .memo-confirm,.unit-confirm{height:56px;border:0;border-radius:12px;background:var(--memo);color:#fff;font-weight:800;cursor:pointer}.unit-confirm{background:var(--accent)}
 .unit-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.unit-preset{min-height:48px;border:1px solid var(--border);border-radius:9px;background:var(--bg);font-weight:800;cursor:pointer}.unit-preset.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.manual-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.manual-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;color:var(--muted)}.manual-form input{min-height:44px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px;background:#fff;color:var(--text);font-weight:700}.manual-form .wide{grid-column:1/-1}.manual-actions{display:flex;gap:10px;margin-top:14px}.manual-actions button{flex:1}.btn-reset{min-height:38px;padding:0 11px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #efd58a;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
 .export-panel{max-width:460px;border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom))}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px}.export-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
 .confirm-box{max-width:360px;border-radius:18px;padding:24px;text-align:center;margin:0 14px 18px}.confirm-title{font-size:18px;font-weight:900;margin-bottom:8px}.confirm-sub{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}.confirm-product{font-weight:800;background:var(--bg);border-radius:9px;padding:10px;margin-bottom:16px}.confirm-btns{display:flex;gap:10px}.confirm-btns button{flex:1;height:50px;border:0;border-radius:10px;font-weight:900}.confirm-cancel{background:var(--bg);color:var(--text)}.confirm-ok{background:var(--danger);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:200;transform:translateX(-50%) translateY(80px);transition:.25s;background:var(--accent);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
@@ -191,7 +192,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       </div>
     </div>
     <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="mergeAndRender()">データを結合して表示</button></div>
-    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button></div>
+    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button></div>
     <div class="tabs-wrap" id="p1-tabs-wrap" style="display:none"><div class="country-tabs" id="p1-country-tabs"></div><div id="p1-country-panels"></div></div>
   </div>
   <div class="view" id="view-p15">
@@ -217,6 +218,23 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     <button class="np-key wide" id="np-next" onclick="confirmF()">次の項目へ</button>
     <div class="memo-input-wrap" id="memo-input-wrap"><textarea class="memo-textarea" id="memo-textarea" placeholder="現場メモを入力" maxlength="200" oninput="updateMemoCount()"></textarea><div class="memo-char-count"><span id="memo-count">0</span> / 200</div><button class="memo-confirm" onclick="confirmMemo()">メモを保存して閉じる</button></div>
     <div class="unit-input-wrap" id="unit-input-wrap"><div class="unit-presets" id="unit-presets"><button class="unit-preset" onclick="selectUnit('kg')">kg</button><button class="unit-preset" onclick="selectUnit('g')">g</button><button class="unit-preset" onclick="selectUnit('匹')">匹</button><button class="unit-preset" onclick="selectUnit('尾')">尾</button><button class="unit-preset" onclick="selectUnit('枚')">枚</button><button class="unit-preset" onclick="selectUnit('箱')">箱</button><button class="unit-preset" onclick="selectUnit('本')">本</button><button class="unit-preset" onclick="selectUnit('個')">個</button></div><input class="unit-text-input" id="unit-text-input" type="text" placeholder="単位を入力" maxlength="10" oninput="onUnitTextInput()"><button class="unit-confirm" onclick="confirmUnit()">単位を保存して閉じる</button></div>
+  </div>
+</div>
+<div class="confirm-bg" id="manual-order-bg" onclick="closeManualOrderModal()">
+  <div class="export-panel" onclick="event.stopPropagation()">
+    <div class="export-head"><div class="export-head-title">追加オーダー</div><button class="export-close" onclick="closeManualOrderModal()">×</button></div>
+    <div class="manual-form">
+      <label>輸入社コード<input id="manual-importer" placeholder="JKT"></label>
+      <label>店舗名<input id="manual-customer" placeholder="店舗名"></label>
+      <label class="wide">商品名<input id="manual-product-name" placeholder="商品名"></label>
+      <label>商品コード<input id="manual-product-id" placeholder="未入力可"></label>
+      <label>注文数量<input id="manual-qty" inputmode="decimal" placeholder="数量"></label>
+      <label>注文単位<input id="manual-unit" placeholder="kg / 本 / 個"></label>
+      <label>産地<input id="manual-origin" placeholder="産地"></label>
+      <label>売価<input id="manual-price" inputmode="decimal" placeholder="売価"></label>
+      <label class="wide">備考<input id="manual-memo" placeholder="備考"></label>
+    </div>
+    <div class="manual-actions"><button class="btn" onclick="closeManualOrderModal()">キャンセル</button><button class="btn btn-primary" onclick="addManualOrder()">追加する</button></div>
   </div>
 </div>
 <div class="export-bg" id="export-bg" onclick="closeExportPicker()"><div class="export-panel" onclick="event.stopPropagation()"><div class="export-head"><div class="export-head-title">Excel出力する輸入社を選択</div><button class="export-close" onclick="closeExportPicker()">×</button></div><div class="export-label">輸入社コード</div><div class="export-options" id="export-options"></div><button class="export-all" onclick="doExport(null)">全てまとめて出力</button></div></div>
@@ -1374,6 +1392,24 @@ function updateInlineBox(rowIdx,value){
   saveOrderLineToSupabase(row);
   if(currentPhase===2)buildP2();
 }
+P1_UNIT.qty="";
+P1_UNIT.net="";
+P1_UNIT.box="";
+function resetP1Row(rowIdx){
+  const row=rows[rowIdx];
+  if(!row)return;
+  if(!confirm(`「${row.product_name}」の入力内容をリセットしますか？`))return;
+  row._qty="";
+  row._net="";
+  row._box="";
+  row._unit=row.unit||"";
+  row._stockout=false;
+  renderP1Cell(row.country,row.customer);
+  updateP1CountryBadge(row.country);
+  saveOrderLineToSupabase(row);
+  if(currentPhase===2)buildP2();
+  toast("入力内容をリセットしました");
+}
 function p1TouchCell(row,field,label,unit){
   const value=field==="unit"?row._unit:row[P1_KEY[field]];
   const text=value?`${esc(value)}${unit||""}`:esc(label);
@@ -1391,6 +1427,45 @@ function openP1NP(i,startField){
   if(curF==="unit")showUnitInput();
   else updateP1NP();
 }
+function openManualOrderModal(){
+  if(!rows.length){toast("先に作業データを表示してください");return}
+  const imp=activeCountry||activeImporter||getCountries()[0]||"";
+  const customer=(imp&&activeCustomer[imp])||"";
+  document.getElementById("manual-importer").value=imp;
+  document.getElementById("manual-customer").value=customer;
+  ["product-name","product-id","qty","unit","origin","price","memo"].forEach(id=>document.getElementById("manual-"+id).value="");
+  document.getElementById("manual-order-bg").classList.add("open");
+  setTimeout(()=>document.getElementById("manual-product-name").focus(),80);
+}
+function closeManualOrderModal(){
+  document.getElementById("manual-order-bg").classList.remove("open");
+}
+function manualValue(id){
+  return document.getElementById(id)?.value.trim()||"";
+}
+function addManualOrder(){
+  const importerId=manualValue("manual-importer");
+  const customer=manualValue("manual-customer");
+  const productName=manualValue("manual-product-name");
+  if(!importerId||!customer||!productName){toast("輸入社、店舗名、商品名は必須です");return}
+  const nextIdx=rows.reduce((max,r)=>Math.max(max,Number(r._idx)||0),-1)+1;
+  const productId=manualValue("manual-product-id")||`ADD-${String(nextIdx+1).padStart(4,"0")}`;
+  const row={
+    _idx:nextIdx,_qty:"",_net:"",_box:"",_memo:manualValue("manual-memo"),_unit:manualValue("manual-unit"),_stockout:false,
+    customer,product_id:productId,product_name:productName,unit:manualValue("manual-unit"),csv_qty:manualValue("manual-qty"),
+    en_name:"",sci_name:"",origin:manualValue("manual-origin"),unit_price:manualValue("manual-price"),importer_id:importerId,country:countryCode(importerId)
+  };
+  rows.push(row);
+  orderRows.push({product_id:row.product_id,product_name:row.product_name,unit:row.unit,csv_qty:row.csv_qty,customer:row.customer,importer_id:row.importer_id,csv_memo:row._memo,origin:row.origin,unit_price:row.unit_price});
+  activeCountry=row.country;
+  activeCustomer[row.country]=row.customer;
+  buildP1Tabs();
+  p1SwitchCountry(row.country);
+  p1SwitchCustomer(row.country,row.customer);
+  if(currentSessionId)saveOrderLineToSupabase(row);
+  closeManualOrderModal();
+  toast("追加オーダーを追加しました");
+}
 function renderP1Cell(country,customer){
   const cRows=rows.filter(r=>r.country===country&&r.customer===customer);
   const stockout=cRows.filter(r=>r._stockout).length;
@@ -1404,10 +1479,10 @@ function renderP1Cell(country,customer){
   if(!tbody)return;
   tbody.innerHTML=cRows.map((r,i)=>{
     if(r._stockout){
-      return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;text-decoration:line-through;color:var(--muted)">${esc(r.product_name)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
+      return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;text-decoration:line-through;color:var(--muted)">${esc(r.product_name)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
     }
     const d=r._qty&&r._net&&r._box,p=!d&&(r._qty||r._net||r._box);
-    return `<tr class="${d?"done":p?"partial":"pending"}" onclick="openP1NP(${r._idx},'qty')"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${p1TouchCell(r,"qty","数量","")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${p1TouchCell(r,"net","NET","kg")}</td><td>${boxInput(r)}</td><td>${memoCell(r._memo)}</td><td>${d?'<span class="badge badge-done">完了</span>':p?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
+    return `<tr class="${d?"done":p?"partial":"pending"}" onclick="openP1NP(${r._idx},'qty')"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${p1TouchCell(r,"qty","数量","")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${p1TouchCell(r,"net","NET","")}</td><td>${boxInput(r)}</td><td>${memoCell(r._memo)}</td><td>${d?'<span class="badge badge-done">完了</span>':p?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
   }).join("");
 }
 function buildP1Tabs_np(){
