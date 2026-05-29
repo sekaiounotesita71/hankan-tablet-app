@@ -109,6 +109,9 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .shop-name-cell{font-weight:800;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inline-box-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:center;padding:0 8px}
 .inline-box-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--p2)}
+.touch-input-cell{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:40px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-weight:800;cursor:pointer}
+.touch-input-cell.empty{background:var(--bg);color:var(--muted);border-style:dashed;font-weight:700}
+.touch-input-cell:active{transform:scale(.97)}
 .p15-input{width:100%;min-width:110px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:800;padding:0 10px}
 .p15-price{max-width:120px;text-align:right;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .p15-input:focus{outline:2px solid rgba(163,109,0,.22);border-color:var(--warn)}
@@ -1371,6 +1374,23 @@ function updateInlineBox(rowIdx,value){
   saveOrderLineToSupabase(row);
   if(currentPhase===2)buildP2();
 }
+function p1TouchCell(row,field,label,unit){
+  const value=field==="unit"?row._unit:row[P1_KEY[field]];
+  const text=value?`${esc(value)}${unit||""}`:esc(label);
+  return `<button type="button" class="touch-input-cell${value?"":" empty"}" onclick="event.stopPropagation();openP1NP(${row._idx},'${field}')">${text}</button>`;
+}
+function openP1NP(i,startField){
+  npMode="p1";
+  curRow=i;
+  curF=startField||"qty";
+  npVal=curF==="unit"?"":(rows[i]?.[P1_KEY[curF]]||"");
+  document.getElementById("np-meta").textContent=`輸入社 ${rows[i].country} / ${rows[i].customer}`;
+  document.getElementById("np-product").textContent=rows[i].product_name;
+  buildP1Tabs_np();
+  document.getElementById("modal-bg").classList.add("open");
+  if(curF==="unit")showUnitInput();
+  else updateP1NP();
+}
 function renderP1Cell(country,customer){
   const cRows=rows.filter(r=>r.country===country&&r.customer===customer);
   const stockout=cRows.filter(r=>r._stockout).length;
@@ -1387,7 +1407,7 @@ function renderP1Cell(country,customer){
       return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;text-decoration:line-through;color:var(--muted)">${esc(r.product_name)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
     }
     const d=r._qty&&r._net&&r._box,p=!d&&(r._qty||r._net||r._box);
-    return `<tr class="${d?"done":p?"partial":"pending"}" onclick="openP1NP(${r._idx})"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${ic(r._qty,"数量")}</td><td>${ic(r._unit,"単位")}</td><td>${ic(r._net,"kg",true)}</td><td>${boxInput(r)}</td><td>${memoCell(r._memo)}</td><td>${d?'<span class="badge badge-done">完了</span>':p?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
+    return `<tr class="${d?"done":p?"partial":"pending"}" onclick="openP1NP(${r._idx},'qty')"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${p1TouchCell(r,"qty","数量","")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${p1TouchCell(r,"net","NET","kg")}</td><td>${boxInput(r)}</td><td>${memoCell(r._memo)}</td><td>${d?'<span class="badge badge-done">完了</span>':p?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
   }).join("");
 }
 function buildP1Tabs_np(){
