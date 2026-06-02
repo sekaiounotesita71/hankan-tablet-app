@@ -67,8 +67,11 @@ main{width:min(1280px,100%);margin:0 auto;padding:18px max(14px,env(safe-area-in
 .merge-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 .merge-info{font-size:14px;color:var(--muted)}.merge-info strong{color:var(--text)}
 .tabs-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.country-tabs,.customer-tabs{display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.country-tabs::-webkit-scrollbar,.customer-tabs::-webkit-scrollbar{display:none}
+.country-tabs,.customer-tabs{display:flex;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;-webkit-overflow-scrolling:touch}
+.country-tabs::-webkit-scrollbar,.customer-tabs::-webkit-scrollbar{height:10px}
+.country-tabs::-webkit-scrollbar-track,.customer-tabs::-webkit-scrollbar-track{background:transparent}
+.country-tabs::-webkit-scrollbar-thumb,.customer-tabs::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:999px;border:3px solid transparent;background-clip:content-box}
+.country-tabs::-webkit-scrollbar-thumb:hover,.customer-tabs::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:content-box}
 .country-tabs{background:#faf8f3;border-bottom:2px solid var(--border)}
 .customer-tabs{padding:0 12px;background:#fffdf9;border-bottom:1px solid var(--border);gap:2px}
 .country-tab,.customer-tab{
@@ -144,6 +147,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   header{align-items:stretch;flex-direction:column}.header-title{font-size:17px}.header-right{width:100%;justify-content:space-between}.phase-switcher{flex:1}.phase-btn{flex:1;padding:0 8px}.btn{padding:0 12px}
   main{padding-top:14px}.import-grid{grid-template-columns:1fr}.tabs-wrap{border-radius:0;margin-left:-14px;margin-right:-14px;border-left:0;border-right:0}
   .country-tab,.customer-tab{min-height:52px}.statusbar{gap:12px}.table-scroll{padding-bottom:8px}table{min-width:920px}.np-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .country-tabs,.customer-tabs{scrollbar-width:none}.country-tabs::-webkit-scrollbar,.customer-tabs::-webkit-scrollbar{display:none}
 }
 </style>
 </head>
