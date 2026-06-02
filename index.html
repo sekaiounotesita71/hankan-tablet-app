@@ -221,7 +221,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     </div>
     <button class="np-key wide" id="np-next" onclick="confirmF()">次の項目へ</button>
     <div class="memo-input-wrap" id="memo-input-wrap"><textarea class="memo-textarea" id="memo-textarea" placeholder="現場メモを入力" maxlength="200" oninput="updateMemoCount()"></textarea><div class="memo-char-count"><span id="memo-count">0</span> / 200</div><button class="memo-confirm" onclick="confirmMemo()">メモを保存して閉じる</button></div>
-    <div class="unit-input-wrap" id="unit-input-wrap"><div class="unit-presets" id="unit-presets"><button class="unit-preset" onclick="selectUnit('kg')">kg</button><button class="unit-preset" onclick="selectUnit('g')">g</button><button class="unit-preset" onclick="selectUnit('匹')">匹</button><button class="unit-preset" onclick="selectUnit('尾')">尾</button><button class="unit-preset" onclick="selectUnit('枚')">枚</button><button class="unit-preset" onclick="selectUnit('箱')">箱</button><button class="unit-preset" onclick="selectUnit('本')">本</button><button class="unit-preset" onclick="selectUnit('個')">個</button></div><input class="unit-text-input" id="unit-text-input" type="text" placeholder="単位を入力" maxlength="10" oninput="onUnitTextInput()"><button class="unit-confirm" onclick="confirmUnit()">単位を保存して閉じる</button></div>
+    <div class="unit-input-wrap" id="unit-input-wrap"><div class="unit-presets" id="unit-presets"><button class="unit-preset" onclick="selectUnit('Kg')">Kg</button><button class="unit-preset" onclick="selectUnit('g')">g</button><button class="unit-preset" onclick="selectUnit('匹')">匹</button><button class="unit-preset" onclick="selectUnit('尾')">尾</button><button class="unit-preset" onclick="selectUnit('枚')">枚</button><button class="unit-preset" onclick="selectUnit('箱')">箱</button><button class="unit-preset" onclick="selectUnit('本')">本</button><button class="unit-preset" onclick="selectUnit('個')">個</button></div><input class="unit-text-input" id="unit-text-input" type="text" placeholder="単位を入力" maxlength="10" oninput="onUnitTextInput()"><button class="unit-confirm" onclick="confirmUnit()">単位を保存して閉じる</button></div>
   </div>
 </div>
 <div class="confirm-bg" id="manual-order-bg" onclick="closeManualOrderModal()">
@@ -271,7 +271,7 @@ function parseCSV(text,type){const lines=String(text).trim().replace(/^\uFEFF/,"
 function splitLine(line){const res=[];let cur="",inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++}else inQ=!inQ}else if(c===","&&!inQ){res.push(cur);cur=""}else cur+=c}res.push(cur);return res}
 function setOk(id,t){const el=document.getElementById(id);el.textContent=t;el.className="import-status ok"}
 function checkMergeReady(){if(!orderRows.length)return;const mc=Object.keys(masterMap).length;document.getElementById("merge-bar").style.display="flex";document.getElementById("merge-info").innerHTML=`受注 <strong>${orderRows.length}件</strong>`+(mc?`　商品マスタ <strong>${mc}件</strong>`:`　<span style="color:var(--warn)">商品マスタ未読込</span>`)}
-function mergeAndRender(){rows=orderRows.map((r,i)=>{const m=masterMap[r.product_id]||{};return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:r.unit||"",_stockout:false,customer:r.customer||"-",product_id:r.product_id||"",product_name:r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||"",en_name:m.en_name||"",sci_name:m.sci_name||"",origin:m.origin||"",unit_price:r.unit_price||m.unit_price||"",importer_id:r.importer_id||"",country:countryCode(r.importer_id)}});buildP1Tabs();document.getElementById("merge-bar").style.display="none";document.getElementById("p1-tabs-wrap").style.display="";document.getElementById("export-btn").disabled=false}
+function mergeAndRender(){rows=orderRows.map((r,i)=>{const m=masterMap[r.product_id]||{};return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:r.customer||"-",product_id:r.product_id||"",product_name:r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||"",en_name:m.en_name||"",sci_name:m.sci_name||"",origin:m.origin||"",unit_price:r.unit_price||m.unit_price||"",importer_id:r.importer_id||"",country:countryCode(r.importer_id)}});buildP1Tabs();document.getElementById("merge-bar").style.display="none";document.getElementById("p1-tabs-wrap").style.display="";document.getElementById("export-btn").disabled=false}
 function getCountries(){const seen={},l=[];rows.forEach(r=>{if(!seen[r.country]){seen[r.country]=1;l.push(r.country)}});return l.sort()}
 function getCustomersOf(c){const seen={},l=[];rows.filter(r=>r.country===c).forEach(r=>{if(!seen[r.customer]){seen[r.customer]=1;l.push(r.customer)}});return l}
 function buildP1Tabs(){const countries=getCountries();activeCountry=countries[0];countries.forEach(c=>activeCustomer[c]=getCustomersOf(c)[0]);document.getElementById("p1-country-tabs").innerHTML=countries.map(c=>`<button class="country-tab${c===activeCountry?" active":""}" id="p1ctry-${cid(c)}" onclick="p1SwitchCountry('${esc(c)}')"><span class="country-code">${esc(c)}</span><span class="cbadge has-pending" id="p1ctry-badge-${cid(c)}">-</span></button>`).join("");document.getElementById("p1-country-panels").innerHTML=countries.map(c=>`<div class="country-panel${c===activeCountry?" active":""}" id="p1cpanel-${cid(c)}"><div class="customer-tabs" id="p1cust-tabs-${cid(c)}"></div><div id="p1cust-panels-${cid(c)}"></div></div>`).join("");countries.forEach(c=>buildP1CustomerTabs(c))}
@@ -305,7 +305,7 @@ function confirmUnit(){saveUnitCur();closeNP();if(currentSessionId&&curRow!==nul
 let pendingStockoutIdx=null;
 function confirmStockout(i){pendingStockoutIdx=i;document.getElementById("confirm-product-name").textContent=rows[i].product_name;document.getElementById("confirm-bg").classList.add("open")}
 function cancelStockout(){pendingStockoutIdx=null;document.getElementById("confirm-bg").classList.remove("open")}
-function executeStockout(){if(pendingStockoutIdx===null)return;const r=rows[pendingStockoutIdx];r._stockout=true;r._qty="";r._net="";r._box="";r._unit=r.unit||"";document.getElementById("confirm-bg").classList.remove("open");renderP1Cell(r.country,r.customer);updateP1CountryBadge(r.country);saveOrderLineToSupabase(r);pendingStockoutIdx=null;toast("欠品として登録しました")}
+function executeStockout(){if(pendingStockoutIdx===null)return;const r=rows[pendingStockoutIdx];r._stockout=true;r._qty="";r._net="";r._box="";r._unit="Kg";document.getElementById("confirm-bg").classList.remove("open");renderP1Cell(r.country,r.customer);updateP1CountryBadge(r.country);saveOrderLineToSupabase(r);pendingStockoutIdx=null;toast("欠品として登録しました")}
 function undoStockout(i){rows[i]._stockout=false;renderP1Cell(rows[i].country,rows[i].customer);updateP1CountryBadge(rows[i].country);saveOrderLineToSupabase(rows[i]);toast("欠品を取り消しました")}
 function showMemo(){document.getElementById("np-disp-wrap").style.display="none";document.getElementById("np-grid").style.display="none";document.getElementById("np-next").style.display="none";document.getElementById("unit-input-wrap").classList.remove("show");document.getElementById("memo-input-wrap").classList.add("show");const ta=document.getElementById("memo-textarea");ta.value=rows[curRow]?._memo||"";updateMemoCount();document.querySelectorAll(".np-tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-memo")?.classList.add("active");setTimeout(()=>ta.focus(),100)}
 function nk(v){if(v==="."&&npVal.includes("."))return;npVal=(npVal===""||npVal==="0")&&v!=="."?v:npVal+v;document.getElementById("np-val").textContent=npVal}
@@ -713,7 +713,7 @@ function mergeAndRender(){
     const m=masterMap[productId]||{};
     const customer=r.customer||findFirstValue(r,["エンドユーザーの店名","エンドユーザー店名","店舗名","店名","得意先名","顧客名","納品先名","届け先名"]);
     const importerId=r.importer_id||findFirstValue(r,["輸入社ID","輸入社コード","輸入者ID","輸入者コード","C/S"])||"JKT";
-    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:r.unit||"",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:r.product_name||findFirstValue(r,["商品名","品名","NAME OF GOODS INJAPANESE","NAME OF GOODS"])||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||findFirstValue(r,["NAME OF GOODS"])||"",sci_name:m.sci_name||"",origin:m.origin||r.origin||"",unit_price:r.unit_price||m.unit_price||findFirstValue(r,["U/PRICE by JPN YEN"])||"",importer_id:importerId,country:countryCode(importerId)};
+    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:r.product_name||findFirstValue(r,["商品名","品名","NAME OF GOODS INJAPANESE","NAME OF GOODS"])||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||findFirstValue(r,["NAME OF GOODS"])||"",sci_name:m.sci_name||"",origin:m.origin||r.origin||"",unit_price:r.unit_price||m.unit_price||findFirstValue(r,["U/PRICE by JPN YEN"])||"",importer_id:importerId,country:countryCode(importerId)};
   });
   activeCountry=null;
   activeCustomer={};
@@ -941,7 +941,7 @@ async function openSavedSession(sessionId){
     _net:r.net_weight??"",
     _box:r.box_no||"",
     _memo:r.memo||"",
-    _unit:r.input_unit||r.ordered_unit||"",
+    _unit:r.input_unit||"Kg",
     _stockout:!!r.is_stockout,
     customer:r.store_name||"UNKNOWN_STORE",
     product_id:r.product_id||"",
@@ -978,7 +978,7 @@ async function refreshCurrentSessionFromSupabase(){
     const dbRow=lineBySource.get(r._idx+1);
     if(!dbRow)return;
     r._qty=dbRow.input_qty??"";
-    r._unit=dbRow.input_unit||dbRow.ordered_unit||"";
+    r._unit=dbRow.input_unit||"Kg";
     r._net=dbRow.net_weight??"";
     r._box=dbRow.box_no||"";
     r._memo=dbRow.memo||"";
@@ -1013,7 +1013,7 @@ function applyRemoteOrderLine(dbRow){
   if(idx<0)return;
   const r=rows[idx];
   r._qty=dbRow.input_qty??"";
-  r._unit=dbRow.input_unit||dbRow.ordered_unit||"";
+  r._unit=dbRow.input_unit||"Kg";
   r._net=dbRow.net_weight??"";
   r._box=dbRow.box_no||"";
   r._memo=dbRow.memo||"";
@@ -1096,7 +1096,7 @@ function applyRemoteOrderLine(dbRow){
   if(idx<0)return;
   const r=rows[idx],oldCountry=r.country,oldCustomer=r.customer;
   r._qty=dbRow.input_qty??"";
-  r._unit=dbRow.input_unit||dbRow.ordered_unit||"";
+  r._unit=dbRow.input_unit||"Kg";
   r._net=dbRow.net_weight??"";
   r._box=dbRow.box_no||"";
   r._memo=dbRow.memo||"";
@@ -1335,7 +1335,7 @@ function mergeAndRender(){
     const englishName=findFirstValue(r,["NAME OF GOODS"]);
     const orderOrigin=r.origin||findFirstValue(r,["産地","origin"]);
     const orderPrice=r.unit_price||findFirstValue(r,["売価","U/PRICE by JPN YEN"]);
-    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:r.unit||"",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:orderOrigin||m.origin||"",unit_price:orderPrice||m.unit_price||"",importer_id:importerId,country:countryCode(importerId)};
+    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:orderOrigin||m.origin||"",unit_price:orderPrice||m.unit_price||"",importer_id:importerId,country:countryCode(importerId)};
   });
   activeCountry=null;
   activeCustomer={};
@@ -1406,7 +1406,7 @@ function resetP1Row(rowIdx){
   row._qty="";
   row._net="";
   row._box="";
-  row._unit=row.unit||"";
+  row._unit=row.unit||"Kg";
   row._stockout=false;
   renderP1Cell(row.country,row.customer);
   updateP1CountryBadge(row.country);
@@ -1455,7 +1455,7 @@ function addManualOrder(){
   const nextIdx=rows.reduce((max,r)=>Math.max(max,Number(r._idx)||0),-1)+1;
   const productId=manualValue("manual-product-id")||`ADD-${String(nextIdx+1).padStart(4,"0")}`;
   const row={
-    _idx:nextIdx,_qty:"",_net:"",_box:"",_memo:manualValue("manual-memo"),_unit:manualValue("manual-unit"),_stockout:false,
+    _idx:nextIdx,_qty:"",_net:"",_box:"",_memo:manualValue("manual-memo"),_unit:"Kg",_stockout:false,
     customer,product_id:productId,product_name:productName,unit:manualValue("manual-unit"),csv_qty:manualValue("manual-qty"),
     en_name:"",sci_name:"",origin:manualValue("manual-origin"),unit_price:manualValue("manual-price"),importer_id:importerId,country:countryCode(importerId)
   };
@@ -1828,6 +1828,23 @@ async function exportExcel(){
   renderExportPreview(null);
   document.getElementById("export-bg").classList.add("open");
 }
+function applyUnitDefault(){
+  rows.forEach(r=>{
+    if(!r._unit)r._unit="Kg";
+  });
+}
+const __mergeAndRenderUnitDefaultBase=mergeAndRender;
+mergeAndRender=function(){
+  __mergeAndRenderUnitDefaultBase();
+  applyUnitDefault();
+  buildP1Tabs();
+};
+const __openSavedSessionUnitDefaultBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await __openSavedSessionUnitDefaultBase(sessionId);
+  applyUnitDefault();
+  if(rows.length)buildP1Tabs();
+};
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
