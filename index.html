@@ -1799,6 +1799,31 @@ function doExport(country){
   XLSX.writeFile(wb,payload.filename);
   toast("Excelを出力しました");
 }
+async function directExportCountry(country){
+  if(currentSessionId&&supabaseClient){
+    setSaveState("Supabase: 出力前に最新確認中...");
+    const ok=await refreshCurrentSessionFromSupabase();
+    if(!ok){setSaveState("Supabase: 最新取得失敗",true);return}
+    setSaveState("Supabase: 最新データで出力");
+  }
+  doExport(country);
+}
+async function exportExcel(){
+  if(currentSessionId&&supabaseClient){
+    setSaveState("Supabase: 最新データ確認中...");
+    const ok=await refreshCurrentSessionFromSupabase();
+    if(!ok){setSaveState("Supabase: 最新取得失敗",true);return}
+    setSaveState("Supabase: 最新データ反映済み");
+  }
+  const countries=getCountries();
+  ensureExportPreviewUI();
+  document.getElementById("export-options").innerHTML=countries.map(c=>{
+    const cRows=rows.filter(r=>r.country===c),done=cRows.filter(r=>r._stockout||(r._qty&&r._net&&r._box)).length,total=cRows.length,pct=total?Math.round(done/total*100):0;
+    return`<div class="export-option"><button type="button" class="export-option-left export-option-button" data-country="${esc(c)}" onclick="event.stopPropagation();renderExportPreview(this.dataset.country)" style="border:0;background:transparent;padding:0;flex:1"><span class="export-option-code">${esc(c)}</span><span class="export-option-meta">${total}件 / ${done}件完了</span><span class="cbadge ${pct===100?"all-done":pct===0?"has-pending":"partial"}">${pct}%</span></button><button type="button" class="sync-btn primary" data-country="${esc(c)}" onclick="event.stopPropagation();directExportCountry(this.dataset.country)">出力</button></div>`;
+  }).join("");
+  renderExportPreview(null);
+  document.getElementById("export-bg").classList.add("open");
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
