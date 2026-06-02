@@ -1406,7 +1406,7 @@ function resetP1Row(rowIdx){
   row._qty="";
   row._net="";
   row._box="";
-  row._unit=row.unit||"Kg";
+  row._unit="Kg";
   row._stockout=false;
   renderP1Cell(row.country,row.customer);
   updateP1CountryBadge(row.country);
@@ -1828,6 +1828,57 @@ async function exportExcel(){
   renderExportPreview(null);
   document.getElementById("export-bg").classList.add("open");
 }
+function jsArg(v){
+  return JSON.stringify(String(v??""));
+}
+loadSessionList=async function(){
+  if(!(await requireSupabaseLogin()))return;
+  const {data,error}=await supabaseClient.from("work_sessions").select("id,name,status,created_at,updated_at").order("updated_at",{ascending:false}).limit(50);
+  if(error){toast("作業一覧エラー: "+error.message);return}
+  const wrap=document.getElementById("session-options");
+  wrap.innerHTML=(data||[]).map(s=>`<div class="export-option" id="session-row-${cid(s.id)}"><div class="export-option-left" onclick="openSavedSession(${jsArg(s.id)})" style="flex:1;cursor:pointer"><span class="export-option-code">${esc(s.name)}</span><span class="export-option-meta">${new Date(s.updated_at||s.created_at).toLocaleString("ja-JP")}</span></div><span class="export-option-badge partial">${esc(s.status)}</span><button class="btn-stockout" onclick="deleteSavedSession(event,${jsArg(s.id)},${jsArg(s.name)})">削除</button></div>`).join("")||`<div class="export-option"><div class="export-option-meta">保存済み作業はまだありません</div></div>`;
+  document.getElementById("session-bg").classList.add("open");
+};
+deleteSavedSession=async function(event,sessionId,name){
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  if(!(await requireSupabaseLogin()))return;
+  if(!confirm(`「${name}」を削除しますか？\n関連する明細と箱情報も削除されます。`))return;
+  const btn=event?.currentTarget;
+  if(btn){btn.disabled=true;btn.textContent="削除中"}
+  setSaveState("Supabase: 削除中...");
+  const boxResult=await supabaseClient.from("boxes").delete().eq("session_id",sessionId);
+  if(boxResult.error){
+    if(btn){btn.disabled=false;btn.textContent="削除"}
+    setSaveState("Supabase: 削除失敗",true);
+    toast("箱情報削除エラー: "+boxResult.error.message);
+    return;
+  }
+  const lineResult=await supabaseClient.from("order_lines").delete().eq("session_id",sessionId);
+  if(lineResult.error){
+    if(btn){btn.disabled=false;btn.textContent="削除"}
+    setSaveState("Supabase: 削除失敗",true);
+    toast("明細削除エラー: "+lineResult.error.message);
+    return;
+  }
+  const sessionResult=await supabaseClient.from("work_sessions").delete().eq("id",sessionId);
+  if(sessionResult.error){
+    if(btn){btn.disabled=false;btn.textContent="削除"}
+    setSaveState("Supabase: 削除失敗",true);
+    toast("作業削除エラー: "+sessionResult.error.message);
+    return;
+  }
+  if(currentSessionId===sessionId){
+    currentSessionId=null;
+    currentSessionName="";
+    unsubscribeRealtime();
+    updateCloudSaveButton();
+  }
+  document.getElementById("session-row-"+cid(sessionId))?.remove();
+  setSaveState("Supabase: 削除済み");
+  toast("削除しました");
+  loadSessionList();
+};
 function applyUnitDefault(){
   rows.forEach(r=>{
     if(!r._unit)r._unit="Kg";
