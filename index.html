@@ -130,7 +130,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .np-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}.np-tab{min-height:48px;padding:6px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--muted);font-size:13px;font-weight:800;line-height:1.25;cursor:pointer}.np-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}.np-tab.memo-tab.active{background:var(--memo);border-color:var(--memo)}.np-tab.p2-tab.active{background:var(--p2);border-color:var(--p2)}
 .tick{display:block;font-size:11px;color:var(--success);margin-top:2px}.np-tab.active .tick{color:#a8ffd8}
 .np-disp{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px}.np-val{font-size:38px;font-weight:900;min-height:48px;flex:1}.np-unit{color:var(--muted);font-weight:800}
-.np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}.np-key{height:66px;border:0;border-radius:12px;background:#ece6dc;color:var(--text);font-size:24px;font-weight:800;cursor:pointer}.np-key.act{font-size:17px;background:#e2dbd0}.np-key.wide{grid-column:span 3;height:58px;background:var(--accent);color:#fff;font-size:16px}.np-key.wide.last{background:var(--success)}
+.np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}.np-key{height:66px;border:0;border-radius:12px;background:#ece6dc;color:var(--text);font-size:24px;font-weight:800;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}.np-key.act{font-size:17px;background:#e2dbd0}.np-key.del{font-size:22px;background:#d8d0c4}.np-key.wide{grid-column:span 3;height:58px;background:var(--accent);color:#fff;font-size:16px}.np-key.wide.last{background:var(--success)}
 .memo-input-wrap,.unit-input-wrap{display:none;flex-direction:column;gap:10px;margin-bottom:10px}.memo-input-wrap.show,.unit-input-wrap.show{display:flex}
 .memo-textarea,.unit-text-input{width:100%;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);padding:12px;font-size:16px}.memo-textarea{height:130px;resize:none;line-height:1.55}.memo-char-count{text-align:right;color:var(--muted);font-size:12px}
 .memo-confirm,.unit-confirm{height:56px;border:0;border-radius:12px;background:var(--memo);color:#fff;font-weight:800;cursor:pointer}.unit-confirm{background:var(--accent)}
@@ -213,7 +213,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       <button class="np-key" onclick="nk('7')">7</button><button class="np-key" onclick="nk('8')">8</button><button class="np-key" onclick="nk('9')">9</button>
       <button class="np-key" onclick="nk('4')">4</button><button class="np-key" onclick="nk('5')">5</button><button class="np-key" onclick="nk('6')">6</button>
       <button class="np-key" onclick="nk('1')">1</button><button class="np-key" onclick="nk('2')">2</button><button class="np-key" onclick="nk('3')">3</button>
-      <button class="np-key act" onclick="nk('.')">.</button><button class="np-key" onclick="nk('0')">0</button><button class="np-key act" onclick="ndel()">⌫</button>
+      <button class="np-key del" id="np-delete" type="button" onpointerdown="startDeleteKey(event)" onpointerup="stopDeleteKey()" onpointercancel="stopDeleteKey()" onpointerleave="stopDeleteKey()">⌫</button><button class="np-key" onclick="nk('0')">0</button><button class="np-key act" onclick="nk('.')">.</button>
     </div>
     <button class="np-key wide" id="np-next" onclick="confirmF()">次の項目へ</button>
     <div class="memo-input-wrap" id="memo-input-wrap"><textarea class="memo-textarea" id="memo-textarea" placeholder="現場メモを入力" maxlength="200" oninput="updateMemoCount()"></textarea><div class="memo-char-count"><span id="memo-count">0</span> / 200</div><button class="memo-confirm" onclick="confirmMemo()">メモを保存して閉じる</button></div>
@@ -1379,7 +1379,7 @@ async function saveCurrentSessionToSupabase(){
   toast("Supabaseに保存しました");
 }
 function boxInput(row){
-  return `<input class="inline-box-input" value="${esc(row._box)}" placeholder="箱" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur()}" onblur="updateInlineBox(${row._idx},this.value)">`;
+  return `<input class="inline-box-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${esc(row._box)}" placeholder="箱" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur()}" onblur="updateInlineBox(${row._idx},this.value)">`;
 }
 function updateInlineBox(rowIdx,value){
   const row=rows[rowIdx];
@@ -1650,6 +1650,130 @@ unsubscribeRealtime=function(){
   stopAutoRefresh();
   __unsubscribeRealtimeBase();
 };
+function exportBoxNo(value){
+  return String(value??"").trim();
+}
+function forceTextColumn(ws,colIndex,rowCount){
+  if(typeof XLSX==="undefined")return;
+  const col=XLSX.utils.encode_col(colIndex);
+  for(let row=2;row<=rowCount+1;row++){
+    const addr=`${col}${row}`;
+    if(!ws[addr]||ws[addr].v===undefined||ws[addr].v===null||ws[addr].v==="")continue;
+    ws[addr].v=String(ws[addr].v);
+    ws[addr].t="s";
+    ws[addr].z="@";
+  }
+}
+var deleteKeyRepeatTimer=null;
+function refreshNpDisplay(){
+  const el=document.getElementById("np-val");
+  if(el)el.textContent=npVal||"0";
+}
+function deleteOneDigit(){
+  npVal=String(npVal||"").slice(0,-1);
+  refreshNpDisplay();
+}
+function startDeleteKey(event){
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  stopDeleteKey();
+  deleteOneDigit();
+  deleteKeyRepeatTimer=setTimeout(()=>{
+    deleteKeyRepeatTimer=setInterval(deleteOneDigit,90);
+  },320);
+}
+function stopDeleteKey(){
+  if(deleteKeyRepeatTimer){
+    clearTimeout(deleteKeyRepeatTimer);
+    clearInterval(deleteKeyRepeatTimer);
+  }
+  deleteKeyRepeatTimer=null;
+}
+function ndel(){
+  deleteOneDigit();
+}
+function buildExportPayload(country){
+  const targetRows=country?rows.filter(r=>r.country===country):rows;
+  const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
+  const headers=["商品コード","エンドユーザー店名","ケース番号","温度帯","商品名","英名・学術名","packing","産地","No of BOX","現場入力数量","現場入力単位","NET重量","グロス重量","単価","金額","メモ","欠品"];
+  const seenBoxes={},netTotals={};
+  targetRows.forEach(r=>{
+    const boxNo=exportBoxNo(r._box);
+    if(r._stockout||!boxNo)return;
+    const key=`${importerCode(r.importer_id)}__${boxNo}`;
+    netTotals[key]=(netTotals[key]||0)+(parseFloat(r._net)||0);
+  });
+  const p1data=targetRows.map(r=>{
+    const imp=importerCode(r.importer_id),boxNo=exportBoxNo(r._box),boxKey=`${imp}_${boxNo}`,isFirst=boxNo&&!seenBoxes[boxKey];
+    if(boxNo)seenBoxes[boxKey]=true;
+    const gross=isFirst?(boxMap[imp]?.[boxNo]?.gross||""):"";
+    const qty=r._stockout||r._qty===""?"":Number(r._qty);
+    const price=r.unit_price===""?"":Number(String(r.unit_price).replace(/,/g,""));
+    const amount=qty===""||price===""?"":qty*price;
+    const enSci=[r.en_name,r.sci_name].filter(Boolean).join(" / ");
+    return{"商品コード":r.product_id,"エンドユーザー店名":r.customer,"ケース番号":r._stockout?"":boxNo,"温度帯":"","商品名":r.product_name,"英名・学術名":enSci,"packing":"","産地":r.origin||"","No of BOX":"","現場入力数量":qty,"現場入力単位":r._stockout?"":r._unit,"NET重量":r._stockout||r._net===""?"":Number(r._net),"グロス重量":r._stockout?"":(gross===""?"":Number(gross)),"単価":price,"金額":amount,"メモ":r._memo,"欠品":r._stockout?"欠品":""};
+  });
+  const targetImporters=[...new Set(targetRows.map(r=>importerCode(r.importer_id)))].sort();
+  const p2Sheets=targetImporters.map(imp=>{
+    const bm=boxMap[imp]||{};
+    const boxNos=[...new Set(targetRows.filter(r=>importerCode(r.importer_id)===imp&&!r._stockout&&exportBoxNo(r._box)).map(r=>exportBoxNo(r._box)))].sort((a,b)=>a.localeCompare(b,"ja",{numeric:true}));
+    const data=boxNos.map(bn=>{
+      const b=bm[bn]||{gross:"",dry_ice:"",dry_ice_enabled:false,box_size:""};
+      const netTotal=netTotals[`${imp}__${bn}`]||0;
+      return{"箱番号":bn,"NET重量合計(kg)":netTotal?Number(netTotal.toFixed(2)):"","グロス重量(kg)":b.gross===""?"":Number(b.gross),"ドライアイス重量(kg)":b.dry_ice_enabled&&b.dry_ice!==""?Number(b.dry_ice):(b.dry_ice_enabled?"入力待ち":""),"箱サイズ":b.box_size||""};
+    });
+    return{name:`箱一覧_${imp}`.slice(0,31),data};
+  }).filter(s=>s.data.length);
+  const boxNumberList=p2Sheets.flatMap(sheet=>sheet.data.map(r=>({"箱番号":r["箱番号"],"グロス重量":r["グロス重量(kg)"],"ドライアイス":r["ドライアイス重量(kg)"],"箱サイズ":r["箱サイズ"]})));
+  return{headers,p1data,p2Sheets,boxNumberList,filename:country?`invoice_${country}_${d}.xlsx`:`invoice_all_${d}.xlsx`};
+}
+async function exportExcel(){
+  if(currentSessionId&&supabaseClient){
+    setSaveState("Supabase: 最新データ確認中...");
+    const ok=await refreshCurrentSessionFromSupabase();
+    if(!ok){setSaveState("Supabase: 最新取得失敗",true);return}
+    setSaveState("Supabase: 最新データ反映済み");
+  }
+  const countries=getCountries();
+  ensureExportPreviewUI();
+  document.getElementById("export-options").innerHTML=countries.map(c=>{
+    const cRows=rows.filter(r=>r.country===c),done=cRows.filter(r=>r._stockout||(r._qty&&r._net&&r._box)).length,total=cRows.length,pct=total?Math.round(done/total*100):0;
+    return`<button type="button" class="export-option export-option-button" onclick="event.stopPropagation();renderExportPreview(${JSON.stringify(c)})"><div class="export-option-left"><span class="export-option-code">${esc(c)}</span><span class="export-option-meta">${total}件 / ${done}件完了</span></div><span class="cbadge ${pct===100?"all-done":pct===0?"has-pending":"partial"}">${pct}%</span></button>`;
+  }).join("");
+  const styleId="export-option-button-style";
+  if(!document.getElementById(styleId)){
+    const style=document.createElement("style");
+    style.id=styleId;
+    style.textContent=".export-option-button{width:100%;background:#fff;text-align:left;color:inherit}.export-option-button:active{transform:scale(.99)}";
+    document.head.appendChild(style);
+  }
+  renderExportPreview(null);
+  document.getElementById("export-bg").classList.add("open");
+}
+function doExport(country){
+  closeExportPicker();
+  if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}
+  const payload=buildExportPayload(country),wb=XLSX.utils.book_new();
+  const ws1=XLSX.utils.json_to_sheet(payload.p1data,{header:payload.headers});
+  forceTextColumn(ws1,2,payload.p1data.length);
+  payload.p1data.forEach((row,i)=>{const v=row["金額"];ws1[`O${i+2}`]={f:`J${i+2}*N${i+2}`,v:v===""?undefined:v,t:v===""?"z":"n"}});
+  ws1["!cols"]=[{wch:12},{wch:22},{wch:12},{wch:8},{wch:20},{wch:30},{wch:10},{wch:12},{wch:10},{wch:13},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:24},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws1,"Invoice Data");
+  payload.p2Sheets.forEach(sheet=>{
+    const ws2=XLSX.utils.json_to_sheet(sheet.data,{header:["箱番号","NET重量合計(kg)","グロス重量(kg)","ドライアイス重量(kg)","箱サイズ"]});
+    forceTextColumn(ws2,0,sheet.data.length);
+    ws2["!cols"]=[{wch:12},{wch:18},{wch:16},{wch:20},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws2,sheet.name);
+  });
+  const ws3=XLSX.utils.json_to_sheet(payload.boxNumberList,{header:["箱番号","グロス重量","ドライアイス","箱サイズ"]});
+  forceTextColumn(ws3,0,payload.boxNumberList.length);
+  ws3["!cols"]=[{wch:12},{wch:14},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,ws3,"箱番号一覧");
+  XLSX.writeFile(wb,payload.filename);
+  toast("Excelを出力しました");
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
