@@ -1765,7 +1765,7 @@ async function exportExcel(){
   ensureExportPreviewUI();
   document.getElementById("export-options").innerHTML=countries.map(c=>{
     const cRows=rows.filter(r=>r.country===c),done=cRows.filter(r=>r._stockout||(r._qty&&r._net&&r._box)).length,total=cRows.length,pct=total?Math.round(done/total*100):0;
-    return`<button type="button" class="export-option export-option-button" onclick="event.stopPropagation();renderExportPreview(${JSON.stringify(c)})"><div class="export-option-left"><span class="export-option-code">${esc(c)}</span><span class="export-option-meta">${total}件 / ${done}件完了</span></div><span class="cbadge ${pct===100?"all-done":pct===0?"has-pending":"partial"}">${pct}%</span></button>`;
+    return`<button type="button" class="export-option export-option-button" data-country="${esc(c)}" onclick="event.stopPropagation();renderExportPreview(this.dataset.country)"><div class="export-option-left"><span class="export-option-code">${esc(c)}</span><span class="export-option-meta">${total}件 / ${done}件完了</span></div><span class="cbadge ${pct===100?"all-done":pct===0?"has-pending":"partial"}">${pct}%</span></button>`;
   }).join("");
   const styleId="export-option-button-style";
   if(!document.getElementById(styleId)){
