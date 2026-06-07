@@ -66,14 +66,14 @@ main{width:min(1280px,100%);margin:0 auto;padding:18px max(14px,env(safe-area-in
 .field-hint{font-size:12px;color:var(--muted);line-height:1.65}.field-hint span{display:inline-block;background:var(--bg);border-radius:5px;padding:2px 7px;margin:2px}
 .merge-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 .merge-info{font-size:14px;color:var(--muted)}.merge-info strong{color:var(--text)}
-.tabs-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.tabs-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:visible}
 .country-tabs,.customer-tabs{display:flex;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;-webkit-overflow-scrolling:touch}
 .country-tabs::-webkit-scrollbar,.customer-tabs::-webkit-scrollbar{height:10px}
 .country-tabs::-webkit-scrollbar-track,.customer-tabs::-webkit-scrollbar-track{background:transparent}
 .country-tabs::-webkit-scrollbar-thumb,.customer-tabs::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:999px;border:3px solid transparent;background-clip:content-box}
 .country-tabs::-webkit-scrollbar-thumb:hover,.customer-tabs::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:content-box}
-.country-tabs{background:#faf8f3;border-bottom:2px solid var(--border)}
-.customer-tabs{padding:0 12px;background:#fffdf9;border-bottom:1px solid var(--border);gap:2px}
+.country-tabs{position:sticky;top:var(--sticky-country-top,64px);z-index:18;background:#faf8f3;border-bottom:2px solid var(--border)}
+.customer-tabs{position:sticky;top:var(--sticky-customer-top,116px);z-index:17;padding:0 12px;background:#fffdf9;border-bottom:1px solid var(--border);gap:2px}
 .country-tab,.customer-tab{
   flex:0 0 auto;display:flex;align-items:center;gap:8px;min-height:48px;border:0;background:transparent;color:var(--muted);
   cursor:pointer;white-space:nowrap;font-weight:800;border-bottom:3px solid transparent;
@@ -170,6 +170,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   <button class="sync-btn primary" onclick="signInSupabase()">ログイン</button>
   <button class="sync-btn" onclick="signOutSupabase()">ログアウト</button>
   <button class="sync-btn" onclick="loadSessionList()">作業一覧</button>
+  <button class="sync-btn" onclick="diagnoseJune4Data()">6/4診断</button>
   <div class="sync-user" id="sync-user"></div>
 </div>
 <div class="export-bg" id="session-bg" onclick="closeSessionPicker()">
@@ -1034,7 +1035,16 @@ function markRemoteUpdate(label){
 }
 function updateCloudSaveButton(){
   const btn=document.getElementById("cloud-save-btn");
-  if(btn)btn.textContent=currentSessionId?"上書き保存":"名前を付けて保存";
+  if(!btn)return;
+  if(currentSessionId){
+    btn.textContent="自動保存中";
+    btn.disabled=true;
+    btn.title="保存済み作業の明細は入力ごとに自動保存されます";
+  }else{
+    btn.textContent="名前を付けて保存";
+    btn.disabled=false;
+    btn.title="";
+  }
 }
 function switchPhase(n){
   currentPhase=n;
@@ -1839,6 +1849,91 @@ function clearBlockingOverlays(){
   });
 }
 window.addEventListener("pageshow",()=>setTimeout(clearBlockingOverlays,0));
+function normalizeImporterLabel(value){
+  const raw=String(value||"").trim().replace(/\s+/g," ");
+  const upper=raw.toUpperCase();
+  if(/^DIM\s*VEG$/.test(upper))return "DIM Veg";
+  if(/^DIM\s*FZ$/.test(upper))return "DIM FZ";
+  if(/^DIM$/.test(upper))return "DIM";
+  if(/^JKT$/.test(upper))return "JKT";
+  if(/^FBI$/.test(upper))return "FBI";
+  return raw;
+}
+function detectImporterLabelFromText(text){
+  const source=String(text||"");
+  const patterns=[
+    {re:/\bDIM\s*[-_,/ ]*\s*VEG\b/i,label:"DIM Veg"},
+    {re:/\bDIM\s*[-_,/ ]*\s*FZ\b/i,label:"DIM FZ"},
+    {re:/\bDIM\b/i,label:"DIM"},
+    {re:/\bJKT\b/i,label:"JKT"},
+    {re:/\bFBI\b/i,label:"FBI"}
+  ];
+  for(const p of patterns)if(p.re.test(source))return p.label;
+  return "";
+}
+function pdfImporterMarkers(text){
+  const source=String(text||"");
+  const markers=[];
+  const re=/\b(DIM)\s*[-_,/ ]*\s*(VEG|FZ)?\b|\b(JKT|FBI)\b/gi;
+  let m;
+  while((m=re.exec(source))){
+    const label=m[1]?normalizeImporterLabel([m[1],m[2]||""].join(" ").trim()):normalizeImporterLabel(m[3]);
+    markers.push({index:m.index,label});
+  }
+  return markers;
+}
+function detectPdfImporterForRecord(raw,fullText,fallback){
+  const direct=detectImporterLabelFromText(raw);
+  if(direct)return direct;
+  const idx=String(fullText||"").indexOf(String(raw||""));
+  if(idx>=0){
+    const before=pdfImporterMarkers(fullText).filter(m=>m.index<=idx).pop();
+    if(before)return before.label;
+  }
+  return normalizeImporterLabel(fallback);
+}
+const __inferImporterCodeFromFilenameImporterSplitBase=inferImporterCodeFromFilename;
+inferImporterCodeFromFilename=function(filename){
+  return detectImporterLabelFromText(String(filename||"").replace(/\.[^.]+$/,""))||normalizeImporterLabel(__inferImporterCodeFromFilenameImporterSplitBase(filename));
+};
+const __parseOrderPdfTextImporterSplitBase=parseOrderPdfText;
+parseOrderPdfText=function(text,filename,importerCodeValue,pageNo){
+  const fallback=normalizeImporterLabel(importerCodeValue);
+  return __parseOrderPdfTextImporterSplitBase(text,filename,fallback,pageNo).map(row=>{
+    const label=detectPdfImporterForRecord(row.raw_pdf_text||"",text,fallback);
+    return {...row,importer_id:label,importer_code:label};
+  });
+};
+function updateStickyTabOffsets(){
+  const header=document.querySelector("header");
+  const headerHeight=header?Math.ceil(header.getBoundingClientRect().height):64;
+  const activeCountryTabs=document.querySelector(".view.active .country-tabs");
+  const countryHeight=activeCountryTabs?Math.ceil(activeCountryTabs.getBoundingClientRect().height):52;
+  document.documentElement.style.setProperty("--sticky-country-top",`${headerHeight}px`);
+  document.documentElement.style.setProperty("--sticky-customer-top",`${headerHeight+countryHeight}px`);
+}
+window.addEventListener("resize",()=>setTimeout(updateStickyTabOffsets,0));
+window.addEventListener("orientationchange",()=>setTimeout(updateStickyTabOffsets,250));
+const __buildP1TabsStickyBase=buildP1Tabs;
+buildP1Tabs=function(){
+  __buildP1TabsStickyBase();
+  setTimeout(updateStickyTabOffsets,0);
+};
+const __buildP15StickyBase=buildP15;
+buildP15=function(){
+  __buildP15StickyBase();
+  setTimeout(updateStickyTabOffsets,0);
+};
+const __buildP2StickyBase=buildP2;
+buildP2=function(){
+  __buildP2StickyBase();
+  setTimeout(updateStickyTabOffsets,0);
+};
+const __switchPhaseStickyBase=switchPhase;
+switchPhase=function(n){
+  __switchPhaseStickyBase(n);
+  setTimeout(updateStickyTabOffsets,0);
+};
 const __mergeAndRenderUnitDefaultBase=mergeAndRender;
 mergeAndRender=function(){
   __mergeAndRenderUnitDefaultBase();
@@ -1851,6 +1946,50 @@ openSavedSession=async function(sessionId){
   applyUnitDefault();
   if(rows.length)buildP1Tabs();
 };
+const __saveCurrentSessionNoOverwriteBase=saveCurrentSessionToSupabase;
+saveCurrentSessionToSupabase=async function(){
+  if(currentSessionId){
+    updateCloudSaveButton();
+    toast("保存済み作業は入力ごとに自動保存されます");
+    return;
+  }
+  await __saveCurrentSessionNoOverwriteBase();
+};
+function sessionLocalDate(value){
+  if(!value)return "";
+  return new Date(value).toLocaleDateString("ja-JP",{timeZone:"Asia/Tokyo"});
+}
+function nonEmptyLineCount(lines){
+  return (lines||[]).filter(r=>r.input_qty!==null||r.net_weight!==null||r.box_no||r.memo||r.is_stockout).length;
+}
+async function diagnoseJune4Data(){
+  if(!(await requireSupabaseLogin()))return;
+  setSaveState("Supabase: 6/4診断中...");
+  const {data:sessions,error}=await supabaseClient.from("work_sessions").select("id,name,status,created_at,updated_at,created_by").order("created_at",{ascending:false}).limit(200);
+  if(error){setSaveState("Supabase: 診断失敗",true);toast("診断エラー: "+error.message);return}
+  const target=(sessions||[]).filter(s=>sessionLocalDate(s.created_at)==="2026/6/4"||sessionLocalDate(s.created_at)==="2026/06/04");
+  const body=document.getElementById("session-options");
+  document.getElementById("session-bg").classList.add("open");
+  if(!target.length){
+    body.innerHTML=`<div class="export-option"><div class="export-option-left"><span class="export-option-code">6/4作成なし</span><span class="export-option-meta">ログイン中ユーザーで見える範囲では、2026/6/4作成の作業は0件です。直近作業: ${(sessions||[]).slice(0,5).map(s=>`${esc(s.name)} ${sessionLocalDate(s.created_at)}`).join(" / ")||"-"}</span></div></div>`;
+    setSaveState("Supabase: 6/4作成 0件");
+    return;
+  }
+  const summaries=[];
+  for(const s of target){
+    const {data:lines,error:lineError}=await supabaseClient.from("order_lines").select("source_row_no,input_qty,net_weight,box_no,memo,is_stockout,updated_at,updated_by").eq("session_id",s.id).order("source_row_no",{ascending:true});
+    const {data:boxes,error:boxError}=await supabaseClient.from("boxes").select("box_no,gross_weight,dry_ice_weight,box_size,updated_at,updated_by").eq("session_id",s.id);
+    const lineCount=(lines||[]).length;
+    const filled=nonEmptyLineCount(lines);
+    const boxCount=(boxes||[]).length;
+    const latestLine=(lines||[]).map(r=>r.updated_at).filter(Boolean).sort().pop()||"";
+    const latestBox=(boxes||[]).map(r=>r.updated_at).filter(Boolean).sort().pop()||"";
+    const updater=[...(new Set((lines||[]).map(r=>r.updated_by).filter(Boolean)))].slice(0,3).join(", ");
+    summaries.push({s,lineError,boxError,lineCount,filled,boxCount,latestLine,latestBox,updater});
+  }
+  body.innerHTML=summaries.map(x=>`<div class="export-option" onclick="openSavedSession('${x.s.id}')"><div class="export-option-left" style="flex:1"><span class="export-option-code">${esc(x.s.name)}</span><span class="export-option-meta">作成: ${new Date(x.s.created_at).toLocaleString("ja-JP")} / 作業更新: ${new Date(x.s.updated_at).toLocaleString("ja-JP")}</span><span class="export-option-meta">明細: ${x.lineCount}件 / 入力あり: ${x.filled}件 / 箱: ${x.boxCount}件</span><span class="export-option-meta">明細最終更新: ${x.latestLine?new Date(x.latestLine).toLocaleString("ja-JP"):"-"} / 箱最終更新: ${x.latestBox?new Date(x.latestBox).toLocaleString("ja-JP"):"-"}</span><span class="export-option-meta">updated_by: ${esc(x.updater||"-")}${x.lineError?` / 明細エラー: ${esc(x.lineError.message)}`:""}${x.boxError?` / 箱エラー: ${esc(x.boxError.message)}`:""}</span></div><span class="cbadge ${x.filled? "partial":"has-pending"}">${x.filled}/${x.lineCount}</span></div>`).join("");
+  setSaveState(`Supabase: 6/4診断 ${summaries.length}件`);
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
