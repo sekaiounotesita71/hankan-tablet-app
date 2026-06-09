@@ -221,7 +221,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     </div>
     <button class="np-key wide" id="np-next" onclick="confirmF()">次の項目へ</button>
     <div class="memo-input-wrap" id="memo-input-wrap"><textarea class="memo-textarea" id="memo-textarea" placeholder="現場メモを入力" maxlength="200" oninput="updateMemoCount()"></textarea><div class="memo-char-count"><span id="memo-count">0</span> / 200</div><button class="memo-confirm" onclick="confirmMemo()">メモを保存して閉じる</button></div>
-    <div class="unit-input-wrap" id="unit-input-wrap"><div class="unit-presets" id="unit-presets"><button class="unit-preset" onclick="selectUnit('Kg')">Kg</button><button class="unit-preset" onclick="selectUnit('g')">g</button><button class="unit-preset" onclick="selectUnit('匹')">匹</button><button class="unit-preset" onclick="selectUnit('尾')">尾</button><button class="unit-preset" onclick="selectUnit('枚')">枚</button><button class="unit-preset" onclick="selectUnit('箱')">箱</button><button class="unit-preset" onclick="selectUnit('本')">本</button><button class="unit-preset" onclick="selectUnit('個')">個</button></div><input class="unit-text-input" id="unit-text-input" type="text" placeholder="単位を入力" maxlength="10" oninput="onUnitTextInput()"><button class="unit-confirm" onclick="confirmUnit()">単位を保存して閉じる</button></div>
+    <div class="unit-input-wrap" id="unit-input-wrap"><div class="unit-presets" id="unit-presets"><button class="unit-preset" onclick="selectUnit('Kg')">Kg</button><button class="unit-preset" onclick="selectUnit('pkt')">pkt</button><button class="unit-preset" onclick="selectUnit('PC')">PC</button><button class="unit-preset" onclick="selectUnit('CS')">CS</button></div><input class="unit-text-input" id="unit-text-input" type="text" placeholder="単位を選択" maxlength="10" readonly oninput="onUnitTextInput()"><button class="unit-confirm" onclick="confirmUnit()">単位を保存して閉じる</button></div>
   </div>
 </div>
 <div class="confirm-bg" id="manual-order-bg" onclick="closeManualOrderModal()">
@@ -297,7 +297,7 @@ function switchF(f){if(f==="memo"){saveNP();curF="memo";showMemo();return}if(f==
 function updateP1NP(){document.getElementById("np-val").textContent=npVal||"0";document.getElementById("np-unit").textContent=P1_UNIT[curF]||"";P1_FIELDS.forEach(f=>{document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);const tk=document.getElementById("tick-"+f);if(tk)tk.textContent=rows[curRow]?.[P1_KEY[f]]?"✓":""});document.getElementById("tab-unit")?.classList.toggle("active",curF==="unit");document.getElementById("tick-unit").textContent=rows[curRow]?._unit?"✓":"";document.getElementById("tab-memo")?.classList.remove("active");document.getElementById("tick-memo").textContent=rows[curRow]?._memo?"✓":"";const isLast=curF==="box",btn=document.getElementById("np-next");btn.textContent=isLast?"保存して閉じる":"次の項目へ";btn.className="np-key wide"+(isLast?" last":"")}
 function updateP2NP(){document.getElementById("np-val").textContent=npVal||"0";document.getElementById("np-unit").textContent=P2_UNIT[curF]||"kg";["gross","dry_ice"].forEach(f=>{document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);const tk=document.getElementById("tick-"+f);if(tk)tk.textContent=boxMap[curP2Imp]?.[curP2Box]?.[f]?"✓":""});const btn=document.getElementById("np-next");btn.textContent="保存して閉じる";btn.className="np-key wide last"}
 function showNumpad(){document.getElementById("np-disp-wrap").style.display="flex";document.getElementById("np-grid").style.display="grid";document.getElementById("np-next").style.display="block";document.getElementById("memo-input-wrap").classList.remove("show");document.getElementById("unit-input-wrap").classList.remove("show")}
-function showUnitInput(){document.getElementById("np-disp-wrap").style.display="none";document.getElementById("np-grid").style.display="none";document.getElementById("np-next").style.display="none";document.getElementById("memo-input-wrap").classList.remove("show");document.getElementById("unit-input-wrap").classList.add("show");const cur=rows[curRow]?._unit||"",inp=document.getElementById("unit-text-input");inp.value=cur;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===cur));document.querySelectorAll(".np-tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-unit")?.classList.add("active");setTimeout(()=>inp.focus(),100)}
+function showUnitInput(){document.getElementById("np-disp-wrap").style.display="none";document.getElementById("np-grid").style.display="none";document.getElementById("np-next").style.display="none";document.getElementById("memo-input-wrap").classList.remove("show");document.getElementById("unit-input-wrap").classList.add("show");const allowed=["Kg","pkt","PC","CS"];const cur=allowed.includes(rows[curRow]?._unit)?rows[curRow]._unit:"Kg";if(rows[curRow])rows[curRow]._unit=cur;const inp=document.getElementById("unit-text-input");inp.value=cur;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===cur));document.querySelectorAll(".np-tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-unit")?.classList.add("active")}
 function selectUnit(u){document.getElementById("unit-text-input").value=u;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===u))}
 function onUnitTextInput(){const v=document.getElementById("unit-text-input").value;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===v))}
 function saveUnitCur(){if(curRow!==null)rows[curRow]._unit=document.getElementById("unit-text-input").value.trim()}
@@ -1853,6 +1853,8 @@ function normalizeImporterLabel(value){
   const upper=raw.toUpperCase();
   if(/^DIM\s*VEG$/.test(upper))return "DIM Veg";
   if(/^DIM\s*FZ$/.test(upper))return "DIM FZ";
+  if(/^FBI\s*VEG$/.test(upper))return "FBI Veg";
+  if(/^FBI\s*FZ$/.test(upper))return "FBI FZ";
   if(/^DIM$/.test(upper))return "DIM";
   if(/^JKT$/.test(upper))return "JKT";
   if(/^FBI$/.test(upper))return "FBI";
@@ -1863,6 +1865,8 @@ function detectImporterLabelFromText(text){
   const patterns=[
     {re:/\bDIM\s*[-_,/ ]*\s*VEG\b/i,label:"DIM Veg"},
     {re:/\bDIM\s*[-_,/ ]*\s*FZ\b/i,label:"DIM FZ"},
+    {re:/\bFBI\s*[-_,/ ]*\s*VEG\b/i,label:"FBI Veg"},
+    {re:/\bFBI\s*[-_,/ ]*\s*FZ\b/i,label:"FBI FZ"},
     {re:/\bDIM\b/i,label:"DIM"},
     {re:/\bJKT\b/i,label:"JKT"},
     {re:/\bFBI\b/i,label:"FBI"}
@@ -1873,7 +1877,7 @@ function detectImporterLabelFromText(text){
 function pdfImporterMarkers(text){
   const source=String(text||"");
   const markers=[];
-  const re=/\b(DIM)\s*[-_,/ ]*\s*(VEG|FZ)?\b|\b(JKT|FBI)\b/gi;
+  const re=/\b(DIM|FBI)\s*[-_,/ ]*\s*(VEG|FZ)?\b|\b(JKT)\b/gi;
   let m;
   while((m=re.exec(source))){
     const label=m[1]?normalizeImporterLabel([m[1],m[2]||""].join(" ").trim()):normalizeImporterLabel(m[3]);
