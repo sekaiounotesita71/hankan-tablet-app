@@ -190,9 +190,10 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
         <div class="field-hint">使用列: <span>商品ID</span><span>商品名</span><span>単位</span><span>数量</span><span>輸入社ID</span><span>エンドユーザーの店名</span><span>産地</span><span>売価</span><span>備考</span></div>
       </div>
       <div class="import-card">
-        <div class="import-card-header"><div class="import-card-title">2. 商品マスタCSV</div><div class="import-status" id="master-status">未読込</div></div>
-        <label class="drop-zone" id="master-zone"><input type="file" id="master-file" accept=".csv"><div class="drop-text">CSVをここへドロップ<br><strong>またはタップして選択</strong></div></label>
-        <div class="field-hint">使用列: <span>商品ID</span><span>英名</span><span>学術名</span><span>産地</span></div>
+        <div class="import-card-header"><div class="import-card-title">2. 商品マスタ</div><div class="import-status" id="master-status">ログイン後に自動取得</div></div>
+        <label class="drop-zone" id="master-zone"><input type="file" id="master-file" accept=".csv"><div class="drop-text">変更がある時だけCSVをここへドロップ<br><strong>またはタップしてマスタ更新</strong></div></label>
+        <div class="field-hint">Supabaseから自動取得します。使用列: <span>商品コード</span><span>商品名(英語)</span><span>学術名</span><span>産地</span></div>
+        <button class="btn" style="width:100%;margin-top:10px" onclick="loadProductMasterFromSupabase({force:true})">クラウドから再読込</button>
       </div>
     </div>
     <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="mergeAndRender()">データを結合して表示</button></div>
@@ -648,6 +649,7 @@ function resolveCsvKey(header,type){
   };
   const masterAliases={
     product_id:["商品id","商品ｉｄ","商品コード","品番","productid","product_id"],
+    product_name:["商品名","品名","productname","product_name"],
     en_name:["英名","英語名","英文名","商品名(英語)","商品名（英語）","商品名英語","englishname","en_name"],
     sci_name:["学術名","学名","scientificname","sci_name"],
     origin:["産地","原産地","origin"],
@@ -1160,7 +1162,8 @@ async function readCSVFiles(fileList,type){
     masterMap={};
     latestMasterFilename=files.map(f=>f.name).join(", ");
     for(const file of files)await readCSVFile(file,type,true);
-    setOk("master-status",`読込済 ${Object.keys(masterMap).length}件`);
+    if(currentUser&&supabaseClient)await saveProductMasterToSupabase(latestMasterFilename);
+    else setOk("master-status",`端末に読込済 ${Object.keys(masterMap).length}件 / ログイン後にクラウド保存`);
     checkMergeReady();
   }
 }
@@ -1995,6 +1998,103 @@ saveCurrentSessionToSupabase=async function(){
     return;
   }
   await __saveCurrentSessionNoOverwriteBase();
+};
+let productMasterLoadedUserId="";
+let productMasterLoadPromise=null;
+function productMasterTableMissing(error){
+  const message=String(error?.message||"");
+  return error?.code==="42P01"||/product_master|schema cache/i.test(message);
+}
+function setMasterStatus(message,isError){
+  const el=document.getElementById("master-status");
+  if(!el)return;
+  el.textContent=message;
+  el.className="import-status"+(isError?"":" ok");
+  if(isError)el.style.color="#b8322a";else el.style.color="";
+}
+async function loadProductMasterFromSupabase(options={}){
+  const force=!!options.force;
+  if(!supabaseClient||!currentUser){
+    if(force)toast("先にSupabaseへログインしてください");
+    return false;
+  }
+  if(!force&&productMasterLoadedUserId===currentUser.id&&Object.keys(masterMap).length)return true;
+  if(productMasterLoadPromise&&!force)return productMasterLoadPromise;
+  productMasterLoadPromise=(async()=>{
+    setMasterStatus("クラウドから読込中...");
+    const pageSize=1000,loaded=[];
+    let from=0,lastUpdated="",sourceFilename="";
+    while(true){
+      const {data,error}=await supabaseClient.from("product_master")
+        .select("product_id,product_name,english_name,scientific_name,origin,unit_price,source_filename,updated_at")
+        .order("product_id",{ascending:true}).range(from,from+pageSize-1);
+      if(error){
+        const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"商品マスタを取得できません: "+error.message;
+        setMasterStatus("クラウド未設定",true);
+        if(force)toast(hint);
+        return false;
+      }
+      loaded.push(...(data||[]));
+      if((data||[]).length<pageSize)break;
+      from+=pageSize;
+    }
+    const nextMap={};
+    loaded.forEach(item=>{
+      const key=normalizeProductId(item.product_id);
+      if(!key)return;
+      nextMap[key]={product_id:item.product_id||"",product_name:item.product_name||"",en_name:item.english_name||"",sci_name:item.scientific_name||"",origin:item.origin||"",unit_price:item.unit_price??""};
+      if(item.updated_at&&item.updated_at>lastUpdated){lastUpdated=item.updated_at;sourceFilename=item.source_filename||sourceFilename}
+    });
+    masterMap=nextMap;
+    productMasterLoadedUserId=currentUser.id;
+    const dateText=lastUpdated?new Date(lastUpdated).toLocaleString("ja-JP"):"未更新";
+    setMasterStatus(loaded.length?`クラウド ${loaded.length}件 / ${dateText}`:"クラウドにマスタ未登録");
+    latestMasterFilename=sourceFilename||latestMasterFilename;
+    checkMergeReady();
+    if(force)toast(loaded.length?`商品マスタ ${loaded.length}件を再読込しました`:"クラウドに商品マスタがありません");
+    return true;
+  })();
+  try{return await productMasterLoadPromise}finally{productMasterLoadPromise=null}
+}
+async function saveProductMasterToSupabase(filename){
+  if(!supabaseClient||!currentUser){
+    setMasterStatus(`端末に読込済 ${Object.keys(masterMap).length}件 / 未ログイン`);
+    return false;
+  }
+  const entries=Object.entries(masterMap);
+  if(!entries.length){setMasterStatus("CSVに商品マスタがありません",true);return false}
+  setMasterStatus(`クラウドへ保存中 0/${entries.length}`);
+  const payloads=entries.map(([key,item])=>({
+    product_id:key,
+    product_name:item.product_name||item["商品名"]||null,
+    english_name:item.en_name||null,
+    scientific_name:item.sci_name||null,
+    origin:item.origin||null,
+    unit_price:numberOrNull(item.unit_price),
+    source_filename:filename||null,
+    updated_by:currentUser.id
+  }));
+  const chunkSize=400;
+  for(let i=0;i<payloads.length;i+=chunkSize){
+    const {error}=await supabaseClient.from("product_master").upsert(payloads.slice(i,i+chunkSize),{onConflict:"product_id"});
+    if(error){
+      const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"商品マスタ保存エラー: "+error.message;
+      setMasterStatus("クラウド保存失敗",true);
+      toast(hint);
+      return false;
+    }
+    setMasterStatus(`クラウドへ保存中 ${Math.min(i+chunkSize,payloads.length)}/${payloads.length}`);
+  }
+  productMasterLoadedUserId=currentUser.id;
+  setMasterStatus(`クラウド保存済み ${payloads.length}件 / ${new Date().toLocaleString("ja-JP")}`);
+  toast(`商品マスタ ${payloads.length}件を更新しました`);
+  return true;
+}
+const __updateSupabaseStatusProductMasterBase=updateSupabaseStatus;
+updateSupabaseStatus=function(){
+  __updateSupabaseStatusProductMasterBase();
+  if(currentUser)loadProductMasterFromSupabase();
+  else productMasterLoadedUserId="";
 };
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
