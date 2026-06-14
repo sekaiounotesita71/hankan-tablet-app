@@ -193,7 +193,10 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
         <div class="import-card-header"><div class="import-card-title">2. 商品マスタ</div><div class="import-status" id="master-status">ログイン後に自動取得</div></div>
         <label class="drop-zone" id="master-zone"><input type="file" id="master-file" accept=".csv"><div class="drop-text">変更がある時だけCSVをここへドロップ<br><strong>またはタップしてマスタ更新</strong></div></label>
         <div class="field-hint">Supabaseから自動取得します。使用列: <span>商品コード</span><span>商品名(英語)</span><span>学術名</span><span>産地</span></div>
-        <button class="btn" style="width:100%;margin-top:10px" onclick="loadProductMasterFromSupabase({force:true})">クラウドから再読込</button>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1;min-width:170px" onclick="saveCurrentProductMaster()">現在のCSVをクラウド保存</button>
+          <button class="btn" style="flex:1;min-width:170px" onclick="loadProductMasterFromSupabase({force:true})">クラウドから再読込</button>
+        </div>
       </div>
     </div>
     <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="mergeAndRender()">データを結合して表示</button></div>
@@ -1162,8 +1165,10 @@ async function readCSVFiles(fileList,type){
     masterMap={};
     latestMasterFilename=files.map(f=>f.name).join(", ");
     for(const file of files)await readCSVFile(file,type,true);
+    productMasterPendingUpload=Object.keys(masterMap).length>0;
+    productMasterPendingFilename=latestMasterFilename;
     if(currentUser&&supabaseClient)await saveProductMasterToSupabase(latestMasterFilename);
-    else setOk("master-status",`端末に読込済 ${Object.keys(masterMap).length}件 / ログイン後にクラウド保存`);
+    else setMasterStatus(`端末に読込済 ${Object.keys(masterMap).length}件 / ログイン後に自動保存`);
     checkMergeReady();
   }
 }
@@ -2001,6 +2006,8 @@ saveCurrentSessionToSupabase=async function(){
 };
 let productMasterLoadedUserId="";
 let productMasterLoadPromise=null;
+let productMasterPendingUpload=false;
+let productMasterPendingFilename="";
 function productMasterTableMissing(error){
   const message=String(error?.message||"");
   return error?.code==="42P01"||/product_master|schema cache/i.test(message);
@@ -2074,26 +2081,47 @@ async function saveProductMasterToSupabase(filename){
     source_filename:filename||null,
     updated_by:currentUser.id
   }));
-  const chunkSize=400;
+  const chunkSize=200;
   for(let i=0;i<payloads.length;i+=chunkSize){
     const {error}=await supabaseClient.from("product_master").upsert(payloads.slice(i,i+chunkSize),{onConflict:"product_id"});
     if(error){
       const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"商品マスタ保存エラー: "+error.message;
-      setMasterStatus("クラウド保存失敗",true);
+      setMasterStatus(`保存失敗: ${hint}`,true);
       toast(hint);
       return false;
     }
     setMasterStatus(`クラウドへ保存中 ${Math.min(i+chunkSize,payloads.length)}/${payloads.length}`);
   }
   productMasterLoadedUserId=currentUser.id;
+  productMasterPendingUpload=false;
+  productMasterPendingFilename="";
   setMasterStatus(`クラウド保存済み ${payloads.length}件 / ${new Date().toLocaleString("ja-JP")}`);
   toast(`商品マスタ ${payloads.length}件を更新しました`);
   return true;
 }
+async function saveCurrentProductMaster(){
+  const count=Object.keys(masterMap).length;
+  if(!count){toast("先に商品マスタCSVを選択してください");return}
+  if(!currentUser||!supabaseClient){
+    productMasterPendingUpload=true;
+    productMasterPendingFilename=latestMasterFilename;
+    setMasterStatus(`端末に読込済 ${count}件 / 先にログインしてください`);
+    toast("先にSupabaseへログインしてください");
+    return;
+  }
+  productMasterPendingUpload=true;
+  await saveProductMasterToSupabase(latestMasterFilename||productMasterPendingFilename);
+}
 const __updateSupabaseStatusProductMasterBase=updateSupabaseStatus;
 updateSupabaseStatus=function(){
   __updateSupabaseStatusProductMasterBase();
-  if(currentUser)loadProductMasterFromSupabase();
+  if(currentUser){
+    if(productMasterPendingUpload&&Object.keys(masterMap).length){
+      saveProductMasterToSupabase(productMasterPendingFilename||latestMasterFilename);
+    }else{
+      loadProductMasterFromSupabase();
+    }
+  }
   else productMasterLoadedUserId="";
 };
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
