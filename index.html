@@ -1672,10 +1672,33 @@ function switchPhase(n){
     saveAllBoxesToSupabase();
   }
 }
+function captureTabScrollPositions(){
+  const positions={};
+  document.querySelectorAll(".country-tabs,.customer-tabs").forEach((el,index)=>{
+    const key=el.id||`tab-scroll-${index}`;
+    positions[key]=el.scrollLeft;
+  });
+  return positions;
+}
+function restoreTabScrollPositions(positions){
+  const restore=()=>{
+    document.querySelectorAll(".country-tabs,.customer-tabs").forEach((el,index)=>{
+      const key=el.id||`tab-scroll-${index}`;
+      if(Object.prototype.hasOwnProperty.call(positions,key))el.scrollLeft=positions[key];
+    });
+  };
+  restore();
+  requestAnimationFrame(()=>{
+    restore();
+    requestAnimationFrame(restore);
+  });
+}
 const __refreshCurrentSessionFromSupabaseBase=refreshCurrentSessionFromSupabase;
 refreshCurrentSessionFromSupabase=async function(){
+  const tabScrollPositions=captureTabScrollPositions();
   const ok=await __refreshCurrentSessionFromSupabaseBase();
   if(ok&&currentPhase===1.5)buildP15();
+  restoreTabScrollPositions(tabScrollPositions);
   return ok;
 };
 const __applyRemoteOrderLineBase=applyRemoteOrderLine;
