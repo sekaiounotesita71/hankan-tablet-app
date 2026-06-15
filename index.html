@@ -1407,10 +1407,13 @@ function boxInput(row){
   return `<input class="inline-box-input" data-row-idx="${row._idx}" inputmode="numeric" pattern="[0-9]*" lang="en" autocomplete="off" value="${esc(row._box)}" placeholder="箱" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleInlineBoxKey(event,${row._idx})" onblur="updateInlineBox(${row._idx},this.value)">`;
 }
 let p1InlineRefreshTimer=null;
+document.addEventListener("focusin",event=>{
+  if(event.target?.matches?.(".inline-box-input,.inline-work-input"))clearTimeout(p1InlineRefreshTimer);
+});
 function scheduleP1InlineRefresh(row){
   clearTimeout(p1InlineRefreshTimer);
   const refresh=()=>{
-    if(document.activeElement?.classList.contains("inline-box-input")){
+    if(document.activeElement?.matches(".inline-box-input,.inline-work-input")){
       p1InlineRefreshTimer=setTimeout(refresh,250);
       return;
     }
