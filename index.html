@@ -2160,11 +2160,10 @@ function configureNativeNumberInput(){
 function focusNativeNumberInput(){
   const input=nativeNumberInput();
   if(!input)return;
-  setTimeout(()=>{
-    if(!document.getElementById("modal-bg")?.classList.contains("open"))return;
-    input.focus({preventScroll:true});
-    input.select();
-  },80);
+  if(!document.getElementById("modal-bg")?.classList.contains("open"))return;
+  input.focus({preventScroll:true});
+  input.select();
+  requestAnimationFrame(()=>input.select());
 }
 function onNativeNumberInput(){
   const input=nativeNumberInput();
@@ -2191,6 +2190,18 @@ showNumpad=function(){
   document.getElementById("unit-input-wrap").classList.remove("show");
   configureNativeNumberInput();
   focusNativeNumberInput();
+};
+openP2NP=function(imp,bn,startField){
+  npMode="p2";
+  curP2Imp=imp;
+  curP2Box=bn;
+  curF=startField||"gross";
+  npVal=boxMap[imp]?.[bn]?.[curF]||"";
+  document.getElementById("np-meta").textContent=`輸入社: ${imp}`;
+  document.getElementById("np-product").textContent=`箱番号 ${bn}`;
+  buildP2Tabs_np();
+  document.getElementById("modal-bg").classList.add("open");
+  updateP2NP();
 };
 updateP1NP=function(){
   showNumpad();
