@@ -2344,6 +2344,45 @@ toggleDI=function(imp,bn,checked){
   renderP2Importer(imp);
   saveBoxToSupabase(imp,bn);
 };
+let deferredRemoteOrderLines=new Map();
+let deferredRemoteBoxes=new Map();
+let deferredRemoteRenderTimer=null;
+function inlineEntryActive(){
+  return document.activeElement?.classList.contains("inline-work-input");
+}
+function scheduleDeferredRemoteRender(){
+  clearTimeout(deferredRemoteRenderTimer);
+  deferredRemoteRenderTimer=setTimeout(()=>{
+    if(inlineEntryActive()){
+      scheduleDeferredRemoteRender();
+      return;
+    }
+    const orderUpdates=[...deferredRemoteOrderLines.values()];
+    const boxUpdates=[...deferredRemoteBoxes.values()];
+    deferredRemoteOrderLines.clear();
+    deferredRemoteBoxes.clear();
+    orderUpdates.forEach(row=>__applyRemoteOrderLineInlineBase(row));
+    boxUpdates.forEach(row=>__applyRemoteBoxInlineBase(row));
+  },300);
+}
+const __applyRemoteOrderLineInlineBase=applyRemoteOrderLine;
+applyRemoteOrderLine=function(dbRow){
+  if(inlineEntryActive()){
+    if(dbRow?.source_row_no)deferredRemoteOrderLines.set(dbRow.source_row_no,dbRow);
+    scheduleDeferredRemoteRender();
+    return;
+  }
+  __applyRemoteOrderLineInlineBase(dbRow);
+};
+const __applyRemoteBoxInlineBase=applyRemoteBox;
+applyRemoteBox=function(dbRow){
+  if(inlineEntryActive()){
+    if(dbRow?.importer_code&&dbRow?.box_no)deferredRemoteBoxes.set(`${dbRow.importer_code}__${dbRow.box_no}`,dbRow);
+    scheduleDeferredRemoteRender();
+    return;
+  }
+  __applyRemoteBoxInlineBase(dbRow);
+};
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
