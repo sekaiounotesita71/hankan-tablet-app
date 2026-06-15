@@ -112,6 +112,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .shop-name-cell{font-weight:800;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inline-box-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:center;padding:0 8px}
 .inline-box-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--p2)}
+.inline-work-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:right;padding:0 8px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.inline-work-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--accent)}.inline-work-input.weight{width:104px}
 .touch-input-cell{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:40px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-weight:800;cursor:pointer}
 .touch-input-cell.empty{background:var(--bg);color:var(--muted);border-style:dashed;font-weight:700}
 .touch-input-cell:active{transform:scale(.97)}
@@ -2254,6 +2255,94 @@ confirmF=function(){
     closeNP();
     toast("箱情報を保存しました");
   }
+};
+function sanitizeInlineNumber(value,integerOnly){
+  let next=String(value||"").replace(/[^0-9.]/g,"");
+  if(integerOnly)return next.replace(/\./g,"");
+  const dot=next.indexOf(".");
+  return dot<0?next:next.slice(0,dot+1)+next.slice(dot+1).replace(/\./g,"");
+}
+function inlineP1Input(row,field,label){
+  const key=P1_KEY[field],value=row[key]||"",integerOnly=field==="box";
+  return `<input class="inline-work-input${field==="net"?" weight":""}" data-row-idx="${row._idx}" data-field="${field}" inputmode="${integerOnly?"numeric":"decimal"}" pattern="${integerOnly?"[0-9]*":"[0-9.]*"}" autocomplete="off" enterkeyhint="next" value="${esc(value)}" placeholder="${esc(label)}" onclick="event.stopPropagation()" oninput="updateInlineP1Draft(this)" onblur="commitInlineP1Field(this)" onkeydown="handleInlineWorkKey(event)">`;
+}
+function updateInlineP1Draft(input){
+  const row=rows[Number(input.dataset.rowIdx)],field=input.dataset.field;
+  if(!row||!P1_KEY[field])return;
+  const value=sanitizeInlineNumber(input.value,field==="box");
+  if(input.value!==value)input.value=value;
+  row[P1_KEY[field]]=value;
+}
+function commitInlineP1Field(input){
+  updateInlineP1Draft(input);
+  const row=rows[Number(input.dataset.rowIdx)];
+  if(!row)return;
+  saveOrderLineToSupabase(row);
+  scheduleP1InlineRefresh(row);
+}
+function handleInlineWorkKey(event){
+  if(event.key!=="Enter")return;
+  event.preventDefault();
+  const current=event.currentTarget;
+  if(current.dataset.rowIdx!==undefined)commitInlineP1Field(current);
+  else commitInlineBoxField(current);
+  const inputs=[...document.querySelectorAll(".inline-work-input")].filter(el=>el.offsetParent!==null&&!el.disabled);
+  const next=inputs[inputs.indexOf(current)+1];
+  if(next){next.focus();next.select()}else current.blur();
+}
+function commitInlineBoxField(input){
+  const imp=input.dataset.imp,bn=input.dataset.box,field=input.dataset.boxField;
+  const box=boxMap[imp]?.[bn];
+  if(!box)return;
+  const value=sanitizeInlineNumber(input.value,false);
+  if(input.value!==value)input.value=value;
+  box[field]=value;
+  saveBoxToSupabase(imp,bn);
+  setTimeout(()=>{
+    if(!document.activeElement?.classList.contains("inline-work-input"))renderP2Importer(imp);
+  },200);
+}
+renderP1Cell=function(country,customer){
+  const cRows=rows.filter(r=>r.country===country&&(customer==="ALL"||r.customer===customer));
+  const stockout=cRows.filter(r=>r._stockout).length;
+  const done=cRows.filter(r=>!r._stockout&&r._qty&&r._net&&r._box).length;
+  const inProgress=cRows.filter(r=>!r._stockout&&(r._qty||r._net||r._box)&&!(r._qty&&r._net&&r._box)).length;
+  const total=cRows.length,effective=total-stockout,pending=Math.max(0,effective-done-inProgress),pct=effective?Math.round(done/effective*100):100,key=cid(country+customer);
+  const badge=document.getElementById("p1custbadge-"+key);
+  if(badge){badge.textContent=`${done+stockout}/${total}`;badge.className="cbadge "+(done+stockout===total?"all-done":done+stockout===0?"has-pending":"partial")}
+  const status=document.getElementById("p1custat-"+key);
+  if(status)status.innerHTML=`<div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">完了</div></div><div class="stat-div"></div><div><div class="stat-num" style="color:var(--warn)">${inProgress}</div><div class="stat-label">入力途中</div></div><div class="stat-div"></div><div><div class="stat-num pending">${pending}</div><div class="stat-label">未入力</div></div>${stockout?`<div class="stat-div"></div><div><div class="stat-num" style="color:#888">${stockout}</div><div class="stat-label">欠品</div></div>`:""}<div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div>`;
+  const tbody=document.getElementById("p1cusbody-"+key);
+  if(!tbody)return;
+  tbody.innerHTML=cRows.map((r,i)=>{
+    if(r._stockout)return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;text-decoration:line-through;color:var(--muted)">${esc(r.product_name)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
+    const complete=r._qty&&r._net&&r._box,partial=!complete&&(r._qty||r._net||r._box);
+    return `<tr class="${complete?"done":partial?"partial":"pending"}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${inlineP1Input(r,"qty","数量")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${inlineP1Input(r,"net","NET")}</td><td>${inlineP1Input(r,"box","箱")}</td><td>${memoCell(r._memo)}</td><td>${complete?'<span class="badge badge-done">完了</span>':partial?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
+  }).join("");
+};
+renderP2Importer=function(imp){
+  const bm=boxMap[imp]||{},boxNos=Object.keys(bm).sort();
+  const done=boxNos.filter(bn=>bm[bn].gross!==""&&bm[bn].box_size).length,total=boxNos.length,pct=total?Math.round(done/total*100):0;
+  const badge=document.getElementById("p2imp-badge-"+cid(imp));
+  if(badge){badge.textContent=`${done}/${total}箱`;badge.className="cbadge "+(done===total?"all-done":done===0?"has-pending":"partial")}
+  const wrap=document.getElementById("p2content-"+cid(imp));if(!wrap)return;
+  const netTotals={};rows.forEach(r=>{if(!r._stockout&&importerCode(r.importer_id)===imp&&r._box)netTotals[r._box]=(netTotals[r._box]||0)+(parseFloat(r._net)||0)});
+  const sizeOptions=["","小","中","大","特大"];
+  const rowsHtml=boxNos.map(bn=>{
+    const b=bm[bn],complete=b.gross!==""&&b.box_size;
+    const gross=`<input class="inline-work-input weight" data-imp="${esc(imp)}" data-box="${esc(bn)}" data-box-field="gross" inputmode="decimal" pattern="[0-9.]*" autocomplete="off" enterkeyhint="next" value="${esc(b.gross)}" placeholder="重量" onclick="event.stopPropagation()" oninput="this.value=sanitizeInlineNumber(this.value,false)" onblur="commitInlineBoxField(this)" onkeydown="handleInlineWorkKey(event)">`;
+    const dryInput=b.dry_ice_enabled?`<input class="inline-work-input weight" data-imp="${esc(imp)}" data-box="${esc(bn)}" data-box-field="dry_ice" inputmode="decimal" pattern="[0-9.]*" autocomplete="off" enterkeyhint="next" value="${esc(b.dry_ice)}" placeholder="重量" onclick="event.stopPropagation()" oninput="this.value=sanitizeInlineNumber(this.value,false)" onblur="commitInlineBoxField(this)" onkeydown="handleInlineWorkKey(event)">`:"";
+    const sizeSelect=`<select class="box-size-select" onclick="event.stopPropagation()" onchange="updateBoxSize('${esc(imp)}','${esc(bn)}',this.value)">${sizeOptions.map(s=>`<option value="${esc(s)}" ${b.box_size===s?"selected":""}>${s?esc(s):"選択"}</option>`).join("")}</select>`;
+    return `<tr class="${complete?"done":"pending"}"><td style="font-size:18px;font-weight:900;font-family:ui-monospace,SFMono-Regular,Consolas,monospace">${esc(bn)}</td><td>${netTotals[bn]?netTotals[bn].toFixed(2)+"kg":"-"}</td><td>${gross}</td><td><div style="display:flex;align-items:center;gap:8px"><label class="di-toggle" onclick="event.stopPropagation()"><input type="checkbox" ${b.dry_ice_enabled?"checked":""} onchange="toggleDI('${esc(imp)}','${esc(bn)}',this.checked)"><div class="di-track"></div></label>${dryInput}</div></td><td>${sizeSelect}</td><td>${complete?'<span class="badge badge-done">完了</span>':'<span class="badge badge-pending">未入力</span>'}</td></tr>`;
+  }).join("");
+  wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">総箱数</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="table-scroll"><table><thead><tr><th>箱番号</th><th>NET合計</th><th>グロス重量</th><th>ドライアイス</th><th>箱サイズ</th><th>状態</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+};
+toggleDI=function(imp,bn,checked){
+  if(!boxMap[imp]?.[bn])return;
+  boxMap[imp][bn].dry_ice_enabled=checked;
+  if(!checked)boxMap[imp][bn].dry_ice="";
+  renderP2Importer(imp);
+  saveBoxToSupabase(imp,bn);
 };
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
