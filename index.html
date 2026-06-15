@@ -132,7 +132,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .np-close,.export-close{width:44px;height:44px;border:0;background:var(--bg);border-radius:999px;font-size:24px;cursor:pointer;color:var(--muted)}
 .np-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}.np-tab{min-height:48px;padding:6px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--muted);font-size:13px;font-weight:800;line-height:1.25;cursor:pointer}.np-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}.np-tab.memo-tab.active{background:var(--memo);border-color:var(--memo)}.np-tab.p2-tab.active{background:var(--p2);border-color:var(--p2)}
 .tick{display:block;font-size:11px;color:var(--success);margin-top:2px}.np-tab.active .tick{color:#a8ffd8}
-.np-disp{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px}.np-val{font-size:38px;font-weight:900;min-height:48px;flex:1}.np-unit{color:var(--muted);font-weight:800}
+.np-disp{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px}.np-val{font-size:38px;font-weight:900;min-height:48px;flex:1}.np-unit{color:var(--muted);font-weight:800}.np-native-input{width:100%;min-width:0;height:58px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-size:30px;font-weight:900;padding:0 12px;text-align:right;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.np-native-input:focus{outline:3px solid rgba(9,105,162,.2);border-color:var(--accent)}
 .np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}.np-key{height:66px;border:0;border-radius:12px;background:#ece6dc;color:var(--text);font-size:24px;font-weight:800;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}.np-key.act{font-size:17px;background:#e2dbd0}.np-key.del{font-size:22px;background:#d8d0c4}.np-key.wide{grid-column:span 3;height:58px;background:var(--accent);color:#fff;font-size:16px}.np-key.wide.last{background:var(--success)}
 .memo-input-wrap,.unit-input-wrap{display:none;flex-direction:column;gap:10px;margin-bottom:10px}.memo-input-wrap.show,.unit-input-wrap.show{display:flex}
 .memo-textarea,.unit-text-input{width:100%;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);padding:12px;font-size:16px}.memo-textarea{height:130px;resize:none;line-height:1.55}.memo-char-count{text-align:right;color:var(--muted);font-size:12px}
@@ -216,7 +216,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   <div class="np-panel" onclick="event.stopPropagation()">
     <div class="np-head"><div><div class="np-meta" id="np-meta"></div><div class="np-product" id="np-product"></div></div><button class="np-close" onclick="closeNP()">×</button></div>
     <div class="np-tabs" id="np-tabs"></div>
-    <div class="np-disp" id="np-disp-wrap"><div class="np-val" id="np-val">0</div><div class="np-unit" id="np-unit"></div></div>
+    <div class="np-disp" id="np-disp-wrap"><input class="np-native-input" id="np-native-input" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" aria-label="数値入力" oninput="onNativeNumberInput()" onkeydown="handleNativeNumberKey(event)"><div class="np-unit" id="np-unit"></div></div>
     <div class="np-grid" id="np-grid">
       <button class="np-key" onclick="nk('7')">7</button><button class="np-key" onclick="nk('8')">8</button><button class="np-key" onclick="nk('9')">9</button>
       <button class="np-key" onclick="nk('4')">4</button><button class="np-key" onclick="nk('5')">5</button><button class="np-key" onclick="nk('6')">6</button>
@@ -238,7 +238,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       <label>商品コード<input id="manual-product-id" placeholder="未入力可"></label>
       <label>注文数量<input id="manual-qty" inputmode="decimal" placeholder="数量"></label>
       <label>注文単位<input id="manual-unit" placeholder="kg / 本 / 個"></label>
-      <label>産地<input id="manual-origin" placeholder="産地"></label>
+      <label>産地<input id="manual-origin" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="産地"></label>
       <label>売価<input id="manual-price" inputmode="decimal" placeholder="売価"></label>
       <label class="wide">備考<input id="manual-memo" placeholder="備考"></label>
     </div>
@@ -1590,7 +1590,7 @@ function p15SwitchImporter(imp){
 function renderP15Importer(imp){
   const impRows=rows.filter(r=>importerCode(r.importer_id)===imp);
   const done=impRows.filter(r=>r.origin&&r.unit_price!=="").length,total=impRows.length,pct=total?Math.round(done/total*100):0;
-  const body=impRows.map((r,i)=>`<tr><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" inputmode="text" lang="en" autocapitalize="characters" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td><input class="p15-input p15-price" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td></tr>`).join("");
+  const body=impRows.map((r,i)=>`<tr><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td><input class="p15-input p15-price" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td></tr>`).join("");
   const wrap=document.getElementById("p15content-"+cid(imp));
   if(!wrap)return;
   wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">産地・売価入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="table-scroll"><table><thead><tr><th>#</th><th>店舗名</th><th>商品名</th><th>商品コード</th><th>産地</th><th>売価</th><th>状態</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -2146,6 +2146,103 @@ updateSupabaseStatus=function(){
     }
   }
   else productMasterLoadedUserId="";
+};
+function nativeNumberInput(){return document.getElementById("np-native-input")}
+function configureNativeNumberInput(){
+  const input=nativeNumberInput();
+  if(!input)return;
+  const integerOnly=npMode==="p1"&&curF==="box";
+  input.inputMode=integerOnly?"numeric":"decimal";
+  input.pattern=integerOnly?"[0-9]*":"[0-9.]*";
+  input.enterKeyHint=npMode==="p1"&&curF!=="box"?"next":"done";
+  input.value=npVal||"";
+}
+function focusNativeNumberInput(){
+  const input=nativeNumberInput();
+  if(!input)return;
+  setTimeout(()=>{
+    if(!document.getElementById("modal-bg")?.classList.contains("open"))return;
+    input.focus({preventScroll:true});
+    input.select();
+  },80);
+}
+function onNativeNumberInput(){
+  const input=nativeNumberInput();
+  if(!input)return;
+  let value=String(input.value||"").replace(/[^0-9.]/g,"");
+  if(npMode==="p1"&&curF==="box")value=value.replace(/\./g,"");
+  else{
+    const dot=value.indexOf(".");
+    if(dot>=0)value=value.slice(0,dot+1)+value.slice(dot+1).replace(/\./g,"");
+  }
+  if(input.value!==value)input.value=value;
+  npVal=value;
+}
+function handleNativeNumberKey(event){
+  if(event.key!=="Enter")return;
+  event.preventDefault();
+  confirmF();
+}
+showNumpad=function(){
+  document.getElementById("np-disp-wrap").style.display="flex";
+  document.getElementById("np-grid").style.display="none";
+  document.getElementById("np-next").style.display="block";
+  document.getElementById("memo-input-wrap").classList.remove("show");
+  document.getElementById("unit-input-wrap").classList.remove("show");
+  configureNativeNumberInput();
+  focusNativeNumberInput();
+};
+updateP1NP=function(){
+  showNumpad();
+  document.getElementById("np-unit").textContent=P1_UNIT[curF]||"";
+  P1_FIELDS.forEach(f=>{
+    document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);
+    const tick=document.getElementById("tick-"+f);
+    if(tick)tick.textContent=rows[curRow]?.[P1_KEY[f]]?"✓":"";
+  });
+  document.getElementById("tab-unit")?.classList.toggle("active",curF==="unit");
+  const unitTick=document.getElementById("tick-unit");
+  if(unitTick)unitTick.textContent=rows[curRow]?._unit?"✓":"";
+  const isLast=curF==="box",btn=document.getElementById("np-next");
+  btn.textContent=isLast?"保存して閉じる":"次の項目へ";
+  btn.className="np-key wide"+(isLast?" last":"");
+};
+updateP2NP=function(){
+  showNumpad();
+  document.getElementById("np-unit").textContent=P2_UNIT[curF]||"kg";
+  ["gross","dry_ice"].forEach(f=>{
+    document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);
+    const tick=document.getElementById("tick-"+f);
+    if(tick)tick.textContent=boxMap[curP2Imp]?.[curP2Box]?.[f]?"✓":"";
+  });
+  const btn=document.getElementById("np-next");
+  btn.textContent=npMode==="p2"&&curF==="gross"&&boxMap[curP2Imp]?.[curP2Box]?.dry_ice_enabled?"次の項目へ":"保存して閉じる";
+  btn.className="np-key wide"+(btn.textContent==="保存して閉じる"?" last":"");
+};
+confirmF=function(){
+  onNativeNumberInput();
+  saveNP();
+  if(npMode==="p1"){
+    const index=P1_FIELDS.indexOf(curF);
+    if(index<P1_FIELDS.length-1){
+      curF=P1_FIELDS[index+1];
+      npVal=rows[curRow]?.[P1_KEY[curF]]||"";
+      updateP1NP();
+    }else{
+      closeNP();
+      toast("入力を保存しました");
+    }
+    return;
+  }
+  const box=boxMap[curP2Imp]?.[curP2Box];
+  if(curF==="gross"&&box?.dry_ice_enabled){
+    curF="dry_ice";
+    npVal=box.dry_ice||"";
+    updateP2NP();
+  }else{
+    closeNP();
+    toast("箱情報を保存しました");
+  }
 };
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
