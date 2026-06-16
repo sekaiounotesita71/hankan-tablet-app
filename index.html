@@ -3727,6 +3727,72 @@ async function applyCustomerFixAndSave(idx){
   });
   if(ok)await applyCustomerFix(idx);
 }
+function cmCsvKey(header,index,total){
+  const n=normalizeHeaderName(header);
+  const aliases={
+    customer_code:["customer_code","customercode","code","\u5f97\u610f\u5148\u30b3\u30fc\u30c9","\u9867\u5ba2\u30b3\u30fc\u30c9","\u5e97\u8217\u30b3\u30fc\u30c9"],
+    customer_name:["customer_name","customername","name","\u5f97\u610f\u5148\u540d","\u9867\u5ba2\u540d","\u5e97\u8217\u540d","\u5e97\u540d","\u30a8\u30f3\u30c9\u30e6\u30fc\u30b6\u30fc\u306e\u5e97\u540d"],
+    importer_code:["importer_code","importercode","importer","\u8f38\u5165\u793e\u30b3\u30fc\u30c9","\u8f38\u5165\u793eid","\u8f38\u5165\u793e","cs","c/s"],
+    country_code:["country_code","countrycode","country","\u56fd\u30b3\u30fc\u30c9","\u56fd"],
+    alias_name:["alias_name","alias","pdf_text","\u5225\u540d","\u7565\u79f0","\u8868\u8a18\u3086\u308c","pdf\u8868\u8a18"]
+  };
+  for(const [key,names] of Object.entries(aliases)){
+    if(names.map(normalizeHeaderName).includes(n))return key;
+  }
+  if(total===2&&index===0)return "customer_code";
+  if(total===2&&index===1)return "customer_name";
+  return header;
+}
+function parseCustomerMasterCsv(text){
+  const lines=String(text||"").trim().replace(/^\uFEFF/,"").split(/\r?\n/).filter(Boolean);
+  if(lines.length<2)return [];
+  const rawHeaders=splitLine(lines[0]);
+  const headers=rawHeaders.map((h,i)=>cmCsvKey(h,i,rawHeaders.length));
+  const rowsToSave=lines.slice(1).map(line=>{
+    const cols=splitLine(line);
+    const row={};
+    headers.forEach((h,i)=>row[h]=(cols[i]||"").replace(/^"|"$/g,"").trim());
+    return {
+      customer_code:row.customer_code||null,
+      customer_name:row.customer_name||"",
+      importer_code:row.importer_code||"",
+      country_code:row.country_code||"",
+      alias_name:row.alias_name||null,
+      active:true
+    };
+  }).filter(r=>r.customer_name);
+  const dedup=new Map();
+  rowsToSave.forEach(r=>dedup.set(`${r.importer_code}::${r.customer_name}`,r));
+  return [...dedup.values()];
+}
+async function uploadCustomerMasterCsvFile(file){
+  if(!file)return;
+  if(!(await requireSupabaseLogin()))return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const rowsToSave=parseCustomerMasterCsv(decodeCsvBuffer(e.target.result));
+    if(!rowsToSave.length){toast("Customer CSV has no rows.");return}
+    if(!confirm(`Customer master ${rowsToSave.length} rows upload?`))return;
+    setSaveState(`Supabase: customer master uploading ${rowsToSave.length}`);
+    for(let i=0;i<rowsToSave.length;i+=500){
+      const chunk=rowsToSave.slice(i,i+500);
+      const {error}=await supabaseClient.from("customer_master").upsert(chunk,{onConflict:"importer_code,customer_name"});
+      if(error){setSaveState("Supabase: customer master upload failed",true);alert(customerMasterErrorMessage(error));return}
+      setSaveState(`Supabase: customer master ${Math.min(i+500,rowsToSave.length)}/${rowsToSave.length}`);
+    }
+    await loadCustomerMaster();
+    renderCustomerMasterList();
+    renderCustomerFixList();
+    setSaveState("Supabase: customer master uploaded");
+    toast("Customer CSV uploaded.");
+  };
+  reader.readAsArrayBuffer(file);
+}
+function onCustomerMasterCsvChange(input){
+  const file=input.files?.[0];
+  input.value="";
+  uploadCustomerMasterCsvFile(file);
+}
 const __mergeAndRenderCustomerMasterSafeBase=mergeAndRender;
 mergeAndRender=function(){
   const result=__mergeAndRenderCustomerMasterSafeBase();
