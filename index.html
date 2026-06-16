@@ -3379,6 +3379,67 @@ function renderCustomerMasterList(){
   }
   list.innerHTML=filtered.slice(0,200).map(c=>`<div class="customer-master-item"><div class="customer-master-name">${esc(c.customer_name)}</div><div class="customer-master-meta">${esc(c.importer_code||"")} ${esc(c.country_code||"")}${c.alias_name?` / ${esc(c.alias_name)}`:""}</div></div>`).join("");
 }
+function normalizeCustomerMasterCsvKey(header){
+  const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
+  const n=normalizeHeaderName(raw);
+  const map={
+    customer_code:["customer_code","customercode","code","得意先コード","得意先cd","顧客コード","店舗コード"],
+    customer_name:["customer_name","customername","name","得意先名","顧客名","店舗名","店名","エンドユーザーの店名","エンドユーザー店名"],
+    importer_code:["importer_code","importercode","importer","輸入社コード","輸入社id","輸入社","cs","c/s"],
+    country_code:["country_code","countrycode","country","国コード","国"],
+    alias_name:["alias_name","alias","pdf_text","別名","略称","表記ゆれ","pdf表記"]
+  };
+  for(const [key,names] of Object.entries(map)){
+    if(names.map(normalizeHeaderName).includes(n))return key;
+  }
+  return raw;
+}
+function parseCustomerMasterCsv(text){
+  const lines=String(text||"").trim().replace(/^\uFEFF/,"").split(/\r?\n/).filter(Boolean);
+  if(lines.length<2)return [];
+  const headers=splitLine(lines[0]).map(normalizeCustomerMasterCsvKey);
+  return lines.slice(1).map(line=>{
+    const cols=splitLine(line);
+    const row={};
+    headers.forEach((h,i)=>row[h]=(cols[i]||"").replace(/^"|"$/g,"").trim());
+    return {
+      customer_code:row.customer_code||null,
+      customer_name:row.customer_name||"",
+      importer_code:row.importer_code||null,
+      country_code:row.country_code||null,
+      alias_name:row.alias_name||null,
+      active:true
+    };
+  }).filter(r=>r.customer_name);
+}
+async function uploadCustomerMasterCsvFile(file){
+  if(!file)return;
+  if(!(await requireSupabaseLogin()))return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const rowsToSave=parseCustomerMasterCsv(decodeCsvBuffer(e.target.result));
+    if(!rowsToSave.length){toast("Customer CSV has no rows.");return}
+    if(!confirm(`得意先マスタ ${rowsToSave.length}件を登録しますか？`))return;
+    setSaveState(`Supabase: customer master uploading ${rowsToSave.length}`);
+    for(let i=0;i<rowsToSave.length;i+=500){
+      const chunk=rowsToSave.slice(i,i+500);
+      const {error}=await supabaseClient.from("customer_master").upsert(chunk,{onConflict:"importer_code,customer_name"});
+      if(error){setSaveState("Supabase: customer master upload failed",true);alert(customerMasterErrorMessage(error));return}
+      setSaveState(`Supabase: customer master ${Math.min(i+500,rowsToSave.length)}/${rowsToSave.length}`);
+    }
+    await loadCustomerMaster();
+    renderCustomerMasterList();
+    renderCustomerFixList();
+    setSaveState("Supabase: customer master uploaded");
+    toast("得意先マスタCSVを登録しました");
+  };
+  reader.readAsArrayBuffer(file);
+}
+function onCustomerMasterCsvChange(input){
+  const file=input.files?.[0];
+  input.value="";
+  uploadCustomerMasterCsvFile(file);
+}
 async function addCustomerMaster(customer){
   if(!(await requireSupabaseLogin()))return false;
   const payload={
@@ -3511,6 +3572,10 @@ function ensureCustomerMasterUI(){
           <button class="btn btn-primary wide" type="button" onclick="addCustomerMasterFromForm()">${CM_LABEL.add}</button>
         </div>
         <h3>Customer list</h3>
+        <label class="btn btn-primary wide" style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;cursor:pointer">
+          CSV Upload
+          <input type="file" accept=".csv" style="display:none" onchange="onCustomerMasterCsvChange(this)">
+        </label>
         <input class="sales-ref-search" id="cm-search" placeholder="Search customer" oninput="renderCustomerMasterList()">
         <div class="customer-master-list" id="customer-master-list"></div>
       </div>
