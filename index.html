@@ -143,6 +143,8 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .manual-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.manual-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;color:var(--muted)}.manual-form input{min-height:44px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px;background:#fff;color:var(--text);font-weight:700}.manual-form .wide{grid-column:1/-1}.manual-actions{display:flex;gap:10px;margin-top:14px}.manual-actions button{flex:1}.btn-reset{min-height:38px;padding:0 11px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #efd58a;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
 .export-panel{max-width:460px;max-height:calc(100dvh - 24px);border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px;flex:0 0 auto}.export-options{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:8px;margin-bottom:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;flex:0 0 auto;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
 .session-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 2px;padding:6px 2px 0;font-size:13px;font-weight:900;color:var(--muted)}.session-section-count{font-size:12px;color:var(--muted);font-weight:800}.session-finalized{background:#f8fafc;border-color:#d7dde7}.session-finalized .export-option-code{color:#526071}.session-finalized .export-option-meta{color:#7b8794}.session-empty{min-height:46px;border:1px dashed var(--border);background:var(--bg);cursor:default}.session-locked-badge{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:12px;font-weight:900;white-space:nowrap}
+.sales-ref-panel{width:min(1180px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.sales-ref-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff}.sales-ref-title{font-weight:900}.sales-ref-body{display:grid;grid-template-columns:310px 1fr;min-height:0}.sales-ref-list{border-right:1px solid var(--border);overflow:auto;background:#f8fafc;padding:10px}.sales-ref-session{width:100%;border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer}.sales-ref-session.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,122,82,.12)}.sales-ref-session-name{display:block;font-weight:900;color:var(--text);margin-bottom:4px}.sales-ref-session-meta{display:block;font-size:12px;color:var(--muted);font-weight:800}.sales-ref-main{min-width:0;display:grid;grid-template-rows:auto auto 1fr;background:#fff}.sales-ref-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}.sales-ref-search{height:42px;min-width:240px;flex:1;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-weight:700}.sales-ref-summary{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:800}.sales-ref-table-wrap{overflow:auto;min-height:0}.sales-ref-table{width:100%;min-width:1120px;border-collapse:separate;border-spacing:0}.sales-ref-table th,.sales-ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}.sales-ref-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.sales-ref-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:30px;color:var(--muted);font-weight:800;text-align:center}
+@media (max-width:820px){.sales-ref-panel{width:100vw;height:100dvh;border-radius:0}.sales-ref-body{grid-template-columns:1fr;grid-template-rows:180px 1fr}.sales-ref-list{border-right:0;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow:auto}.sales-ref-session{min-width:220px}.sales-ref-search{min-width:160px}}
 .confirm-box{max-width:360px;border-radius:18px;padding:24px;text-align:center;margin:0 14px 18px}.confirm-title{font-size:18px;font-weight:900;margin-bottom:8px}.confirm-sub{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}.confirm-product{font-weight:800;background:var(--bg);border-radius:9px;padding:10px;margin-bottom:16px}.confirm-btns{display:flex;gap:10px}.confirm-btns button{flex:1;height:50px;border:0;border-radius:10px;font-weight:900}.confirm-cancel{background:var(--bg);color:var(--text)}.confirm-ok{background:var(--danger);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:200;transform:translateX(-50%) translateY(80px);transition:.25s;background:var(--accent);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
 @media (min-width:700px){.modal-bg,.export-bg,.confirm-bg{align-items:center}.np-panel{max-width:520px;border-radius:20px;padding-bottom:22px}.export-panel{border-radius:20px}.confirm-box{margin:0}.np-grid{gap:10px}.np-key{height:70px}}
@@ -173,6 +175,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   <button class="sync-btn primary" onclick="signInSupabase()">ログイン</button>
   <button class="sync-btn" onclick="signOutSupabase()">ログアウト</button>
   <button class="sync-btn" onclick="loadSessionList()">作業一覧</button>
+  <button class="sync-btn" onclick="openSalesReference()">売上参照</button>
   <div class="sync-user" id="sync-user"></div>
 </div>
 <div class="export-bg" id="session-bg" onclick="closeSessionPicker()">
@@ -182,6 +185,25 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       <button class="export-close" onclick="closeSessionPicker()">×</button>
     </div>
     <div class="export-options" id="session-options"></div>
+  </div>
+</div>
+<div class="export-bg" id="sales-ref-bg" onclick="closeSalesReference()">
+  <div class="sales-ref-panel" onclick="event.stopPropagation()">
+    <div class="sales-ref-head">
+      <div class="sales-ref-title">売上参照</div>
+      <button class="export-close" onclick="closeSalesReference()">×</button>
+    </div>
+    <div class="sales-ref-body">
+      <div class="sales-ref-list" id="sales-ref-sessions"></div>
+      <div class="sales-ref-main">
+        <div class="sales-ref-toolbar">
+          <input class="sales-ref-search" id="sales-ref-search" type="search" placeholder="店名・商品名・輸入社・箱番号で検索" oninput="renderSalesReferenceRows()">
+          <button class="btn btn-primary" onclick="exportSalesReferenceExcel()">Excel出力</button>
+        </div>
+        <div class="sales-ref-summary" id="sales-ref-summary">確定済み作業を選択してください</div>
+        <div class="sales-ref-table-wrap" id="sales-ref-table-wrap"><div class="sales-ref-empty">左の一覧から売上確定済みデータを選択してください</div></div>
+      </div>
+    </div>
   </div>
 </div>
 <main>
@@ -2659,6 +2681,322 @@ loadSessionList=async function(){
   ].join("");
   document.getElementById("session-bg").classList.add("open");
 };
+/* disabled mojibake sales reference block
+let salesReferenceSessionsTrial=[];
+let currentSalesReferenceSessionId="";
+let currentSalesReferenceRows=[];
+function closeSalesReference(){
+  document.getElementById("sales-ref-bg").classList.remove("open");
+}
+function salesRefMoney(v){
+  if(v===null||v===undefined||v==="")return "";
+  const n=Number(v);
+  return Number.isFinite(n)?n.toLocaleString("ja-JP",{maximumFractionDigits:2}):"";
+}
+function salesRefText(v){return v===null||v===undefined?"":String(v)}
+function salesRefSessionLabel(session){
+  const date=session?.finalized_at?new Date(session.finalized_at).toLocaleString("ja-JP"):"確定日時なし";
+  return `${session?.name||"(名称なし)"} / ${date}`;
+}
+async function openSalesReference(){
+  if(!(await requireSupabaseLogin()))return;
+  const bg=document.getElementById("sales-ref-bg");
+  const list=document.getElementById("sales-ref-sessions");
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  bg.classList.add("open");
+  list.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
+  summary.textContent="確定済み作業を読込中...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">左の一覧から売上確定済みデータを選択してください</div>`;
+  currentSalesReferenceSessionId="";
+  currentSalesReferenceRows=[];
+  const {data,error}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .order("finalized_at",{ascending:false,nullsFirst:false})
+    .limit(120);
+  if(error){list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;summary.textContent="読込失敗";return}
+  salesReferenceSessionsTrial=(data||[]).filter(s=>s.locked||s.status==="closed");
+  renderSalesReferenceSessions();
+  if(salesReferenceSessionsTrial.length)await loadSalesReferenceSession(salesReferenceSessionsTrial[0].id);
+  else summary.textContent="売上確定済みデータはありません";
+}
+function renderSalesReferenceSessions(){
+  const list=document.getElementById("sales-ref-sessions");
+  if(!salesReferenceSessionsTrial.length){
+    list.innerHTML=`<div class="sales-ref-empty">売上確定済みデータはありません</div>`;
+    return;
+  }
+  list.innerHTML=salesReferenceSessionsTrial.map(s=>{
+    const active=s.id===currentSalesReferenceSessionId?" active":"";
+    const date=s.finalized_at?new Date(s.finalized_at).toLocaleString("ja-JP"):new Date(s.updated_at||s.created_at).toLocaleString("ja-JP");
+    return `<button class="sales-ref-session${active}" onclick="loadSalesReferenceSession('${s.id}')"><span class="sales-ref-session-name">${esc(s.name||"(名称なし)")}</span><span class="sales-ref-session-meta">${esc(date)}</span></button>`;
+  }).join("");
+}
+async function loadSalesReferenceSession(sessionId){
+  currentSalesReferenceSessionId=sessionId;
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="売上明細を読込中...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
+  const {data,error}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .eq("session_id",sessionId)
+    .order("importer_code",{ascending:true})
+    .order("store_name",{ascending:true})
+    .order("source_row_no",{ascending:true});
+  if(error){summary.textContent="売上明細の読込に失敗";tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;return}
+  currentSalesReferenceRows=data||[];
+  const search=document.getElementById("sales-ref-search");
+  if(search)search.value="";
+  renderSalesReferenceRows();
+}
+function filteredSalesReferenceRows(){
+  const q=(document.getElementById("sales-ref-search")?.value||"").trim().toLowerCase();
+  if(!q)return currentSalesReferenceRows;
+  return currentSalesReferenceRows.filter(r=>[
+    r.importer_code,r.country_code,r.store_name,r.product_id,r.product_name,r.english_name,
+    r.scientific_name,r.origin,r.box_no,r.memo
+  ].some(v=>salesRefText(v).toLowerCase().includes(q)));
+}
+function renderSalesReferenceRows(){
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  const summary=document.getElementById("sales-ref-summary");
+  if(!currentSalesReferenceSessionId){
+    summary.textContent="確定済み作業を選択してください";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">左の一覧から売上確定済みデータを選択してください</div>`;
+    return;
+  }
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const displayRows=filteredSalesReferenceRows();
+  const totalAmount=displayRows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
+  const totalNet=displayRows.reduce((sum,r)=>sum+(Number(r.net_weight)||0),0);
+  summary.innerHTML=[
+    `<span>${esc(salesRefSessionLabel(session))}</span>`,
+    `<span>表示 ${displayRows.length}件 / 全${currentSalesReferenceRows.length}件</span>`,
+    `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
+    `<span>金額 ${salesRefMoney(totalAmount)}</span>`
+  ].join("");
+  if(!displayRows.length){
+    tableWrap.innerHTML=`<div class="sales-ref-empty">該当する売上明細はありません</div>`;
+    return;
+  }
+  tableWrap.innerHTML=`<table class="sales-ref-table"><thead><tr>
+    <th>輸入社</th><th>国</th><th>店名</th><th>商品コード</th><th>商品名</th><th>英名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱番号</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th>
+  </tr></thead><tbody>${displayRows.map(r=>`<tr>
+    <td>${esc(r.importer_code)}</td><td>${esc(r.country_code)}</td><td>${esc(r.store_name)}</td><td>${esc(r.product_id)}</td><td>${esc(r.product_name)}</td><td>${esc(r.english_name)}</td><td>${esc(r.origin)}</td>
+    <td>${esc(salesRefMoney(r.input_qty))}</td><td>${esc(r.input_unit)}</td><td>${esc(salesRefMoney(r.net_weight))}</td><td>${esc(r.box_no)}</td><td>${esc(salesRefMoney(r.unit_price))}</td><td>${esc(salesRefMoney(r.amount))}</td><td>${esc(r.memo)}</td><td>${r.is_stockout?"欠品":""}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function exportSalesReferenceExcel(){
+  if(!currentSalesReferenceSessionId){toast("売上確定済みデータを選択してください");return}
+  if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}
+  const displayRows=filteredSalesReferenceRows();
+  if(!displayRows.length){toast("出力する売上明細がありません");return}
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const wb=XLSX.utils.book_new();
+  const data=displayRows.map(r=>({
+    "確定日時":r.finalized_at?new Date(r.finalized_at).toLocaleString("ja-JP"):"",
+    "輸入社":r.importer_code||"",
+    "国コード":r.country_code||"",
+    "店名":r.store_name||"",
+    "商品コード":r.product_id||"",
+    "商品名":r.product_name||"",
+    "英名":r.english_name||"",
+    "学術名":r.scientific_name||"",
+    "産地":r.origin||"",
+    "数量":r.input_qty??"",
+    "単位":r.input_unit||"",
+    "NET重量":r.net_weight??"",
+    "箱番号":r.box_no||"",
+    "グロス重量":r.gross_weight??"",
+    "ドライアイス":r.dry_ice_weight??"",
+    "箱サイズ":r.box_size||"",
+    "単価":r.unit_price??"",
+    "金額":r.amount??"",
+    "メモ":r.memo||"",
+    "欠品":r.is_stockout?"欠品":""
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws["!cols"]=[{wch:20},{wch:10},{wch:8},{wch:24},{wch:14},{wch:24},{wch:24},{wch:24},{wch:14},{wch:10},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12},{wch:28},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws,"売上明細");
+  const safeName=(session?.name||"sales").replace(/[\\/:*?"<>|]/g,"_").slice(0,40);
+  const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
+  XLSX.writeFile(wb,`sales_${safeName}_${d}.xlsx`);
+  toast("売上参照Excelを出力しました");
+}
+*/
+let salesReferenceSessionsTrial=[];
+let currentSalesReferenceSessionId="";
+let currentSalesReferenceRows=[];
+const salesRefLabel="\u58f2\u4e0a\u53c2\u7167";
+function initSalesReferenceLabels(){
+  document.querySelectorAll('[onclick="openSalesReference()"]').forEach(b=>b.textContent=salesRefLabel);
+  const title=document.querySelector(".sales-ref-title");
+  if(title)title.textContent=salesRefLabel;
+  const close=document.querySelector("#sales-ref-bg .export-close");
+  if(close)close.textContent="x";
+  const search=document.getElementById("sales-ref-search");
+  if(search)search.placeholder="Search store / product / importer / box";
+  const exportBtn=document.querySelector("#sales-ref-bg .sales-ref-toolbar .btn-primary");
+  if(exportBtn)exportBtn.textContent="Excel";
+  const summary=document.getElementById("sales-ref-summary");
+  if(summary)summary.textContent="Select finalized sales data.";
+}
+initSalesReferenceLabels();
+function closeSalesReference(){
+  document.getElementById("sales-ref-bg").classList.remove("open");
+}
+function salesRefMoney(v){
+  if(v===null||v===undefined||v==="")return "";
+  const n=Number(v);
+  return Number.isFinite(n)?n.toLocaleString("ja-JP",{maximumFractionDigits:2}):"";
+}
+function salesRefText(v){return v===null||v===undefined?"":String(v)}
+function salesRefSessionLabel(session){
+  const date=session?.finalized_at?new Date(session.finalized_at).toLocaleString("ja-JP"):"No finalized time";
+  return `${session?.name||"(no name)"} / ${date}`;
+}
+async function openSalesReference(){
+  initSalesReferenceLabels();
+  if(!(await requireSupabaseLogin()))return;
+  const bg=document.getElementById("sales-ref-bg");
+  const list=document.getElementById("sales-ref-sessions");
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  bg.classList.add("open");
+  list.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  summary.textContent="Loading finalized sessions...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Select finalized data from the left list.</div>`;
+  currentSalesReferenceSessionId="";
+  currentSalesReferenceRows=[];
+  const {data,error}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .order("finalized_at",{ascending:false,nullsFirst:false})
+    .limit(120);
+  if(error){
+    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    summary.textContent="Load failed";
+    return;
+  }
+  salesReferenceSessionsTrial=(data||[]).filter(s=>s.locked||s.status==="closed");
+  renderSalesReferenceSessions();
+  if(salesReferenceSessionsTrial.length)await loadSalesReferenceSession(salesReferenceSessionsTrial[0].id);
+  else summary.textContent="No finalized sales data.";
+}
+function renderSalesReferenceSessions(){
+  const list=document.getElementById("sales-ref-sessions");
+  if(!salesReferenceSessionsTrial.length){
+    list.innerHTML=`<div class="sales-ref-empty">No finalized sales data.</div>`;
+    return;
+  }
+  list.innerHTML=salesReferenceSessionsTrial.map(s=>{
+    const active=s.id===currentSalesReferenceSessionId?" active":"";
+    const date=s.finalized_at?new Date(s.finalized_at).toLocaleString("ja-JP"):new Date(s.updated_at||s.created_at).toLocaleString("ja-JP");
+    return `<button class="sales-ref-session${active}" onclick="loadSalesReferenceSession('${s.id}')"><span class="sales-ref-session-name">${esc(s.name||"(no name)")}</span><span class="sales-ref-session-meta">${esc(date)}</span></button>`;
+  }).join("");
+}
+async function loadSalesReferenceSession(sessionId){
+  currentSalesReferenceSessionId=sessionId;
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="Loading sales records...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  const {data,error}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .eq("session_id",sessionId)
+    .order("importer_code",{ascending:true})
+    .order("store_name",{ascending:true})
+    .order("source_row_no",{ascending:true});
+  if(error){
+    summary.textContent="Sales record load failed";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    return;
+  }
+  currentSalesReferenceRows=data||[];
+  const search=document.getElementById("sales-ref-search");
+  if(search)search.value="";
+  renderSalesReferenceRows();
+}
+function filteredSalesReferenceRows(){
+  const q=(document.getElementById("sales-ref-search")?.value||"").trim().toLowerCase();
+  if(!q)return currentSalesReferenceRows;
+  return currentSalesReferenceRows.filter(r=>[
+    r.importer_code,r.country_code,r.store_name,r.product_id,r.product_name,r.english_name,
+    r.scientific_name,r.origin,r.box_no,r.memo
+  ].some(v=>salesRefText(v).toLowerCase().includes(q)));
+}
+function renderSalesReferenceRows(){
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  const summary=document.getElementById("sales-ref-summary");
+  if(!currentSalesReferenceSessionId){
+    summary.textContent="Select finalized data.";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">Select finalized data from the left list.</div>`;
+    return;
+  }
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const displayRows=filteredSalesReferenceRows();
+  const totalAmount=displayRows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
+  const totalNet=displayRows.reduce((sum,r)=>sum+(Number(r.net_weight)||0),0);
+  summary.innerHTML=[
+    `<span>${esc(salesRefSessionLabel(session))}</span>`,
+    `<span>Rows ${displayRows.length} / ${currentSalesReferenceRows.length}</span>`,
+    `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
+    `<span>Amount ${salesRefMoney(totalAmount)}</span>`
+  ].join("");
+  if(!displayRows.length){
+    tableWrap.innerHTML=`<div class="sales-ref-empty">No matching sales records.</div>`;
+    return;
+  }
+  tableWrap.innerHTML=`<table class="sales-ref-table"><thead><tr>
+    <th>Importer</th><th>Country</th><th>Store</th><th>Product Code</th><th>Product</th><th>English</th><th>Origin</th><th>Qty</th><th>Unit</th><th>NET</th><th>Box</th><th>Unit Price</th><th>Amount</th><th>Memo</th><th>Stockout</th>
+  </tr></thead><tbody>${displayRows.map(r=>`<tr>
+    <td>${esc(r.importer_code)}</td><td>${esc(r.country_code)}</td><td>${esc(r.store_name)}</td><td>${esc(r.product_id)}</td><td>${esc(r.product_name)}</td><td>${esc(r.english_name)}</td><td>${esc(r.origin)}</td>
+    <td>${esc(salesRefMoney(r.input_qty))}</td><td>${esc(r.input_unit)}</td><td>${esc(salesRefMoney(r.net_weight))}</td><td>${esc(r.box_no)}</td><td>${esc(salesRefMoney(r.unit_price))}</td><td>${esc(salesRefMoney(r.amount))}</td><td>${esc(r.memo)}</td><td>${r.is_stockout?"YES":""}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function exportSalesReferenceExcel(){
+  if(!currentSalesReferenceSessionId){toast("Select finalized sales data.");return}
+  if(typeof XLSX==="undefined"){toast("Excel library is not loaded.");return}
+  const displayRows=filteredSalesReferenceRows();
+  if(!displayRows.length){toast("No sales records to export.");return}
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const wb=XLSX.utils.book_new();
+  const data=displayRows.map(r=>({
+    "Finalized At":r.finalized_at?new Date(r.finalized_at).toLocaleString("ja-JP"):"",
+    "Importer":r.importer_code||"",
+    "Country":r.country_code||"",
+    "Store":r.store_name||"",
+    "Product Code":r.product_id||"",
+    "Product":r.product_name||"",
+    "English":r.english_name||"",
+    "Scientific":r.scientific_name||"",
+    "Origin":r.origin||"",
+    "Qty":r.input_qty??"",
+    "Unit":r.input_unit||"",
+    "NET Weight":r.net_weight??"",
+    "Box No":r.box_no||"",
+    "Gross Weight":r.gross_weight??"",
+    "Dry Ice":r.dry_ice_weight??"",
+    "Box Size":r.box_size||"",
+    "Unit Price":r.unit_price??"",
+    "Amount":r.amount??"",
+    "Memo":r.memo||"",
+    "Stockout":r.is_stockout?"YES":""
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws["!cols"]=[{wch:20},{wch:10},{wch:8},{wch:24},{wch:14},{wch:24},{wch:24},{wch:24},{wch:14},{wch:10},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12},{wch:28},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws,"Sales Records");
+  const safeName=(session?.name||"sales").replace(/[\\/:*?"<>|]/g,"_").slice(0,40);
+  const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
+  XLSX.writeFile(wb,`sales_${safeName}_${d}.xlsx`);
+  toast("Sales reference Excel exported.");
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
