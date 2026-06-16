@@ -3286,7 +3286,7 @@ function ensureCustomerMasterUI(){
           <button class="btn btn-primary wide" type="button" onclick="addCustomerMasterFromForm()">追加</button>
         </div>
         <h3>登録済み得意先</h3>
-        <input class="sales-ref-search" id="cm-search" placeholder="Search customer" oninput="renderCustomerMasterList()">
+        <input class="sales-ref-search" id="cm-search" placeholder="Search customer" oninput="resetCustomerMasterPage()">
         <div class="customer-master-list" id="customer-master-list"></div>
       </div>
     </div>
@@ -3793,6 +3793,43 @@ function onCustomerMasterCsvChange(input){
   input.value="";
   uploadCustomerMasterCsvFile(file);
 }
+let customerMasterPage=0;
+const customerMasterPageSize=100;
+function filteredCustomerMasterRows(){
+  const q=(document.getElementById("cm-search")?.value||"").trim().toLowerCase();
+  return customerMasterRows.filter(c=>!q||[c.customer_name,c.customer_code,c.importer_code,c.country_code,c.alias_name].some(v=>String(v||"").toLowerCase().includes(q)));
+}
+function customerMasterTotalPages(total){
+  return Math.max(1,Math.ceil(total/customerMasterPageSize));
+}
+function changeCustomerMasterPage(delta){
+  const total=filteredCustomerMasterRows().length;
+  const pages=customerMasterTotalPages(total);
+  customerMasterPage=Math.min(Math.max(0,customerMasterPage+delta),pages-1);
+  renderCustomerMasterList();
+}
+function resetCustomerMasterPage(){
+  customerMasterPage=0;
+  renderCustomerMasterList();
+}
+renderCustomerMasterList=function(){
+  const list=document.getElementById("customer-master-list");
+  if(!list)return;
+  const filtered=filteredCustomerMasterRows();
+  const pages=customerMasterTotalPages(filtered.length);
+  if(customerMasterPage>=pages)customerMasterPage=pages-1;
+  const start=customerMasterPage*customerMasterPageSize;
+  const pageRows=filtered.slice(start,start+customerMasterPageSize);
+  if(!filtered.length){
+    list.innerHTML=`<div class="customer-empty">登録済み得意先がありません。</div>`;
+    return;
+  }
+  const controls=`<div class="customer-master-item"><div class="customer-master-name">${filtered.length}件</div><div class="customer-master-meta">ページ ${customerMasterPage+1} / ${pages} (${start+1}-${Math.min(start+customerMasterPageSize,filtered.length)})</div><div class="customer-fix-actions" style="margin-top:8px"><button class="btn" type="button" ${customerMasterPage<=0?"disabled":""} onclick="changeCustomerMasterPage(-1)">前へ</button><button class="btn" type="button" ${customerMasterPage>=pages-1?"disabled":""} onclick="changeCustomerMasterPage(1)">次へ</button></div></div>`;
+  list.innerHTML=controls+pageRows.map(c=>`<div class="customer-master-item"><div class="customer-master-name">${esc(c.customer_name)}</div><div class="customer-master-meta">${esc(c.customer_code||"")}${c.importer_code?` / ${esc(c.importer_code)}`:""}${c.country_code?` / ${esc(c.country_code)}`:""}${c.alias_name?` / ${esc(c.alias_name)}`:""}</div></div>`).join("");
+};
+document.addEventListener("input",event=>{
+  if(event.target?.id==="cm-search")customerMasterPage=0;
+});
 const __mergeAndRenderCustomerMasterSafeBase=mergeAndRender;
 mergeAndRender=function(){
   const result=__mergeAndRenderCustomerMasterSafeBase();
