@@ -75,6 +75,19 @@ create table if not exists public.boxes (
   unique (session_id, importer_code, box_no)
 );
 
+create table if not exists public.product_master (
+  product_id text primary key,
+  product_name text,
+  english_name text,
+  scientific_name text,
+  origin text,
+  unit_price numeric,
+  source_filename text,
+  updated_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_order_lines_session_country_store
   on public.order_lines(session_id, country_code, store_name);
 
@@ -83,6 +96,9 @@ create index if not exists idx_order_lines_session_box
 
 create index if not exists idx_boxes_session_importer
   on public.boxes(session_id, importer_code, box_no);
+
+create index if not exists idx_product_master_updated_at
+  on public.product_master(updated_at desc);
 
 drop trigger if exists trg_work_sessions_updated_at on public.work_sessions;
 create trigger trg_work_sessions_updated_at
@@ -99,9 +115,15 @@ create trigger trg_boxes_updated_at
 before update on public.boxes
 for each row execute function public.set_updated_at();
 
+drop trigger if exists trg_product_master_updated_at on public.product_master;
+create trigger trg_product_master_updated_at
+before update on public.product_master
+for each row execute function public.set_updated_at();
+
 alter table public.work_sessions enable row level security;
 alter table public.order_lines enable row level security;
 alter table public.boxes enable row level security;
+alter table public.product_master enable row level security;
 
 -- 初期運用向け:
 -- ログイン済みユーザーは全作業データを読める・作れる・更新できる設定です。
@@ -130,6 +152,13 @@ to authenticated
 using (true)
 with check (true);
 
+drop policy if exists "authenticated can delete work sessions" on public.work_sessions;
+create policy "authenticated can delete work sessions"
+on public.work_sessions
+for delete
+to authenticated
+using (true);
+
 drop policy if exists "authenticated can read order lines" on public.order_lines;
 create policy "authenticated can read order lines"
 on public.order_lines
@@ -152,6 +181,13 @@ to authenticated
 using (true)
 with check (true);
 
+drop policy if exists "authenticated can delete order lines" on public.order_lines;
+create policy "authenticated can delete order lines"
+on public.order_lines
+for delete
+to authenticated
+using (true);
+
 drop policy if exists "authenticated can read boxes" on public.boxes;
 create policy "authenticated can read boxes"
 on public.boxes
@@ -173,6 +209,42 @@ for update
 to authenticated
 using (true)
 with check (true);
+
+drop policy if exists "authenticated can delete boxes" on public.boxes;
+create policy "authenticated can delete boxes"
+on public.boxes
+for delete
+to authenticated
+using (true);
+
+drop policy if exists "authenticated can read product master" on public.product_master;
+create policy "authenticated can read product master"
+on public.product_master
+for select
+to authenticated
+using (true);
+
+drop policy if exists "authenticated can insert product master" on public.product_master;
+create policy "authenticated can insert product master"
+on public.product_master
+for insert
+to authenticated
+with check (true);
+
+drop policy if exists "authenticated can update product master" on public.product_master;
+create policy "authenticated can update product master"
+on public.product_master
+for update
+to authenticated
+using (true)
+with check (true);
+
+drop policy if exists "authenticated can delete product master" on public.product_master;
+create policy "authenticated can delete product master"
+on public.product_master
+for delete
+to authenticated
+using (true);
 
 -- Realtime対象に追加します。
 -- すでに追加済みの場合でも止まりにくいように、重複エラーは無視します。

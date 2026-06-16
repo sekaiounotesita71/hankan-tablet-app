@@ -2567,6 +2567,59 @@ mergeAndRender=function(){
   updateLockUITrial();
   return result;
 };
+function salesLockSetupErrorMessage(error){
+  const msg=String(error?.message||"");
+  if(error?.code==="42P01"||/sales_records|user_roles/i.test(msg))return "売上確定用SQLが未実行です。sales-lock-trial-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"||/locked|finalized_at|schema cache/i.test(msg))return "work_sessionsにロック用カラムがありません。sales-lock-trial-migration.sql を再実行してください。";
+  return msg||"Supabase設定を確認できませんでした。";
+}
+async function checkSalesLockSetupTrial(){
+  if(!(await requireSupabaseLogin()))return false;
+  const {error:sessionError}=await supabaseClient.from("work_sessions").select("id,locked,finalized_at").limit(1);
+  if(sessionError){alert(salesLockSetupErrorMessage(sessionError));return false}
+  const {error:salesError}=await supabaseClient.from("sales_records").select("id").limit(1);
+  if(salesError){alert(salesLockSetupErrorMessage(salesError));return false}
+  return true;
+}
+async function upsertSalesRecordsTrial(payloads){
+  for(let i=0;i<payloads.length;i+=200){
+    const chunk=payloads.slice(i,i+200);
+    const {error}=await supabaseClient.from("sales_records").upsert(chunk,{onConflict:"session_id,source_row_no"});
+    if(error)throw error;
+    setSaveState(`Supabase: 売上確定中 ${Math.min(i+200,payloads.length)}/${payloads.length}`);
+  }
+}
+finalizeSalesTrial=async function(){
+  if(!currentSessionId){
+    await saveCurrentSessionToSupabase();
+    if(!currentSessionId)return;
+  }
+  if(currentSessionLocked){toast("すでに売上確定済みです");return}
+  if(!(await checkSalesLockSetupTrial()))return;
+  const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
+  if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
+  if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
+  const refreshed=await refreshCurrentSessionFromSupabase();
+  if(!refreshed){alert("最新データの取得に失敗したため、売上確定を中止しました。");return}
+  try{
+    setSaveState("Supabase: 売上確定中...");
+    await upsertSalesRecordsTrial(rows.map(salesRecordPayloadTrial));
+    const finalizedAt=new Date().toISOString();
+    const {data,error}=await supabaseClient.from("work_sessions")
+      .update({locked:true,finalized_at:finalizedAt,finalized_by:currentUser.id,status:"closed"})
+      .eq("id",currentSessionId)
+      .select("locked,finalized_at")
+      .single();
+    if(error)throw error;
+    setSessionLockStateTrial(data);
+    setSaveState("Supabase: 売上確定済み");
+    toast("売上確定しました");
+  }catch(error){
+    const message=salesLockSetupErrorMessage(error);
+    setSaveState("Supabase: 売上確定失敗",true);
+    alert("売上確定エラー: "+message);
+  }
+};
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
