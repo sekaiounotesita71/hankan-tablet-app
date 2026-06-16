@@ -144,7 +144,8 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .export-panel{max-width:460px;max-height:calc(100dvh - 24px);border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px;flex:0 0 auto}.export-options{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:8px;margin-bottom:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;flex:0 0 auto;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
 .session-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 2px;padding:6px 2px 0;font-size:13px;font-weight:900;color:var(--muted)}.session-section-count{font-size:12px;color:var(--muted);font-weight:800}.session-finalized{background:#f8fafc;border-color:#d7dde7}.session-finalized .export-option-code{color:#526071}.session-finalized .export-option-meta{color:#7b8794}.session-empty{min-height:46px;border:1px dashed var(--border);background:var(--bg);cursor:default}.session-locked-badge{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:12px;font-weight:900;white-space:nowrap}
 .sales-ref-panel{width:min(1180px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.sales-ref-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff}.sales-ref-title{font-weight:900}.sales-ref-body{display:grid;grid-template-columns:310px 1fr;min-height:0;overflow:hidden}.sales-ref-list{border-right:1px solid var(--border);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#f8fafc;padding:10px}.sales-ref-session{width:100%;border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer}.sales-ref-session.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,122,82,.12)}.sales-ref-session-name{display:block;font-weight:900;color:var(--text);margin-bottom:4px}.sales-ref-session-meta{display:block;font-size:12px;color:var(--muted);font-weight:800}.sales-ref-main{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto 1fr;background:#fff;overflow:hidden}.sales-ref-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}.sales-ref-search{height:42px;min-width:180px;flex:1;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-weight:700}.sales-ref-filter{height:42px;min-width:130px;border:1px solid var(--border-strong);border-radius:9px;padding:0 10px;background:#fff;font-weight:800}.sales-ref-filter.date{min-width:145px}.sales-ref-summary{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:800}.sales-ref-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;min-height:0;max-height:100%}.sales-ref-table{width:100%;min-width:1120px;border-collapse:separate;border-spacing:0}.sales-ref-table th,.sales-ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}.sales-ref-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.sales-ref-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:30px;color:var(--muted);font-weight:800;text-align:center}
-@media (max-width:820px){.sales-ref-panel{width:100vw;height:100dvh;border-radius:0}.sales-ref-body{grid-template-columns:1fr;grid-template-rows:180px 1fr}.sales-ref-list{border-right:0;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow:auto}.sales-ref-session{min-width:220px}.sales-ref-search{min-width:160px}}
+.sales-ref-analysis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#fbfcfd}.sales-ref-card{border:1px solid var(--border);border-radius:9px;background:#fff;min-width:0;overflow:hidden}.sales-ref-card-head{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:900;color:var(--muted);display:flex;justify-content:space-between;gap:8px}.sales-ref-card-body{max-height:132px;overflow:auto;-webkit-overflow-scrolling:touch}.sales-ref-rank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-ref-rank:last-child{border-bottom:0}.sales-ref-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--text)}.sales-ref-rank-value{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}.sales-ref-total-card{background:#eef7f1;border-color:#cfe7d9}.sales-ref-total-card .sales-ref-rank-name,.sales-ref-total-card .sales-ref-rank-value{color:#167a52}
+@media (max-width:820px){.sales-ref-panel{width:100vw;height:100dvh;border-radius:0}.sales-ref-body{grid-template-columns:1fr;grid-template-rows:180px 1fr}.sales-ref-list{border-right:0;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow:auto}.sales-ref-session{min-width:220px}.sales-ref-search{min-width:160px}.sales-ref-analysis{grid-template-columns:1fr}.sales-ref-card-body{max-height:110px}}
 .confirm-box{max-width:360px;border-radius:18px;padding:24px;text-align:center;margin:0 14px 18px}.confirm-title{font-size:18px;font-weight:900;margin-bottom:8px}.confirm-sub{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}.confirm-product{font-weight:800;background:var(--bg);border-radius:9px;padding:10px;margin-bottom:16px}.confirm-btns{display:flex;gap:10px}.confirm-btns button{flex:1;height:50px;border:0;border-radius:10px;font-weight:900}.confirm-cancel{background:var(--bg);color:var(--text)}.confirm-ok{background:var(--danger);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:200;transform:translateX(-50%) translateY(80px);transition:.25s;background:var(--accent);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
 @media (min-width:700px){.modal-bg,.export-bg,.confirm-bg{align-items:center}.np-panel{max-width:520px;border-radius:20px;padding-bottom:22px}.export-panel{border-radius:20px}.confirm-box{margin:0}.np-grid{gap:10px}.np-key{height:70px}}
@@ -201,6 +202,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
           <button class="btn btn-primary" onclick="exportSalesReferenceExcel()">Excel出力</button>
         </div>
         <div class="sales-ref-summary" id="sales-ref-summary">確定済み作業を選択してください</div>
+        <div class="sales-ref-analysis" id="sales-ref-analysis"></div>
         <div class="sales-ref-table-wrap" id="sales-ref-table-wrap"><div class="sales-ref-empty">左の一覧から売上確定済みデータを選択してください</div></div>
       </div>
     </div>
@@ -3190,7 +3192,46 @@ const __renderSalesReferenceRowsBase=renderSalesReferenceRows;
 renderSalesReferenceRows=function(){
   updateSalesReferenceFilterOptions();
   __renderSalesReferenceRowsBase();
+  renderSalesReferenceAnalysis();
 };
+function salesRefAmount(r){return Number(r?.amount)||0}
+function salesRefNet(r){return Number(r?.net_weight)||0}
+function salesRefMonth(v){
+  const d=salesRefDateOnly(v);
+  return d?d.slice(0,7):"No date";
+}
+function salesRefGroup(rows,keyFn){
+  const map=new Map();
+  rows.forEach(r=>{
+    const key=keyFn(r)||"(blank)";
+    const cur=map.get(key)||{key,amount:0,net:0,count:0};
+    cur.amount+=salesRefAmount(r);
+    cur.net+=salesRefNet(r);
+    cur.count+=1;
+    map.set(key,cur);
+  });
+  return [...map.values()].sort((a,b)=>b.amount-a.amount||b.count-a.count);
+}
+function salesRefRankRows(items,limit){
+  if(!items.length)return `<div class="sales-ref-rank"><span class="sales-ref-rank-name">No data</span><span class="sales-ref-rank-value"></span></div>`;
+  return items.slice(0,limit).map(x=>`<div class="sales-ref-rank"><span class="sales-ref-rank-name">${esc(x.key)}</span><span class="sales-ref-rank-value">${salesRefMoney(x.amount)}</span></div>`).join("");
+}
+function renderSalesReferenceAnalysis(){
+  const el=document.getElementById("sales-ref-analysis");
+  if(!el)return;
+  const displayRows=filteredSalesReferenceRows();
+  const totalAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const totalNet=displayRows.reduce((sum,r)=>sum+salesRefNet(r),0);
+  const byMonth=salesRefGroup(displayRows,r=>salesRefMonth(r.finalized_at));
+  const byImporter=salesRefGroup(displayRows,r=>r.importer_code);
+  const byProduct=salesRefGroup(displayRows,r=>`${r.product_id||""} ${r.product_name||""}`.trim());
+  el.innerHTML=[
+    `<div class="sales-ref-card sales-ref-total-card"><div class="sales-ref-card-head"><span>Total</span><span>${displayRows.length} rows</span></div><div class="sales-ref-card-body"><div class="sales-ref-rank"><span class="sales-ref-rank-name">Amount</span><span class="sales-ref-rank-value">${salesRefMoney(totalAmount)}</span></div><div class="sales-ref-rank"><span class="sales-ref-rank-name">NET kg</span><span class="sales-ref-rank-value">${salesRefMoney(totalNet)}</span></div></div></div>`,
+    `<div class="sales-ref-card"><div class="sales-ref-card-head"><span>Monthly sales</span><span>Amount</span></div><div class="sales-ref-card-body">${salesRefRankRows(byMonth,12)}</div></div>`,
+    `<div class="sales-ref-card"><div class="sales-ref-card-head"><span>Importer sales</span><span>Amount</span></div><div class="sales-ref-card-body">${salesRefRankRows(byImporter,12)}</div></div>`,
+    `<div class="sales-ref-card"><div class="sales-ref-card-head"><span>Top products</span><span>Amount</span></div><div class="sales-ref-card-body">${salesRefRankRows(byProduct,12)}</div></div>`
+  ].join("");
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
