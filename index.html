@@ -143,7 +143,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .manual-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.manual-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;color:var(--muted)}.manual-form input{min-height:44px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px;background:#fff;color:var(--text);font-weight:700}.manual-form .wide{grid-column:1/-1}.manual-actions{display:flex;gap:10px;margin-top:14px}.manual-actions button{flex:1}.btn-reset{min-height:38px;padding:0 11px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #efd58a;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
 .export-panel{max-width:460px;max-height:calc(100dvh - 24px);border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px;flex:0 0 auto}.export-options{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:8px;margin-bottom:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;flex:0 0 auto;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
 .session-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 2px;padding:6px 2px 0;font-size:13px;font-weight:900;color:var(--muted)}.session-section-count{font-size:12px;color:var(--muted);font-weight:800}.session-finalized{background:#f8fafc;border-color:#d7dde7}.session-finalized .export-option-code{color:#526071}.session-finalized .export-option-meta{color:#7b8794}.session-empty{min-height:46px;border:1px dashed var(--border);background:var(--bg);cursor:default}.session-locked-badge{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:12px;font-weight:900;white-space:nowrap}
-.sales-ref-panel{width:min(1180px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.sales-ref-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff}.sales-ref-title{font-weight:900}.sales-ref-body{display:grid;grid-template-columns:310px 1fr;min-height:0}.sales-ref-list{border-right:1px solid var(--border);overflow:auto;background:#f8fafc;padding:10px}.sales-ref-session{width:100%;border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer}.sales-ref-session.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,122,82,.12)}.sales-ref-session-name{display:block;font-weight:900;color:var(--text);margin-bottom:4px}.sales-ref-session-meta{display:block;font-size:12px;color:var(--muted);font-weight:800}.sales-ref-main{min-width:0;display:grid;grid-template-rows:auto auto 1fr;background:#fff}.sales-ref-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}.sales-ref-search{height:42px;min-width:240px;flex:1;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-weight:700}.sales-ref-summary{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:800}.sales-ref-table-wrap{overflow:auto;min-height:0}.sales-ref-table{width:100%;min-width:1120px;border-collapse:separate;border-spacing:0}.sales-ref-table th,.sales-ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}.sales-ref-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.sales-ref-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:30px;color:var(--muted);font-weight:800;text-align:center}
+.sales-ref-panel{width:min(1180px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.sales-ref-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff}.sales-ref-title{font-weight:900}.sales-ref-body{display:grid;grid-template-columns:310px 1fr;min-height:0;overflow:hidden}.sales-ref-list{border-right:1px solid var(--border);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#f8fafc;padding:10px}.sales-ref-session{width:100%;border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer}.sales-ref-session.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,122,82,.12)}.sales-ref-session-name{display:block;font-weight:900;color:var(--text);margin-bottom:4px}.sales-ref-session-meta{display:block;font-size:12px;color:var(--muted);font-weight:800}.sales-ref-main{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto 1fr;background:#fff;overflow:hidden}.sales-ref-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}.sales-ref-search{height:42px;min-width:180px;flex:1;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-weight:700}.sales-ref-filter{height:42px;min-width:130px;border:1px solid var(--border-strong);border-radius:9px;padding:0 10px;background:#fff;font-weight:800}.sales-ref-filter.date{min-width:145px}.sales-ref-summary{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:800}.sales-ref-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;min-height:0;max-height:100%}.sales-ref-table{width:100%;min-width:1120px;border-collapse:separate;border-spacing:0}.sales-ref-table th,.sales-ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}.sales-ref-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.sales-ref-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:30px;color:var(--muted);font-weight:800;text-align:center}
 @media (max-width:820px){.sales-ref-panel{width:100vw;height:100dvh;border-radius:0}.sales-ref-body{grid-template-columns:1fr;grid-template-rows:180px 1fr}.sales-ref-list{border-right:0;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow:auto}.sales-ref-session{min-width:220px}.sales-ref-search{min-width:160px}}
 .confirm-box{max-width:360px;border-radius:18px;padding:24px;text-align:center;margin:0 14px 18px}.confirm-title{font-size:18px;font-weight:900;margin-bottom:8px}.confirm-sub{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}.confirm-product{font-weight:800;background:var(--bg);border-radius:9px;padding:10px;margin-bottom:16px}.confirm-btns{display:flex;gap:10px}.confirm-btns button{flex:1;height:50px;border:0;border-radius:10px;font-weight:900}.confirm-cancel{background:var(--bg);color:var(--text)}.confirm-ok{background:var(--danger);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:200;transform:translateX(-50%) translateY(80px);transition:.25s;background:var(--accent);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
@@ -2997,6 +2997,200 @@ function exportSalesReferenceExcel(){
   XLSX.writeFile(wb,`sales_${safeName}_${d}.xlsx`);
   toast("Sales reference Excel exported.");
 }
+/* sales reference cross-filter override */
+let currentSalesReferenceMode="all";
+function salesRefDateOnly(v){
+  if(!v)return "";
+  const d=new Date(v);
+  return Number.isNaN(d.getTime())?"":d.toISOString().slice(0,10);
+}
+function ensureSalesReferenceFilters(){
+  const toolbar=document.querySelector("#sales-ref-bg .sales-ref-toolbar");
+  if(!toolbar||document.getElementById("sales-ref-importer-filter"))return;
+  const search=document.getElementById("sales-ref-search");
+  const importer=document.createElement("select");
+  importer.id="sales-ref-importer-filter";
+  importer.className="sales-ref-filter";
+  importer.onchange=renderSalesReferenceRows;
+  const product=document.createElement("input");
+  product.id="sales-ref-product-filter";
+  product.className="sales-ref-filter";
+  product.placeholder="Product ID";
+  product.setAttribute("list","sales-ref-product-list");
+  product.oninput=renderSalesReferenceRows;
+  const list=document.createElement("datalist");
+  list.id="sales-ref-product-list";
+  const from=document.createElement("input");
+  from.id="sales-ref-date-from";
+  from.className="sales-ref-filter date";
+  from.type="date";
+  from.oninput=renderSalesReferenceRows;
+  const to=document.createElement("input");
+  to.id="sales-ref-date-to";
+  to.className="sales-ref-filter date";
+  to.type="date";
+  to.oninput=renderSalesReferenceRows;
+  const clear=document.createElement("button");
+  clear.className="btn";
+  clear.type="button";
+  clear.textContent="Clear";
+  clear.onclick=clearSalesReferenceFilters;
+  toolbar.insertBefore(importer,search);
+  toolbar.insertBefore(product,search.nextSibling);
+  toolbar.insertBefore(list,product.nextSibling);
+  toolbar.insertBefore(from,product.nextSibling);
+  toolbar.insertBefore(to,from.nextSibling);
+  toolbar.insertBefore(clear,to.nextSibling);
+}
+function updateSalesReferenceFilterOptions(){
+  const importer=document.getElementById("sales-ref-importer-filter");
+  const productList=document.getElementById("sales-ref-product-list");
+  if(importer){
+    const current=importer.value;
+    const importers=[...new Set(currentSalesReferenceRows.map(r=>r.importer_code).filter(Boolean))].sort();
+    importer.innerHTML=`<option value="">All importers</option>`+importers.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+    if(importers.includes(current))importer.value=current;
+  }
+  if(productList){
+    const products=[...new Set(currentSalesReferenceRows.map(r=>r.product_id).filter(Boolean))].sort();
+    productList.innerHTML=products.slice(0,800).map(v=>`<option value="${esc(v)}"></option>`).join("");
+  }
+}
+function clearSalesReferenceFilters(){
+  ["sales-ref-search","sales-ref-product-filter","sales-ref-date-from","sales-ref-date-to"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value="";
+  });
+  const importer=document.getElementById("sales-ref-importer-filter");
+  if(importer)importer.value="";
+  renderSalesReferenceRows();
+}
+const __initSalesReferenceLabelsBase=initSalesReferenceLabels;
+initSalesReferenceLabels=function(){
+  __initSalesReferenceLabelsBase();
+  ensureSalesReferenceFilters();
+};
+openSalesReference=async function(){
+  initSalesReferenceLabels();
+  if(!(await requireSupabaseLogin()))return;
+  const bg=document.getElementById("sales-ref-bg");
+  const list=document.getElementById("sales-ref-sessions");
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  bg.classList.add("open");
+  list.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  summary.textContent="Loading finalized sales data...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  currentSalesReferenceSessionId="";
+  currentSalesReferenceRows=[];
+  currentSalesReferenceMode="all";
+  const {data:sessions,error:sessionError}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .order("finalized_at",{ascending:false,nullsFirst:false})
+    .limit(120);
+  if(sessionError){
+    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(sessionError))}</div>`;
+    summary.textContent="Load failed";
+    return;
+  }
+  salesReferenceSessionsTrial=(sessions||[]).filter(s=>s.locked||s.status==="closed");
+  const {data:records,error:recordError}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .order("finalized_at",{ascending:false})
+    .limit(5000);
+  if(recordError){
+    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(recordError))}</div>`;
+    summary.textContent="Load failed";
+    return;
+  }
+  currentSalesReferenceRows=records||[];
+  currentSalesReferenceSessionId="__all__";
+  renderSalesReferenceSessions();
+  updateSalesReferenceFilterOptions();
+  renderSalesReferenceRows();
+};
+renderSalesReferenceSessions=function(){
+  const list=document.getElementById("sales-ref-sessions");
+  const allActive=currentSalesReferenceSessionId==="__all__"?" active":"";
+  const allButton=`<button class="sales-ref-session${allActive}" onclick="loadSalesReferenceAll()"><span class="sales-ref-session-name">All finalized sales</span><span class="sales-ref-session-meta">Cross-session search</span></button>`;
+  if(!salesReferenceSessionsTrial.length){
+    list.innerHTML=allButton+`<div class="sales-ref-empty">No finalized sessions.</div>`;
+    return;
+  }
+  list.innerHTML=allButton+salesReferenceSessionsTrial.map(s=>{
+    const active=s.id===currentSalesReferenceSessionId?" active":"";
+    const date=s.finalized_at?new Date(s.finalized_at).toLocaleString("ja-JP"):new Date(s.updated_at||s.created_at).toLocaleString("ja-JP");
+    return `<button class="sales-ref-session${active}" onclick="loadSalesReferenceSession('${s.id}')"><span class="sales-ref-session-name">${esc(s.name||"(no name)")}</span><span class="sales-ref-session-meta">${esc(date)}</span></button>`;
+  }).join("");
+};
+async function loadSalesReferenceAll(){
+  currentSalesReferenceSessionId="__all__";
+  currentSalesReferenceMode="all";
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="Loading all finalized sales records...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  const {data,error}=await supabaseClient.from("sales_records").select("*").order("finalized_at",{ascending:false}).limit(5000);
+  if(error){
+    summary.textContent="Sales record load failed";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    return;
+  }
+  currentSalesReferenceRows=data||[];
+  updateSalesReferenceFilterOptions();
+  renderSalesReferenceRows();
+}
+loadSalesReferenceSession=async function(sessionId){
+  currentSalesReferenceSessionId=sessionId;
+  currentSalesReferenceMode="session";
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="Loading sales records...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  const {data,error}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .eq("session_id",sessionId)
+    .order("importer_code",{ascending:true})
+    .order("store_name",{ascending:true})
+    .order("source_row_no",{ascending:true});
+  if(error){
+    summary.textContent="Sales record load failed";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    return;
+  }
+  currentSalesReferenceRows=data||[];
+  updateSalesReferenceFilterOptions();
+  renderSalesReferenceRows();
+};
+filteredSalesReferenceRows=function(){
+  const q=(document.getElementById("sales-ref-search")?.value||"").trim().toLowerCase();
+  const importer=(document.getElementById("sales-ref-importer-filter")?.value||"").trim();
+  const product=(document.getElementById("sales-ref-product-filter")?.value||"").trim().toLowerCase();
+  const from=document.getElementById("sales-ref-date-from")?.value||"";
+  const to=document.getElementById("sales-ref-date-to")?.value||"";
+  return currentSalesReferenceRows.filter(r=>{
+    if(importer&&salesRefText(r.importer_code)!==importer)return false;
+    if(product&&!salesRefText(r.product_id).toLowerCase().includes(product))return false;
+    const d=salesRefDateOnly(r.finalized_at);
+    if(from&&(!d||d<from))return false;
+    if(to&&(!d||d>to))return false;
+    if(q&&![
+      r.importer_code,r.country_code,r.store_name,r.product_id,r.product_name,r.english_name,
+      r.scientific_name,r.origin,r.box_no,r.memo
+    ].some(v=>salesRefText(v).toLowerCase().includes(q)))return false;
+    return true;
+  });
+};
+const __renderSalesReferenceRowsBase=renderSalesReferenceRows;
+renderSalesReferenceRows=function(){
+  updateSalesReferenceFilterOptions();
+  __renderSalesReferenceRowsBase();
+};
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
