@@ -47,6 +47,7 @@ header{
 .btn:active,.np-key:active,.unit-preset:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn-primary:disabled{opacity:.42;cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#fff}.lock-badge{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--danger-bg);color:var(--danger);font-size:12px;font-weight:900}.lock-badge.open{background:var(--success-bg);color:var(--success)}
 .sync-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left));background:#eef7f1;border-bottom:1px solid #cfe7d9;color:#24513d}
 .sync-status{font-size:13px;font-weight:800;margin-right:auto}
 .sync-input{height:38px;min-width:180px;border:1px solid #bad9c8;border-radius:8px;background:#fff;padding:0 10px;color:var(--text)}
@@ -201,7 +202,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       </div>
     </div>
     <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="mergeAndRender()">データを結合して表示</button></div>
-    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button></div>
+    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button><button class="btn btn-primary" id="finalize-btn" onclick="finalizeSalesTrial()">売上確定</button><button class="btn" id="unlock-btn" onclick="unlockSessionTrial()" style="display:none">ロック解除</button></div>
     <div class="tabs-wrap" id="p1-tabs-wrap" style="display:none"><div class="country-tabs" id="p1-country-tabs"></div><div id="p1-country-panels"></div></div>
   </div>
   <div class="view" id="view-p15">
@@ -2385,6 +2386,186 @@ applyRemoteBox=function(dbRow){
     return;
   }
   __applyRemoteBoxInlineBase(dbRow);
+};
+let currentUserRole="user";
+let currentSessionLocked=false;
+let currentSessionFinalizedAt="";
+function currentUserIsAdmin(){return currentUserRole==="admin"}
+async function loadCurrentUserRoleTrial(){
+  currentUserRole="user";
+  if(!supabaseClient||!currentUser){updateLockUITrial();return}
+  const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
+  if(!error&&data?.role)currentUserRole=data.role;
+  updateLockUITrial();
+}
+function setSessionLockStateTrial(session){
+  currentSessionLocked=!!session?.locked;
+  currentSessionFinalizedAt=session?.finalized_at||"";
+  updateLockUITrial();
+}
+function lockBadgeHtml(){
+  if(!currentSessionId)return "";
+  if(currentSessionLocked)return ` <span class="lock-badge">確定ロック中</span>`;
+  return ` <span class="lock-badge open">編集中</span>`;
+}
+function updateLockUITrial(){
+  const finalizeBtn=document.getElementById("finalize-btn");
+  const unlockBtn=document.getElementById("unlock-btn");
+  if(finalizeBtn){
+    finalizeBtn.style.display=currentSessionId?"":"none";
+    finalizeBtn.disabled=!!currentSessionLocked;
+    finalizeBtn.textContent=currentSessionLocked?"売上確定済み":"売上確定";
+  }
+  if(unlockBtn){
+    unlockBtn.style.display=currentSessionLocked&&currentUserIsAdmin()?"":"none";
+  }
+  const info=document.getElementById("cloud-save-info");
+  if(info&&currentSessionId&&!info.dataset.lockDecorated){
+    info.dataset.baseText=info.textContent||"";
+  }
+  if(info&&currentSessionId){
+    if(!info.innerHTML.includes("lock-badge"))info.dataset.baseText=info.textContent||"";
+    const base=info.dataset.baseText||info.textContent||"";
+    const finalized=currentSessionFinalizedAt?` / 確定 ${new Date(currentSessionFinalizedAt).toLocaleString("ja-JP")}`:"";
+    info.innerHTML=`${esc(base)}${finalized}${lockBadgeHtml()}`;
+    info.dataset.lockDecorated="1";
+  }
+  applyLockToInputsTrial();
+}
+function applyLockToInputsTrial(){
+  const locked=!!currentSessionLocked;
+  document.querySelectorAll(".inline-work-input,.inline-box-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.box-size-select,.di-toggle input").forEach(el=>{
+    el.disabled=locked;
+    if(locked)el.title="売上確定済みのため編集できません";
+    else el.removeAttribute("title");
+  });
+  const addBtn=[...document.querySelectorAll("#cloud-save-bar .btn")].find(btn=>btn.textContent==="追加オーダー");
+  if(addBtn)addBtn.disabled=locked;
+}
+function requireEditableTrial(){
+  if(!currentSessionLocked)return true;
+  toast("売上確定済みです。管理者がロック解除すると編集できます");
+  return false;
+}
+function salesRecordPayloadTrial(row){
+  const imp=importerCode(row.importer_id);
+  const box=row._box?(boxMap[imp]?.[row._box]||{}):{};
+  const qty=numberOrNull(row._qty);
+  const price=numberOrNull(row.unit_price);
+  return{
+    session_id:currentSessionId,
+    source_row_no:row._idx+1,
+    finalized_by:currentUser?.id||null,
+    country_code:row.country||null,
+    importer_id:row.importer_id||null,
+    importer_code:imp||null,
+    store_name:row.customer||null,
+    product_id:row.product_id||null,
+    product_name:row.product_name||null,
+    english_name:row.en_name||null,
+    scientific_name:row.sci_name||null,
+    origin:row.origin||null,
+    ordered_qty:numberOrNull(row.csv_qty),
+    ordered_unit:row.unit||null,
+    input_qty:qty,
+    input_unit:row._unit||null,
+    net_weight:numberOrNull(row._net),
+    box_no:row._box||null,
+    gross_weight:numberOrNull(box.gross),
+    dry_ice_enabled:!!box.dry_ice_enabled,
+    dry_ice_weight:numberOrNull(box.dry_ice),
+    box_size:box.box_size||null,
+    unit_price:price,
+    amount:qty!==null&&price!==null?qty*price:null,
+    memo:row._memo||null,
+    is_stockout:!!row._stockout
+  };
+}
+async function finalizeSalesTrial(){
+  if(!currentSessionId){
+    await saveCurrentSessionToSupabase();
+    if(!currentSessionId)return;
+  }
+  if(currentSessionLocked){toast("すでに売上確定済みです");return}
+  if(!(await requireSupabaseLogin()))return;
+  const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
+  if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
+  if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
+  await refreshCurrentSessionFromSupabase();
+  setSaveState("Supabase: 売上確定中...");
+  const payloads=rows.map(salesRecordPayloadTrial);
+  for(let i=0;i<payloads.length;i+=300){
+    const {error}=await supabaseClient.from("sales_records").upsert(payloads.slice(i,i+300),{onConflict:"session_id,source_row_no"});
+    if(error){setSaveState("Supabase: 売上確定失敗",true);toast("売上確定エラー: "+error.message);return}
+  }
+  const {data,error}=await supabaseClient.from("work_sessions").update({locked:true,finalized_at:new Date().toISOString(),finalized_by:currentUser.id,status:"closed"}).eq("id",currentSessionId).select("locked,finalized_at").single();
+  if(error){setSaveState("Supabase: ロック失敗",true);toast("ロック更新エラー: "+error.message);return}
+  setSessionLockStateTrial(data);
+  setSaveState("Supabase: 売上確定済み");
+  toast("売上確定しました");
+}
+async function unlockSessionTrial(){
+  if(!currentSessionId||!currentSessionLocked)return;
+  if(!currentUserIsAdmin()){toast("ロック解除は管理者のみ可能です");return}
+  const reason=prompt("ロック解除理由を入力してください");
+  if(!reason)return;
+  const {data,error}=await supabaseClient.from("work_sessions").update({locked:false,unlocked_at:new Date().toISOString(),unlocked_by:currentUser.id,unlock_reason:reason,status:"active"}).eq("id",currentSessionId).select("locked,finalized_at").single();
+  if(error){toast("ロック解除エラー: "+error.message);return}
+  setSessionLockStateTrial(data);
+  toast("ロック解除しました");
+}
+const __updateSupabaseStatusLockBase=updateSupabaseStatus;
+updateSupabaseStatus=function(){
+  __updateSupabaseStatusLockBase();
+  loadCurrentUserRoleTrial();
+};
+const __openSavedSessionLockBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await __openSavedSessionLockBase(sessionId);
+  if(currentSessionId&&supabaseClient){
+    const {data}=await supabaseClient.from("work_sessions").select("locked,finalized_at").eq("id",currentSessionId).maybeSingle();
+    setSessionLockStateTrial(data);
+  }
+};
+const __refreshCurrentSessionLockBase=refreshCurrentSessionFromSupabase;
+refreshCurrentSessionFromSupabase=async function(){
+  const ok=await __refreshCurrentSessionLockBase();
+  if(ok&&currentSessionId&&supabaseClient){
+    const {data}=await supabaseClient.from("work_sessions").select("locked,finalized_at").eq("id",currentSessionId).maybeSingle();
+    setSessionLockStateTrial(data);
+  }
+  return ok;
+};
+const __saveOrderLineLockBase=saveOrderLineToSupabase;
+saveOrderLineToSupabase=async function(row){if(!requireEditableTrial())return;return __saveOrderLineLockBase(row)};
+const __saveBoxLockBase=saveBoxToSupabase;
+saveBoxToSupabase=async function(imp,bn){if(!requireEditableTrial())return;return __saveBoxLockBase(imp,bn)};
+const __renderP1CellLockBase=renderP1Cell;
+renderP1Cell=function(country,customer){__renderP1CellLockBase(country,customer);applyLockToInputsTrial()};
+const __renderP2ImporterLockBase=renderP2Importer;
+renderP2Importer=function(imp){__renderP2ImporterLockBase(imp);applyLockToInputsTrial()};
+const __addManualOrderLockBase=addManualOrder;
+addManualOrder=function(){if(!requireEditableTrial())return;return __addManualOrderLockBase()};
+const __executeStockoutLockBase=executeStockout;
+executeStockout=function(){if(!requireEditableTrial())return;return __executeStockoutLockBase()};
+const __undoStockoutLockBase=undoStockout;
+undoStockout=function(i){if(!requireEditableTrial())return;return __undoStockoutLockBase(i)};
+const __resetP1RowLockBase=resetP1Row;
+resetP1Row=function(rowIdx){if(!requireEditableTrial())return;return __resetP1RowLockBase(rowIdx)};
+const __resetLocalStateLockBase=resetLocalStateForSession;
+resetLocalStateForSession=function(){
+  __resetLocalStateLockBase();
+  currentSessionLocked=false;
+  currentSessionFinalizedAt="";
+  updateLockUITrial();
+};
+const __mergeAndRenderLockBase=mergeAndRender;
+mergeAndRender=function(){
+  currentSessionLocked=false;
+  currentSessionFinalizedAt="";
+  const result=__mergeAndRenderLockBase();
+  updateLockUITrial();
+  return result;
 };
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
