@@ -3560,6 +3560,7 @@ function ensureCustomerMasterUI(){
     <div class="customer-master-body">
       <div class="customer-master-section">
         <h3>${CM_LABEL.fix}</h3>
+        <button class="btn btn-primary" type="button" style="width:100%;margin-bottom:8px" onclick="applyCustomerMasterAutoFromButton()">マスタ自動補正</button>
         <div class="customer-fix-list" id="customer-fix-list"></div>
       </div>
       <div class="customer-master-section">
@@ -3793,6 +3794,216 @@ function onCustomerMasterCsvChange(input){
   input.value="";
   uploadCustomerMasterCsvFile(file);
 }
+function normalizeCustomerMatchText(value){
+  return String(value||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"").replace(/[()（）.,，．・]/g,"");
+}
+function customerRowSearchText(row){
+  return [
+    row?.customer,
+    row?.raw_pdf_text,
+    row?.source_filename,
+    row?.product_id,
+    row?.product_name
+  ].map(v=>String(v||"")).join(" ");
+}
+function customerMasterAppliesToRow(master,row){
+  const mi=String(master.importer_code||"");
+  const ri=currentImporterForCustomer(row);
+  const mc=String(master.country_code||"");
+  const rc=String(row?.country||"");
+  return (!mi||!ri||mi===ri)&&(!mc||!rc||mc===rc);
+}
+function findCustomerMasterMatch(row){
+  const text=normalizeCustomerMatchText(customerRowSearchText(row));
+  const current=normalizeCustomerMatchText(row?.customer);
+  const candidates=customerMasterRows.filter(c=>customerMasterAppliesToRow(c,row));
+  for(const c of candidates){
+    const code=normalizeCustomerMatchText(c.customer_code);
+    if(code&&text.includes(code))return c;
+  }
+  for(const c of candidates){
+    const alias=normalizeCustomerMatchText(c.alias_name);
+    if(alias&&text.includes(alias))return c;
+  }
+  for(const c of candidates){
+    const name=normalizeCustomerMatchText(c.customer_name);
+    if(name&&current&&current.includes(name))return c;
+  }
+  return null;
+}
+async function applyCustomerMasterAuto(options={}){
+  if(!customerMasterRows.length){
+    const ok=await loadCustomerMaster();
+    if(!ok)return 0;
+  }
+  let changed=0;
+  rows.forEach((row,idx)=>{
+    const match=findCustomerMasterMatch(row);
+    if(!match||!match.customer_name)return;
+    if(row.customer===match.customer_name)return;
+    if(!isMissingCustomerName(row.customer)&&!normalizeCustomerMatchText(row.customer).includes(normalizeCustomerMatchText(match.customer_code)))return;
+    row.customer=match.customer_name;
+    if(orderRows[idx])orderRows[idx].customer=match.customer_name;
+    changed++;
+  });
+  if(changed){
+    buildP1Tabs();
+    renderCustomerFixList();
+    if(options.save&&currentSessionId){
+      for(const row of rows.filter(r=>r&&r.customer)){
+        await saveOrderLineToSupabase(row);
+      }
+    }
+    toast(`得意先マスタで${changed}件補正しました`);
+  }else{
+    toast("得意先マスタで補正できる行はありませんでした");
+  }
+  return changed;
+}
+async function applyCustomerMasterAutoFromButton(){
+  await applyCustomerMasterAuto({save:true});
+}
+function normalizeCustomerMatchTextV2(value){
+  return String(value||"")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g,"")
+    .replace(/[()\uFF08\uFF09.,\uFF0C\uFF0E\u30FB]/g,"")
+    .replace(/inc$|ltd$|co$|corp$|corporation$|limited$/g,"");
+}
+function customerMasterUsableV2(master){
+  const s=String(master?.customer_name||"")+String(master?.alias_name||"");
+  return !/使用禁止|禁止|inactive/i.test(s);
+}
+function longestCommonSubstringLengthV2(a,b){
+  a=String(a||"");
+  b=String(b||"");
+  if(!a||!b)return 0;
+  const dp=new Array(b.length+1).fill(0);
+  let best=0;
+  for(let i=1;i<=a.length;i++){
+    for(let j=b.length;j>=1;j--){
+      if(a[i-1]===b[j-1]){
+        dp[j]=dp[j-1]+1;
+        if(dp[j]>best)best=dp[j];
+      }else{
+        dp[j]=0;
+      }
+    }
+  }
+  return best;
+}
+function customerNameSimilarityV2(a,b){
+  a=normalizeCustomerMatchTextV2(a);
+  b=normalizeCustomerMatchTextV2(b);
+  if(!a||!b)return 0;
+  if(a===b)return 1;
+  if(a.length>=5&&b.length>=5&&(a.includes(b)||b.includes(a)))return Math.min(a.length,b.length)/Math.max(a.length,b.length);
+  return longestCommonSubstringLengthV2(a,b)/Math.max(a.length,b.length);
+}
+findCustomerMasterMatch=function(row){
+  const text=normalizeCustomerMatchTextV2(customerRowSearchText(row));
+  const candidates=customerMasterRows.filter(c=>customerMasterUsableV2(c)&&customerMasterAppliesToRow(c,row));
+  for(const c of candidates){
+    const code=normalizeCustomerMatchTextV2(c.customer_code);
+    if(code&&text.includes(code))return Object.assign({_matchScore:1,_matchReason:"code"},c);
+  }
+  for(const c of candidates){
+    const alias=normalizeCustomerMatchTextV2(c.alias_name);
+    if(alias&&text.includes(alias))return Object.assign({_matchScore:.95,_matchReason:"alias"},c);
+  }
+  for(const c of candidates){
+    const name=normalizeCustomerMatchTextV2(c.customer_name);
+    if(name&&text.includes(name))return Object.assign({_matchScore:.92,_matchReason:"name-exact"},c);
+  }
+  let best=null;
+  for(const c of candidates){
+    const score=Math.max(
+      customerNameSimilarityV2(row?.customer,c.customer_name),
+      customerNameSimilarityV2(customerRowSearchText(row),c.customer_name),
+      customerNameSimilarityV2(row?.customer,c.alias_name)
+    );
+    if(score>=.72&&(!best||score>best._matchScore)){
+      best=Object.assign({_matchScore:score,_matchReason:"name-similar"},c);
+    }
+  }
+  return best;
+};
+applyCustomerMasterAuto=async function(options={}){
+  if(!customerMasterRows.length){
+    const ok=await loadCustomerMaster();
+    if(!ok)return 0;
+  }
+  let changed=0;
+  rows.forEach((row,idx)=>{
+    const match=findCustomerMasterMatch(row);
+    if(!match||!match.customer_name)return;
+    if(row.customer===match.customer_name)return;
+    const score=Number(match._matchScore)||0;
+    if(!isMissingCustomerName(row.customer)&&score<.9)return;
+    row.customer=match.customer_name;
+    if(orderRows[idx])orderRows[idx].customer=match.customer_name;
+    changed++;
+  });
+  if(changed){
+    buildP1Tabs();
+    renderCustomerFixList();
+    if(options.save&&currentSessionId){
+      for(const row of rows.filter(r=>r&&r.customer)){
+        await saveOrderLineToSupabase(row);
+      }
+    }
+    toast(`得意先マスタで${changed}件補正しました`);
+  }else{
+    toast("得意先マスタで補正できる行はありませんでした");
+  }
+  return changed;
+};
+/* disabled broken pdf tail parser
+function pdfCustomerLooksLikeProductCodeTail(value){
+  const s=String(value||"").normalize("NFKC").trim();
+  if(!s)return true;
+  if(/[ぁ-んァ-ヶ一-龠]/.test(s))return false;
+  return /^[-－]?[0-9A-Za-z]{1,10}$/.test(s);
+}
+function mergePdfProductCodeTail(row){
+  if(!row||!pdfCustomerLooksLikeProductCodeTail(row.customer))return row;
+  const tail=String(row.customer||"").normalize("NFKC").trim();
+  if(tail&&/^[-－]?[0-9A-Za-z]{1,10}$/.test(tail)){
+    const normalizedTail=tail.replace(/^－/,"-");
+    if(!String(row.product_id||"").endsWith(normalizedTail)){
+      row.product_id=String(row.product_id||"")+normalizedTail;
+    }
+  }
+  row.customer="\u5e97\u8217\u540d\u672a\u53d6\u5f97";
+  return row;
+}
+const __parseOrderPdfTextCustomerTailBase=parseOrderPdfText;
+parseOrderPdfText=function(text,filename,importerCodeValue,pageNo){
+  return __parseOrderPdfTextCustomerTailBase(text,filename,importerCodeValue,pageNo).map(mergePdfProductCodeTail);
+};
+*/
+function pdfCustomerLooksLikeProductCodeTail(value){
+  const s=String(value||"").normalize("NFKC").trim();
+  if(!s)return true;
+  if(/[\u3040-\u30ff\u3400-\u9fff]/.test(s))return false;
+  return /^-?[0-9A-Za-z]{1,10}$/.test(s);
+}
+function mergePdfProductCodeTail(row){
+  if(!row||!pdfCustomerLooksLikeProductCodeTail(row.customer))return row;
+  const tail=String(row.customer||"").normalize("NFKC").trim();
+  if(tail&&/^-?[0-9A-Za-z]{1,10}$/.test(tail)){
+    if(!String(row.product_id||"").endsWith(tail)){
+      row.product_id=String(row.product_id||"")+tail;
+    }
+  }
+  row.customer="\u5e97\u8217\u540d\u672a\u53d6\u5f97";
+  return row;
+}
+const __parseOrderPdfTextCustomerTailSafeBase=parseOrderPdfText;
+parseOrderPdfText=function(text,filename,importerCodeValue,pageNo){
+  return __parseOrderPdfTextCustomerTailSafeBase(text,filename,importerCodeValue,pageNo).map(mergePdfProductCodeTail);
+};
 let customerMasterPage=0;
 const customerMasterPageSize=100;
 function filteredCustomerMasterRows(){
@@ -3834,6 +4045,9 @@ const __mergeAndRenderCustomerMasterSafeBase=mergeAndRender;
 mergeAndRender=function(){
   const result=__mergeAndRenderCustomerMasterSafeBase();
   ensureCustomerMasterUI();
+  if(supabaseClient&&currentUser){
+    setTimeout(()=>applyCustomerMasterAuto({save:false}),0);
+  }
   return result;
 };
 const __openSavedSessionCustomerMasterSafeBase=openSavedSession;
