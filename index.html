@@ -855,6 +855,33 @@ function numberOrNull(v){
   const n=Number(String(v).replace(/,/g,""));
   return Number.isFinite(n)?n:null;
 }
+function salesShippingFeePromptValue(){
+  const v=prompt("送料を入力してください。不要な場合は0のまま確定してください。","0");
+  if(v===null)return null;
+  const n=numberOrNull(v);
+  if(n===null||n<0){
+    alert("送料は0以上の数値で入力してください。");
+    return null;
+  }
+  return n;
+}
+function salesShippingFeesPromptValue(importers){
+  const fees={};
+  for(const imp of importers){
+    const v=prompt(`${imp} の送料を入力してください。不要な場合は0のまま確定してください。`,"0");
+    if(v===null)return null;
+    const n=numberOrNull(v);
+    if(n===null||n<0){
+      alert("送料は0以上の数値で入力してください。");
+      return null;
+    }
+    fees[imp]=n;
+  }
+  return fees;
+}
+function salesShippingFeesTotal(fees){
+  return Object.values(fees||{}).reduce((sum,v)=>sum+(Number(v)||0),0);
+}
 function importerCodeFromRow(r){
   return importerCode(r.importer_id);
 }
@@ -2640,7 +2667,7 @@ function salesLockSetupErrorMessage(error){
 }
 async function checkSalesLockSetupTrial(){
   if(!(await requireSupabaseLogin()))return false;
-  const {error:sessionError}=await supabaseClient.from("work_sessions").select("id,locked,finalized_at").limit(1);
+  const {error:sessionError}=await supabaseClient.from("work_sessions").select("id,locked,finalized_at,shipping_fee,shipping_fees").limit(1);
   if(sessionError){alert(salesLockSetupErrorMessage(sessionError));return false}
   const {error:salesError}=await supabaseClient.from("sales_records").select("id").limit(1);
   if(salesError){alert(salesLockSetupErrorMessage(salesError));return false}
@@ -2664,6 +2691,10 @@ finalizeSalesTrial=async function(){
   const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
   if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
   if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
+  const shippingImporters=[...new Set(rows.map(r=>importerCode(r.importer_id)).filter(Boolean))].sort();
+  const shippingFees=salesShippingFeesPromptValue(shippingImporters);
+  if(shippingFees===null)return;
+  const shippingFee=salesShippingFeesTotal(shippingFees);
   const refreshed=await refreshCurrentSessionFromSupabase();
   if(!refreshed){alert("最新データの取得に失敗したため、売上確定を中止しました。");return}
   try{
@@ -2671,9 +2702,9 @@ finalizeSalesTrial=async function(){
     await upsertSalesRecordsTrial(rows.map(salesRecordPayloadTrial));
     const finalizedAt=new Date().toISOString();
     const {data,error}=await supabaseClient.from("work_sessions")
-      .update({locked:true,finalized_at:finalizedAt,finalized_by:currentUser.id,status:"closed"})
+      .update({locked:true,finalized_at:finalizedAt,finalized_by:currentUser.id,status:"closed",shipping_fee:shippingFee,shipping_fees:shippingFees})
       .eq("id",currentSessionId)
-      .select("locked,finalized_at")
+      .select("locked,finalized_at,shipping_fee,shipping_fees")
       .single();
     if(error)throw error;
     setSessionLockStateTrial(data);
@@ -2707,7 +2738,7 @@ loadSessionList=async function(){
   if(!(await requireSupabaseLogin()))return;
   const {data,error}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
     .order("updated_at",{ascending:false})
     .limit(80);
   if(error){toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));return}
@@ -2754,7 +2785,7 @@ async function openSalesReference(){
   currentSalesReferenceRows=[];
   const {data,error}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
     .order("finalized_at",{ascending:false,nullsFirst:false})
     .limit(120);
   if(error){list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;summary.textContent="読込失敗";return}
@@ -2819,8 +2850,12 @@ function renderSalesReferenceRows(){
     `<span>${esc(salesRefSessionLabel(session))}</span>`,
     `<span>表示 ${displayRows.length}件 / 全${currentSalesReferenceRows.length}件</span>`,
     `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
+    `<span>送料 ${salesRefMoney(shippingFee)}</span>`,
+    `<span>会計合計 ${salesRefMoney(accountingTotal)}</span>`,
     `<span>金額 ${salesRefMoney(totalAmount)}</span>`
   ].join("");
+  summary.innerHTML+=`<span>送料 ${salesRefMoney(shippingFee)}</span><span>会計合計 ${salesRefMoney(accountingTotal)}</span>`;
+  summary.innerHTML+=`<span>送料 ${salesRefMoney(shippingFee)}</span><span>会計合計 ${salesRefMoney(accountingTotal)}</span>`;
   if(!displayRows.length){
     tableWrap.innerHTML=`<div class="sales-ref-empty">該当する売上明細はありません</div>`;
     return;
@@ -2839,6 +2874,16 @@ function exportSalesReferenceExcel(){
   if(!displayRows.length){toast("出力する売上明細がありません");return}
   const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
   const wb=XLSX.utils.book_new();
+  const productAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const shippingFee=salesRefShippingFeeForRows(displayRows);
+  const accountingTotal=productAmount+shippingFee;
+  const summaryWs=XLSX.utils.json_to_sheet([
+    {"Item":"Product Amount","Amount":productAmount},
+    {"Item":"Shipping Fee","Amount":shippingFee},
+    {"Item":"Accounting Total","Amount":accountingTotal}
+  ]);
+  summaryWs["!cols"]=[{wch:20},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,summaryWs,"Summary");
   const data=displayRows.map(r=>({
     "確定日時":r.finalized_at?new Date(r.finalized_at).toLocaleString("ja-JP"):"",
     "輸入社":r.importer_code||"",
@@ -2916,7 +2961,7 @@ async function openSalesReference(){
   currentSalesReferenceRows=[];
   const {data,error}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
     .order("finalized_at",{ascending:false,nullsFirst:false})
     .limit(120);
   if(error){
@@ -3132,7 +3177,7 @@ openSalesReference=async function(){
   currentSalesReferenceMode="all";
   const {data:sessions,error:sessionError}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
     .order("finalized_at",{ascending:false,nullsFirst:false})
     .limit(120);
   if(sessionError){
@@ -3246,13 +3291,16 @@ renderSalesReferenceRows=function(){
   const displayRows=filteredSalesReferenceRows();
   const totalAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
   const totalNet=displayRows.reduce((sum,r)=>sum+salesRefNet(r),0);
+  const shippingFee=salesRefShippingFeeForRows(displayRows);
+  const accountingTotal=totalAmount+shippingFee;
+  const shippingSummaryHtml=`<span>送料 ${salesRefMoney(shippingFee)}</span><span>会計合計 ${salesRefMoney(accountingTotal)}</span>`;
   const label=currentSalesReferenceSessionId==="__all__"?"全売上":salesRefSessionLabel(session);
   summary.innerHTML=[
     `<span>${esc(label)}</span>`,
     `<span>表示 ${displayRows.length} / 全${currentSalesReferenceRows.length}件</span>`,
     `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
     `<span>金額 ${salesRefMoney(totalAmount)}</span>`
-  ].join("");
+  ].join("")+shippingSummaryHtml;
   if(!displayRows.length){
     tableWrap.innerHTML=`<div class="sales-ref-empty">該当する売上明細はありません。</div>`;
     renderSalesReferenceAnalysis();
@@ -3268,6 +3316,32 @@ renderSalesReferenceRows=function(){
 };
 function salesRefAmount(r){return Number(r?.amount)||0}
 function salesRefNet(r){return Number(r?.net_weight)||0}
+function salesRefSessionShippingFee(sessionId,importerCodes){
+  const s=salesReferenceSessionsTrial.find(x=>x.id===sessionId);
+  const fees=s?.shipping_fees;
+  if(fees&&typeof fees==="object"){
+    const codes=importerCodes&&importerCodes.size?importerCodes:new Set(Object.keys(fees));
+    let total=0;
+    codes.forEach(code=>{total+=Number(fees[code])||0});
+    return total;
+  }
+  return Number(s?.shipping_fee)||0;
+}
+function salesRefShippingFeeForRows(displayRows){
+  const importersBySession=new Map();
+  displayRows.forEach(r=>{
+    if(!r.session_id)return;
+    const set=importersBySession.get(r.session_id)||new Set();
+    if(r.importer_code)set.add(r.importer_code);
+    importersBySession.set(r.session_id,set);
+  });
+  if(currentSalesReferenceSessionId&&currentSalesReferenceSessionId!=="__all__"){
+    return salesRefSessionShippingFee(currentSalesReferenceSessionId,importersBySession.get(currentSalesReferenceSessionId));
+  }
+  let total=0;
+  importersBySession.forEach((codes,id)=>{total+=salesRefSessionShippingFee(id,codes)});
+  return total;
+}
 function salesRefMonth(v){
   const d=salesRefDateOnly(v);
   return d?d.slice(0,7):"No date";
