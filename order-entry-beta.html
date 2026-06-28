@@ -365,18 +365,73 @@ function workProductMasterToItem(row,contractPrices={}){
     contractPrices:contractPrices[row.product_id]||{}
   };
 }
+function productMasterPayload(item,minimal=false){
+  const payload={
+    product_id:item.code,
+    product_name:item.name,
+    english_name:dbText(item.englishName),
+    unit_price:dbNumber(item.unitPrice),
+    source_filename:"order-entry-beta"
+  };
+  if(!minimal){
+    payload.aliases=item.aliases||[];
+    payload.default_supplier_code=dbText(item.supplierCode);
+    payload.default_supplier_name=dbText(item.supplierName);
+  }
+  return payload;
+}
+function isMissingColumnError(error){
+  const msg=String(error?.message||"");
+  return error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg);
+}
+async function saveProductsToDb(items){
+  if(!dbReady||!supabaseClient||!items.length)return;
+  const saveChunk=async (chunk,minimal=false)=>{
+    const payloads=chunk.map(item=>productMasterPayload(item,minimal));
+    return supabaseClient.from("product_master").upsert(payloads,{onConflict:"product_id"});
+  };
+  for(let i=0;i<items.length;i+=300){
+    const chunk=items.slice(i,i+300);
+    let {error}=await saveChunk(chunk,false);
+    if(error&&isMissingColumnError(error)){
+      const retry=await saveChunk(chunk,true);
+      error=retry.error;
+    }
+    if(error)throw error;
+  }
+}
 async function saveMasterItemToDb(type,item){
   if(!dbReady||!supabaseClient)return false;
   if(type==="products"&&item.supplierCode){
     await saveMasterItemToDb("suppliers",{code:item.supplierCode,name:item.supplierName||item.supplierCode,aliases:[]});
+  }
+  if(type==="products"){
+    await saveProductsToDb([item]);
+    await saveProductContractsToDb([item]);
+    return true;
   }
   if(type==="customers"&&item.importerCode){
     await saveMasterItemToDb("importers",{code:item.importerCode,name:item.importerName||item.importerCode,aliases:[item.importerCode,item.importerName].filter(Boolean)});
   }
   if(type==="customers"){
     const payload=masterItemToDb(type,item);
-    const {data:existing,error:findError}=await supabaseClient.from("customer_master").select("id").eq("customer_code",item.code).limit(1).maybeSingle();
-    if(findError)throw findError;
+    let existing=null;
+    if(String(item.code||"").trim()){
+      const {data,error}=await supabaseClient.from("customer_master").select("id").eq("customer_code",item.code).limit(1).maybeSingle();
+      if(error)throw error;
+      existing=data;
+    }
+    if(!existing&&String(item.importerCode||"").trim()&&String(item.name||"").trim()){
+      const {data,error}=await supabaseClient
+        .from("customer_master")
+        .select("id")
+        .eq("importer_code",item.importerCode)
+        .eq("customer_name",item.name)
+        .limit(1)
+        .maybeSingle();
+      if(error)throw error;
+      existing=data;
+    }
     const result=existing?.id
       ? await supabaseClient.from("customer_master").update(payload).eq("id",existing.id)
       : await supabaseClient.from("customer_master").insert(payload);
@@ -416,6 +471,9 @@ async function saveMastersToDb(type,items){
       if(code&&!suppliers.has(code))suppliers.set(code,{code,name:String(item.supplierName||code).trim()||code,aliases:[]});
     });
     for(const item of suppliers.values())await saveMasterItemToDb("suppliers",item);
+    await saveProductsToDb(items);
+    await saveProductContractsToDb(items);
+    return;
   }
   if(type==="customers"){
     const importers=new Map();
@@ -1810,14 +1868,15 @@ function importMastersCsv(input){
       else count++;
       importedItems.push(item);
     });
+    let dbWarning="";
     if(dbReady&&supabaseClient&&importedItems.length){
       try{
         await saveMastersToDb(masterType,importedItems);
         setDbStatus("DB接続中","ok");
       }catch(error){
-        alert(dbErrorMessage(error));
+        dbWarning=dbErrorMessage(error);
+        console.warn(dbWarning,error);
         setDbStatus("DB保存失敗");
-        return;
       }
     }
     refreshCustomerLists();
@@ -1825,7 +1884,7 @@ function importMastersCsv(input){
     refreshProductLists();
     refreshSupplierLists();
     renderMasters();
-    alert(`マスタを取り込みました。追加 ${count}件、更新 ${updated}件、スキップ ${skipped}件`);
+    alert(`マスタを取り込みました。追加 ${count}件、更新 ${updated}件、スキップ ${skipped}件${dbWarning?`\n\nDB保存のみ失敗: ${dbWarning}`:""}`);
   };
   reader.readAsArrayBuffer(file);
 }
