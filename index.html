@@ -30,6 +30,9 @@ header{
   background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
 }
 .header-title{font-size:18px;font-weight:700;white-space:nowrap}
+.app-nav{display:flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:10px;background:var(--bg);padding:4px}
+.app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:900;white-space:nowrap}
+.app-nav-link.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .header-right{display:flex;align-items:center;gap:10px;min-width:0}
 .phase-switcher{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px;gap:3px}
 .phase-btn{
@@ -153,7 +156,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:200;transform:translateX(-50%) translateY(80px);transition:.25s;background:var(--accent);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
 @media (min-width:700px){.modal-bg,.export-bg,.confirm-bg{align-items:center}.np-panel{max-width:520px;border-radius:20px;padding-bottom:22px}.export-panel{border-radius:20px}.confirm-box{margin:0}.np-grid{gap:10px}.np-key{height:70px}}
 @media (max-width:820px){
-  header{align-items:stretch;flex-direction:column}.header-title{font-size:17px}.header-right{width:100%;justify-content:space-between}.phase-switcher{flex:1}.phase-btn{flex:1;padding:0 8px}.btn{padding:0 12px}
+  header{align-items:stretch;flex-direction:column}.header-title{font-size:17px}.app-nav{width:100%;justify-content:stretch}.app-nav-link{flex:1}.header-right{width:100%;justify-content:space-between}.phase-switcher{flex:1}.phase-btn{flex:1;padding:0 8px}.btn{padding:0 12px}
   main{padding-top:14px}.import-grid{grid-template-columns:1fr}.tabs-wrap{border-radius:0;margin-left:-14px;margin-right:-14px;border-left:0;border-right:0}
   .country-tab,.customer-tab{min-height:52px}.statusbar{gap:12px}.table-scroll{padding-bottom:8px}table{min-width:920px}.np-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
   .country-tabs,.customer-tabs{scrollbar-width:none}.country-tabs::-webkit-scrollbar,.customer-tabs::-webkit-scrollbar{display:none}
@@ -175,6 +178,10 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 <header>
   <div class="header-title">オーダー管理</div>
   <div class="header-right">
+    <nav class="app-nav" aria-label="アプリ切替">
+      <a class="app-nav-link active" href="/">作業アプリ</a>
+      <a class="app-nav-link" href="/order-entry-beta.html">発注入力</a>
+    </nav>
     <div class="phase-switcher">
       <button class="phase-btn active" id="btn-p1" onclick="switchPhase(1)">Phase 1 入力</button>
       <button class="phase-btn p15" id="btn-p15" onclick="switchPhase(1.5)">Phase 1.5 産地・売価</button>
