@@ -234,13 +234,20 @@ drop policy if exists "anon all product price contracts" on public.product_price
 drop policy if exists "anon all customer master" on public.customer_master;
 drop policy if exists "anon all order entry batches" on public.order_entry_batches;
 drop policy if exists "anon all order entry lines" on public.order_entry_lines;
+drop policy if exists "order entry all importer master" on public.importer_master;
+drop policy if exists "order entry all supplier master" on public.supplier_master;
+drop policy if exists "order entry all product master" on public.product_master;
+drop policy if exists "order entry all product price contracts" on public.product_price_contracts;
+drop policy if exists "order entry all customer master" on public.customer_master;
+drop policy if exists "order entry all order entry batches" on public.order_entry_batches;
+drop policy if exists "order entry all order entry lines" on public.order_entry_lines;
 
-create policy "anon all importer master" on public.importer_master for all to anon using (true) with check (true);
-create policy "anon all supplier master" on public.supplier_master for all to anon using (true) with check (true);
-create policy "anon all product master" on public.product_master for all to anon using (true) with check (true);
-create policy "anon all product price contracts" on public.product_price_contracts for all to anon using (true) with check (true);
-create policy "anon all customer master" on public.customer_master for all to anon using (true) with check (true);
-create policy "anon all order entry batches" on public.order_entry_batches for all to anon using (true) with check (true);
-create policy "anon all order entry lines" on public.order_entry_lines for all to anon using (true) with check (true);
+create policy "order entry all importer master" on public.importer_master for all to anon, authenticated using (true) with check (true);
+create policy "order entry all supplier master" on public.supplier_master for all to anon, authenticated using (true) with check (true);
+create policy "order entry all product master" on public.product_master for all to anon, authenticated using (true) with check (true);
+create policy "order entry all product price contracts" on public.product_price_contracts for all to anon, authenticated using (true) with check (true);
+create policy "order entry all customer master" on public.customer_master for all to anon, authenticated using (true) with check (true);
+create policy "order entry all order entry batches" on public.order_entry_batches for all to anon, authenticated using (true) with check (true);
+create policy "order entry all order entry lines" on public.order_entry_lines for all to anon, authenticated using (true) with check (true);
 
 notify pgrst, 'reload schema';
