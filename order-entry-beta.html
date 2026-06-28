@@ -1,0 +1,1671 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>受注登録ベータ</title>
+<style>
+:root{
+  --bg:#f5f6f7;--panel:#fff;--line:#d8dde3;--line2:#b8c0ca;--text:#15181c;--muted:#64707d;
+  --accent:#0f5132;--accent-bg:#e8f4ee;--danger:#b42318;--warn:#9a5b00;--blue:#174ea6;--blue-bg:#eaf2ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Meiryo,sans-serif;font-size:14px}
+button,input,select,textarea{font:inherit}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line)}
+.title{font-weight:900;font-size:18px}.sub{color:var(--muted);font-size:12px;font-weight:800}
+.title-wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.app-nav{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:9px;background:#f7f9fb;padding:4px}
+.app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 11px;border-radius:7px;color:var(--muted);text-decoration:none;font-size:12px;font-weight:900;white-space:nowrap}
+.app-nav-link.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
+main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:12px}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
+.table-wrap{overflow:auto}.orders{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(230px,48vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 135px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
+.summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
+.line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-preview{max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
+.master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.panel:has(#master-list){display:none}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
+.inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
+.modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="title-wrap">
+    <div><div class="title">受注登録ベータ</div><div class="sub">現行アプリとは独立。1得意先ごとに商品を登録して、発注書・現品票を検証します。</div></div>
+    <nav class="app-nav" aria-label="アプリ切替">
+      <a class="app-nav-link" href="/">作業アプリ</a>
+      <a class="app-nav-link active" href="/order-entry-beta.html">発注入力</a>
+    </nav>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="loadSample()">サンプル</button>
+    <button class="btn" onclick="document.getElementById('order-import-file').click()">受注CSV取込</button>
+    <button class="btn" onclick="addOrderRow()">商品追加</button>
+    <button class="btn" onclick="toggleMasterAdminPanel()">マスタ管理</button>
+    <button class="btn blue" onclick="confirmCustomerOrder()">受注確定 Ctrl+Enter</button>
+    <button class="btn primary" onclick="printPurchaseOrders()">発注書PDF</button>
+    <button class="btn primary" onclick="printPickingTickets()">現品票PDF</button>
+    <button class="btn danger" onclick="clearAll()">全消去</button>
+    <input id="order-import-file" type="file" accept=".csv,text/csv" style="display:none" onchange="importOrdersCsv(this)">
+  </div>
+</header>
+<main>
+  <div class="layout">
+    <section class="panel">
+      <div class="panel-head">基本情報</div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <label class="wide">日付<input id="order-date" type="date"></label>
+          <label>輸入社コード<input id="batch-importer-code" readonly placeholder="得意先から自動反映"></label>
+          <label>輸入社名<input id="batch-importer-name" readonly placeholder="得意先から自動反映"></label>
+          <label>得意先コード<input id="batch-customer-code" list="customer-code-list" placeholder="例 01-002"></label>
+          <label>得意先名<input id="batch-customer-name" list="customer-name-list" placeholder="例 OSSK(Sushi Sakuta)"></label>
+          <label class="wide">メモ<textarea id="batch-note" placeholder="この受注全体のメモ"></textarea></label>
+        </div>
+        <datalist id="customer-code-list"></datalist>
+        <datalist id="customer-name-list"></datalist>
+        <datalist id="importer-code-list"></datalist>
+        <datalist id="importer-name-list"></datalist>
+        <datalist id="product-code-list"></datalist>
+        <datalist id="supplier-code-list"></datalist>
+        <div class="status-line">
+          <span id="confirm-state" class="pill warn">未確定</span>
+          <span id="save-state" class="sub">未保存</span>
+        </div>
+        <div class="hint">手入力はここで輸入社と得意先を1回だけ指定します。下の明細には商品だけを追加します。</div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head">LINE文面貼り付けβ</div>
+      <div class="panel-body line-parser">
+        <textarea id="line-text" placeholder="例: OSSK あわび 1本、金目 2本、山葵 15本"></textarea>
+        <div class="actions"><button class="btn" onclick="parseLineDraft()">下書き生成</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
+        <div class="line-preview" id="line-preview">商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。</div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-top:12px">
+    <div class="panel-head"><span>商品明細</span><span class="sub">得意先は基本情報側で管理</span></div>
+    <div class="summary" id="summary"></div>
+    <div class="table-wrap">
+      <table class="orders">
+        <thead><tr>
+          <th>No.</th><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>仕入先コード</th><th>仕入先名</th><th>備考</th><th></th>
+        </tr></thead>
+        <tbody id="order-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:12px">
+    <div class="panel-head"><span>確定済み受注</span><span class="sub">詳細確認・修正戻し・削除</span></div>
+    <div class="panel-body">
+      <div class="form-grid" style="grid-template-columns:180px 220px auto">
+        <label>日付<input id="confirmed-filter-date" type="date"></label>
+        <label>輸入社<input id="confirmed-filter-importer" list="importer-code-list" placeholder="例 DIM / FBI"></label>
+        <div class="actions" style="align-items:end"><button class="btn" onclick="clearConfirmedFilters()">絞込解除</button></div>
+      </div>
+      <div id="confirmed-orders" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:12px">
+    <div class="panel-head"><span>マスタ管理β</span><button class="small" onclick="hideMasterAdminPanel()">閉じる</button></div>
+    <div class="panel-body">
+      <div class="master-tabs">
+        <button class="btn" onclick="setMasterType('products')">商品</button>
+        <button class="btn" onclick="setMasterType('customers')">得意先</button>
+        <button class="btn" onclick="setMasterType('suppliers')">仕入先</button>
+        <button class="btn" onclick="setMasterType('importers')">輸入社</button>
+      </div>
+      <div class="form-grid">
+        <label>コード<input id="master-code" placeholder="コード"></label>
+        <label>名称<input id="master-name" placeholder="名称"></label>
+        <label class="wide">別名・検索語<input id="master-aliases" placeholder="カンマ区切り。LINE文面の推測にも使用"></label>
+        <label id="product-en-wrap" class="wide">英名<input id="master-english" placeholder="商品マスタのみ"></label>
+        <label id="product-supplier-wrap">既定仕入先コード<input id="master-supplier-code" placeholder="商品マスタのみ"></label>
+        <label id="product-supplier-name-wrap">既定仕入先名<input id="master-supplier-name" placeholder="商品マスタのみ"></label>
+        <label id="product-price-wrap">商品マスタ価格<input id="master-unit-price" inputmode="decimal" placeholder="通常単価"></label>
+        <label id="product-contract-price-wrap" class="wide">輸入社別契約価格<input id="master-contract-prices" placeholder="例 DIM=1200, FBI=1300"></label>
+        <label id="customer-importer-code-wrap">既定輸入社コード<input id="master-importer-code" list="importer-code-list" placeholder="得意先マスタのみ"></label>
+        <label id="customer-importer-name-wrap">既定輸入社名<input id="master-importer-name" list="importer-name-list" placeholder="得意先マスタのみ"></label>
+      </div>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn primary" onclick="addMasterItem()">マスタ追加/更新</button>
+        <button class="btn" onclick="document.getElementById('master-import-file').click()">マスタCSV取込</button>
+        <button class="btn" onclick="exportMasters()">マスタCSV出力</button>
+        <input id="master-import-file" type="file" accept=".csv,text/csv" style="display:none" onchange="importMastersCsv(this)">
+      </div>
+      <div class="hint">本番ではこの内容をSupabase側のDBで管理し、現場アプリ・受注入力・Excel出力が同じマスタを見る形にします。</div>
+      <div class="master-list" id="master-list" style="margin-top:10px"></div>
+    </div>
+  </section>
+</main>
+<div id="product-lookup-modal" class="modal-backdrop" onclick="if(event.target===this)closeProductLookup()">
+  <div class="modal">
+    <div class="modal-head">
+      <span>商品参照</span>
+      <button class="small" onclick="closeProductLookup()">閉じる</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-grid" style="grid-template-columns:minmax(220px,1fr) auto">
+        <label>商品検索
+          <input id="product-lookup-search" placeholder="商品コード・商品名・別名で検索" oninput="renderProductLookup()" onkeydown="handleProductLookupKey(event)">
+        </label>
+        <button class="btn" onclick="document.getElementById('product-lookup-search').value='';renderProductLookup();document.getElementById('product-lookup-search').focus()">クリア</button>
+      </div>
+      <div class="hint">商品を選択すると、選択中の明細行へ商品コード・商品名・仕入先が入ります。</div>
+      <div id="product-lookup-results" class="lookup-results"></div>
+    </div>
+  </div>
+</div>
+<script>
+const STORAGE_KEY="order-entry-beta-v2";
+const MASTER_KEY="order-entry-beta-masters-v1";
+const CONFIRMED_KEY="order-entry-beta-confirmed-v1";
+const LINE_DICT_KEY="order-entry-beta-line-dictionary-v1";
+let orders=[];
+let confirmedBatches=[];
+let draftRows=[];
+let masterType="products";
+let confirmed=false;
+let lastOrderRowIndex=0;
+let productLookupRowIndex=0;
+
+const baseMasters={
+  products:[
+    {code:"323",name:"アワビ",englishName:"Abalone/Haliotis",aliases:["あわび","アワビ","鮑"],supplierCode:"4941",supplierName:"22魚グロス"},
+    {code:"039",name:"金目鯛",englishName:"Kinmedai/Doederleinia berycoides",aliases:["金目","キンメ","金目鯛"],supplierCode:"4943",supplierName:"22活〆"},
+    {code:"921",name:"山葵",englishName:"Wasabi/Eutrema japonicum",aliases:["山葵","わさび","ワサビ"],supplierCode:"9001",supplierName:"野菜仕入"},
+    {code:"204",name:"ボタンエビ",englishName:"Botan shrimp",aliases:["ボタンエビ","ぼたんえび"],supplierCode:"4941",supplierName:"22魚グロス"},
+    {code:"074AA",name:"養殖カンパチ カマ付フィレ",englishName:"Kanpachi/Seriola dumerili",aliases:["カンパチ"],supplierCode:"4943",supplierName:"22活〆"}
+  ],
+  customers:[
+    {code:"01-002",name:"OSSK(Sushi Sakuta)",aliases:["OSSK","Sushi Sakuta"]},
+    {code:"01-003",name:"ONGA(Morinaga)",aliases:["ONGA","Morinaga"]},
+    {code:"01-020",name:"OEDO",aliases:["OEDO"]},
+    {code:"01-018",name:"OENS",aliases:["OENS"]},
+    {code:"01-100",name:"Sato",aliases:["Sato"]}
+  ],
+  suppliers:[
+    {code:"4941",name:"22魚グロス",aliases:["魚グロス","グロス"]},
+    {code:"4943",name:"22活〆",aliases:["活〆","活締"]},
+    {code:"9001",name:"野菜仕入",aliases:["野菜"]}
+  ],
+  importers:[
+    {code:"DIM",name:"DIM",aliases:["DIM"]},
+    {code:"DIM Veg",name:"DIM Veg",aliases:["DIM Veg","DIM VEG"]},
+    {code:"DIM FZ",name:"DIM FZ",aliases:["DIM FZ"]},
+    {code:"FBI",name:"FBI",aliases:["FBI"]},
+    {code:"FBI Veg",name:"FBI Veg",aliases:["FBI Veg","FBI VEG"]},
+    {code:"FBI FZ",name:"FBI FZ",aliases:["FBI FZ"]},
+    {code:"JKT",name:"JKT",aliases:["JKT"]},
+    {code:"BKK",name:"BKK",aliases:["BKK"]}
+  ]
+};
+
+function today(){return new Date().toISOString().slice(0,10)}
+function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
+function blankOrder(){return{productCode:"",productName:"",englishName:"",qty:"",unit:"",supplierCode:"",supplierName:"",memo:""}}
+function val(id){return document.getElementById(id)?.value||""}
+function getMasters(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
+    const mergeList=(type)=>{
+      const map=new Map();
+      (baseMasters[type]||[]).forEach(item=>map.set(masterCodeKey(item.code),item));
+      (saved[type]||[]).forEach(item=>{
+        const key=masterCodeKey(item.code);
+        if(key)map.set(key,item);
+      });
+      return [...map.values()];
+    };
+    return {
+      products:mergeList("products"),
+      customers:mergeList("customers"),
+      suppliers:mergeList("suppliers"),
+      importers:mergeList("importers")
+    };
+  }catch(e){return JSON.parse(JSON.stringify(baseMasters))}
+}
+function saveCustomMaster(type,item){
+  const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
+  saved.products=saved.products||[];
+  saved.customers=saved.customers||[];
+  saved.suppliers=saved.suppliers||[];
+  saved.importers=saved.importers||[];
+  const list=saved[type];
+  const idx=list.findIndex(x=>String(x.code).toLowerCase()===String(item.code).toLowerCase());
+  if(idx>=0)list[idx]=item;else list.push(item);
+  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+}
+function masterCodeKey(code){
+  return String(code||"").trim().toLowerCase();
+}
+function masterCodeExists(type,code){
+  const key=masterCodeKey(code);
+  if(!key)return false;
+  return (getMasters()[type]||[]).some(item=>masterCodeKey(item.code)===key);
+}
+function appendCustomMaster(type,item){
+  if(masterCodeExists(type,item.code))return false;
+  const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
+  saved.products=saved.products||[];
+  saved.customers=saved.customers||[];
+  saved.suppliers=saved.suppliers||[];
+  saved.importers=saved.importers||[];
+  saved[type].push(item);
+  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+  return true;
+}
+function upsertCustomMaster(type,item){
+  const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
+  saved.products=saved.products||[];
+  saved.customers=saved.customers||[];
+  saved.suppliers=saved.suppliers||[];
+  saved.importers=saved.importers||[];
+  const key=masterCodeKey(item.code);
+  const list=saved[type];
+  const idx=list.findIndex(existing=>masterCodeKey(existing.code)===key);
+  if(idx>=0){
+    list[idx]={...list[idx],...item};
+    localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+    return "updated";
+  }
+  const existedBefore=masterCodeExists(type,item.code);
+  list.push(item);
+  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+  return existedBefore?"updated":"added";
+}
+function loadConfirmedBatches(){
+  try{
+    confirmedBatches=JSON.parse(localStorage.getItem(CONFIRMED_KEY)||"[]");
+    if(!Array.isArray(confirmedBatches))confirmedBatches=[];
+  }catch(e){confirmedBatches=[]}
+}
+function saveConfirmedBatches(){
+  localStorage.setItem(CONFIRMED_KEY,JSON.stringify(confirmedBatches));
+}
+function init(){
+  document.getElementById("order-date").value=today();
+  loadConfirmedBatches();
+  loadLocal();
+  ensureStarterRow();
+  refreshCustomerLists();
+  refreshImporterLists();
+  refreshProductLists();
+  refreshSupplierLists();
+  render();
+  renderMasters();
+  hideMasterAdminPanel();
+}
+function normalizeLineExpression(value){
+  return String(value||"")
+    .normalize("NFKC")
+    .replace(/[（）()【】\[\]「」]/g," ")
+    .replace(/\d+(?:\.\d+)?\s*(kg|KG|Kg|本|個|PC|pc|pkt|P|パック|CS|C\/S)?/g," ")
+    .replace(/\s+/g," ")
+    .trim()
+    .toLowerCase();
+}
+function loadLineDictionary(){
+  try{
+    const data=JSON.parse(localStorage.getItem(LINE_DICT_KEY)||"[]");
+    return Array.isArray(data)?data:[];
+  }catch(e){return []}
+}
+function saveLineDictionary(list){
+  localStorage.setItem(LINE_DICT_KEY,JSON.stringify(list));
+}
+function lookupLineDictionary(expression){
+  const key=normalizeLineExpression(expression);
+  if(!key)return null;
+  return loadLineDictionary()
+    .filter(x=>x.active!==false&&x.key===key&&x.productCode)
+    .sort((a,b)=>(b.count||0)-(a.count||0)||(String(b.lastUsedAt||"").localeCompare(String(a.lastUsedAt||""))))[0]||null;
+}
+function learnLineDictionaryFromOrders(rows){
+  const list=loadLineDictionary();
+  const now=new Date().toISOString();
+  let changed=0;
+  rows.forEach(row=>{
+    const expression=row.sourceExpression||row.lineExpression||"";
+    const key=normalizeLineExpression(expression);
+    const productCode=String(row.productCode||"").trim();
+    if(!key||!productCode)return;
+    const productName=String(row.productName||"").trim();
+    const idx=list.findIndex(x=>x.key===key&&String(x.productCode||"").trim().toLowerCase()===productCode.toLowerCase());
+    if(idx>=0){
+      list[idx]={...list[idx],expression:expression.trim(),productCode,productName,count:(Number(list[idx].count)||0)+1,lastUsedAt:now,active:true};
+    }else{
+      list.push({key,expression:expression.trim(),productCode,productName,count:1,lastUsedAt:now,active:true});
+    }
+    changed++;
+  });
+  if(changed)saveLineDictionary(list);
+  return changed;
+}
+function deleteLineDictionaryEntry(index){
+  const list=loadLineDictionary();
+  if(index<0||index>=list.length)return;
+  list.splice(index,1);
+  saveLineDictionary(list);
+  renderLineDictionaryPreview();
+}
+function renderLineDictionaryPreview(){
+  const preview=document.getElementById("line-preview");
+  const list=loadLineDictionary()
+    .map((item,index)=>({...item,index}))
+    .sort((a,b)=>(b.count||0)-(a.count||0)||String(b.lastUsedAt||"").localeCompare(String(a.lastUsedAt||"")));
+  if(!list.length){
+    preview.textContent="読み替え辞書はまだありません。LINE下書きを商品追加し、修正して受注確定すると自動で登録されます。";
+    return;
+  }
+  preview.innerHTML=list.slice(0,80).map(item=>`
+    <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 70px 46px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:5px 0">
+      <span>${esc(item.expression||item.key)}</span>
+      <span><b>${esc(item.productCode)}</b> ${esc(item.productName||"")}</span>
+      <span>${Number(item.count)||0}回</span>
+      <button class="small" type="button" onclick="deleteLineDictionaryEntry(${item.index})">削除</button>
+    </div>
+  `).join("");
+}
+function isOrderRowBlank(row){
+  return !["productCode","productName","qty","unit","supplierCode","supplierName","memo"].some(key=>String(row?.[key]||"").trim());
+}
+function activeOrderRows(){
+  return orders.filter(row=>!isOrderRowBlank(row));
+}
+function ensureStarterRow(){
+  if(!orders.length)orders=[blankOrder()];
+}
+function hideMasterAdminPanel(){
+  const list=document.getElementById("master-list");
+  const panel=list?.closest(".panel");
+  if(panel)panel.style.display="none";
+}
+function showMasterAdminPanel(){
+  const list=document.getElementById("master-list");
+  const panel=list?.closest(".panel");
+  if(!panel)return;
+  panel.style.display="block";
+  renderMasters();
+  requestAnimationFrame(()=>panel.scrollIntoView({behavior:"smooth",block:"start"}));
+}
+function toggleMasterAdminPanel(){
+  const list=document.getElementById("master-list");
+  const panel=list?.closest(".panel");
+  if(!panel)return;
+  if(panel.style.display==="none"||getComputedStyle(panel).display==="none"){
+    showMasterAdminPanel();
+  }else{
+    hideMasterAdminPanel();
+  }
+}
+function customer(){
+  return {code:val("batch-customer-code").trim(),name:val("batch-customer-name").trim()};
+}
+function importer(){
+  return {code:val("batch-importer-code").trim(),name:val("batch-importer-name").trim()};
+}
+function currentBatch(){
+  const rows=activeOrderRows();
+  return {
+    id:`B${Date.now()}`,
+    confirmedAt:new Date().toISOString(),
+    orderDate:val("order-date"),
+    shipDate:val("order-date"),
+    note:val("batch-note"),
+    importer:importer(),
+    customer:customer(),
+    rows:rows.map(r=>({...r}))
+  };
+}
+function rowsWithBatchMeta(batch){
+  return (batch.rows||[]).map(r=>({
+    ...r,
+    orderDate:batch.orderDate||"",
+    shipDate:batch.shipDate||batch.orderDate||"",
+    batchNote:batch.note||"",
+    importerCode:batch.importer?.code||"",
+    importerName:batch.importer?.name||"",
+    customerCode:batch.customer?.code||"",
+    customerName:batch.customer?.name||""
+  }));
+}
+function printableRows(){
+  const confirmedRows=confirmedBatches.flatMap(rowsWithBatchMeta);
+  const currentRows=activeOrderRows().map(r=>({
+    ...r,
+    orderDate:val("order-date"),
+    shipDate:val("order-date"),
+    batchNote:val("batch-note"),
+    importerCode:val("batch-importer-code"),
+    importerName:val("batch-importer-name"),
+    customerCode:val("batch-customer-code"),
+    customerName:val("batch-customer-name")
+  }));
+  return [...confirmedRows,...currentRows];
+}
+function resetCurrentOrderForm(){
+  orders=[blankOrder()];
+  draftRows=[];
+  confirmed=false;
+  ["batch-importer-code","batch-importer-name","batch-customer-code","batch-customer-name","batch-note","line-text"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value="";
+  });
+  const preview=document.getElementById("line-preview");
+  if(preview)preview.textContent="商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。";
+  hideAllProductSuggestions();
+  hideCustomerSuggestions();
+  saveLocal();
+  render();
+  requestAnimationFrame(()=>document.getElementById("batch-customer-code")?.focus());
+}
+function saveLocal(){
+  const data={
+    orderDate:val("order-date"),shipDate:val("order-date"),batchNote:val("batch-note"),
+    importerCode:val("batch-importer-code"),importerName:val("batch-importer-name"),
+    customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),confirmed,orders
+  };
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+  document.getElementById("save-state").textContent="端末保存済み";
+  document.getElementById("confirm-state").textContent=confirmed?"確定済み":"未確定";
+  document.getElementById("confirm-state").className=confirmed?"pill blue":"pill warn";
+}
+function loadLocal(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(!raw)return;
+  try{
+    const data=JSON.parse(raw);
+    if(data.orderDate)document.getElementById("order-date").value=data.orderDate;
+    document.getElementById("batch-note").value=data.batchNote||"";
+    document.getElementById("batch-importer-code").value=data.importerCode||"";
+    document.getElementById("batch-importer-name").value=data.importerName||"";
+    document.getElementById("batch-customer-code").value=data.customerCode||"";
+    document.getElementById("batch-customer-name").value=data.customerName||"";
+    confirmed=!!data.confirmed;
+    orders=Array.isArray(data.orders)?data.orders:[];
+  }catch(e){}
+}
+function setHeaderCustomer(c){
+  if(!c)return;
+  if(c.code)document.getElementById("batch-customer-code").value=c.code;
+  if(c.name)document.getElementById("batch-customer-name").value=c.name;
+  if(c.importerCode||c.importerName){
+    setHeaderImporter({code:c.importerCode||"",name:c.importerName||""});
+  }
+}
+function resolveImporter(input){
+  const code=String(input?.code||"").trim();
+  const name=String(input?.name||"").trim();
+  const codeLower=code.toLowerCase();
+  const nameLower=name.toLowerCase();
+  const found=getMasters().importers.find(c=>{
+    const masterCode=String(c.code||"").trim().toLowerCase();
+    const masterName=String(c.name||"").trim().toLowerCase();
+    return (codeLower&&masterCode===codeLower)||(nameLower&&masterName===nameLower);
+  });
+  return {
+    code:code||(found?.code||""),
+    name:name||(found?.name||"")
+  };
+}
+function setHeaderImporter(c){
+  if(!c)return;
+  const resolved=resolveImporter(c);
+  document.getElementById("batch-importer-code").value=resolved.code;
+  document.getElementById("batch-importer-name").value=resolved.name;
+}
+function refreshCustomerLists(){
+  const masters=getMasters();
+  document.getElementById("customer-code-list").innerHTML=masters.customers.map(c=>`<option value="${esc(c.code)}">${esc(c.name)}</option>`).join("");
+  document.getElementById("customer-name-list").innerHTML=masters.customers.map(c=>`<option value="${esc(c.name)}">${esc(c.code)}</option>`).join("");
+}
+function refreshImporterLists(){
+  const masters=getMasters();
+  document.getElementById("importer-code-list").innerHTML=masters.importers.map(c=>`<option value="${esc(c.code)}">${esc(c.name)}</option>`).join("");
+  document.getElementById("importer-name-list").innerHTML=masters.importers.map(c=>`<option value="${esc(c.name)}">${esc(c.code)}</option>`).join("");
+}
+function refreshProductLists(){
+  const masters=getMasters();
+  document.getElementById("product-code-list").innerHTML=masters.products.map(p=>`<option value="${esc(p.code)}">${esc(p.name)}</option>`).join("");
+}
+function refreshSupplierLists(){
+  const masters=getMasters();
+  document.getElementById("supplier-code-list").innerHTML=masters.suppliers.map(s=>`<option value="${esc(s.code)}">${esc(s.name)}</option>`).join("");
+}
+function lookupCustomerByInput(value){
+  const s=String(value||"").toLowerCase();
+  return getMasters().customers.find(c=>String(c.code).toLowerCase()===s||String(c.name).toLowerCase()===s||((c.aliases||[]).some(a=>String(a).toLowerCase()===s)));
+}
+function customerSearchValues(c){
+  return [c.code,c.name,c.importerCode,c.importerName,...(c.aliases||[])].map(v=>String(v||"").toLowerCase());
+}
+function customerInlineMatches(query){
+  const q=String(query||"").trim().toLowerCase();
+  if(!q)return [];
+  const matches=getMasters().customers.filter(c=>customerSearchValues(c).some(v=>v.includes(q)));
+  return matches.length>10?[]:matches;
+}
+function hideCustomerSuggestions(){
+  document.querySelectorAll(".inline-customer-suggest").forEach(el=>el.remove());
+}
+function showCustomerSuggestions(inputId,query){
+  hideCustomerSuggestions();
+  const matches=customerInlineMatches(query);
+  if(!matches.length)return;
+  const input=document.getElementById(inputId);
+  const anchor=input?.closest("label");
+  if(!anchor)return;
+  anchor.style.position="relative";
+  const box=document.createElement("div");
+  box.className="inline-customer-suggest";
+  box.id="customer-suggest";
+  box.dataset.payload=JSON.stringify(matches);
+  box.innerHTML=matches.map((c,idx)=>`<button type="button" class="${idx===0?"active":""}" onclick="chooseInlineCustomer(${idx})">
+    <b>${esc(c.code)}</b><span>${esc(c.name)}</span><span class="subtext">${esc([c.importerCode,c.importerName].filter(Boolean).join(" "))}</span>
+  </button>`).join("");
+  anchor.appendChild(box);
+}
+function chooseInlineCustomer(index){
+  const box=document.getElementById("customer-suggest");
+  if(!box)return false;
+  let items=[];
+  try{items=JSON.parse(box.dataset.payload||"[]")}catch(e){}
+  const item=items[index];
+  if(!item)return false;
+  setHeaderCustomer(item);
+  hideCustomerSuggestions();
+  confirmed=false;
+  saveLocal();
+  renderSummary();
+  return true;
+}
+function chooseFirstInlineCustomer(){
+  const rows=[...document.querySelectorAll("#customer-suggest button")];
+  const idx=Math.max(0,rows.findIndex(row=>row.classList.contains("active")));
+  return chooseInlineCustomer(idx);
+}
+function lookupImporterByInput(value){
+  const s=String(value||"").toLowerCase();
+  return getMasters().importers.find(c=>String(c.code).toLowerCase()===s||String(c.name).toLowerCase()===s||((c.aliases||[]).some(a=>String(a).toLowerCase()===s)));
+}
+function lookupSupplierByCode(code){
+  const s=String(code||"").trim().toLowerCase();
+  if(!s)return null;
+  return getMasters().suppliers.find(x=>String(x.code).trim().toLowerCase()===s)||null;
+}
+function supplierNameFor(code,fallback){
+  return fallback||lookupSupplierByCode(code)?.name||"";
+}
+function setRow(i,key,value){
+  orders[i][key]=value;
+  confirmed=false;
+  if(key==="productCode"){
+    const applied=applyProductByCode(i,value);
+    if(applied){
+      hideProductSuggestions(i);
+      forceSyncOrderFields(i,["productCode","productName","supplierCode","supplierName"]);
+    }
+    else showProductSuggestions(i,value);
+  }
+  if(key==="supplierCode")applySupplierByCode(i,value);
+  syncOrderRow(i);
+  saveLocal();
+  renderSummary();
+}
+function syncOrderRow(i){
+  const row=orders[i];
+  if(!row)return;
+  ["productCode","productName","englishName","qty","unit","supplierCode","supplierName","memo"].forEach(field=>{
+    const el=document.querySelector(`[data-row="${i}"][data-field="${field}"]`);
+    if(el&&document.activeElement!==el)el.value=row[field]||"";
+  });
+}
+function forceSyncOrderFields(i,fields){
+  const row=orders[i];
+  if(!row)return;
+  fields.forEach(field=>{
+    const el=document.querySelector(`[data-row="${i}"][data-field="${field}"]`);
+    if(el)el.value=row[field]||"";
+  });
+}
+function applyProductByCode(i,code){
+  const hit=getMasters().products.find(p=>String(p.code).toLowerCase()===String(code||"").toLowerCase());
+  if(!hit)return false;
+  const supplierCode=hit.supplierCode||"";
+  Object.assign(orders[i],{
+    productCode:hit.code,
+    productName:hit.name,
+    englishName:hit.englishName||"",
+    supplierCode,
+    supplierName:supplierNameFor(supplierCode,hit.supplierName)
+  });
+  return true;
+}
+function applyProductToRow(i,product){
+  if(!orders[i])orders[i]={...blankOrder()};
+  const supplierCode=product.supplierCode||orders[i].supplierCode||"";
+  Object.assign(orders[i],{
+    productCode:product.code||product.productCode||"",
+    productName:product.name||product.productName||"",
+    englishName:product.englishName||"",
+    supplierCode,
+    supplierName:supplierNameFor(supplierCode,product.supplierName||orders[i].supplierName)
+  });
+  confirmed=false;
+  syncOrderRow(i);
+  forceSyncOrderFields(i,["productCode","productName","supplierCode","supplierName"]);
+  saveLocal();
+  renderSummary();
+}
+function productSearchValues(p){
+  return [p.code,p.name,p.englishName,p.supplierCode,p.supplierName,...(p.aliases||[])].map(v=>String(v||"").toLowerCase());
+}
+function productInlineMatches(query){
+  const q=String(query||"").trim().toLowerCase();
+  if(!q)return [];
+  const matches=getMasters().products.filter(p=>productSearchValues(p).some(v=>v.includes(q)));
+  return matches.length>10?[]:matches;
+}
+function hideProductSuggestions(rowIndex){
+  const box=document.getElementById(`product-suggest-${rowIndex}`);
+  if(box)box.remove();
+}
+function hideAllProductSuggestions(){
+  document.querySelectorAll(".inline-product-suggest").forEach(el=>el.remove());
+}
+function showProductSuggestions(rowIndex,query){
+  hideProductSuggestions(rowIndex);
+  const matches=productInlineMatches(query);
+  if(!matches.length)return;
+  const input=document.querySelector(`[data-row="${rowIndex}"][data-field="productCode"]`);
+  if(!input)return;
+  const rect=input.getBoundingClientRect();
+  const box=document.createElement("div");
+  box.className="inline-product-suggest";
+  box.id=`product-suggest-${rowIndex}`;
+  box.dataset.payload=JSON.stringify(matches);
+  box.innerHTML=matches.map((p,idx)=>`<button type="button" class="${idx===0?"active":""}" onclick="chooseInlineProduct(${rowIndex},${idx})">
+    <b>${esc(p.code)}</b><span>${esc(p.name)}</span><span class="subtext">${esc([p.supplierCode,p.supplierName].filter(Boolean).join(" "))}</span>
+  </button>`).join("");
+  document.body.appendChild(box);
+  const width=Math.min(430,window.innerWidth-16);
+  const left=Math.min(Math.max(8,rect.left),window.innerWidth-width-8);
+  const below=rect.bottom+6;
+  const top=below+box.offsetHeight>window.innerHeight-8?Math.max(8,rect.top-box.offsetHeight-6):below;
+  box.style.left=`${left}px`;
+  box.style.top=`${top}px`;
+  box.style.width=`${width}px`;
+}
+function chooseInlineProduct(rowIndex,index){
+  const box=document.getElementById(`product-suggest-${rowIndex}`);
+  if(!box)return false;
+  let items=[];
+  try{items=JSON.parse(box.dataset.payload||"[]")}catch(e){}
+  const item=items[index];
+  if(!item)return false;
+  applyProductToRow(rowIndex,item);
+  hideProductSuggestions(rowIndex);
+  focusOrderCell(rowIndex,"qty");
+  return true;
+}
+function chooseFirstInlineProduct(rowIndex){
+  const rows=[...document.querySelectorAll(`#product-suggest-${rowIndex} button`)];
+  const idx=Math.max(0,rows.findIndex(row=>row.classList.contains("active")));
+  return chooseInlineProduct(rowIndex,idx);
+}
+function applySupplierByCode(i,code){
+  const hit=lookupSupplierByCode(code);
+  if(!hit)return;
+  Object.assign(orders[i],{supplierCode:hit.code,supplierName:hit.name});
+}
+function addOrderRow(row){
+  orders.push({...blankOrder(),...(row||{})});
+  confirmed=false;
+  saveLocal();
+  render();
+}
+function focusOrderCell(rowIndex, field){
+  requestAnimationFrame(()=>{
+    const el=document.querySelector(`[data-row="${rowIndex}"][data-field="${field}"]`);
+    if(!el)return;
+    el.focus();
+    if(typeof el.select==="function")el.select();
+  });
+}
+function removeRow(i){
+  orders.splice(i,1);
+  ensureStarterRow();
+  confirmed=false;
+  saveLocal();
+  render();
+}
+function clearAll(){
+  if(!confirm("受注明細をすべて消しますか？"))return;
+  orders=[blankOrder()];
+  confirmedBatches=[];
+  confirmed=false;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(CONFIRMED_KEY);
+  document.getElementById("batch-importer-code").value="";
+  document.getElementById("batch-importer-name").value="";
+  document.getElementById("batch-customer-code").value="";
+  document.getElementById("batch-customer-name").value="";
+  document.getElementById("batch-note").value="";
+  render();
+  saveLocal();
+}
+function render(){
+  hideAllProductSuggestions();
+  const body=document.getElementById("order-body");
+  body.innerHTML=orders.map((r,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><div class="lookup-cell"><input class="code" list="product-code-list" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
+    <td><input class="name" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)"></td>
+    <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
+    <td><input class="code" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
+    <td><input class="code" list="supplier-code-list" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
+    <td><input class="supplier" data-order-input data-row="${i}" data-field="supplierName" value="${esc(r.supplierName)}" oninput="setRow(${i},'supplierName',this.value)"></td>
+    <td><input class="memo" data-order-input data-row="${i}" data-field="memo" value="${esc(r.memo)}" oninput="setRow(${i},'memo',this.value)"></td>
+    <td><button class="small" onclick="removeRow(${i})">削除</button></td>
+  </tr>`).join("");
+  renderSummary();
+  renderConfirmedOrders();
+}
+function batchLabel(batch){
+  return `${batch.customer?.name||batch.customer?.code||"得意先未設定"} / ${batch.importer?.code||batch.importer?.name||"輸入社未設定"}`;
+}
+function renderConfirmedOrders(){
+  const box=document.getElementById("confirmed-orders");
+  if(!box)return;
+  if(!confirmedBatches.length){
+    box.innerHTML=`<div class="hint">確定済み受注はまだありません。</div>`;
+    return;
+  }
+  const dateFilter=val("confirmed-filter-date");
+  const importerFilter=val("confirmed-filter-importer").trim().toLowerCase();
+  const batches=confirmedBatches.map((batch,index)=>({batch,index})).filter(({batch})=>{
+    const dateOk=!dateFilter||(batch.orderDate||"")===dateFilter;
+    const importerText=[batch.importer?.code,batch.importer?.name].filter(Boolean).join(" ").toLowerCase();
+    const importerOk=!importerFilter||importerText.includes(importerFilter);
+    return dateOk&&importerOk;
+  });
+  if(!batches.length){
+    box.innerHTML=`<div class="hint">条件に一致する確定済み受注はありません。</div>`;
+    return;
+  }
+  box.innerHTML=batches.map(({batch:b,index:i})=>{
+    const rows=b.rows||[];
+    const details=rows.map((r,idx)=>`<tr><td>${idx+1}</td><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.supplierName||r.supplierCode)}</td><td>${esc(r.memo)}</td></tr>`).join("");
+    return `<div class="master-item" style="grid-template-columns:minmax(0,1fr) auto">
+      <div>
+        <b>${esc(batchLabel(b))}</b><br>
+        <span class="sub">${esc(b.orderDate||"")} / ${rows.length}明細 / ${esc(new Date(b.confirmedAt||Date.now()).toLocaleString("ja-JP"))}</span>
+        <details style="margin-top:8px">
+          <summary>詳細</summary>
+          <div class="table-wrap" style="margin-top:8px">
+            <table class="orders" style="min-width:760px"><thead><tr><th>No.</th><th>コード</th><th>商品名</th><th>数量</th><th>単位</th><th>仕入先</th><th>備考</th></tr></thead><tbody>${details}</tbody></table>
+          </div>
+        </details>
+      </div>
+      <div class="actions">
+        <button class="small" onclick="restoreConfirmedBatch(${i})">修正</button>
+        <button class="small" onclick="deleteConfirmedBatch(${i})">削除</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function clearConfirmedFilters(){
+  const date=document.getElementById("confirmed-filter-date");
+  const importer=document.getElementById("confirmed-filter-importer");
+  if(date)date.value="";
+  if(importer)importer.value="";
+  renderConfirmedOrders();
+}
+function restoreConfirmedBatch(index){
+  const batch=confirmedBatches[index];
+  if(!batch)return;
+  if(orders.length&&!confirm("入力中の明細があります。確定済み受注を修正へ戻すと、入力中の内容は上書きされます。続けますか？"))return;
+  confirmedBatches.splice(index,1);
+  saveConfirmedBatches();
+  document.getElementById("order-date").value=batch.orderDate||today();
+  document.getElementById("batch-note").value=batch.note||"";
+  setHeaderImporter(batch.importer||{});
+  setHeaderCustomer(batch.customer||{});
+  orders=(batch.rows||[]).map(r=>({...blankOrder(),...r}));
+  confirmed=false;
+  saveLocal();
+  render();
+  requestAnimationFrame(()=>document.querySelector('[data-row="0"][data-field="productCode"]')?.focus());
+}
+function deleteConfirmedBatch(index){
+  const batch=confirmedBatches[index];
+  if(!batch)return;
+  if(!confirm(`${batchLabel(batch)} を削除しますか？`))return;
+  confirmedBatches.splice(index,1);
+  saveConfirmedBatches();
+  render();
+}
+function moveOrderFocus(current){
+  const fields=["productCode","productName","qty","unit","supplierCode","supplierName","memo"];
+  const rowIndex=Number(current.dataset.row);
+  const field=current.dataset.field;
+  const fieldIndex=fields.indexOf(field);
+  if(fieldIndex<fields.length-1){
+    focusOrderCell(rowIndex,fields[fieldIndex+1]);
+    return;
+  }
+  if(rowIndex>=orders.length-1){
+    addOrderRow();
+    focusOrderCell(rowIndex+1,fields[0]);
+  }else{
+    focusOrderCell(rowIndex+1,fields[0]);
+  }
+}
+function renderSummary(){
+  const activeRows=activeOrderRows();
+  const suppliers=new Set(activeRows.map(r=>r.supplierCode||r.supplierName).filter(Boolean));
+  const confirmedLines=confirmedBatches.reduce((sum,b)=>sum+(b.rows?.length||0),0);
+  const c=customer();
+  const im=importer();
+  document.getElementById("summary").innerHTML=[
+    `<span class="pill">明細 ${activeRows.length}件</span>`,
+    `<span class="pill blue">確定済み ${confirmedBatches.length}件 / ${confirmedLines}明細</span>`,
+    `<span class="pill blue">輸入社 ${esc(im.code||im.name||"未設定")}</span>`,
+    `<span class="pill">得意先 ${esc(c.code||c.name||"未設定")}</span>`,
+    `<span class="pill">仕入先 ${suppliers.size}件</span>`,
+    `<span class="pill warn">商品コード未入力 ${activeRows.filter(r=>!r.productCode).length}件</span>`
+  ].join("");
+}
+function loadSample(){
+  setHeaderImporter({code:"DIM",name:"DIM"});
+  setHeaderCustomer({code:"01-002",name:"OSSK(Sushi Sakuta)"});
+  orders=[
+    {productCode:"323",productName:"アワビ",englishName:"Abalone/Haliotis",qty:"1",unit:"本",supplierCode:"4941",supplierName:"22魚グロス",memo:""},
+    {productCode:"039",productName:"金目鯛",englishName:"Kinmedai/Doederleinia berycoides",qty:"2",unit:"本",supplierCode:"4943",supplierName:"22活〆",memo:"静岡"},
+    {productCode:"921",productName:"山葵",englishName:"Wasabi/Eutrema japonicum",qty:"15",unit:"本",supplierCode:"9001",supplierName:"野菜仕入",memo:""}
+  ];
+  confirmed=false;
+  saveLocal();
+  render();
+}
+function inferCustomer(text){
+  const lower=text.toLowerCase();
+  return getMasters().customers.find(c=>[c.code,c.name,...(c.aliases||[])].some(w=>String(w||"").toLowerCase()&&lower.includes(String(w).toLowerCase())))||{};
+}
+function inferImporter(text){
+  const lower=text.toLowerCase();
+  return getMasters().importers.find(c=>[c.code,c.name,...(c.aliases||[])].some(w=>String(w||"").toLowerCase()&&lower.includes(String(w).toLowerCase())))||{};
+}
+function inferProduct(text){
+  return getMasters().products.find(p=>[p.code,p.name,...(p.aliases||[])].some(w=>String(w||"")&&text.includes(String(w))))||{};
+}
+function productLookupMatches(){
+  const q=val("product-lookup-search").trim().toLowerCase();
+  return getMasters().products.filter(p=>{
+    if(!q)return true;
+    return [p.code,p.name,p.englishName,p.supplierCode,p.supplierName,...(p.aliases||[])]
+      .some(v=>String(v||"").toLowerCase().includes(q));
+  }).slice(0,100);
+}
+function moveActiveOption(containerSelector,rowSelector,delta){
+  const rows=[...document.querySelectorAll(`${containerSelector} ${rowSelector}`)];
+  if(!rows.length)return false;
+  let idx=rows.findIndex(row=>row.classList.contains("active"));
+  if(idx<0)idx=0;else idx=(idx+delta+rows.length)%rows.length;
+  rows.forEach(row=>row.classList.remove("active"));
+  rows[idx].classList.add("active");
+  rows[idx].scrollIntoView({block:"nearest"});
+  return true;
+}
+function clickActiveOption(containerSelector,rowSelector){
+  const active=document.querySelector(`${containerSelector} ${rowSelector}.active`)||document.querySelector(`${containerSelector} ${rowSelector}`);
+  if(!active)return false;
+  active.click();
+  return true;
+}
+function openProductLookup(rowIndex){
+  productLookupRowIndex=rowIndex;
+  lastOrderRowIndex=rowIndex;
+  const current=orders[rowIndex]?.productCode||orders[rowIndex]?.productName||"";
+  document.getElementById("product-lookup-search").value=current;
+  document.getElementById("product-lookup-modal").classList.add("open");
+  renderProductLookup();
+  requestAnimationFrame(()=>{
+    const input=document.getElementById("product-lookup-search");
+    input.focus();
+    input.select();
+  });
+}
+function closeProductLookup(){
+  document.getElementById("product-lookup-modal").classList.remove("open");
+  focusOrderCell(productLookupRowIndex,"productCode");
+}
+function isProductLookupOpen(){
+  return document.getElementById("product-lookup-modal")?.classList.contains("open");
+}
+function renderProductLookup(){
+  const results=productLookupMatches();
+  const box=document.getElementById("product-lookup-results");
+  box.dataset.payload=JSON.stringify(results);
+  box.innerHTML=results.map((p,i)=>{
+    const alias=(p.aliases||[]).join(", ");
+    return `<button class="lookup-row ${i===0?"active":""}" type="button" onclick="chooseProductLookup(${i})">
+      <b>${esc(p.code)}</b>
+      <span>${esc(p.name)}</span>
+      <span class="subtext">${esc(p.englishName||alias)}</span>
+      <span class="subtext">${esc([p.supplierCode,p.supplierName].filter(Boolean).join(" "))}</span>
+    </button>`;
+  }).join("")||`<div class="hint" style="padding:10px">該当商品なし</div>`;
+}
+function chooseProductLookup(index){
+  let items=[];
+  try{items=JSON.parse(document.getElementById("product-lookup-results").dataset.payload||"[]")}catch(e){}
+  const item=items[index];
+  if(!item)return;
+  applyProductToRow(productLookupRowIndex,item);
+  closeProductLookup();
+  focusOrderCell(productLookupRowIndex,"qty");
+}
+function handleProductLookupKey(e){
+  if(e.key==="Escape"){
+    e.preventDefault();
+    e.stopPropagation();
+    closeProductLookup();
+    return;
+  }
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+    e.preventDefault();
+    e.stopPropagation();
+    moveActiveOption("#product-lookup-results",".lookup-row",e.key==="ArrowDown"?1:-1);
+    return;
+  }
+  if(e.key!=="Enter"||e.isComposing)return;
+  e.preventDefault();
+  e.stopPropagation();
+  clickActiveOption("#product-lookup-results",".lookup-row");
+}
+function parseLineDraft(){
+  const text=val("line-text").trim();
+  if(!text){document.getElementById("line-preview").textContent="文面を貼り付けてください。";return}
+  const inferredImporter=inferImporter(text);
+  const inferredCustomer=inferCustomer(text);
+  if(inferredImporter.code||inferredImporter.name)setHeaderImporter(inferredImporter);
+  if(inferredCustomer.code||inferredCustomer.name)setHeaderCustomer(inferredCustomer);
+  const parts=text.replace(/[、，]/g,",").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+  draftRows=parts.map(part=>{
+    const learned=lookupLineDictionary(part);
+    const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
+    const p=learnedProduct||inferProduct(part);
+    const q=part.match(/(\d+(?:\.\d+)?)\s*(kg|Kg|KG|本|個|PC|pc|pkt|P|パック|CS|C\/S)?/);
+    return {
+      productCode:p.code||"",
+      productName:p.name||part.replace(/\d.*$/,"").trim(),
+      englishName:p.englishName||"",
+      qty:q?q[1]:"",
+      unit:q?(q[2]||""):"",
+      supplierCode:p.supplierCode||"",
+      supplierName:p.supplierName||"",
+      memo:learned?"辞書":(p.code?"":"要確認"),
+      sourceExpression:part
+    };
+  }).filter(r=>r.productName);
+  saveLocal();
+  document.getElementById("line-preview").textContent=draftRows.map((r,i)=>`${i+1}. ${r.productCode||"商品コード未推測"} ${r.productName} ${r.qty}${r.unit} / ${r.supplierName||"仕入先未推測"} ${r.memo}`).join("\n")||"候補を作れませんでした。";
+}
+function addDraftRows(){
+  if(!draftRows.length){parseLineDraft();if(!draftRows.length)return}
+  orders.push(...draftRows.map(r=>({...blankOrder(),...r})));
+  draftRows=[];
+  confirmed=false;
+  saveLocal();
+  render();
+}
+function confirmCustomerOrder(options={}){
+  const c=customer();
+  const im=importer();
+  if(!im.code&&!im.name){alert("輸入社を入力してください。");return}
+  if(!c.code&&!c.name){alert("得意先を入力してください。");return}
+  if(!activeOrderRows().length){alert("商品明細がありません。");return}
+  const learnedCount=learnLineDictionaryFromOrders(activeOrderRows());
+  confirmedBatches.push(currentBatch());
+  saveConfirmedBatches();
+  const message=`受注確定しました${learnedCount?` / 辞書更新 ${learnedCount}件`:""}`;
+  if(options.silent)document.getElementById("save-state").textContent=message;
+  else alert(message+"。次の得意先を入力してください。");
+  resetCurrentOrderForm();
+  return true;
+}
+function groupedBySupplier(){
+  const map=new Map();
+  printableRows().forEach(r=>{
+    const key=(r.importerCode||"NO_IMPORTER")+"|"+(r.supplierCode||"NO_CODE")+" "+(r.supplierName||"仕入先未設定");
+    if(!map.has(key))map.set(key,[]);
+    map.get(key).push(r);
+  });
+  return map;
+}
+function printPurchaseOrders(){
+  if(!printableRows().length){alert("明細がありません");return}
+  const groups=groupedBySupplier();
+  const pages=[...groups.entries()].map(([supplier,rows],idx)=>purchaseOrderPage(supplier,rows,idx+1)).join("");
+  openPrintDoc("発注書",purchaseOrderCss()+pages);
+}
+function purchaseOrderPage(supplier,rows,no){
+  const first=rows[0]||{};
+  const supplierName=String(supplier).split("|").slice(1).join("|")||supplier;
+  const importerLabel=first.importerName||first.importerCode||"";
+  return `<section class="po-page">
+    <div class="po-title">発注書</div>
+    <div class="po-meta"><div>発注No. ${esc(first.importerCode||"BETA")}-${String(no).padStart(3,"0")}</div><div>発注日 ${esc(first.orderDate||val("order-date"))}</div></div>
+    <div class="po-importer">輸入社: ${esc(importerLabel)}</div>
+    <div class="po-supplier">${esc(supplierName)}</div>
+    <table><thead><tr><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>得意先</th><th>備考</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.customerName||r.customerCode)}</td><td>${esc(r.memo)}</td></tr>`).join("")}
+    </tbody></table>
+  </section>`;
+}
+function printPickingTickets(){
+  const rows=printableRows();
+  if(!rows.length){alert("明細がありません");return}
+  openPrintDoc("オーダー現品票",ticketCss()+`<section class="ticket-page">${rows.map(ticketHtml).join("")}</section>`);
+}
+function ticketColorForImporter(value){
+  const code=String(value||"").toUpperCase();
+  const presets={
+    DIM:["#111827","#f3f4f6"],
+    FBI:["#174ea6","#eaf2ff"],
+    BKK:["#a16207","#fef3c7"],
+    JKT:["#b42318","#fff1f0"],
+    KL:["#0f7a3b","#e8f4ee"],
+    EN:["#6d28d9","#f3e8ff"]
+  };
+  const key=Object.keys(presets).find(k=>code.includes(k));
+  if(key)return presets[key];
+  let hash=0;
+  for(let i=0;i<code.length;i++)hash=(hash*31+code.charCodeAt(i))>>>0;
+  const palette=[["#0f766e","#e6fffb"],["#be123c","#fff1f2"],["#4338ca","#eef2ff"],["#a16207","#fefce8"],["#0369a1","#e0f2fe"]];
+  return palette[hash%palette.length];
+}
+function ticketHtml(r){
+  const importer=r.importerCode||r.importerName||"";
+  const [main,bg]=ticketColorForImporter(importer);
+  return `<div class="ticket" style="--ticket-main:${esc(main)};--ticket-bg:${esc(bg)}">
+    <div class="ticket-importer"><span>輸入社:</span><strong>${esc(importer)}</strong></div>
+    <div><span>得意先:</span><strong>${esc(r.customerName||r.customerCode)}</strong></div>
+    <div><span>商品名:</span><strong>${esc(r.productName)}</strong></div>
+    <div class="en">${esc(r.englishName)}</div>
+    <div><span>数量:</span><strong>${esc(r.qty)} ${esc(r.unit)}</strong></div>
+    <div><span>備考:</span><strong>${esc(r.memo)}</strong></div>
+  </div>`;
+}
+function printBaseCss(){
+  return `<style>@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;color:#000;font-family:Arial,"Helvetica Neue",Meiryo,sans-serif}.po-page,.ticket-page{page-break-after:always}</style>`;
+}
+function purchaseOrderCss(){
+  return printBaseCss()+`<style>.po-page{min-height:281mm;padding:5mm}.po-title{text-align:center;font-size:18pt;font-weight:900;letter-spacing:3px}.po-meta{display:flex;justify-content:space-between;margin:6mm 0 3mm;font-size:9.5pt}.po-importer{font-size:10pt;font-weight:900;margin-bottom:1.5mm}.po-supplier{font-size:13pt;font-weight:900;margin-bottom:4mm;border-bottom:1px solid #000;padding-bottom:1.5mm}table{width:100%;border-collapse:collapse;font-size:9pt}th,td{border:1px solid #000;padding:1.6mm 1.2mm;text-align:left;vertical-align:top}th{background:#eee}</style>`;
+}
+function ticketCss(){
+  return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm}.ticket{border:2px solid var(--ticket-main,#000);border-left-width:7mm;padding:3.2mm 4.2mm;overflow:hidden;font-size:12pt;line-height:1.18;background:linear-gradient(90deg,var(--ticket-bg,#fff) 0 15mm,#fff 15mm);print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:2.2mm}.ticket span{display:inline-block;min-width:19mm;font-weight:900}.ticket strong{font-weight:900}.ticket .ticket-importer{margin:-1.6mm -2.6mm 2.4mm -2.6mm;padding:1.6mm 2.6mm;background:var(--ticket-bg,#fff);color:var(--ticket-main,#000);border-bottom:1px solid var(--ticket-main,#000);print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .en{font-size:8.5pt;line-height:1.1;margin-left:19mm;min-height:9mm}</style>`;
+}
+function openPrintDoc(title,html){
+  const w=window.open("","_blank");
+  if(!w){alert("ポップアップがブロックされました");return}
+  w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title>${html.match(/^<style[\s\S]*?<\/style>/)?.[0]||""}</head><body>${html.replace(/^<style[\s\S]*?<\/style>/,"")}<script>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+  w.document.close();
+}
+function setMasterType(type){
+  masterType=type;
+  renderMasters();
+}
+function addMasterItem(){
+  const code=val("master-code").trim();
+  const name=val("master-name").trim();
+  if(!code||!name){alert("コードと名称を入力してください。");return}
+  const aliases=val("master-aliases").split(",").map(s=>s.trim()).filter(Boolean);
+  const item={code,name,aliases};
+  if(masterType==="products"){
+    item.englishName=val("master-english").trim();
+    item.supplierCode=val("master-supplier-code").trim();
+    item.supplierName=val("master-supplier-name").trim();
+    item.unitPrice=val("master-unit-price").trim();
+    item.contractPrices=parseContractPrices(val("master-contract-prices"));
+  }
+  if(masterType==="customers"){
+    item.importerCode=val("master-importer-code").trim();
+    item.importerName=val("master-importer-name").trim();
+  }
+  const result=upsertCustomMaster(masterType,item);
+  ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-importer-code","master-importer-name"].forEach(id=>document.getElementById(id).value="");
+  refreshCustomerLists();
+  refreshImporterLists();
+  refreshProductLists();
+  refreshSupplierLists();
+  renderMasters();
+  alert(result==="updated"?`コード ${code} を更新しました。`:`コード ${code} を追加しました。`);
+}
+function renderMasters(){
+  const list=document.getElementById("master-list");
+  if(!list)return;
+  const isProduct=masterType==="products";
+  const isCustomer=masterType==="customers";
+  ["product-en-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
+  ["customer-importer-code-wrap","customer-importer-name-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
+  const masters=getMasters()[masterType]||[];
+  const title={products:"商品",customers:"得意先",suppliers:"仕入先",importers:"輸入社"}[masterType];
+  document.getElementById("master-list").innerHTML=masters.map(m=>{
+    const extra=[
+      m.supplierName,
+      m.unitPrice||m.unit_price?`通常価格: ${m.unitPrice||m.unit_price}`:"",
+      m.contractPrices||m.importer_prices?`契約価格: ${formatContractPrices(m.contractPrices||m.importer_prices)}`:"",
+      m.importerCode||m.importerName?`輸入社: ${[m.importerCode,m.importerName].filter(Boolean).join(" ")}`:"",
+      (m.aliases||[]).join(", ")
+    ].filter(Boolean).join(" / ");
+    return `<div class="master-item"><b>${esc(m.code)}</b><div>${esc(m.name)}<br><span class="sub">${esc(extra)}</span></div></div>`;
+  }).join("")||`${title}マスタがありません`;
+}
+function exportMasters(){
+  const masters=getMasters()[masterType]||[];
+  const importerCodes=masterType==="products"
+    ?[...new Set(masters.flatMap(m=>Object.keys(m.contractPrices||m.importer_prices||{})))].sort()
+    :[];
+  const header=["type","code","name","english_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"importer_code","importer_name","aliases"];
+  const rows=[header,...masters.map(m=>{
+    const prices=m.contractPrices||m.importer_prices||{};
+    return [
+      masterType,m.code,m.name,m.englishName||"",m.supplierCode||"",m.supplierName||"",m.unitPrice||m.unit_price||"",formatContractPrices(prices),
+      ...importerCodes.map(code=>prices[code]||""),
+      m.importerCode||"",m.importerName||"",(m.aliases||[]).join("|")
+    ];
+  })];
+  const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`${masterType}-master.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function parseCsv(text){
+  const rows=[];
+  let row=[],cell="",quote=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],next=text[i+1];
+    if(ch==='"'&&quote&&next==='"'){cell+='"';i++;continue}
+    if(ch==='"'){quote=!quote;continue}
+    if(ch===","&&!quote){row.push(cell);cell="";continue}
+    if((ch==="\n"||ch==="\r")&&!quote){
+      if(ch==="\r"&&next==="\n")i++;
+      row.push(cell);
+      if(row.some(v=>String(v).trim()))rows.push(row);
+      row=[];cell="";
+      continue;
+    }
+    cell+=ch;
+  }
+  row.push(cell);
+  if(row.some(v=>String(v).trim()))rows.push(row);
+  return rows;
+}
+function normalizedHeader(value){
+  return String(value||"").replace(/^\uFEFF/,"").trim().toLowerCase().replace(/[\s_\-　]/g,"");
+}
+function rowValue(row,headers,names){
+  const keys=names.map(normalizedHeader);
+  for(const key of keys){
+    const idx=headers.indexOf(key);
+    if(idx>=0)return String(row[idx]||"").trim();
+  }
+  return "";
+}
+function aliasesFrom(value){
+  return String(value||"").split(/[|,、]/).map(s=>s.trim()).filter(Boolean);
+}
+function normalizeImporterCode(value){
+  return String(value??"").normalize("NFKC").trim().replace(/[\s_\-　]+/g,"").toUpperCase();
+}
+function parseContractPrices(value){
+  const prices={};
+  String(value||"").split(/[,、\n]/).forEach(part=>{
+    const m=part.trim().match(/^(.+?)[=:：]\s*(.+)$/);
+    if(!m)return;
+    const code=normalizeImporterCode(m[1]);
+    const price=String(m[2]||"").trim();
+    if(code&&price)prices[code]=price;
+  });
+  return prices;
+}
+function formatContractPrices(prices){
+  return Object.entries(prices||{}).map(([code,price])=>`${code}=${price}`).join(", ");
+}
+function contractPriceHeaderCode(header){
+  const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
+  const compact=raw.normalize("NFKC").replace(/[\s_\-　]+/g,"");
+  const generic=["単価","価格","売価","契約単価","契約価格","unitprice","price"];
+  if(generic.map(normalizedHeader).includes(normalizedHeader(raw)))return "";
+  let m=compact.match(/^(.+?)(?:契約)?(?:単価|価格|売価)$/i);
+  if(!m)m=compact.match(/^(.+?)(?:contract)?(?:unitprice|price)$/i);
+  if(!m)m=compact.match(/^(?:契約)?(?:単価|価格|売価)(.+)$/i);
+  if(!m)m=compact.match(/^(?:contract)?(?:unitprice|price)(.+)$/i);
+  const code=normalizeImporterCode(m?.[1]||"");
+  return /^[A-Z0-9]{2,12}$/.test(code)?code:"";
+}
+function readContractPricesFromCsv(row,headers){
+  const prices={};
+  headers.forEach((h,i)=>{
+    const code=contractPriceHeaderCode(h);
+    const value=String(row[i]||"").trim();
+    if(code&&value)prices[code]=value;
+  });
+  return prices;
+}
+function csvHeaderScore(text){
+  const first=(parseCsv(text)[0]||[]).map(v=>String(v||""));
+  const joined=first.join("|");
+  let score=0;
+  ["code","name","コード","名称","商品コード","商品名","得意先コード","得意先名","仕入先コード","仕入先名","輸入社コード","輸入社名"].forEach(key=>{
+    if(joined.includes(key))score+=10;
+  });
+  score-=((text.match(/\uFFFD/g)||[]).length*5);
+  return score;
+}
+function decodeCsvBuffer(buffer){
+  const candidates=[];
+  ["utf-8","shift_jis"].forEach(enc=>{
+    try{
+      candidates.push({enc,text:new TextDecoder(enc).decode(buffer)});
+    }catch(e){}
+  });
+  if(!candidates.length)return "";
+  candidates.sort((a,b)=>csvHeaderScore(b.text)-csvHeaderScore(a.text));
+  return candidates[0].text;
+}
+function masterItemFromCsvRow(row,headers,type){
+  const code=rowValue(row,headers,["code","コード","商品コード","得意先コード","仕入先コード","輸入社コード","customer_code","supplier_code","importer_code","product_code"])||String(row[0]||"").trim();
+  const name=rowValue(row,headers,["name","名称","名前","商品名","得意先名","仕入先名","輸入社名","customer_name","supplier_name","importer_name","product_name"])||String(row[1]||"").trim();
+  if(!code||!name)return null;
+  const item={code,name,aliases:aliasesFrom(rowValue(row,headers,["aliases","alias","別名","検索語","読み","よみ","カナ","kana"]))};
+  if(type==="products"){
+    item.englishName=rowValue(row,headers,["english_name","english","英名","英語名","商品英名"]);
+    item.supplierCode=rowValue(row,headers,["supplier_code","仕入先コード","既定仕入先コード"]);
+    item.supplierName=rowValue(row,headers,["supplier_name","仕入先名","既定仕入先名"]);
+    item.unitPrice=rowValue(row,headers,["unit_price","unitprice","単価","価格","売価","通常単価","商品マスタ価格"]);
+    item.contractPrices={
+      ...parseContractPrices(rowValue(row,headers,["contract_prices","contractprices","輸入社別契約価格","契約価格"])),
+      ...readContractPricesFromCsv(row,headers)
+    };
+  }
+  if(type==="customers"){
+    item.importerCode=rowValue(row,headers,["importer_code","importercode","import_code","importcode","輸入社コード","輸入先コード","輸入会社コード","輸入元コード","既定輸入社コード","紐づけ輸入社コード"])||String(row[2]||"").trim();
+    item.importerName=rowValue(row,headers,["importer_name","importername","import_name","importname","輸入社名","輸入先名","輸入会社名","輸入元名","既定輸入社名","紐づけ輸入社名"])||String(row[3]||"").trim();
+  }
+  return item;
+}
+function orderCsvValue(row,headers,names){
+  return rowValue(row,headers,names);
+}
+function findMasterCustomer(code,name){
+  const codeKey=String(code||"").trim().toLowerCase();
+  const nameKey=String(name||"").trim().toLowerCase();
+  return getMasters().customers.find(c=>
+    (codeKey&&String(c.code||"").trim().toLowerCase()===codeKey)||
+    (nameKey&&String(c.name||"").trim().toLowerCase()===nameKey)||
+    (nameKey&&(c.aliases||[]).some(a=>String(a||"").trim().toLowerCase()===nameKey))
+  )||null;
+}
+function findMasterImporter(code,name,filename){
+  const codeKey=String(code||"").trim().toLowerCase();
+  const nameKey=String(name||"").trim().toLowerCase();
+  const text=String(filename||"").toLowerCase();
+  return getMasters().importers.find(c=>
+    (codeKey&&String(c.code||"").trim().toLowerCase()===codeKey)||
+    (nameKey&&String(c.name||"").trim().toLowerCase()===nameKey)||
+    (text&&[c.code,c.name,...(c.aliases||[])].some(v=>String(v||"").toLowerCase()&&text.includes(String(v).toLowerCase())))
+  )||null;
+}
+function findMasterProduct(code,name){
+  const codeKey=String(code||"").trim().toLowerCase();
+  const nameKey=String(name||"").trim().toLowerCase();
+  return getMasters().products.find(p=>
+    (codeKey&&String(p.code||"").trim().toLowerCase()===codeKey)||
+    (nameKey&&String(p.name||"").trim().toLowerCase()===nameKey)||
+    (nameKey&&(p.aliases||[]).some(a=>String(a||"").trim().toLowerCase()===nameKey))
+  )||null;
+}
+function orderItemFromCsvRow(row,headers,filename){
+  const customerCode=orderCsvValue(row,headers,["customer_code","customercode","得意先コード","顧客コード","エンドユーザーコード"]);
+  const customerName=orderCsvValue(row,headers,["customer_name","customername","得意先名","顧客名","エンドユーザーの店名","エンドユーザー店名","店舗名","店名","納品先名","届け先名","buyer","shop"]);
+  const customerMaster=findMasterCustomer(customerCode,customerName);
+  const importerCodeRaw=orderCsvValue(row,headers,["importer_code","importercode","importer_id","importerid","輸入社コード","輸入社ID","輸入先コード","輸入会社コード","c/s"]);
+  const importerNameRaw=orderCsvValue(row,headers,["importer_name","importername","輸入社名","輸入先名","輸入会社名"]);
+  const importerMaster=findMasterImporter(importerCodeRaw||customerMaster?.importerCode,importerNameRaw||customerMaster?.importerName,filename);
+  const productCode=orderCsvValue(row,headers,["product_code","productcode","product_id","productid","code","商品コード","商品ID","品番"]);
+  const productName=orderCsvValue(row,headers,["product_name","productname","商品名","品名","name of goods injapanese","name"]);
+  const productMaster=findMasterProduct(productCode,productName);
+  const supplierCode=orderCsvValue(row,headers,["supplier_code","suppliercode","仕入先コード"]);
+  const supplierName=orderCsvValue(row,headers,["supplier_name","suppliername","仕入先名"]);
+  const resolvedSupplierCode=supplierCode||productMaster?.supplierCode||"";
+  const qty=orderCsvValue(row,headers,["qty","qnty","quantity","数量","注文数量","受注数量","発注数量"]);
+  const item={
+    orderDate:orderCsvValue(row,headers,["date","order_date","orderdate","日付","受注日","注文日","配送希望日","納品希望日"])||val("order-date")||today(),
+    importer:{code:importerCodeRaw||importerMaster?.code||customerMaster?.importerCode||"",name:importerNameRaw||importerMaster?.name||customerMaster?.importerName||""},
+    customer:{code:customerCode||customerMaster?.code||"",name:customerName||customerMaster?.name||""},
+    row:{
+      productCode:productCode||productMaster?.code||"",
+      productName:productName||productMaster?.name||"",
+      englishName:orderCsvValue(row,headers,["english_name","english","英名","英語名","name of goods"])||productMaster?.englishName||"",
+      qty,
+      unit:orderCsvValue(row,headers,["unit","単位","注文単位","受注単位"]),
+      supplierCode:resolvedSupplierCode,
+      supplierName:supplierNameFor(resolvedSupplierCode,supplierName||productMaster?.supplierName||""),
+      memo:orderCsvValue(row,headers,["memo","note","備考","摘要"]),
+      unitPrice:orderCsvValue(row,headers,["unit_price","unitprice","単価","価格","売価","u/price by jpn yen"])||productMaster?.unitPrice||""
+    }
+  };
+  if(!item.row.productCode&&!item.row.productName)return null;
+  return item;
+}
+function batchKeyFromOrderItem(item){
+  return [
+    item.orderDate||"",
+    item.importer.code||item.importer.name||"",
+    item.customer.code||item.customer.name||""
+  ].join("\u001f");
+}
+function applyImportedOrderGroup(group){
+  document.getElementById("order-date").value=group.orderDate||today();
+  setHeaderImporter(group.importer||{});
+  setHeaderCustomer(group.customer||{});
+  orders=group.rows.map(r=>({...blankOrder(),...r}));
+  confirmed=false;
+  saveLocal();
+  render();
+}
+function importOrdersCsv(input){
+  const file=input.files?.[0];
+  input.value="";
+  if(!file)return;
+  if((orders.length||val("batch-customer-code")||val("batch-customer-name"))&&!confirm("現在入力中の受注があります。CSV取込を続けますか？"))return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const text=decodeCsvBuffer(reader.result);
+    const rowsCsv=parseCsv(text);
+    if(rowsCsv.length<2){alert("CSVのデータ行がありません。");return}
+    const headers=rowsCsv[0].map(normalizedHeader);
+    const items=rowsCsv.slice(1).map(row=>orderItemFromCsvRow(row,headers,file.name)).filter(Boolean);
+    if(!items.length){alert("取り込める受注明細がありません。商品コードまたは商品名の列を確認してください。");return}
+    const groups=new Map();
+    items.forEach(item=>{
+      const key=batchKeyFromOrderItem(item);
+      if(!groups.has(key))groups.set(key,{orderDate:item.orderDate,importer:item.importer,customer:item.customer,rows:[]});
+      groups.get(key).rows.push(item.row);
+    });
+    const grouped=[...groups.values()];
+    if(grouped.length===1){
+      applyImportedOrderGroup(grouped[0]);
+      alert(`受注CSVを取り込みました。\n明細: ${grouped[0].rows.length}件`);
+      return;
+    }
+    grouped.forEach(group=>{
+      confirmedBatches.push({
+        id:`CSV${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+        confirmedAt:new Date().toISOString(),
+        orderDate:group.orderDate||today(),
+        shipDate:group.orderDate||today(),
+        note:`CSV取込: ${file.name}`,
+        importer:group.importer,
+        customer:group.customer,
+        rows:group.rows
+      });
+    });
+    resetCurrentOrderForm();
+    saveConfirmedBatches();
+    saveLocal();
+    render();
+    alert(`受注CSVを取り込みました。\n得意先単位: ${grouped.length}件\n明細: ${items.length}件\n確定済み受注に追加しました。`);
+  };
+  reader.readAsArrayBuffer(file);
+}
+function importMastersCsv(input){
+  const file=input.files?.[0];
+  input.value="";
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const text=decodeCsvBuffer(reader.result);
+    const rows=parseCsv(text);
+    if(rows.length<2){alert("CSVのデータ行がありません。");return}
+    const headers=rows[0].map(normalizedHeader);
+    let count=0,updated=0,skipped=0;
+    rows.slice(1).forEach(row=>{
+      const item=masterItemFromCsvRow(row,headers,masterType);
+      if(!item){skipped++;return}
+      const result=upsertCustomMaster(masterType,item);
+      if(result==="updated")updated++;
+      else count++;
+    });
+    refreshCustomerLists();
+    refreshImporterLists();
+    refreshProductLists();
+    refreshSupplierLists();
+    renderMasters();
+    alert(`マスタを取り込みました。追加 ${count}件、更新 ${updated}件、スキップ ${skipped}件`);
+  };
+  reader.readAsArrayBuffer(file);
+}
+function searchItems(){
+  const masters=getMasters();
+  return [
+    ...masters.products.map(item=>({type:"products",label:"商品",item})),
+    ...masters.customers.map(item=>({type:"customers",label:"得意先",item})),
+    ...masters.suppliers.map(item=>({type:"suppliers",label:"仕入先",item})),
+    ...masters.importers.map(item=>({type:"importers",label:"輸入社",item}))
+  ];
+}
+function runCodeSearch(){
+  const type=val("search-type");
+  const q=val("code-search").trim().toLowerCase();
+  const results=document.getElementById("search-results");
+  const items=searchItems().filter(row=>{
+    if(type!=="all"&&row.type!==type)return false;
+    if(!q)return true;
+    const m=row.item;
+    return [m.code,m.name,m.englishName,m.supplierCode,m.supplierName,...(m.aliases||[])]
+      .some(v=>String(v||"").toLowerCase().includes(q));
+  }).slice(0,80);
+  results.innerHTML=items.map((row,idx)=>{
+    const m=row.item;
+    const sub=[m.englishName,m.supplierName,(m.aliases||[]).join(", ")].filter(Boolean).join(" / ");
+    return `<button class="search-row" type="button" onclick="applySearchResult('${row.type}',${idx})" data-search-type="${row.type}" data-search-index="${idx}">
+      <span class="kind">${esc(row.label)}</span><b>${esc(m.code)}</b><span>${esc(m.name)}</span><span class="alias">${esc(sub)}</span>
+    </button>`;
+  }).join("")||`<div class="hint" style="padding:10px">該当なし</div>`;
+  results.dataset.payload=JSON.stringify(items.map(row=>({type:row.type,item:row.item})));
+}
+function clearCodeSearch(){
+  document.getElementById("code-search").value="";
+  runCodeSearch();
+  document.getElementById("code-search").focus();
+}
+function handleSearchKey(e){
+  if(e.key!=="Enter"||e.isComposing)return;
+  const first=document.querySelector(".search-row");
+  if(!first)return;
+  e.preventDefault();
+  first.click();
+}
+function targetOrderRow(){
+  if(!orders.length){
+    orders.push({...blankOrder()});
+    render();
+  }
+  const max=Math.max(0,orders.length-1);
+  return Math.min(Math.max(0,lastOrderRowIndex),max);
+}
+function applySearchResult(type,index){
+  let payload=[];
+  try{payload=JSON.parse(document.getElementById("search-results").dataset.payload||"[]")}catch(e){}
+  const row=payload[index];
+  if(!row||row.type!==type)return;
+  const selected=row.item;
+  confirmed=false;
+  if(type==="customers"){
+    setHeaderCustomer(selected);
+    saveLocal();
+    renderSummary();
+    document.getElementById("batch-customer-code").focus();
+    return;
+  }
+  if(type==="importers"){
+    setHeaderImporter(selected);
+    saveLocal();
+    renderSummary();
+    document.getElementById("batch-importer-code").focus();
+    return;
+  }
+  const rowIndex=targetOrderRow();
+  if(type==="products"){
+    applyProductToRow(rowIndex,selected);
+    focusOrderCell(rowIndex,"qty");
+    return;
+  }
+  if(type==="suppliers"){
+    Object.assign(orders[rowIndex],{supplierCode:selected.code,supplierName:selected.name});
+    syncOrderRow(rowIndex);
+    saveLocal();
+    renderSummary();
+    focusOrderCell(rowIndex,"supplierName");
+  }
+}
+["order-date","batch-note","batch-customer-code","batch-customer-name"].forEach(id=>{
+  document.addEventListener("input",e=>{
+    if(e.target?.id!==id)return;
+    if(id==="batch-customer-code"||id==="batch-customer-name"){
+      const hit=lookupCustomerByInput(e.target.value);
+      if(hit){
+        setHeaderCustomer(hit);
+        hideCustomerSuggestions();
+      }else{
+        showCustomerSuggestions(id,e.target.value);
+      }
+    }
+    confirmed=false;
+    saveLocal();
+    renderSummary();
+  });
+});
+["confirmed-filter-date","confirmed-filter-importer"].forEach(id=>{
+  document.addEventListener("input",e=>{
+    if(e.target?.id!==id)return;
+    renderConfirmedOrders();
+  });
+});
+document.addEventListener("keydown",e=>{
+  if(!["Enter","ArrowDown","ArrowUp","Escape"].includes(e.key)||e.isComposing)return;
+  if(isProductLookupOpen()){
+    if(e.key==="Escape"){
+      e.preventDefault();
+      closeProductLookup();
+      return;
+    }
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+      e.preventDefault();
+      moveActiveOption("#product-lookup-results",".lookup-row",e.key==="ArrowDown"?1:-1);
+      return;
+    }
+    if(e.key==="Enter"){
+      e.preventDefault();
+      clickActiveOption("#product-lookup-results",".lookup-row");
+      return;
+    }
+  }
+  if(e.key==="Enter"&&e.ctrlKey){
+    e.preventDefault();
+    confirmCustomerOrder({silent:true});
+    return;
+  }
+  const target=e.target;
+  if(!(target instanceof HTMLInputElement))return;
+  if(target.matches("[data-order-input]")){
+    if(target.dataset.field==="productCode"){
+      if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+        if(moveActiveOption(`#product-suggest-${target.dataset.row}`,"button",e.key==="ArrowDown"?1:-1)){
+          e.preventDefault();
+          return;
+        }
+      }
+      if(e.key==="Escape"){
+        hideProductSuggestions(Number(target.dataset.row||0));
+        return;
+      }
+      if(e.key==="Enter"&&chooseFirstInlineProduct(Number(target.dataset.row||0))){
+        e.preventDefault();
+        return;
+      }
+    }
+    if(e.key!=="Enter")return;
+    e.preventDefault();
+    moveOrderFocus(target);
+    return;
+  }
+  if(target.id==="batch-customer-code"||target.id==="batch-customer-name"){
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+      if(moveActiveOption("#customer-suggest","button",e.key==="ArrowDown"?1:-1)){
+        e.preventDefault();
+        return;
+      }
+    }
+    if(e.key==="Escape"){
+      hideCustomerSuggestions();
+      return;
+    }
+  }
+  if(e.key!=="Enter")return;
+  const headerFlow=["order-date","batch-customer-code","batch-customer-name"];
+  const idx=headerFlow.indexOf(target.id);
+  if(idx<0)return;
+  if((target.id==="batch-customer-code"||target.id==="batch-customer-name")&&chooseFirstInlineCustomer()){
+    e.preventDefault();
+    const next=document.getElementById("batch-customer-name");
+    if(target.id==="batch-customer-code"&&next){
+      next.focus();
+      next.select?.();
+    }
+    return;
+  }
+  e.preventDefault();
+  if(idx<headerFlow.length-1){
+    const next=document.getElementById(headerFlow[idx+1]);
+    next?.focus();
+    next?.select?.();
+    return;
+  }
+  if(!orders.length)addOrderRow();
+  focusOrderCell(0,"productCode");
+});
+document.addEventListener("focusin",e=>{
+  const target=e.target;
+  if(!(target instanceof HTMLInputElement))return;
+  if(!target.matches("[data-order-input]"))return;
+  lastOrderRowIndex=Number(target.dataset.row||0);
+});
+document.addEventListener("pointerdown",e=>{
+  if(e.target?.closest?.(".lookup-cell"))return;
+  if(e.target?.closest?.(".inline-customer-suggest"))return;
+  if(e.target?.closest?.(".inline-product-suggest"))return;
+  hideAllProductSuggestions();
+  hideCustomerSuggestions();
+});
+document.addEventListener("scroll",hideAllProductSuggestions,true);
+window.addEventListener("resize",hideAllProductSuggestions);
+init();
+</script>
+</body>
+</html>
