@@ -41,7 +41,6 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </nav>
   </div>
   <div class="actions">
-    <button class="btn" onclick="loadSample()">サンプル</button>
     <button class="btn" onclick="document.getElementById('order-import-file').click()">受注CSV取込</button>
     <button class="btn" onclick="addOrderRow()">商品追加</button>
     <button class="btn" onclick="toggleMasterAdminPanel()">マスタ管理</button>
@@ -62,7 +61,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <label>輸入社コード<input id="batch-importer-code" readonly placeholder="得意先から自動反映"></label>
           <label>輸入社名<input id="batch-importer-name" readonly placeholder="得意先から自動反映"></label>
           <label>得意先コード<input id="batch-customer-code" list="customer-code-list" placeholder="例 01-002"></label>
-          <label>得意先名<input id="batch-customer-name" list="customer-name-list" placeholder="例 OSSK(Sushi Sakuta)"></label>
+          <label>得意先名<input id="batch-customer-name" list="customer-name-list" placeholder="得意先名"></label>
           <label class="wide">メモ<textarea id="batch-note" placeholder="この受注全体のメモ"></textarea></label>
         </div>
         <datalist id="customer-code-list"></datalist>
@@ -81,7 +80,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <section class="panel">
       <div class="panel-head">LINE文面貼り付けβ</div>
       <div class="panel-body line-parser">
-        <textarea id="line-text" placeholder="例: OSSK あわび 1本、金目 2本、山葵 15本"></textarea>
+        <textarea id="line-text" placeholder="LINE文面を貼り付け"></textarea>
         <div class="actions"><button class="btn" onclick="parseLineDraft()">下書き生成</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
         <div class="line-preview" id="line-preview">商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。</div>
       </div>
@@ -130,7 +129,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="product-supplier-wrap">既定仕入先コード<input id="master-supplier-code" placeholder="商品マスタのみ"></label>
         <label id="product-supplier-name-wrap">既定仕入先名<input id="master-supplier-name" placeholder="商品マスタのみ"></label>
         <label id="product-price-wrap">商品マスタ価格<input id="master-unit-price" inputmode="decimal" placeholder="通常単価"></label>
-        <label id="product-contract-price-wrap" class="wide">輸入社別契約価格<input id="master-contract-prices" placeholder="例 DIM=1200, FBI=1300"></label>
+        <label id="product-contract-price-wrap" class="wide">輸入社別契約価格<input id="master-contract-prices" placeholder="輸入社コード=価格, 輸入社コード=価格"></label>
         <label id="customer-importer-code-wrap">既定輸入社コード<input id="master-importer-code" list="importer-code-list" placeholder="得意先マスタのみ"></label>
         <label id="customer-importer-name-wrap">既定輸入社名<input id="master-importer-name" list="importer-name-list" placeholder="得意先マスタのみ"></label>
       </div>
@@ -177,35 +176,10 @@ let lastOrderRowIndex=0;
 let productLookupRowIndex=0;
 
 const baseMasters={
-  products:[
-    {code:"323",name:"アワビ",englishName:"Abalone/Haliotis",aliases:["あわび","アワビ","鮑"],supplierCode:"4941",supplierName:"22魚グロス"},
-    {code:"039",name:"金目鯛",englishName:"Kinmedai/Doederleinia berycoides",aliases:["金目","キンメ","金目鯛"],supplierCode:"4943",supplierName:"22活〆"},
-    {code:"921",name:"山葵",englishName:"Wasabi/Eutrema japonicum",aliases:["山葵","わさび","ワサビ"],supplierCode:"9001",supplierName:"野菜仕入"},
-    {code:"204",name:"ボタンエビ",englishName:"Botan shrimp",aliases:["ボタンエビ","ぼたんえび"],supplierCode:"4941",supplierName:"22魚グロス"},
-    {code:"074AA",name:"養殖カンパチ カマ付フィレ",englishName:"Kanpachi/Seriola dumerili",aliases:["カンパチ"],supplierCode:"4943",supplierName:"22活〆"}
-  ],
-  customers:[
-    {code:"01-002",name:"OSSK(Sushi Sakuta)",aliases:["OSSK","Sushi Sakuta"]},
-    {code:"01-003",name:"ONGA(Morinaga)",aliases:["ONGA","Morinaga"]},
-    {code:"01-020",name:"OEDO",aliases:["OEDO"]},
-    {code:"01-018",name:"OENS",aliases:["OENS"]},
-    {code:"01-100",name:"Sato",aliases:["Sato"]}
-  ],
-  suppliers:[
-    {code:"4941",name:"22魚グロス",aliases:["魚グロス","グロス"]},
-    {code:"4943",name:"22活〆",aliases:["活〆","活締"]},
-    {code:"9001",name:"野菜仕入",aliases:["野菜"]}
-  ],
-  importers:[
-    {code:"DIM",name:"DIM",aliases:["DIM"]},
-    {code:"DIM Veg",name:"DIM Veg",aliases:["DIM Veg","DIM VEG"]},
-    {code:"DIM FZ",name:"DIM FZ",aliases:["DIM FZ"]},
-    {code:"FBI",name:"FBI",aliases:["FBI"]},
-    {code:"FBI Veg",name:"FBI Veg",aliases:["FBI Veg","FBI VEG"]},
-    {code:"FBI FZ",name:"FBI FZ",aliases:["FBI FZ"]},
-    {code:"JKT",name:"JKT",aliases:["JKT"]},
-    {code:"BKK",name:"BKK",aliases:["BKK"]}
-  ]
+  products:[],
+  customers:[],
+  suppliers:[],
+  importers:[]
 };
 
 function today(){return new Date().toISOString().slice(0,10)}
@@ -883,18 +857,6 @@ function renderSummary(){
     `<span class="pill">仕入先 ${suppliers.size}件</span>`,
     `<span class="pill warn">商品コード未入力 ${activeRows.filter(r=>!r.productCode).length}件</span>`
   ].join("");
-}
-function loadSample(){
-  setHeaderImporter({code:"DIM",name:"DIM"});
-  setHeaderCustomer({code:"01-002",name:"OSSK(Sushi Sakuta)"});
-  orders=[
-    {productCode:"323",productName:"アワビ",englishName:"Abalone/Haliotis",qty:"1",unit:"本",supplierCode:"4941",supplierName:"22魚グロス",memo:""},
-    {productCode:"039",productName:"金目鯛",englishName:"Kinmedai/Doederleinia berycoides",qty:"2",unit:"本",supplierCode:"4943",supplierName:"22活〆",memo:"静岡"},
-    {productCode:"921",productName:"山葵",englishName:"Wasabi/Eutrema japonicum",qty:"15",unit:"本",supplierCode:"9001",supplierName:"野菜仕入",memo:""}
-  ];
-  confirmed=false;
-  saveLocal();
-  render();
 }
 function inferCustomer(text){
   const lower=text.toLowerCase();
