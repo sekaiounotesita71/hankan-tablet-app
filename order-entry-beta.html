@@ -315,44 +315,54 @@ function masterItemToDb(type,item){
     return {supplier_code:item.code,supplier_name:item.name,aliases:item.aliases||[],is_active:true};
   }
   if(type==="customers"){
-    return {customer_code:item.code,customer_name:item.name,aliases:item.aliases||[],default_importer_code:dbText(item.importerCode),default_importer_name:dbText(item.importerName),is_active:true};
+    return {customer_code:item.code,customer_name:item.name,importer_code:dbText(item.importerCode),alias_name:(item.aliases||[]).join("|")||null,active:true};
   }
   return {
-    product_code:item.code,
+    product_id:item.code,
     product_name:item.name,
     english_name:dbText(item.englishName),
     aliases:item.aliases||[],
-    default_unit:dbText(item.defaultUnit||item.unit),
     default_supplier_code:dbText(item.supplierCode),
     default_supplier_name:dbText(item.supplierName),
     unit_price:dbNumber(item.unitPrice),
-    contract_prices:item.contractPrices||{},
-    is_active:true
+    source_filename:"order-entry-beta"
   };
 }
 function dbMasterToItem(type,row,lookups={}){
   if(type==="importers")return {code:row.importer_code||"",name:row.importer_name||"",aliases:row.aliases||[]};
   if(type==="suppliers")return {code:row.supplier_code||"",name:row.supplier_name||"",aliases:row.aliases||[]};
   if(type==="customers"){
-    const importerCode=row.default_importer_code||"";
+    const importerCode=row.importer_code||"";
     return {
       code:row.customer_code||"",
       name:row.customer_name||"",
-      aliases:row.aliases||[],
+      aliases:aliasesFrom(row.alias_name||""),
       importerCode,
-      importerName:row.default_importer_name||lookups.importerNames?.[importerCode]||""
+      importerName:lookups.importerNames?.[importerCode]||""
     };
   }
   const supplierCode=row.default_supplier_code||"";
   return {
-    code:row.product_code||"",
+    code:row.product_id||"",
     name:row.product_name||"",
     englishName:row.english_name||"",
     aliases:row.aliases||[],
     supplierCode,
     supplierName:row.default_supplier_name||lookups.supplierNames?.[supplierCode]||"",
     unitPrice:row.unit_price??"",
-    contractPrices:row.contract_prices||{}
+    contractPrices:lookups.contractPrices?.[row.product_id]||{}
+  };
+}
+function workProductMasterToItem(row,contractPrices={}){
+  return {
+    code:row.product_id||"",
+    name:row.product_name||"",
+    englishName:row.english_name||"",
+    aliases:[],
+    supplierCode:"",
+    supplierName:"",
+    unitPrice:row.unit_price??"",
+    contractPrices:contractPrices[row.product_id]||{}
   };
 }
 async function saveMasterItemToDb(type,item){
@@ -363,11 +373,39 @@ async function saveMasterItemToDb(type,item){
   if(type==="customers"&&item.importerCode){
     await saveMasterItemToDb("importers",{code:item.importerCode,name:item.importerName||item.importerCode,aliases:[item.importerCode,item.importerName].filter(Boolean)});
   }
-  const table={products:"product_master_unified",customers:"customer_master_unified",suppliers:"supplier_master",importers:"importer_master"}[type];
-  const conflict={products:"product_code",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
+  if(type==="customers"){
+    const payload=masterItemToDb(type,item);
+    const {data:existing,error:findError}=await supabaseClient.from("customer_master").select("id").eq("customer_code",item.code).limit(1).maybeSingle();
+    if(findError)throw findError;
+    const result=existing?.id
+      ? await supabaseClient.from("customer_master").update(payload).eq("id",existing.id)
+      : await supabaseClient.from("customer_master").insert(payload);
+    if(result.error)throw result.error;
+    return true;
+  }
+  const table={products:"product_master",customers:"customer_master",suppliers:"supplier_master",importers:"importer_master"}[type];
+  const conflict={products:"product_id",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
   const {error}=await supabaseClient.from(table).upsert(masterItemToDb(type,item),{onConflict:conflict});
   if(error)throw error;
+  if(type==="products")await saveProductContractsToDb([item]);
   return true;
+}
+async function saveProductContractsToDb(items){
+  if(!dbReady||!supabaseClient)return;
+  const payloads=[];
+  items.forEach(item=>{
+    const productId=String(item.code||"").trim();
+    if(!productId)return;
+    Object.entries(item.contractPrices||{}).forEach(([importerCode,price])=>{
+      const code=normalizeImporterCode(importerCode);
+      const unitPrice=dbNumber(price);
+      if(code&&unitPrice!==null)payloads.push({product_id:productId,importer_code:code,unit_price:unitPrice,source_filename:"order-entry-beta"});
+    });
+  });
+  for(let i=0;i<payloads.length;i+=300){
+    const {error}=await supabaseClient.from("product_price_contracts").upsert(payloads.slice(i,i+300),{onConflict:"product_id,importer_code"});
+    if(error)throw error;
+  }
 }
 async function saveMastersToDb(type,items){
   if(!dbReady||!supabaseClient||!items.length)return;
@@ -386,32 +424,46 @@ async function saveMastersToDb(type,items){
       if(code&&!importers.has(code))importers.set(code,{code,name:String(item.importerName||code).trim()||code,aliases:[code,String(item.importerName||"").trim()].filter(Boolean)});
     });
     for(const item of importers.values())await saveMasterItemToDb("importers",item);
+    for(const item of items)await saveMasterItemToDb("customers",item);
+    return;
   }
-  const table={products:"product_master_unified",customers:"customer_master_unified",suppliers:"supplier_master",importers:"importer_master"}[type];
-  const conflict={products:"product_code",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
+  const table={products:"product_master",customers:"customer_master",suppliers:"supplier_master",importers:"importer_master"}[type];
+  const conflict={products:"product_id",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
   const payloads=items.map(item=>masterItemToDb(type,item));
   for(let i=0;i<payloads.length;i+=300){
     const {error}=await supabaseClient.from(table).upsert(payloads.slice(i,i+300),{onConflict:conflict});
     if(error)throw error;
   }
+  if(type==="products")await saveProductContractsToDb(items);
 }
 async function loadMastersFromDb(){
   if(!supabaseClient)return;
-  const [importersRes,suppliersRes,customersRes,productsRes]=await Promise.all([
+  const [importersRes,suppliersRes,customersRes,productsRes,contractRes]=await Promise.all([
     supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code"),
     supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code"),
-    supabaseClient.from("customer_master_unified").select("*").eq("is_active",true).order("customer_code"),
-    supabaseClient.from("product_master_unified").select("*").eq("is_active",true).order("product_code")
+    supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,alias_name,active").eq("active",true).order("customer_code"),
+    supabaseClient.from("product_master").select("product_id,product_name,english_name,unit_price,aliases,default_supplier_code,default_supplier_name").order("product_id",{ascending:true}).limit(10000),
+    supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price")
   ]);
   const firstError=[importersRes,suppliersRes,customersRes,productsRes].find(r=>r.error)?.error;
   if(firstError)throw firstError;
   const importerNames=Object.fromEntries((importersRes.data||[]).map(r=>[r.importer_code,r.importer_name]));
   const supplierNames=Object.fromEntries((suppliersRes.data||[]).map(r=>[r.supplier_code,r.supplier_name]));
+  const contractPrices={};
+  if(!contractRes.error){
+    (contractRes.data||[]).forEach(row=>{
+      const productId=String(row.product_id||"").trim();
+      const importerCode=normalizeImporterCode(row.importer_code);
+      if(!productId||!importerCode)return;
+      contractPrices[productId]=contractPrices[productId]||{};
+      contractPrices[productId][importerCode]=row.unit_price??"";
+    });
+  }
   saveMastersObject({
     importers:(importersRes.data||[]).map(r=>dbMasterToItem("importers",r)),
     suppliers:(suppliersRes.data||[]).map(r=>dbMasterToItem("suppliers",r)),
     customers:(customersRes.data||[]).map(r=>dbMasterToItem("customers",r,{importerNames})),
-    products:(productsRes.data||[]).map(r=>dbMasterToItem("products",r,{supplierNames}))
+    products:(productsRes.data||[]).map(r=>dbMasterToItem("products",r,{supplierNames,contractPrices}))
   });
 }
 function batchToDb(batch){
