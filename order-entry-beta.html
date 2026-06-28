@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>受注登録ベータ</title>
 <style>
 :root{
@@ -72,6 +73,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <datalist id="supplier-code-list"></datalist>
         <div class="status-line">
           <span id="confirm-state" class="pill warn">未確定</span>
+          <span id="db-state" class="pill warn">DB未接続</span>
           <span id="save-state" class="sub">未保存</span>
         </div>
         <div class="hint">手入力はここで輸入社と得意先を1回だけ指定します。下の明細には商品だけを追加します。</div>
@@ -167,6 +169,8 @@ const STORAGE_KEY="order-entry-beta-v2";
 const MASTER_KEY="order-entry-beta-masters-v1";
 const CONFIRMED_KEY="order-entry-beta-confirmed-v1";
 const LINE_DICT_KEY="order-entry-beta-line-dictionary-v1";
+const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2Z2pzY3h5am9zanFxaHh1dHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMTc3ODgsImV4cCI6MjA5NDc5Mzc4OH0.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
 let orders=[];
 let confirmedBatches=[];
 let draftRows=[];
@@ -174,6 +178,9 @@ let masterType="products";
 let confirmed=false;
 let lastOrderRowIndex=0;
 let productLookupRowIndex=0;
+let supabaseClient=null;
+let dbReady=false;
+let dbLoadInFlight=false;
 
 const baseMasters={
   products:[],
@@ -186,6 +193,43 @@ function today(){return new Date().toISOString().slice(0,10)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
 function blankOrder(){return{productCode:"",productName:"",englishName:"",qty:"",unit:"",supplierCode:"",supplierName:"",memo:""}}
 function val(id){return document.getElementById(id)?.value||""}
+function setDbStatus(text,type="warn"){
+  const el=document.getElementById("db-state");
+  if(!el)return;
+  el.textContent=text;
+  el.className=`pill ${type==="ok"?"blue":"warn"}`;
+}
+function initSupabase(){
+  if(supabaseClient)return supabaseClient;
+  if(!window.supabase){setDbStatus("DB未読込");return null}
+  supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  return supabaseClient;
+}
+function dbErrorMessage(error){
+  const msg=String(error?.message||error||"");
+  if(error?.code==="42P01"||/relation .* does not exist/i.test(msg))return "受注登録用SQLが未実行です。order-entry-beta-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg))return "受注登録用SQLが古い可能性があります。order-entry-beta-migration.sql を再実行してください。";
+  return msg||"DB処理でエラーが発生しました。";
+}
+function savedMastersObject(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
+    saved.products=saved.products||[];
+    saved.customers=saved.customers||[];
+    saved.suppliers=saved.suppliers||[];
+    saved.importers=saved.importers||[];
+    return saved;
+  }catch(e){
+    return {products:[],customers:[],suppliers:[],importers:[]};
+  }
+}
+function saveMastersObject(saved){
+  saved.products=saved.products||[];
+  saved.customers=saved.customers||[];
+  saved.suppliers=saved.suppliers||[];
+  saved.importers=saved.importers||[];
+  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+}
 function getMasters(){
   try{
     const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
@@ -255,6 +299,257 @@ function upsertCustomMaster(type,item){
   localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
   return existedBefore?"updated":"added";
 }
+function dbNumber(value){
+  const n=Number(String(value??"").replace(/,/g,""));
+  return Number.isFinite(n)?n:null;
+}
+function dbText(value){
+  const v=String(value??"").trim();
+  return v||null;
+}
+function masterItemToDb(type,item){
+  if(type==="importers"){
+    return {importer_code:item.code,importer_name:item.name,aliases:item.aliases||[],is_active:true};
+  }
+  if(type==="suppliers"){
+    return {supplier_code:item.code,supplier_name:item.name,aliases:item.aliases||[],is_active:true};
+  }
+  if(type==="customers"){
+    return {customer_code:item.code,customer_name:item.name,aliases:item.aliases||[],default_importer_code:dbText(item.importerCode),default_importer_name:dbText(item.importerName),is_active:true};
+  }
+  return {
+    product_code:item.code,
+    product_name:item.name,
+    english_name:dbText(item.englishName),
+    aliases:item.aliases||[],
+    default_unit:dbText(item.defaultUnit||item.unit),
+    default_supplier_code:dbText(item.supplierCode),
+    default_supplier_name:dbText(item.supplierName),
+    unit_price:dbNumber(item.unitPrice),
+    contract_prices:item.contractPrices||{},
+    is_active:true
+  };
+}
+function dbMasterToItem(type,row,lookups={}){
+  if(type==="importers")return {code:row.importer_code||"",name:row.importer_name||"",aliases:row.aliases||[]};
+  if(type==="suppliers")return {code:row.supplier_code||"",name:row.supplier_name||"",aliases:row.aliases||[]};
+  if(type==="customers"){
+    const importerCode=row.default_importer_code||"";
+    return {
+      code:row.customer_code||"",
+      name:row.customer_name||"",
+      aliases:row.aliases||[],
+      importerCode,
+      importerName:row.default_importer_name||lookups.importerNames?.[importerCode]||""
+    };
+  }
+  const supplierCode=row.default_supplier_code||"";
+  return {
+    code:row.product_code||"",
+    name:row.product_name||"",
+    englishName:row.english_name||"",
+    aliases:row.aliases||[],
+    supplierCode,
+    supplierName:row.default_supplier_name||lookups.supplierNames?.[supplierCode]||"",
+    unitPrice:row.unit_price??"",
+    contractPrices:row.contract_prices||{}
+  };
+}
+async function saveMasterItemToDb(type,item){
+  if(!dbReady||!supabaseClient)return false;
+  if(type==="products"&&item.supplierCode){
+    await saveMasterItemToDb("suppliers",{code:item.supplierCode,name:item.supplierName||item.supplierCode,aliases:[]});
+  }
+  if(type==="customers"&&item.importerCode){
+    await saveMasterItemToDb("importers",{code:item.importerCode,name:item.importerName||item.importerCode,aliases:[item.importerCode,item.importerName].filter(Boolean)});
+  }
+  const table={products:"product_master_unified",customers:"customer_master_unified",suppliers:"supplier_master",importers:"importer_master"}[type];
+  const conflict={products:"product_code",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
+  const {error}=await supabaseClient.from(table).upsert(masterItemToDb(type,item),{onConflict:conflict});
+  if(error)throw error;
+  return true;
+}
+async function saveMastersToDb(type,items){
+  if(!dbReady||!supabaseClient||!items.length)return;
+  if(type==="products"){
+    const suppliers=new Map();
+    items.forEach(item=>{
+      const code=String(item.supplierCode||"").trim();
+      if(code&&!suppliers.has(code))suppliers.set(code,{code,name:String(item.supplierName||code).trim()||code,aliases:[]});
+    });
+    for(const item of suppliers.values())await saveMasterItemToDb("suppliers",item);
+  }
+  if(type==="customers"){
+    const importers=new Map();
+    items.forEach(item=>{
+      const code=String(item.importerCode||"").trim();
+      if(code&&!importers.has(code))importers.set(code,{code,name:String(item.importerName||code).trim()||code,aliases:[code,String(item.importerName||"").trim()].filter(Boolean)});
+    });
+    for(const item of importers.values())await saveMasterItemToDb("importers",item);
+  }
+  const table={products:"product_master_unified",customers:"customer_master_unified",suppliers:"supplier_master",importers:"importer_master"}[type];
+  const conflict={products:"product_code",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
+  const payloads=items.map(item=>masterItemToDb(type,item));
+  for(let i=0;i<payloads.length;i+=300){
+    const {error}=await supabaseClient.from(table).upsert(payloads.slice(i,i+300),{onConflict:conflict});
+    if(error)throw error;
+  }
+}
+async function loadMastersFromDb(){
+  if(!supabaseClient)return;
+  const [importersRes,suppliersRes,customersRes,productsRes]=await Promise.all([
+    supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code"),
+    supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code"),
+    supabaseClient.from("customer_master_unified").select("*").eq("is_active",true).order("customer_code"),
+    supabaseClient.from("product_master_unified").select("*").eq("is_active",true).order("product_code")
+  ]);
+  const firstError=[importersRes,suppliersRes,customersRes,productsRes].find(r=>r.error)?.error;
+  if(firstError)throw firstError;
+  const importerNames=Object.fromEntries((importersRes.data||[]).map(r=>[r.importer_code,r.importer_name]));
+  const supplierNames=Object.fromEntries((suppliersRes.data||[]).map(r=>[r.supplier_code,r.supplier_name]));
+  saveMastersObject({
+    importers:(importersRes.data||[]).map(r=>dbMasterToItem("importers",r)),
+    suppliers:(suppliersRes.data||[]).map(r=>dbMasterToItem("suppliers",r)),
+    customers:(customersRes.data||[]).map(r=>dbMasterToItem("customers",r,{importerNames})),
+    products:(productsRes.data||[]).map(r=>dbMasterToItem("products",r,{supplierNames}))
+  });
+}
+function batchToDb(batch){
+  return {
+    id:String(batch.id||"").startsWith("B")?undefined:batch.id,
+    order_date:batch.orderDate||today(),
+    ship_date:batch.shipDate||batch.orderDate||today(),
+    importer_code:dbText(batch.importer?.code),
+    importer_name_snapshot:dbText(batch.importer?.name),
+    customer_code:dbText(batch.customer?.code),
+    customer_name_snapshot:dbText(batch.customer?.name),
+    status:"confirmed",
+    source_type:String(batch.id||"").startsWith("CSV")?"csv":"manual",
+    note:dbText(batch.note),
+    confirmed_at:batch.confirmedAt||new Date().toISOString()
+  };
+}
+function dbBatchToBatch(row,lines){
+  return {
+    id:row.id,
+    confirmedAt:row.confirmed_at||row.created_at,
+    orderDate:row.order_date||"",
+    shipDate:row.ship_date||row.order_date||"",
+    note:row.note||"",
+    importer:{code:row.importer_code||"",name:row.importer_name_snapshot||""},
+    customer:{code:row.customer_code||"",name:row.customer_name_snapshot||""},
+    rows:(lines||[]).map(line=>({
+      productCode:line.product_code||"",
+      productName:line.product_name_snapshot||"",
+      englishName:line.english_name_snapshot||"",
+      qty:line.order_qty??"",
+      unit:line.order_unit||"",
+      supplierCode:line.supplier_code||"",
+      supplierName:line.supplier_name_snapshot||"",
+      memo:line.purchase_note||"",
+      unitPrice:line.unit_price??"",
+      sourceExpression:line.source_text||""
+    }))
+  };
+}
+async function saveConfirmedBatchToDb(batch){
+  if(!dbReady||!supabaseClient)return null;
+  await ensureBatchMastersInDb(batch);
+  const {data,error}=await supabaseClient.from("order_entry_batches").insert(batchToDb(batch)).select("id").single();
+  if(error)throw error;
+  const batchId=data.id;
+  const payloads=(batch.rows||[]).map((row,index)=>({
+    batch_id:batchId,
+    line_no:index+1,
+    product_code:dbText(row.productCode),
+    product_name_snapshot:row.productName||"",
+    english_name_snapshot:dbText(row.englishName),
+    order_qty:dbNumber(row.qty),
+    order_unit:dbText(row.unit),
+    supplier_code:dbText(row.supplierCode),
+    supplier_name_snapshot:dbText(row.supplierName),
+    purchase_note:dbText(row.memo),
+    unit_price:dbNumber(row.unitPrice),
+    source_text:dbText(row.sourceExpression||row.lineExpression)
+  }));
+  if(payloads.length){
+    const {error:lineError}=await supabaseClient.from("order_entry_lines").insert(payloads);
+    if(lineError)throw lineError;
+  }
+  return batchId;
+}
+async function ensureBatchMastersInDb(batch){
+  const importerCode=String(batch.importer?.code||"").trim();
+  const importerName=String(batch.importer?.name||importerCode).trim();
+  if(importerCode)await saveMasterItemToDb("importers",{code:importerCode,name:importerName||importerCode,aliases:[importerCode,importerName].filter(Boolean)});
+  const customerCode=String(batch.customer?.code||"").trim();
+  const customerName=String(batch.customer?.name||customerCode).trim();
+  if(customerCode)await saveMasterItemToDb("customers",{code:customerCode,name:customerName||customerCode,aliases:[customerName].filter(Boolean),importerCode,importerName});
+  const supplierMap=new Map();
+  const productMap=new Map();
+  (batch.rows||[]).forEach(row=>{
+    const supplierCode=String(row.supplierCode||"").trim();
+    if(supplierCode&&!supplierMap.has(supplierCode)){
+      supplierMap.set(supplierCode,{code:supplierCode,name:String(row.supplierName||supplierCode).trim()||supplierCode,aliases:[]});
+    }
+    const productCode=String(row.productCode||"").trim();
+    if(productCode&&!productMap.has(productCode)){
+      productMap.set(productCode,{
+        code:productCode,
+        name:String(row.productName||productCode).trim()||productCode,
+        englishName:row.englishName||"",
+        aliases:[],
+        supplierCode,
+        supplierName:String(row.supplierName||"").trim(),
+        unitPrice:row.unitPrice||"",
+        contractPrices:{}
+      });
+    }
+  });
+  for(const item of supplierMap.values())await saveMasterItemToDb("suppliers",item);
+  for(const item of productMap.values())await saveMasterItemToDb("products",item);
+}
+async function loadConfirmedBatchesFromDb(){
+  if(!supabaseClient)return;
+  const {data:batches,error}=await supabaseClient.from("order_entry_batches").select("*").eq("status","confirmed").order("order_date",{ascending:false}).order("created_at",{ascending:false}).limit(500);
+  if(error)throw error;
+  if(!batches?.length){confirmedBatches=[];saveConfirmedBatches();return}
+  const ids=batches.map(b=>b.id);
+  const {data:lines,error:lineError}=await supabaseClient.from("order_entry_lines").select("*").in("batch_id",ids).order("line_no",{ascending:true});
+  if(lineError)throw lineError;
+  const byBatch=new Map();
+  (lines||[]).forEach(line=>{
+    if(!byBatch.has(line.batch_id))byBatch.set(line.batch_id,[]);
+    byBatch.get(line.batch_id).push(line);
+  });
+  confirmedBatches=batches.map(batch=>dbBatchToBatch(batch,byBatch.get(batch.id)||[]));
+  saveConfirmedBatches();
+}
+async function loadDbData(){
+  if(dbLoadInFlight)return;
+  const client=initSupabase();
+  if(!client)return;
+  dbLoadInFlight=true;
+  setDbStatus("DB読込中");
+  try{
+    await loadMastersFromDb();
+    await loadConfirmedBatchesFromDb();
+    dbReady=true;
+    setDbStatus("DB接続中","ok");
+    refreshCustomerLists();
+    refreshImporterLists();
+    refreshProductLists();
+    refreshSupplierLists();
+    render();
+    renderMasters();
+  }catch(error){
+    dbReady=false;
+    setDbStatus("DB未設定");
+    console.warn(dbErrorMessage(error),error);
+  }finally{
+    dbLoadInFlight=false;
+  }
+}
 function loadConfirmedBatches(){
   try{
     confirmedBatches=JSON.parse(localStorage.getItem(CONFIRMED_KEY)||"[]");
@@ -276,6 +571,7 @@ function init(){
   render();
   renderMasters();
   hideMasterAdminPanel();
+  loadDbData();
 }
 function normalizeLineExpression(value){
   return String(value||"")
@@ -803,10 +1099,22 @@ function clearConfirmedFilters(){
   if(importer)importer.value="";
   renderConfirmedOrders();
 }
-function restoreConfirmedBatch(index){
+async function markBatchCancelledInDb(batch){
+  if(!dbReady||!supabaseClient||!batch?.id)return;
+  if(String(batch.id).startsWith("B")||String(batch.id).startsWith("CSV"))return;
+  const {error}=await supabaseClient.from("order_entry_batches").update({status:"cancelled"}).eq("id",batch.id);
+  if(error)throw error;
+}
+async function restoreConfirmedBatch(index){
   const batch=confirmedBatches[index];
   if(!batch)return;
   if(orders.length&&!confirm("入力中の明細があります。確定済み受注を修正へ戻すと、入力中の内容は上書きされます。続けますか？"))return;
+  try{
+    await markBatchCancelledInDb(batch);
+  }catch(error){
+    alert(dbErrorMessage(error));
+    return;
+  }
   confirmedBatches.splice(index,1);
   saveConfirmedBatches();
   document.getElementById("order-date").value=batch.orderDate||today();
@@ -819,10 +1127,16 @@ function restoreConfirmedBatch(index){
   render();
   requestAnimationFrame(()=>document.querySelector('[data-row="0"][data-field="productCode"]')?.focus());
 }
-function deleteConfirmedBatch(index){
+async function deleteConfirmedBatch(index){
   const batch=confirmedBatches[index];
   if(!batch)return;
   if(!confirm(`${batchLabel(batch)} を削除しますか？`))return;
+  try{
+    await markBatchCancelledInDb(batch);
+  }catch(error){
+    alert(dbErrorMessage(error));
+    return;
+  }
   confirmedBatches.splice(index,1);
   saveConfirmedBatches();
   render();
@@ -990,14 +1304,24 @@ function addDraftRows(){
   saveLocal();
   render();
 }
-function confirmCustomerOrder(options={}){
+async function confirmCustomerOrder(options={}){
   const c=customer();
   const im=importer();
   if(!im.code&&!im.name){alert("輸入社を入力してください。");return}
   if(!c.code&&!c.name){alert("得意先を入力してください。");return}
   if(!activeOrderRows().length){alert("商品明細がありません。");return}
   const learnedCount=learnLineDictionaryFromOrders(activeOrderRows());
-  confirmedBatches.push(currentBatch());
+  const batch=currentBatch();
+  if(dbReady&&supabaseClient){
+    try{
+      const dbId=await saveConfirmedBatchToDb(batch);
+      if(dbId)batch.id=dbId;
+    }catch(error){
+      alert(dbErrorMessage(error));
+      return false;
+    }
+  }
+  confirmedBatches.unshift(batch);
   saveConfirmedBatches();
   const message=`受注確定しました${learnedCount?` / 辞書更新 ${learnedCount}件`:""}`;
   if(options.silent)document.getElementById("save-state").textContent=message;
@@ -1087,7 +1411,7 @@ function setMasterType(type){
   masterType=type;
   renderMasters();
 }
-function addMasterItem(){
+async function addMasterItem(){
   const code=val("master-code").trim();
   const name=val("master-name").trim();
   if(!code||!name){alert("コードと名称を入力してください。");return}
@@ -1105,6 +1429,15 @@ function addMasterItem(){
     item.importerName=val("master-importer-name").trim();
   }
   const result=upsertCustomMaster(masterType,item);
+  if(dbReady&&supabaseClient){
+    try{
+      await saveMasterItemToDb(masterType,item);
+      setDbStatus("DB接続中","ok");
+    }catch(error){
+      alert(dbErrorMessage(error));
+      setDbStatus("DB保存失敗");
+    }
+  }
   ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-importer-code","master-importer-name"].forEach(id=>document.getElementById(id).value="");
   refreshCustomerLists();
   refreshImporterLists();
@@ -1356,7 +1689,7 @@ function importOrdersCsv(input){
   if(!file)return;
   if((orders.length||val("batch-customer-code")||val("batch-customer-name"))&&!confirm("現在入力中の受注があります。CSV取込を続けますか？"))return;
   const reader=new FileReader();
-  reader.onload=()=>{
+  reader.onload=async ()=>{
     const text=decodeCsvBuffer(reader.result);
     const rowsCsv=parseCsv(text);
     if(rowsCsv.length<2){alert("CSVのデータ行がありません。");return}
@@ -1375,8 +1708,7 @@ function importOrdersCsv(input){
       alert(`受注CSVを取り込みました。\n明細: ${grouped[0].rows.length}件`);
       return;
     }
-    grouped.forEach(group=>{
-      confirmedBatches.push({
+    const importedBatches=grouped.map(group=>({
         id:`CSV${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
         confirmedAt:new Date().toISOString(),
         orderDate:group.orderDate||today(),
@@ -1385,8 +1717,19 @@ function importOrdersCsv(input){
         importer:group.importer,
         customer:group.customer,
         rows:group.rows
-      });
-    });
+      }));
+    if(dbReady&&supabaseClient){
+      try{
+        for(const batch of importedBatches){
+          const dbId=await saveConfirmedBatchToDb(batch);
+          if(dbId)batch.id=dbId;
+        }
+      }catch(error){
+        alert(dbErrorMessage(error));
+        return;
+      }
+    }
+    confirmedBatches.unshift(...importedBatches);
     resetCurrentOrderForm();
     saveConfirmedBatches();
     saveLocal();
@@ -1400,19 +1743,31 @@ function importMastersCsv(input){
   input.value="";
   if(!file)return;
   const reader=new FileReader();
-  reader.onload=()=>{
+  reader.onload=async ()=>{
     const text=decodeCsvBuffer(reader.result);
     const rows=parseCsv(text);
     if(rows.length<2){alert("CSVのデータ行がありません。");return}
     const headers=rows[0].map(normalizedHeader);
     let count=0,updated=0,skipped=0;
+    const importedItems=[];
     rows.slice(1).forEach(row=>{
       const item=masterItemFromCsvRow(row,headers,masterType);
       if(!item){skipped++;return}
       const result=upsertCustomMaster(masterType,item);
       if(result==="updated")updated++;
       else count++;
+      importedItems.push(item);
     });
+    if(dbReady&&supabaseClient&&importedItems.length){
+      try{
+        await saveMastersToDb(masterType,importedItems);
+        setDbStatus("DB接続中","ok");
+      }catch(error){
+        alert(dbErrorMessage(error));
+        setDbStatus("DB保存失敗");
+        return;
+      }
+    }
     refreshCustomerLists();
     refreshImporterLists();
     refreshProductLists();
