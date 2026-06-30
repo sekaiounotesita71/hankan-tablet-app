@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -30,6 +30,9 @@ header{
   background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
 }
 .header-title{font-size:18px;font-weight:700;white-space:nowrap}
+.app-nav{display:flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:10px;background:var(--bg);padding:4px}
+.app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:900;white-space:nowrap}
+.app-nav-link.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .header-right{display:flex;align-items:center;gap:10px;min-width:0}
 .phase-switcher{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px;gap:3px}
 .phase-btn{
@@ -47,6 +50,7 @@ header{
 .btn:active,.np-key:active,.unit-preset:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn-primary:disabled{opacity:.42;cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#fff}.lock-badge{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--danger-bg);color:var(--danger);font-size:12px;font-weight:900}.lock-badge.open{background:var(--success-bg);color:var(--success)}
 .sync-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left));background:#eef7f1;border-bottom:1px solid #cfe7d9;color:#24513d}
 .sync-status{font-size:13px;font-weight:800;margin-right:auto}
 .sync-input{height:38px;min-width:180px;border:1px solid #bad9c8;border-radius:8px;background:#fff;padding:0 10px;color:var(--text)}
@@ -112,6 +116,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .shop-name-cell{font-weight:800;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inline-box-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:center;padding:0 8px}
 .inline-box-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--p2)}
+.inline-work-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:right;padding:0 8px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.inline-work-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--accent)}.inline-work-input.weight{width:104px}
 .touch-input-cell{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:40px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-weight:800;cursor:pointer}
 .touch-input-cell.empty{background:var(--bg);color:var(--muted);border-style:dashed;font-weight:700}
 .touch-input-cell:active{transform:scale(.97)}
@@ -132,22 +137,40 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .np-close,.export-close{width:44px;height:44px;border:0;background:var(--bg);border-radius:999px;font-size:24px;cursor:pointer;color:var(--muted)}
 .np-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}.np-tab{min-height:48px;padding:6px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--muted);font-size:13px;font-weight:800;line-height:1.25;cursor:pointer}.np-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}.np-tab.memo-tab.active{background:var(--memo);border-color:var(--memo)}.np-tab.p2-tab.active{background:var(--p2);border-color:var(--p2)}
 .tick{display:block;font-size:11px;color:var(--success);margin-top:2px}.np-tab.active .tick{color:#a8ffd8}
-.np-disp{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px}.np-val{font-size:38px;font-weight:900;min-height:48px;flex:1}.np-unit{color:var(--muted);font-weight:800}
+.np-disp{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px}.np-val{font-size:38px;font-weight:900;min-height:48px;flex:1}.np-unit{color:var(--muted);font-weight:800}.np-native-input{width:100%;min-width:0;height:58px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-size:30px;font-weight:900;padding:0 12px;text-align:right;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.np-native-input:focus{outline:3px solid rgba(9,105,162,.2);border-color:var(--accent)}
 .np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}.np-key{height:66px;border:0;border-radius:12px;background:#ece6dc;color:var(--text);font-size:24px;font-weight:800;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}.np-key.act{font-size:17px;background:#e2dbd0}.np-key.del{font-size:22px;background:#d8d0c4}.np-key.wide{grid-column:span 3;height:58px;background:var(--accent);color:#fff;font-size:16px}.np-key.wide.last{background:var(--success)}
 .memo-input-wrap,.unit-input-wrap{display:none;flex-direction:column;gap:10px;margin-bottom:10px}.memo-input-wrap.show,.unit-input-wrap.show{display:flex}
 .memo-textarea,.unit-text-input{width:100%;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);padding:12px;font-size:16px}.memo-textarea{height:130px;resize:none;line-height:1.55}.memo-char-count{text-align:right;color:var(--muted);font-size:12px}
 .memo-confirm,.unit-confirm{height:56px;border:0;border-radius:12px;background:var(--memo);color:#fff;font-weight:800;cursor:pointer}.unit-confirm{background:var(--accent)}
 .unit-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.unit-preset{min-height:48px;border:1px solid var(--border);border-radius:9px;background:var(--bg);font-weight:800;cursor:pointer}.unit-preset.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .manual-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.manual-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;color:var(--muted)}.manual-form input{min-height:44px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px;background:#fff;color:var(--text);font-weight:700}.manual-form .wide{grid-column:1/-1}.manual-actions{display:flex;gap:10px;margin-top:14px}.manual-actions button{flex:1}.btn-reset{min-height:38px;padding:0 11px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #efd58a;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
-.export-panel{max-width:460px;border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom))}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px}.export-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
+.export-panel{max-width:460px;max-height:calc(100dvh - 24px);border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px;flex:0 0 auto}.export-options{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:8px;margin-bottom:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;flex:0 0 auto;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
+.session-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 2px;padding:6px 2px 0;font-size:13px;font-weight:900;color:var(--muted)}.session-section-count{font-size:12px;color:var(--muted);font-weight:800}.session-finalized{background:#f8fafc;border-color:#d7dde7}.session-finalized .export-option-code{color:#526071}.session-finalized .export-option-meta{color:#7b8794}.session-empty{min-height:46px;border:1px dashed var(--border);background:var(--bg);cursor:default}.session-locked-badge{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:12px;font-weight:900;white-space:nowrap}
+.sales-ref-panel{width:min(1180px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.sales-ref-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff}.sales-ref-title{font-weight:900}.sales-ref-body{display:grid;grid-template-columns:310px 1fr;min-height:0;overflow:hidden}.sales-ref-list{border-right:1px solid var(--border);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#f8fafc;padding:10px}.sales-ref-session{width:100%;border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer}.sales-ref-session.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,122,82,.12)}.sales-ref-session-name{display:block;font-weight:900;color:var(--text);margin-bottom:4px}.sales-ref-session-meta{display:block;font-size:12px;color:var(--muted);font-weight:800}.sales-ref-main{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto 1fr;background:#fff;overflow:hidden}.sales-ref-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}.sales-ref-search{height:42px;min-width:180px;flex:1;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-weight:700}.sales-ref-filter{height:42px;min-width:130px;border:1px solid var(--border-strong);border-radius:9px;padding:0 10px;background:#fff;font-weight:800}.sales-ref-filter.date{min-width:145px}.sales-ref-summary{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:800}.sales-ref-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;min-height:0;max-height:100%}.sales-ref-table{width:100%;min-width:1200px;border-collapse:separate;border-spacing:0}.sales-ref-table th,.sales-ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}.sales-ref-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.sales-ref-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:30px;color:var(--muted);font-weight:800;text-align:center}
+.sales-ref-analysis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#fbfcfd}.sales-ref-card{border:1px solid var(--border);border-radius:9px;background:#fff;min-width:0;overflow:hidden}.sales-ref-card-head{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:900;color:var(--muted);display:flex;justify-content:space-between;gap:8px}.sales-ref-card-body{max-height:132px;overflow:auto;-webkit-overflow-scrolling:touch}.sales-ref-rank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-ref-rank:last-child{border-bottom:0}.sales-ref-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--text)}.sales-ref-rank-value{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}.sales-ref-total-card{background:#eef7f1;border-color:#cfe7d9}.sales-ref-total-card .sales-ref-rank-name,.sales-ref-total-card .sales-ref-rank-value{color:#167a52}
+.customer-master-panel{width:min(980px,calc(100vw - 24px));height:min(760px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:#fff}.customer-master-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}.customer-master-title{font-weight:900}.customer-master-body{display:grid;grid-template-columns:1fr 1fr;min-height:0}.customer-master-section{min-width:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px;border-right:1px solid var(--border)}.customer-master-section:last-child{border-right:0}.customer-master-section h3{margin:0 0 10px;font-size:14px}.customer-master-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.customer-master-form input,.customer-fix-card input,.customer-fix-card select{height:42px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px;font-weight:700;background:#fff}.customer-master-form .wide{grid-column:1/-1}.customer-master-list,.customer-fix-list{display:flex;flex-direction:column;gap:8px}.customer-master-item,.customer-fix-card{border:1px solid var(--border);border-radius:9px;background:#fff;padding:10px}.customer-master-name{font-weight:900;margin-bottom:4px}.customer-master-meta,.customer-fix-meta{font-size:12px;color:var(--muted);font-weight:800}.customer-fix-card{display:grid;grid-template-columns:1fr;gap:8px}.customer-fix-actions{display:flex;gap:8px}.customer-fix-actions button{flex:1}.customer-empty{padding:18px;border:1px dashed var(--border);border-radius:9px;color:var(--muted);font-weight:800;text-align:center}
+.import-review-bg{display:none;position:fixed;inset:0;z-index:180;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center}.import-review-bg.open{display:flex}.import-review-panel{width:min(1180px,100%);height:min(860px,100%);display:grid;grid-template-rows:auto auto 1fr auto;overflow:hidden;border-radius:12px;background:#fff;box-shadow:0 18px 60px rgba(0,0,0,.28)}.import-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 18px;border-bottom:1px solid var(--border)}.import-review-title{font-size:18px;font-weight:900}.import-review-note{margin-top:4px;color:var(--danger);font-size:13px;font-weight:800}.import-review-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);background:#faf8f3}.import-review-search{height:42px;min-width:230px;flex:1;border:1px solid var(--border-strong);border-radius:8px;padding:0 11px;font-weight:700}.import-review-count{font-size:13px;color:var(--muted);font-weight:800;white-space:nowrap}.import-review-table-wrap{min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}.import-review-table{min-width:940px}.import-review-table th{position:sticky;top:0;z-index:2;background:#f5f2eb}.import-review-table td{padding:8px 9px}.import-review-table tbody tr{cursor:default}.import-review-table tbody tr.suspicious td{background:#fff4e5}.import-review-input{width:100%;height:40px;border:1px solid var(--border-strong);border-radius:7px;background:#fff;padding:0 9px;font-weight:800}.import-review-code{width:130px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase}.import-review-customer{min-width:220px}.import-review-product{font-weight:800}.import-review-meta{font-size:12px;color:var(--muted);white-space:nowrap}.import-review-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid var(--border);background:#fff}.import-review-actions-right{display:flex;gap:10px}.import-review-check{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--muted)}
+.sales-ref-panel{width:min(1500px,calc(100vw - 18px));height:calc(100dvh - 18px);border-radius:12px}.sales-ref-head{min-height:50px;padding:8px 14px}.sales-ref-body{grid-template-columns:1fr;grid-template-rows:76px minmax(0,1fr)}.sales-ref-list{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--border);padding:8px;background:#f8fafc}.sales-ref-session{width:210px;min-width:210px;margin:0;padding:8px 10px}.sales-ref-session-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}.sales-ref-session-meta{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sales-ref-main{grid-template-rows:auto auto auto minmax(0,1fr)}.sales-ref-toolbar{display:grid;grid-template-columns:120px minmax(160px,1fr) 150px 132px 132px auto auto;gap:8px;padding:8px 10px}.sales-ref-filter,.sales-ref-filter.date,.sales-ref-search{height:38px;min-width:0;width:100%;font-size:13px}.sales-ref-toolbar .btn{height:38px;min-height:38px;padding:0 12px;font-size:13px}.sales-ref-summary{padding:7px 10px;font-size:12px;gap:8px;white-space:nowrap;overflow-x:auto;flex-wrap:nowrap}.sales-ref-analysis{display:block;padding:0;background:#fff;border-bottom:1px solid var(--border)}.sales-ref-analysis details{border:0}.sales-ref-analysis summary{height:38px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;cursor:pointer;font-size:13px;font-weight:900;color:var(--muted);background:#fbfcfd;list-style:none}.sales-ref-analysis summary::-webkit-details-marker{display:none}.sales-ref-analysis summary:after{content:"開く";font-size:12px;color:var(--accent)}.sales-ref-analysis details[open] summary:after{content:"閉じる"}.sales-ref-analysis-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px 10px;background:#fbfcfd}.sales-ref-card-head{padding:6px 8px}.sales-ref-card-body{max-height:92px}.sales-ref-rank{padding:5px 8px}.sales-ref-table{min-width:1120px}.sales-ref-table th,.sales-ref-table td{padding:6px 8px;font-size:12px}.sales-ref-table th{top:0}.sales-ref-table td:nth-child(4),.sales-ref-table th:nth-child(4){position:sticky;left:0;z-index:2;background:#fff;box-shadow:1px 0 0 var(--border)}.sales-ref-table th:nth-child(4){z-index:3;background:#f8fafc}.sales-ref-table tbody tr:hover td:nth-child(4){background:#fbfaf7}
+@media (max-width:820px){.sales-ref-panel,.customer-master-panel{width:100vw;height:100dvh;border-radius:0}.sales-ref-body{grid-template-columns:1fr;grid-template-rows:180px 1fr}.sales-ref-list{border-right:0;border-bottom:1px solid var(--border);display:flex;gap:8px;overflow:auto}.sales-ref-session{min-width:220px}.sales-ref-search{min-width:160px}.sales-ref-analysis{grid-template-columns:1fr}.sales-ref-card-body{max-height:110px}.customer-master-body{grid-template-columns:1fr}.customer-master-section{border-right:0;border-bottom:1px solid var(--border)}}
 .confirm-box{max-width:360px;border-radius:18px;padding:24px;text-align:center;margin:0 14px 18px}.confirm-title{font-size:18px;font-weight:900;margin-bottom:8px}.confirm-sub{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}.confirm-product{font-weight:800;background:var(--bg);border-radius:9px;padding:10px;margin-bottom:16px}.confirm-btns{display:flex;gap:10px}.confirm-btns button{flex:1;height:50px;border:0;border-radius:10px;font-weight:900}.confirm-cancel{background:var(--bg);color:var(--text)}.confirm-ok{background:var(--danger);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:200;transform:translateX(-50%) translateY(80px);transition:.25s;background:var(--accent);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
 @media (min-width:700px){.modal-bg,.export-bg,.confirm-bg{align-items:center}.np-panel{max-width:520px;border-radius:20px;padding-bottom:22px}.export-panel{border-radius:20px}.confirm-box{margin:0}.np-grid{gap:10px}.np-key{height:70px}}
 @media (max-width:820px){
-  header{align-items:stretch;flex-direction:column}.header-title{font-size:17px}.header-right{width:100%;justify-content:space-between}.phase-switcher{flex:1}.phase-btn{flex:1;padding:0 8px}.btn{padding:0 12px}
+  header{align-items:stretch;flex-direction:column}.header-title{font-size:17px}.app-nav{width:100%;justify-content:stretch}.app-nav-link{flex:1}.header-right{width:100%;justify-content:space-between}.phase-switcher{flex:1}.phase-btn{flex:1;padding:0 8px}.btn{padding:0 12px}
   main{padding-top:14px}.import-grid{grid-template-columns:1fr}.tabs-wrap{border-radius:0;margin-left:-14px;margin-right:-14px;border-left:0;border-right:0}
   .country-tab,.customer-tab{min-height:52px}.statusbar{gap:12px}.table-scroll{padding-bottom:8px}table{min-width:920px}.np-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
   .country-tabs,.customer-tabs{scrollbar-width:none}.country-tabs::-webkit-scrollbar,.customer-tabs::-webkit-scrollbar{display:none}
+}
+#sales-ref-product-list{display:none}
+@media (max-width:820px){
+  .sales-ref-body{grid-template-columns:1fr;grid-template-rows:68px minmax(0,1fr)}
+  .sales-ref-list{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden}
+  .sales-ref-session{min-width:190px;width:190px}
+  .sales-ref-toolbar{grid-template-columns:1fr 1fr;gap:7px}
+  .sales-ref-search{grid-column:1/-1}
+  .sales-ref-toolbar .btn-primary{grid-column:2}
+  .sales-ref-analysis-grid{grid-template-columns:1fr}
+  .sales-ref-card-body{max-height:90px}
 }
 </style>
 </head>
@@ -155,6 +178,10 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 <header>
   <div class="header-title">オーダー管理</div>
   <div class="header-right">
+    <nav class="app-nav" aria-label="アプリ切替">
+      <a class="app-nav-link active" href="/">作業アプリ</a>
+      <a class="app-nav-link" href="/order-entry-beta.html">発注入力</a>
+    </nav>
     <div class="phase-switcher">
       <button class="phase-btn active" id="btn-p1" onclick="switchPhase(1)">Phase 1 入力</button>
       <button class="phase-btn p15" id="btn-p15" onclick="switchPhase(1.5)">Phase 1.5 産地・売価</button>
@@ -170,7 +197,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   <button class="sync-btn primary" onclick="signInSupabase()">ログイン</button>
   <button class="sync-btn" onclick="signOutSupabase()">ログアウト</button>
   <button class="sync-btn" onclick="loadSessionList()">作業一覧</button>
-  <button class="sync-btn" onclick="diagnoseJune4Data()">6/4診断</button>
+  <button class="sync-btn" onclick="openSalesReference()">売上参照</button>
   <div class="sync-user" id="sync-user"></div>
 </div>
 <div class="export-bg" id="session-bg" onclick="closeSessionPicker()">
@@ -182,6 +209,26 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     <div class="export-options" id="session-options"></div>
   </div>
 </div>
+<div class="export-bg" id="sales-ref-bg" onclick="closeSalesReference()">
+  <div class="sales-ref-panel" onclick="event.stopPropagation()">
+    <div class="sales-ref-head">
+      <div class="sales-ref-title">売上参照</div>
+      <button class="export-close" onclick="closeSalesReference()">×</button>
+    </div>
+    <div class="sales-ref-body">
+      <div class="sales-ref-list" id="sales-ref-sessions"></div>
+      <div class="sales-ref-main">
+        <div class="sales-ref-toolbar">
+          <input class="sales-ref-search" id="sales-ref-search" type="search" placeholder="店名・商品名・輸入社・箱番号で検索" oninput="renderSalesReferenceRows()">
+          <button class="btn btn-primary" onclick="exportSalesReferenceExcel()">Excel出力</button>
+        </div>
+        <div class="sales-ref-summary" id="sales-ref-summary">確定済み作業を選択してください</div>
+        <div class="sales-ref-analysis" id="sales-ref-analysis"></div>
+        <div class="sales-ref-table-wrap" id="sales-ref-table-wrap"><div class="sales-ref-empty">左の一覧から売上確定済みデータを選択してください</div></div>
+      </div>
+    </div>
+  </div>
+</div>
 <main>
   <div class="view active" id="view-p1">
     <div class="import-grid">
@@ -191,13 +238,17 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
         <div class="field-hint">使用列: <span>商品ID</span><span>商品名</span><span>単位</span><span>数量</span><span>輸入社ID</span><span>エンドユーザーの店名</span><span>産地</span><span>売価</span><span>備考</span></div>
       </div>
       <div class="import-card">
-        <div class="import-card-header"><div class="import-card-title">2. 商品マスタCSV</div><div class="import-status" id="master-status">未読込</div></div>
-        <label class="drop-zone" id="master-zone"><input type="file" id="master-file" accept=".csv"><div class="drop-text">CSVをここへドロップ<br><strong>またはタップして選択</strong></div></label>
-        <div class="field-hint">使用列: <span>商品ID</span><span>英名</span><span>学術名</span><span>産地</span></div>
+        <div class="import-card-header"><div class="import-card-title">2. 商品マスタ</div><div class="import-status" id="master-status">ログイン後に自動取得</div></div>
+        <label class="drop-zone" id="master-zone"><input type="file" id="master-file" accept=".csv"><div class="drop-text">変更がある時だけCSVをここへドロップ<br><strong>またはタップしてマスタ更新</strong></div></label>
+        <div class="field-hint">Supabaseから自動取得します。使用列: <span>商品コード</span><span>商品名(英語)</span><span>学術名</span><span>産地</span></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1;min-width:170px" onclick="saveCurrentProductMaster()">現在のCSVをクラウド保存</button>
+          <button class="btn" style="flex:1;min-width:170px" onclick="loadProductMasterFromSupabase({force:true})">クラウドから再読込</button>
+        </div>
       </div>
     </div>
-    <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="mergeAndRender()">データを結合して表示</button></div>
-    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button></div>
+    <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="openImportReview()">顧客名・商品コードを確認</button></div>
+    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button><button class="btn btn-primary" id="finalize-btn" onclick="finalizeSalesTrial()">売上確定</button><button class="btn" id="unlock-btn" onclick="unlockSessionTrial()" style="display:none">ロック解除</button></div>
     <div class="tabs-wrap" id="p1-tabs-wrap" style="display:none"><div class="country-tabs" id="p1-country-tabs"></div><div id="p1-country-panels"></div></div>
   </div>
   <div class="view" id="view-p15">
@@ -209,11 +260,33 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     <div id="p2-empty" style="text-align:center;padding:60px 20px;color:var(--muted);display:none"><div style="font-size:44px;opacity:.25;margin-bottom:12px">箱</div><p>Phase 1で箱番号を入力してからPhase 2へ進んでください。</p></div>
   </div>
 </main>
+<div class="import-review-bg" id="import-review-bg">
+  <div class="import-review-panel">
+    <div class="import-review-head">
+      <div><div class="import-review-title">取り込み内容の確認</div><div class="import-review-note">顧客名と商品コードは、確定後に変更できません。誤りがないか確認してください。</div></div>
+    </div>
+    <div class="import-review-tools">
+      <input class="import-review-search" id="import-review-search" type="search" placeholder="顧客名・商品コード・商品名で絞り込み" oninput="renderImportReview()">
+      <label class="import-review-check"><input type="checkbox" id="import-review-bulk" checked> 同じ顧客名をまとめて修正</label>
+      <span class="import-review-count" id="import-review-count"></span>
+    </div>
+    <div class="import-review-table-wrap">
+      <table class="import-review-table">
+        <thead><tr><th>No.</th><th>輸入社</th><th>顧客名（修正可）</th><th>商品コード（修正可）</th><th>商品名</th><th>元ファイル</th></tr></thead>
+        <tbody id="import-review-body"></tbody>
+      </table>
+    </div>
+    <div class="import-review-actions">
+      <button class="btn" type="button" onclick="cancelImportReview()">取り込みをやり直す</button>
+      <div class="import-review-actions-right"><button class="btn btn-primary" type="button" onclick="confirmImportReview()">内容を確定して作業開始</button></div>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="modal-bg" onclick="closeNP()">
   <div class="np-panel" onclick="event.stopPropagation()">
     <div class="np-head"><div><div class="np-meta" id="np-meta"></div><div class="np-product" id="np-product"></div></div><button class="np-close" onclick="closeNP()">×</button></div>
     <div class="np-tabs" id="np-tabs"></div>
-    <div class="np-disp" id="np-disp-wrap"><div class="np-val" id="np-val">0</div><div class="np-unit" id="np-unit"></div></div>
+    <div class="np-disp" id="np-disp-wrap"><input class="np-native-input" id="np-native-input" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" aria-label="数値入力" oninput="onNativeNumberInput()" onkeydown="handleNativeNumberKey(event)"><div class="np-unit" id="np-unit"></div></div>
     <div class="np-grid" id="np-grid">
       <button class="np-key" onclick="nk('7')">7</button><button class="np-key" onclick="nk('8')">8</button><button class="np-key" onclick="nk('9')">9</button>
       <button class="np-key" onclick="nk('4')">4</button><button class="np-key" onclick="nk('5')">5</button><button class="np-key" onclick="nk('6')">6</button>
@@ -222,7 +295,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     </div>
     <button class="np-key wide" id="np-next" onclick="confirmF()">次の項目へ</button>
     <div class="memo-input-wrap" id="memo-input-wrap"><textarea class="memo-textarea" id="memo-textarea" placeholder="現場メモを入力" maxlength="200" oninput="updateMemoCount()"></textarea><div class="memo-char-count"><span id="memo-count">0</span> / 200</div><button class="memo-confirm" onclick="confirmMemo()">メモを保存して閉じる</button></div>
-    <div class="unit-input-wrap" id="unit-input-wrap"><div class="unit-presets" id="unit-presets"><button class="unit-preset" onclick="selectUnit('Kg')">Kg</button><button class="unit-preset" onclick="selectUnit('g')">g</button><button class="unit-preset" onclick="selectUnit('匹')">匹</button><button class="unit-preset" onclick="selectUnit('尾')">尾</button><button class="unit-preset" onclick="selectUnit('枚')">枚</button><button class="unit-preset" onclick="selectUnit('箱')">箱</button><button class="unit-preset" onclick="selectUnit('本')">本</button><button class="unit-preset" onclick="selectUnit('個')">個</button></div><input class="unit-text-input" id="unit-text-input" type="text" placeholder="単位を入力" maxlength="10" oninput="onUnitTextInput()"><button class="unit-confirm" onclick="confirmUnit()">単位を保存して閉じる</button></div>
+    <div class="unit-input-wrap" id="unit-input-wrap"><div class="unit-presets" id="unit-presets"><button class="unit-preset" onclick="selectUnit('Kg')">Kg</button><button class="unit-preset" onclick="selectUnit('pkt')">pkt</button><button class="unit-preset" onclick="selectUnit('PC')">PC</button><button class="unit-preset" onclick="selectUnit('CS')">CS</button></div><input class="unit-text-input" id="unit-text-input" type="text" placeholder="単位を選択" maxlength="10" readonly oninput="onUnitTextInput()"><button class="unit-confirm" onclick="confirmUnit()">単位を保存して閉じる</button></div>
   </div>
 </div>
 <div class="confirm-bg" id="manual-order-bg" onclick="closeManualOrderModal()">
@@ -235,7 +308,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       <label>商品コード<input id="manual-product-id" placeholder="未入力可"></label>
       <label>注文数量<input id="manual-qty" inputmode="decimal" placeholder="数量"></label>
       <label>注文単位<input id="manual-unit" placeholder="kg / 本 / 個"></label>
-      <label>産地<input id="manual-origin" placeholder="産地"></label>
+      <label>産地<input id="manual-origin" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="産地"></label>
       <label>売価<input id="manual-price" inputmode="decimal" placeholder="売価"></label>
       <label class="wide">備考<input id="manual-memo" placeholder="備考"></label>
     </div>
@@ -298,7 +371,7 @@ function switchF(f){if(f==="memo"){saveNP();curF="memo";showMemo();return}if(f==
 function updateP1NP(){document.getElementById("np-val").textContent=npVal||"0";document.getElementById("np-unit").textContent=P1_UNIT[curF]||"";P1_FIELDS.forEach(f=>{document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);const tk=document.getElementById("tick-"+f);if(tk)tk.textContent=rows[curRow]?.[P1_KEY[f]]?"✓":""});document.getElementById("tab-unit")?.classList.toggle("active",curF==="unit");document.getElementById("tick-unit").textContent=rows[curRow]?._unit?"✓":"";document.getElementById("tab-memo")?.classList.remove("active");document.getElementById("tick-memo").textContent=rows[curRow]?._memo?"✓":"";const isLast=curF==="box",btn=document.getElementById("np-next");btn.textContent=isLast?"保存して閉じる":"次の項目へ";btn.className="np-key wide"+(isLast?" last":"")}
 function updateP2NP(){document.getElementById("np-val").textContent=npVal||"0";document.getElementById("np-unit").textContent=P2_UNIT[curF]||"kg";["gross","dry_ice"].forEach(f=>{document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);const tk=document.getElementById("tick-"+f);if(tk)tk.textContent=boxMap[curP2Imp]?.[curP2Box]?.[f]?"✓":""});const btn=document.getElementById("np-next");btn.textContent="保存して閉じる";btn.className="np-key wide last"}
 function showNumpad(){document.getElementById("np-disp-wrap").style.display="flex";document.getElementById("np-grid").style.display="grid";document.getElementById("np-next").style.display="block";document.getElementById("memo-input-wrap").classList.remove("show");document.getElementById("unit-input-wrap").classList.remove("show")}
-function showUnitInput(){document.getElementById("np-disp-wrap").style.display="none";document.getElementById("np-grid").style.display="none";document.getElementById("np-next").style.display="none";document.getElementById("memo-input-wrap").classList.remove("show");document.getElementById("unit-input-wrap").classList.add("show");const cur=rows[curRow]?._unit||"",inp=document.getElementById("unit-text-input");inp.value=cur;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===cur));document.querySelectorAll(".np-tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-unit")?.classList.add("active");setTimeout(()=>inp.focus(),100)}
+function showUnitInput(){document.getElementById("np-disp-wrap").style.display="none";document.getElementById("np-grid").style.display="none";document.getElementById("np-next").style.display="none";document.getElementById("memo-input-wrap").classList.remove("show");document.getElementById("unit-input-wrap").classList.add("show");const allowed=["Kg","pkt","PC","CS"];const cur=allowed.includes(rows[curRow]?._unit)?rows[curRow]._unit:"Kg";if(rows[curRow])rows[curRow]._unit=cur;const inp=document.getElementById("unit-text-input");inp.value=cur;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===cur));document.querySelectorAll(".np-tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-unit")?.classList.add("active")}
 function selectUnit(u){document.getElementById("unit-text-input").value=u;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===u))}
 function onUnitTextInput(){const v=document.getElementById("unit-text-input").value;document.querySelectorAll(".unit-preset").forEach(b=>b.classList.toggle("active",b.textContent===v))}
 function saveUnitCur(){if(curRow!==null)rows[curRow]._unit=document.getElementById("unit-text-input").value.trim()}
@@ -626,6 +699,43 @@ function updateP1CountryBadge(country){
 function normalizeHeaderName(name){
   return String(name||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").replace(/[ 　\t\r\n]/g,"").trim().toLowerCase();
 }
+function normalizeProductId(value){
+  return String(value??"").normalize("NFKC").trim().replace(/\s+/g,"").replace(/\.0+$/,"").toUpperCase();
+}
+function normalizeImporterCode(value){
+  return String(value??"").normalize("NFKC").trim().replace(/[\s_\-　]+/g,"").toUpperCase();
+}
+function contractPriceHeaderCode(header){
+  const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
+  const compact=raw.normalize("NFKC").replace(/[\s_\-　]+/g,"");
+  const generic=["単価","価格","売価","契約単価","契約価格","unitprice","price"];
+  if(generic.map(normalizeHeaderName).includes(normalizeHeaderName(raw)))return "";
+  let m=compact.match(/^(.+?)(?:契約)?(?:単価|価格|売価)$/i);
+  if(!m)m=compact.match(/^(.+?)(?:contract)?(?:unitprice|price)$/i);
+  if(!m)m=compact.match(/^(?:契約)?(?:単価|価格|売価)(.+)$/i);
+  if(!m)m=compact.match(/^(?:contract)?(?:unitprice|price)(.+)$/i);
+  const code=normalizeImporterCode(m?.[1]||"");
+  return /^[A-Z0-9]{2,12}$/.test(code)?code:"";
+}
+function applyContractPricesFromCsv(rowObj,headers,cols,type){
+  if(type!=="master")return;
+  const prices={};
+  headers.forEach((h,i)=>{
+    const code=contractPriceHeaderCode(h);
+    const value=String(cols[i]||"").replace(/^"|"$/g,"").trim();
+    if(code&&value!=="")prices[code]=value;
+  });
+  if(Object.keys(prices).length)rowObj.importer_prices=prices;
+}
+function resolveContractPrice(master,importerId){
+  const code=normalizeImporterCode(importerId);
+  if(!code||!master)return "";
+  const prices=master.importer_prices||master.contract_prices||{};
+  return prices[code]??prices[importerCode(code)]??"";
+}
+function resolveInitialUnitPrice(orderPrice,master,importerId){
+  return orderPrice||resolveContractPrice(master,importerId)||master?.unit_price||"";
+}
 function resolveCsvKey(header,type){
   const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
   const normalized=normalizeHeaderName(raw);
@@ -646,7 +756,8 @@ function resolveCsvKey(header,type){
   };
   const masterAliases={
     product_id:["商品id","商品ｉｄ","商品コード","品番","productid","product_id"],
-    en_name:["英名","英語名","英文名","englishname","en_name"],
+    product_name:["商品名","品名","productname","product_name"],
+    en_name:["英名","英語名","英文名","商品名(英語)","商品名（英語）","商品名英語","englishname","en_name"],
     sci_name:["学術名","学名","scientificname","sci_name"],
     origin:["産地","原産地","origin"],
     unit_price:["単価","価格","unitprice","unit_price"]
@@ -683,6 +794,7 @@ function parseCSV(text,type){
       const key=resolveCsvKey(h,type);
       obj[key]=(cols[i]||"").replace(/^"|"$/g,"").trim();
     });
+    applyContractPricesFromCsv(obj,headers,cols,type);
     return obj;
   }).filter(r=>Object.values(r).some(v=>v));
   if(type==="order"){
@@ -692,7 +804,7 @@ function parseCSV(text,type){
     if(missingCustomer)toast("店舗名を拾えない行があります。CSVの列名を確認してください。");
   }else{
     masterMap={};
-    parsed.forEach(r=>{if(r.product_id)masterMap[r.product_id]=r});
+    parsed.forEach(r=>{const key=normalizeProductId(r.product_id);if(key)masterMap[key]=r});
     setOk("master-status",`読込済 ${parsed.length}件`);
   }
   checkMergeReady();
@@ -714,7 +826,8 @@ function mergeAndRender(){
     const m=masterMap[productId]||{};
     const customer=r.customer||findFirstValue(r,["エンドユーザーの店名","エンドユーザー店名","店舗名","店名","得意先名","顧客名","納品先名","届け先名"]);
     const importerId=r.importer_id||findFirstValue(r,["輸入社ID","輸入社コード","輸入者ID","輸入者コード","C/S"])||"JKT";
-    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:r.product_name||findFirstValue(r,["商品名","品名","NAME OF GOODS INJAPANESE","NAME OF GOODS"])||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||findFirstValue(r,["NAME OF GOODS"])||"",sci_name:m.sci_name||"",origin:m.origin||r.origin||"",unit_price:r.unit_price||m.unit_price||findFirstValue(r,["U/PRICE by JPN YEN"])||"",importer_id:importerId,country:countryCode(importerId)};
+    const orderPrice=r.unit_price||findFirstValue(r,["売価","U/PRICE by JPN YEN"]);
+    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:r.product_name||findFirstValue(r,["商品名","品名","NAME OF GOODS INJAPANESE","NAME OF GOODS"])||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||findFirstValue(r,["NAME OF GOODS"])||"",sci_name:m.sci_name||"",origin:m.origin||r.origin||"",unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
   });
   activeCountry=null;
   activeCustomer={};
@@ -784,6 +897,33 @@ function numberOrNull(v){
   if(v===undefined||v===null||String(v).trim()==="")return null;
   const n=Number(String(v).replace(/,/g,""));
   return Number.isFinite(n)?n:null;
+}
+function salesShippingFeePromptValue(){
+  const v=prompt("送料を入力してください。不要な場合は0のまま確定してください。","0");
+  if(v===null)return null;
+  const n=numberOrNull(v);
+  if(n===null||n<0){
+    alert("送料は0以上の数値で入力してください。");
+    return null;
+  }
+  return n;
+}
+function salesShippingFeesPromptValue(importers){
+  const fees={};
+  for(const imp of importers){
+    const v=prompt(`${imp} の送料を入力してください。不要な場合は0のまま確定してください。`,"0");
+    if(v===null)return null;
+    const n=numberOrNull(v);
+    if(n===null||n<0){
+      alert("送料は0以上の数値で入力してください。");
+      return null;
+    }
+    fees[imp]=n;
+  }
+  return fees;
+}
+function salesShippingFeesTotal(fees){
+  return Object.values(fees||{}).reduce((sum,v)=>sum+(Number(v)||0),0);
 }
 function importerCodeFromRow(r){
   return importerCode(r.importer_id);
@@ -1139,6 +1279,7 @@ async function readCSVFiles(fileList,type){
   const files=[...fileList||[]].filter(Boolean);
   if(!files.length)return;
   if(type==="order"){
+    importIdentityConfirmed=false;
     orderRows=[];
     latestOrderFilename=files.map(f=>f.name).join(", ");
     latestInferredImporterCode="";
@@ -1158,7 +1299,10 @@ async function readCSVFiles(fileList,type){
     masterMap={};
     latestMasterFilename=files.map(f=>f.name).join(", ");
     for(const file of files)await readCSVFile(file,type,true);
-    setOk("master-status",`読込済 ${Object.keys(masterMap).length}件`);
+    productMasterPendingUpload=Object.keys(masterMap).length>0;
+    productMasterPendingFilename=latestMasterFilename;
+    if(currentUser&&supabaseClient)await saveProductMasterToSupabase(latestMasterFilename);
+    else setMasterStatus(`端末に読込済 ${Object.keys(masterMap).length}件 / ログイン後に自動保存`);
     checkMergeReady();
   }
 }
@@ -1180,7 +1324,7 @@ async function readOrderPdfFile(file){
   for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
     const page=await pdf.getPage(pageNo);
     const content=await page.getTextContent();
-    const text=content.items.map(item=>item.str).join("");
+    const text=content.items.map(item=>item.str).join(" ");
     parsed.push(...parseOrderPdfText(text,file.name,importerFromFile,pageNo));
   }
   return parsed;
@@ -1189,9 +1333,12 @@ function splitPdfRecords(text){
   return String(text||"").split(/-{20,}/).map(s=>s.replace(/\s+/g," ").trim()).filter(s=>/^[0-9]/.test(s)&&!s.includes("コード顧客名商品名"));
 }
 function parsePdfCodeBody(raw){
-  const m=String(raw||"").match(/^(\d+[A-D]{0,2})(.+)$/);
+  const source=String(raw||"").replace(/\s+/g," ").trim();
+  const spaced=source.match(/^(\d+[A-Z]{0,2})\s+(.+)$/i);
+  if(spaced)return{code:spaced[1].toUpperCase(),body:spaced[2].trim()};
+  const m=source.match(/^(\d+[A-E]{0,2})(.+)$/i);
   if(!m)return null;
-  return{code:m[1],body:m[2].trim()};
+  return{code:m[1].toUpperCase(),body:m[2].trim()};
 }
 function parseOrderPdfText(text,filename,importerCodeValue,pageNo){
   const records=[];
@@ -1254,7 +1401,7 @@ function parseCSV(text,type,filename,append){
   }else{
     if(!append)masterMap={};
     latestMasterFilename=append?latestMasterFilename:(filename||latestMasterFilename);
-    parsed.forEach(r=>{if(r.product_id)masterMap[r.product_id]=r});
+    parsed.forEach(r=>{const key=normalizeProductId(r.product_id);if(key)masterMap[key]=r});
   }
 }
 window.addEventListener("online",()=>setSaveState("Supabase: オンライン"));
@@ -1316,6 +1463,7 @@ function parseCSV(text,type,filename){
       const key=resolveCsvKey(h,type);
       obj[key]=(cols[i]||"").replace(/^"|"$/g,"").trim();
     });
+    applyContractPricesFromCsv(obj,headers,cols,type);
     return obj;
   }).filter(r=>Object.values(r).some(v=>v));
   if(type==="order"){
@@ -1329,7 +1477,7 @@ function parseCSV(text,type,filename){
   }else{
     masterMap={};
     latestMasterFilename=filename||latestMasterFilename;
-    parsed.forEach(r=>{if(r.product_id)masterMap[r.product_id]=r});
+    parsed.forEach(r=>{const key=normalizeProductId(r.product_id);if(key)masterMap[key]=r});
     setOk("master-status",`読込済 ${parsed.length}件`);
   }
   checkMergeReady();
@@ -1338,14 +1486,14 @@ function mergeAndRender(){
   const fallbackImporter=latestInferredImporterCode||inferImporterCodeFromFilename(latestOrderFilename)||"UNKNOWN";
   rows=orderRows.map((r,i)=>{
     const productId=r.product_id||findFirstValue(r,["商品ID","商品コード","品番","CODE"]);
-    const m=masterMap[productId]||{};
+    const m=masterMap[normalizeProductId(productId)]||{};
     const customer=r.customer||findFirstValue(r,["エンドユーザーの店名","エンドユーザー店名","店舗名","店名","得意先名","顧客名","納品先名","届け先名","BUTER CODE","BUYER CODE"]);
     const importerId=r.importer_id||r.importer_code||findFirstValue(r,["輸入社ID","輸入社コード","輸入者ID","輸入者コード","C/S"])||fallbackImporter;
     const japaneseName=findFirstValue(r,["NAME OF GOODS INJAPANESE","商品名","品名"]);
     const englishName=findFirstValue(r,["NAME OF GOODS"]);
     const orderOrigin=r.origin||findFirstValue(r,["産地","origin"]);
     const orderPrice=r.unit_price||findFirstValue(r,["売価","U/PRICE by JPN YEN"]);
-    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:orderOrigin||m.origin||"",unit_price:orderPrice||m.unit_price||"",importer_id:importerId,country:countryCode(importerId)};
+    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:orderOrigin||m.origin||"",unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
   });
   activeCountry=null;
   activeCustomer={};
@@ -1393,7 +1541,35 @@ async function saveCurrentSessionToSupabase(){
   toast("Supabaseに保存しました");
 }
 function boxInput(row){
-  return `<input class="inline-box-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${esc(row._box)}" placeholder="箱" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur()}" onblur="updateInlineBox(${row._idx},this.value)">`;
+  return `<input class="inline-box-input" data-row-idx="${row._idx}" inputmode="numeric" pattern="[0-9]*" lang="en" autocomplete="off" value="${esc(row._box)}" placeholder="箱" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleInlineBoxKey(event,${row._idx})" onblur="updateInlineBox(${row._idx},this.value)">`;
+}
+let p1InlineRefreshTimer=null;
+document.addEventListener("focusin",event=>{
+  if(event.target?.matches?.(".inline-box-input,.inline-work-input"))clearTimeout(p1InlineRefreshTimer);
+});
+function scheduleP1InlineRefresh(row){
+  clearTimeout(p1InlineRefreshTimer);
+  const refresh=()=>{
+    if(document.activeElement?.matches(".inline-box-input,.inline-work-input")){
+      p1InlineRefreshTimer=setTimeout(refresh,250);
+      return;
+    }
+    renderP1Cell(row.country,row.customer);
+    if(row.customer!=="ALL"&&document.getElementById("p1cusbody-"+cid(row.country+"ALL")))renderP1Cell(row.country,"ALL");
+    updateP1CountryBadge(row.country);
+    if(currentPhase===2)buildP2();
+  };
+  p1InlineRefreshTimer=setTimeout(refresh,250);
+}
+function handleInlineBoxKey(event,rowIdx){
+  if(event.key!=="Enter")return;
+  event.preventDefault();
+  const current=event.currentTarget;
+  updateInlineBox(rowIdx,current.value);
+  const inputs=[...document.querySelectorAll(".inline-box-input")].filter(el=>el.offsetParent!==null);
+  const pos=inputs.indexOf(current);
+  const next=inputs[pos+1];
+  if(next)setTimeout(()=>{next.focus();next.select()},0);
 }
 function updateInlineBox(rowIdx,value){
   const row=rows[rowIdx];
@@ -1401,10 +1577,8 @@ function updateInlineBox(rowIdx,value){
   const next=String(value||"").trim();
   if(row._box===next)return;
   row._box=next;
-  renderP1Cell(row.country,row.customer);
-  updateP1CountryBadge(row.country);
   saveOrderLineToSupabase(row);
-  if(currentPhase===2)buildP2();
+  scheduleP1InlineRefresh(row);
 }
 P1_UNIT.qty="";
 P1_UNIT.net="";
@@ -1464,10 +1638,12 @@ function addManualOrder(){
   if(!importerId||!customer||!productName){toast("輸入社、店舗名、商品名は必須です");return}
   const nextIdx=rows.reduce((max,r)=>Math.max(max,Number(r._idx)||0),-1)+1;
   const productId=manualValue("manual-product-id")||`ADD-${String(nextIdx+1).padStart(4,"0")}`;
+  const master=masterMap[normalizeProductId(productId)]||{};
+  const manualPrice=manualValue("manual-price");
   const row={
     _idx:nextIdx,_qty:"",_net:"",_box:"",_memo:manualValue("manual-memo"),_unit:"Kg",_stockout:false,
     customer,product_id:productId,product_name:productName,unit:manualValue("manual-unit"),csv_qty:manualValue("manual-qty"),
-    en_name:"",sci_name:"",origin:manualValue("manual-origin"),unit_price:manualValue("manual-price"),importer_id:importerId,country:countryCode(importerId)
+    en_name:master.en_name||"",sci_name:master.sci_name||"",origin:manualValue("manual-origin")||master.origin||"",unit_price:resolveInitialUnitPrice(manualPrice,master,importerId),importer_id:importerId,country:countryCode(importerId)
   };
   rows.push(row);
   orderRows.push({product_id:row.product_id,product_name:row.product_name,unit:row.unit,csv_qty:row.csv_qty,customer:row.customer,importer_id:row.importer_id,csv_memo:row._memo,origin:row.origin,unit_price:row.unit_price});
@@ -1557,7 +1733,7 @@ function p15SwitchImporter(imp){
 function renderP15Importer(imp){
   const impRows=rows.filter(r=>importerCode(r.importer_id)===imp);
   const done=impRows.filter(r=>r.origin&&r.unit_price!=="").length,total=impRows.length,pct=total?Math.round(done/total*100):0;
-  const body=impRows.map((r,i)=>`<tr><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td><input class="p15-input p15-price" inputmode="decimal" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td></tr>`).join("");
+  const body=impRows.map((r,i)=>`<tr><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td><input class="p15-input p15-price" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td></tr>`).join("");
   const wrap=document.getElementById("p15content-"+cid(imp));
   if(!wrap)return;
   wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">産地・売価入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="table-scroll"><table><thead><tr><th>#</th><th>店舗名</th><th>商品名</th><th>商品コード</th><th>産地</th><th>売価</th><th>状態</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -1585,6 +1761,18 @@ function handleP15Key(event,rowIdx,field){
     moveP15Focus(event.currentTarget,-1,true);
   }
 }
+let p15RefreshTimer=null;
+function scheduleP15Refresh(){
+  clearTimeout(p15RefreshTimer);
+  const refresh=()=>{
+    if(document.activeElement?.classList.contains("p15-input")){
+      p15RefreshTimer=setTimeout(refresh,250);
+      return;
+    }
+    if(currentPhase===1.5)buildP15();
+  };
+  p15RefreshTimer=setTimeout(refresh,250);
+}
 function saveP15Field(rowIdx,field,value){
   const row=rows[rowIdx];
   if(!row||!(field==="origin"||field==="unit_price"))return;
@@ -1592,7 +1780,7 @@ function saveP15Field(rowIdx,field,value){
   if(row[field]===next)return;
   row[field]=next;
   saveOrderLineToSupabase(row);
-  if(currentPhase===1.5)buildP15();
+  scheduleP15Refresh();
 }
 function setImportPanelVisible(visible){
   const grid=document.querySelector(".import-grid");
@@ -1627,10 +1815,33 @@ function switchPhase(n){
     saveAllBoxesToSupabase();
   }
 }
+function captureTabScrollPositions(){
+  const positions={};
+  document.querySelectorAll(".country-tabs,.customer-tabs").forEach((el,index)=>{
+    const key=el.id||`tab-scroll-${index}`;
+    positions[key]=el.scrollLeft;
+  });
+  return positions;
+}
+function restoreTabScrollPositions(positions){
+  const restore=()=>{
+    document.querySelectorAll(".country-tabs,.customer-tabs").forEach((el,index)=>{
+      const key=el.id||`tab-scroll-${index}`;
+      if(Object.prototype.hasOwnProperty.call(positions,key))el.scrollLeft=positions[key];
+    });
+  };
+  restore();
+  requestAnimationFrame(()=>{
+    restore();
+    requestAnimationFrame(restore);
+  });
+}
 const __refreshCurrentSessionFromSupabaseBase=refreshCurrentSessionFromSupabase;
 refreshCurrentSessionFromSupabase=async function(){
+  const tabScrollPositions=captureTabScrollPositions();
   const ok=await __refreshCurrentSessionFromSupabaseBase();
   if(ok&&currentPhase===1.5)buildP15();
+  restoreTabScrollPositions(tabScrollPositions);
   return ok;
 };
 const __applyRemoteOrderLineBase=applyRemoteOrderLine;
@@ -1854,6 +2065,8 @@ function normalizeImporterLabel(value){
   const upper=raw.toUpperCase();
   if(/^DIM\s*VEG$/.test(upper))return "DIM Veg";
   if(/^DIM\s*FZ$/.test(upper))return "DIM FZ";
+  if(/^FBI\s*VEG$/.test(upper))return "FBI Veg";
+  if(/^FBI\s*FZ$/.test(upper))return "FBI FZ";
   if(/^DIM$/.test(upper))return "DIM";
   if(/^JKT$/.test(upper))return "JKT";
   if(/^FBI$/.test(upper))return "FBI";
@@ -1864,6 +2077,8 @@ function detectImporterLabelFromText(text){
   const patterns=[
     {re:/\bDIM\s*[-_,/ ]*\s*VEG\b/i,label:"DIM Veg"},
     {re:/\bDIM\s*[-_,/ ]*\s*FZ\b/i,label:"DIM FZ"},
+    {re:/\bFBI\s*[-_,/ ]*\s*VEG\b/i,label:"FBI Veg"},
+    {re:/\bFBI\s*[-_,/ ]*\s*FZ\b/i,label:"FBI FZ"},
     {re:/\bDIM\b/i,label:"DIM"},
     {re:/\bJKT\b/i,label:"JKT"},
     {re:/\bFBI\b/i,label:"FBI"}
@@ -1874,7 +2089,7 @@ function detectImporterLabelFromText(text){
 function pdfImporterMarkers(text){
   const source=String(text||"");
   const markers=[];
-  const re=/\b(DIM)\s*[-_,/ ]*\s*(VEG|FZ)?\b|\b(JKT|FBI)\b/gi;
+  const re=/\b(DIM|FBI)\s*[-_,/ ]*\s*(VEG|FZ)?\b|\b(JKT)\b/gi;
   let m;
   while((m=re.exec(source))){
     const label=m[1]?normalizeImporterLabel([m[1],m[2]||""].join(" ").trim()):normalizeImporterLabel(m[3]);
@@ -1955,42 +2170,2227 @@ saveCurrentSessionToSupabase=async function(){
   }
   await __saveCurrentSessionNoOverwriteBase();
 };
-function sessionLocalDate(value){
-  if(!value)return "";
-  return new Date(value).toLocaleDateString("ja-JP",{timeZone:"Asia/Tokyo"});
+let productMasterLoadedUserId="";
+let productMasterLoadPromise=null;
+let productMasterPendingUpload=false;
+let productMasterPendingFilename="";
+function productMasterTableMissing(error){
+  const message=String(error?.message||"");
+  return error?.code==="42P01"||/product_master|product_price_contracts|schema cache/i.test(message);
 }
-function nonEmptyLineCount(lines){
-  return (lines||[]).filter(r=>r.input_qty!==null||r.net_weight!==null||r.box_no||r.memo||r.is_stockout).length;
+function setMasterStatus(message,isError){
+  const el=document.getElementById("master-status");
+  if(!el)return;
+  el.textContent=message;
+  el.className="import-status"+(isError?"":" ok");
+  if(isError)el.style.color="#b8322a";else el.style.color="";
 }
-async function diagnoseJune4Data(){
-  if(!(await requireSupabaseLogin()))return;
-  setSaveState("Supabase: 6/4診断中...");
-  const {data:sessions,error}=await supabaseClient.from("work_sessions").select("id,name,status,created_at,updated_at,created_by").order("created_at",{ascending:false}).limit(200);
-  if(error){setSaveState("Supabase: 診断失敗",true);toast("診断エラー: "+error.message);return}
-  const target=(sessions||[]).filter(s=>sessionLocalDate(s.created_at)==="2026/6/4"||sessionLocalDate(s.created_at)==="2026/06/04");
-  const body=document.getElementById("session-options");
-  document.getElementById("session-bg").classList.add("open");
-  if(!target.length){
-    body.innerHTML=`<div class="export-option"><div class="export-option-left"><span class="export-option-code">6/4作成なし</span><span class="export-option-meta">ログイン中ユーザーで見える範囲では、2026/6/4作成の作業は0件です。直近作業: ${(sessions||[]).slice(0,5).map(s=>`${esc(s.name)} ${sessionLocalDate(s.created_at)}`).join(" / ")||"-"}</span></div></div>`;
-    setSaveState("Supabase: 6/4作成 0件");
+async function loadProductMasterFromSupabase(options={}){
+  const force=!!options.force;
+  if(!supabaseClient||!currentUser){
+    if(force)toast("先にSupabaseへログインしてください");
+    return false;
+  }
+  if(!force&&productMasterLoadedUserId===currentUser.id&&Object.keys(masterMap).length)return true;
+  if(productMasterLoadPromise&&!force)return productMasterLoadPromise;
+  productMasterLoadPromise=(async()=>{
+    setMasterStatus("クラウドから読込中...");
+    const pageSize=1000,loaded=[];
+    let from=0,lastUpdated="",sourceFilename="";
+    while(true){
+      const {data,error}=await supabaseClient.from("product_master")
+        .select("product_id,product_name,english_name,scientific_name,origin,unit_price,source_filename,updated_at")
+        .order("product_id",{ascending:true}).range(from,from+pageSize-1);
+      if(error){
+        const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"商品マスタを取得できません: "+error.message;
+        setMasterStatus("クラウド未設定",true);
+        if(force)toast(hint);
+        return false;
+      }
+      loaded.push(...(data||[]));
+      if((data||[]).length<pageSize)break;
+      from+=pageSize;
+    }
+    const nextMap={};
+    loaded.forEach(item=>{
+      const key=normalizeProductId(item.product_id);
+      if(!key)return;
+      nextMap[key]={product_id:item.product_id||"",product_name:item.product_name||"",en_name:item.english_name||"",sci_name:item.scientific_name||"",origin:item.origin||"",unit_price:item.unit_price??""};
+      if(item.updated_at&&item.updated_at>lastUpdated){lastUpdated=item.updated_at;sourceFilename=item.source_filename||sourceFilename}
+    });
+    try{
+      const {data:contractRows,error:contractError}=await supabaseClient.from("product_price_contracts")
+        .select("product_id,importer_code,unit_price");
+      if(!contractError){
+        (contractRows||[]).forEach(item=>{
+          const key=normalizeProductId(item.product_id);
+          const importer=normalizeImporterCode(item.importer_code);
+          if(!key||!importer||!nextMap[key])return;
+          nextMap[key].importer_prices=nextMap[key].importer_prices||{};
+          nextMap[key].importer_prices[importer]=item.unit_price??"";
+        });
+      }
+    }catch(e){}
+    masterMap=nextMap;
+    productMasterLoadedUserId=currentUser.id;
+    const dateText=lastUpdated?new Date(lastUpdated).toLocaleString("ja-JP"):"未更新";
+    setMasterStatus(loaded.length?`クラウド ${loaded.length}件 / ${dateText}`:"クラウドにマスタ未登録");
+    latestMasterFilename=sourceFilename||latestMasterFilename;
+    checkMergeReady();
+    if(force)toast(loaded.length?`商品マスタ ${loaded.length}件を再読込しました`:"クラウドに商品マスタがありません");
+    return true;
+  })();
+  try{return await productMasterLoadPromise}finally{productMasterLoadPromise=null}
+}
+async function saveProductMasterToSupabase(filename){
+  if(!supabaseClient||!currentUser){
+    setMasterStatus(`端末に読込済 ${Object.keys(masterMap).length}件 / 未ログイン`);
+    return false;
+  }
+  const entries=Object.entries(masterMap);
+  if(!entries.length){setMasterStatus("CSVに商品マスタがありません",true);return false}
+  setMasterStatus(`クラウドへ保存中 0/${entries.length}`);
+  const payloads=entries.map(([key,item])=>({
+    product_id:key,
+    product_name:item.product_name||item["商品名"]||null,
+    english_name:item.en_name||null,
+    scientific_name:item.sci_name||null,
+    origin:item.origin||null,
+    unit_price:numberOrNull(item.unit_price),
+    source_filename:filename||null,
+    updated_by:currentUser.id
+  }));
+  const chunkSize=200;
+  for(let i=0;i<payloads.length;i+=chunkSize){
+    const {error}=await supabaseClient.from("product_master").upsert(payloads.slice(i,i+chunkSize),{onConflict:"product_id"});
+    if(error){
+      const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"商品マスタ保存エラー: "+error.message;
+      setMasterStatus(`保存失敗: ${hint}`,true);
+      toast(hint);
+      return false;
+    }
+    setMasterStatus(`クラウドへ保存中 ${Math.min(i+chunkSize,payloads.length)}/${payloads.length}`);
+  }
+  const contractPayloads=[];
+  entries.forEach(([key,item])=>{
+    Object.entries(item.importer_prices||item.contract_prices||{}).forEach(([importer,price])=>{
+      const importerCode=normalizeImporterCode(importer);
+      const unitPrice=numberOrNull(price);
+      if(importerCode&&unitPrice!==null)contractPayloads.push({
+        product_id:key,
+        importer_code:importerCode,
+        unit_price:unitPrice,
+        source_filename:filename||null,
+        updated_by:currentUser.id
+      });
+    });
+  });
+  if(contractPayloads.length){
+    for(let i=0;i<contractPayloads.length;i+=chunkSize){
+      const {error}=await supabaseClient.from("product_price_contracts").upsert(contractPayloads.slice(i,i+chunkSize),{onConflict:"product_id,importer_code"});
+      if(error){
+        const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を再実行してください":"輸入社別価格保存エラー: "+error.message;
+        setMasterStatus(`契約価格保存失敗: ${hint}`,true);
+        toast(hint);
+        return false;
+      }
+    }
+  }
+  productMasterLoadedUserId=currentUser.id;
+  productMasterPendingUpload=false;
+  productMasterPendingFilename="";
+  setMasterStatus(`クラウド保存済み ${payloads.length}件 / ${new Date().toLocaleString("ja-JP")}`);
+  toast(`商品マスタ ${payloads.length}件を更新しました`);
+  return true;
+}
+async function saveCurrentProductMaster(){
+  const count=Object.keys(masterMap).length;
+  if(!count){toast("先に商品マスタCSVを選択してください");return}
+  if(!currentUser||!supabaseClient){
+    productMasterPendingUpload=true;
+    productMasterPendingFilename=latestMasterFilename;
+    setMasterStatus(`端末に読込済 ${count}件 / 先にログインしてください`);
+    toast("先にSupabaseへログインしてください");
     return;
   }
-  const summaries=[];
-  for(const s of target){
-    const {data:lines,error:lineError}=await supabaseClient.from("order_lines").select("source_row_no,input_qty,net_weight,box_no,memo,is_stockout,updated_at,updated_by").eq("session_id",s.id).order("source_row_no",{ascending:true});
-    const {data:boxes,error:boxError}=await supabaseClient.from("boxes").select("box_no,gross_weight,dry_ice_weight,box_size,updated_at,updated_by").eq("session_id",s.id);
-    const lineCount=(lines||[]).length;
-    const filled=nonEmptyLineCount(lines);
-    const boxCount=(boxes||[]).length;
-    const latestLine=(lines||[]).map(r=>r.updated_at).filter(Boolean).sort().pop()||"";
-    const latestBox=(boxes||[]).map(r=>r.updated_at).filter(Boolean).sort().pop()||"";
-    const updater=[...(new Set((lines||[]).map(r=>r.updated_by).filter(Boolean)))].slice(0,3).join(", ");
-    summaries.push({s,lineError,boxError,lineCount,filled,boxCount,latestLine,latestBox,updater});
-  }
-  body.innerHTML=summaries.map(x=>`<div class="export-option" onclick="openSavedSession('${x.s.id}')"><div class="export-option-left" style="flex:1"><span class="export-option-code">${esc(x.s.name)}</span><span class="export-option-meta">作成: ${new Date(x.s.created_at).toLocaleString("ja-JP")} / 作業更新: ${new Date(x.s.updated_at).toLocaleString("ja-JP")}</span><span class="export-option-meta">明細: ${x.lineCount}件 / 入力あり: ${x.filled}件 / 箱: ${x.boxCount}件</span><span class="export-option-meta">明細最終更新: ${x.latestLine?new Date(x.latestLine).toLocaleString("ja-JP"):"-"} / 箱最終更新: ${x.latestBox?new Date(x.latestBox).toLocaleString("ja-JP"):"-"}</span><span class="export-option-meta">updated_by: ${esc(x.updater||"-")}${x.lineError?` / 明細エラー: ${esc(x.lineError.message)}`:""}${x.boxError?` / 箱エラー: ${esc(x.boxError.message)}`:""}</span></div><span class="cbadge ${x.filled? "partial":"has-pending"}">${x.filled}/${x.lineCount}</span></div>`).join("");
-  setSaveState(`Supabase: 6/4診断 ${summaries.length}件`);
+  productMasterPendingUpload=true;
+  await saveProductMasterToSupabase(latestMasterFilename||productMasterPendingFilename);
 }
+const __updateSupabaseStatusProductMasterBase=updateSupabaseStatus;
+updateSupabaseStatus=function(){
+  __updateSupabaseStatusProductMasterBase();
+  if(currentUser){
+    if(productMasterPendingUpload&&Object.keys(masterMap).length){
+      saveProductMasterToSupabase(productMasterPendingFilename||latestMasterFilename);
+    }else{
+      loadProductMasterFromSupabase();
+    }
+  }
+  else productMasterLoadedUserId="";
+};
+function nativeNumberInput(){return document.getElementById("np-native-input")}
+function configureNativeNumberInput(){
+  const input=nativeNumberInput();
+  if(!input)return;
+  const integerOnly=npMode==="p1"&&curF==="box";
+  input.inputMode=integerOnly?"numeric":"decimal";
+  input.pattern=integerOnly?"[0-9]*":"[0-9.]*";
+  input.enterKeyHint=npMode==="p1"&&curF!=="box"?"next":"done";
+  input.value=npVal||"";
+}
+function focusNativeNumberInput(){
+  const input=nativeNumberInput();
+  if(!input)return;
+  if(!document.getElementById("modal-bg")?.classList.contains("open"))return;
+  input.focus({preventScroll:true});
+  input.select();
+  requestAnimationFrame(()=>input.select());
+}
+function onNativeNumberInput(){
+  const input=nativeNumberInput();
+  if(!input)return;
+  let value=String(input.value||"").replace(/[^0-9.]/g,"");
+  if(npMode==="p1"&&curF==="box")value=value.replace(/\./g,"");
+  else{
+    const dot=value.indexOf(".");
+    if(dot>=0)value=value.slice(0,dot+1)+value.slice(dot+1).replace(/\./g,"");
+  }
+  if(input.value!==value)input.value=value;
+  npVal=value;
+}
+function handleNativeNumberKey(event){
+  if(event.key!=="Enter")return;
+  event.preventDefault();
+  confirmF();
+}
+showNumpad=function(){
+  document.getElementById("np-disp-wrap").style.display="flex";
+  document.getElementById("np-grid").style.display="none";
+  document.getElementById("np-next").style.display="block";
+  document.getElementById("memo-input-wrap").classList.remove("show");
+  document.getElementById("unit-input-wrap").classList.remove("show");
+  configureNativeNumberInput();
+  focusNativeNumberInput();
+};
+openP2NP=function(imp,bn,startField){
+  npMode="p2";
+  curP2Imp=imp;
+  curP2Box=bn;
+  curF=startField||"gross";
+  npVal=boxMap[imp]?.[bn]?.[curF]||"";
+  document.getElementById("np-meta").textContent=`輸入社: ${imp}`;
+  document.getElementById("np-product").textContent=`箱番号 ${bn}`;
+  buildP2Tabs_np();
+  document.getElementById("modal-bg").classList.add("open");
+  updateP2NP();
+};
+updateP1NP=function(){
+  showNumpad();
+  document.getElementById("np-unit").textContent=P1_UNIT[curF]||"";
+  P1_FIELDS.forEach(f=>{
+    document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);
+    const tick=document.getElementById("tick-"+f);
+    if(tick)tick.textContent=rows[curRow]?.[P1_KEY[f]]?"✓":"";
+  });
+  document.getElementById("tab-unit")?.classList.toggle("active",curF==="unit");
+  const unitTick=document.getElementById("tick-unit");
+  if(unitTick)unitTick.textContent=rows[curRow]?._unit?"✓":"";
+  const isLast=curF==="box",btn=document.getElementById("np-next");
+  btn.textContent=isLast?"保存して閉じる":"次の項目へ";
+  btn.className="np-key wide"+(isLast?" last":"");
+};
+updateP2NP=function(){
+  showNumpad();
+  document.getElementById("np-unit").textContent=P2_UNIT[curF]||"kg";
+  ["gross","dry_ice"].forEach(f=>{
+    document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);
+    const tick=document.getElementById("tick-"+f);
+    if(tick)tick.textContent=boxMap[curP2Imp]?.[curP2Box]?.[f]?"✓":"";
+  });
+  const btn=document.getElementById("np-next");
+  btn.textContent=npMode==="p2"&&curF==="gross"&&boxMap[curP2Imp]?.[curP2Box]?.dry_ice_enabled?"次の項目へ":"保存して閉じる";
+  btn.className="np-key wide"+(btn.textContent==="保存して閉じる"?" last":"");
+};
+confirmF=function(){
+  onNativeNumberInput();
+  saveNP();
+  if(npMode==="p1"){
+    const index=P1_FIELDS.indexOf(curF);
+    if(index<P1_FIELDS.length-1){
+      curF=P1_FIELDS[index+1];
+      npVal=rows[curRow]?.[P1_KEY[curF]]||"";
+      updateP1NP();
+    }else{
+      closeNP();
+      toast("入力を保存しました");
+    }
+    return;
+  }
+  const box=boxMap[curP2Imp]?.[curP2Box];
+  if(curF==="gross"&&box?.dry_ice_enabled){
+    curF="dry_ice";
+    npVal=box.dry_ice||"";
+    updateP2NP();
+  }else{
+    closeNP();
+    toast("箱情報を保存しました");
+  }
+};
+function sanitizeInlineNumber(value,integerOnly){
+  let next=String(value||"").replace(/[^0-9.]/g,"");
+  if(integerOnly)return next.replace(/\./g,"");
+  const dot=next.indexOf(".");
+  return dot<0?next:next.slice(0,dot+1)+next.slice(dot+1).replace(/\./g,"");
+}
+function inlineP1Input(row,field,label){
+  const key=P1_KEY[field],value=row[key]||"",integerOnly=field==="box";
+  return `<input class="inline-work-input${field==="net"?" weight":""}" data-row-idx="${row._idx}" data-field="${field}" inputmode="${integerOnly?"numeric":"decimal"}" pattern="${integerOnly?"[0-9]*":"[0-9.]*"}" autocomplete="off" enterkeyhint="next" value="${esc(value)}" placeholder="${esc(label)}" onclick="event.stopPropagation()" oninput="updateInlineP1Draft(this)" onblur="commitInlineP1Field(this)" onkeydown="handleInlineWorkKey(event)">`;
+}
+function updateInlineP1Draft(input){
+  const row=rows[Number(input.dataset.rowIdx)],field=input.dataset.field;
+  if(!row||!P1_KEY[field])return;
+  const value=sanitizeInlineNumber(input.value,field==="box");
+  if(input.value!==value)input.value=value;
+  row[P1_KEY[field]]=value;
+}
+function commitInlineP1Field(input){
+  updateInlineP1Draft(input);
+  const row=rows[Number(input.dataset.rowIdx)];
+  if(!row)return;
+  saveOrderLineToSupabase(row);
+  scheduleP1InlineRefresh(row);
+}
+function handleInlineWorkKey(event){
+  if(event.key!=="Enter")return;
+  event.preventDefault();
+  const current=event.currentTarget;
+  if(current.dataset.rowIdx!==undefined)commitInlineP1Field(current);
+  else commitInlineBoxField(current);
+  const inputs=[...document.querySelectorAll(".inline-work-input")].filter(el=>el.offsetParent!==null&&!el.disabled);
+  const next=inputs[inputs.indexOf(current)+1];
+  if(next){next.focus();next.select()}else current.blur();
+}
+function commitInlineBoxField(input){
+  const imp=input.dataset.imp,bn=input.dataset.box,field=input.dataset.boxField;
+  const box=boxMap[imp]?.[bn];
+  if(!box)return;
+  const value=sanitizeInlineNumber(input.value,false);
+  if(input.value!==value)input.value=value;
+  box[field]=value;
+  saveBoxToSupabase(imp,bn);
+  setTimeout(()=>{
+    if(!document.activeElement?.classList.contains("inline-work-input"))renderP2Importer(imp);
+  },200);
+}
+renderP1Cell=function(country,customer){
+  const cRows=rows.filter(r=>r.country===country&&(customer==="ALL"||r.customer===customer));
+  const stockout=cRows.filter(r=>r._stockout).length;
+  const done=cRows.filter(r=>!r._stockout&&r._qty&&r._net&&r._box).length;
+  const inProgress=cRows.filter(r=>!r._stockout&&(r._qty||r._net||r._box)&&!(r._qty&&r._net&&r._box)).length;
+  const total=cRows.length,effective=total-stockout,pending=Math.max(0,effective-done-inProgress),pct=effective?Math.round(done/effective*100):100,key=cid(country+customer);
+  const badge=document.getElementById("p1custbadge-"+key);
+  if(badge){badge.textContent=`${done+stockout}/${total}`;badge.className="cbadge "+(done+stockout===total?"all-done":done+stockout===0?"has-pending":"partial")}
+  const status=document.getElementById("p1custat-"+key);
+  if(status)status.innerHTML=`<div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">完了</div></div><div class="stat-div"></div><div><div class="stat-num" style="color:var(--warn)">${inProgress}</div><div class="stat-label">入力途中</div></div><div class="stat-div"></div><div><div class="stat-num pending">${pending}</div><div class="stat-label">未入力</div></div>${stockout?`<div class="stat-div"></div><div><div class="stat-num" style="color:#888">${stockout}</div><div class="stat-label">欠品</div></div>`:""}<div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div>`;
+  const tbody=document.getElementById("p1cusbody-"+key);
+  if(!tbody)return;
+  tbody.innerHTML=cRows.map((r,i)=>{
+    if(r._stockout)return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;text-decoration:line-through;color:var(--muted)">${esc(r.product_name)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
+    const complete=r._qty&&r._net&&r._box,partial=!complete&&(r._qty||r._net||r._box);
+    return `<tr class="${complete?"done":partial?"partial":"pending"}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${inlineP1Input(r,"qty","数量")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${inlineP1Input(r,"net","NET")}</td><td>${inlineP1Input(r,"box","箱")}</td><td>${memoCell(r._memo)}</td><td>${complete?'<span class="badge badge-done">完了</span>':partial?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
+  }).join("");
+};
+renderP2Importer=function(imp){
+  const bm=boxMap[imp]||{},boxNos=Object.keys(bm).sort();
+  const done=boxNos.filter(bn=>bm[bn].gross!==""&&bm[bn].box_size).length,total=boxNos.length,pct=total?Math.round(done/total*100):0;
+  const badge=document.getElementById("p2imp-badge-"+cid(imp));
+  if(badge){badge.textContent=`${done}/${total}箱`;badge.className="cbadge "+(done===total?"all-done":done===0?"has-pending":"partial")}
+  const wrap=document.getElementById("p2content-"+cid(imp));if(!wrap)return;
+  const netTotals={};rows.forEach(r=>{if(!r._stockout&&importerCode(r.importer_id)===imp&&r._box)netTotals[r._box]=(netTotals[r._box]||0)+(parseFloat(r._net)||0)});
+  const sizeOptions=["","小","中","大","特大"];
+  const rowsHtml=boxNos.map(bn=>{
+    const b=bm[bn],complete=b.gross!==""&&b.box_size;
+    const gross=`<input class="inline-work-input weight" data-imp="${esc(imp)}" data-box="${esc(bn)}" data-box-field="gross" inputmode="decimal" pattern="[0-9.]*" autocomplete="off" enterkeyhint="next" value="${esc(b.gross)}" placeholder="重量" onclick="event.stopPropagation()" oninput="this.value=sanitizeInlineNumber(this.value,false)" onblur="commitInlineBoxField(this)" onkeydown="handleInlineWorkKey(event)">`;
+    const dryInput=b.dry_ice_enabled?`<input class="inline-work-input weight" data-imp="${esc(imp)}" data-box="${esc(bn)}" data-box-field="dry_ice" inputmode="decimal" pattern="[0-9.]*" autocomplete="off" enterkeyhint="next" value="${esc(b.dry_ice)}" placeholder="重量" onclick="event.stopPropagation()" oninput="this.value=sanitizeInlineNumber(this.value,false)" onblur="commitInlineBoxField(this)" onkeydown="handleInlineWorkKey(event)">`:"";
+    const sizeSelect=`<select class="box-size-select" onclick="event.stopPropagation()" onchange="updateBoxSize('${esc(imp)}','${esc(bn)}',this.value)">${sizeOptions.map(s=>`<option value="${esc(s)}" ${b.box_size===s?"selected":""}>${s?esc(s):"選択"}</option>`).join("")}</select>`;
+    return `<tr class="${complete?"done":"pending"}"><td style="font-size:18px;font-weight:900;font-family:ui-monospace,SFMono-Regular,Consolas,monospace">${esc(bn)}</td><td>${netTotals[bn]?netTotals[bn].toFixed(2)+"kg":"-"}</td><td>${gross}</td><td><div style="display:flex;align-items:center;gap:8px"><label class="di-toggle" onclick="event.stopPropagation()"><input type="checkbox" ${b.dry_ice_enabled?"checked":""} onchange="toggleDI('${esc(imp)}','${esc(bn)}',this.checked)"><div class="di-track"></div></label>${dryInput}</div></td><td>${sizeSelect}</td><td>${complete?'<span class="badge badge-done">完了</span>':'<span class="badge badge-pending">未入力</span>'}</td></tr>`;
+  }).join("");
+  wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">総箱数</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="table-scroll"><table><thead><tr><th>箱番号</th><th>NET合計</th><th>グロス重量</th><th>ドライアイス</th><th>箱サイズ</th><th>状態</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+};
+toggleDI=function(imp,bn,checked){
+  if(!boxMap[imp]?.[bn])return;
+  boxMap[imp][bn].dry_ice_enabled=checked;
+  if(!checked)boxMap[imp][bn].dry_ice="";
+  renderP2Importer(imp);
+  saveBoxToSupabase(imp,bn);
+};
+let deferredRemoteOrderLines=new Map();
+let deferredRemoteBoxes=new Map();
+let deferredRemoteRenderTimer=null;
+function inlineEntryActive(){
+  return document.activeElement?.classList.contains("inline-work-input");
+}
+function scheduleDeferredRemoteRender(){
+  clearTimeout(deferredRemoteRenderTimer);
+  deferredRemoteRenderTimer=setTimeout(()=>{
+    if(inlineEntryActive()){
+      scheduleDeferredRemoteRender();
+      return;
+    }
+    const orderUpdates=[...deferredRemoteOrderLines.values()];
+    const boxUpdates=[...deferredRemoteBoxes.values()];
+    deferredRemoteOrderLines.clear();
+    deferredRemoteBoxes.clear();
+    orderUpdates.forEach(row=>__applyRemoteOrderLineInlineBase(row));
+    boxUpdates.forEach(row=>__applyRemoteBoxInlineBase(row));
+  },300);
+}
+const __applyRemoteOrderLineInlineBase=applyRemoteOrderLine;
+applyRemoteOrderLine=function(dbRow){
+  if(inlineEntryActive()){
+    if(dbRow?.source_row_no)deferredRemoteOrderLines.set(dbRow.source_row_no,dbRow);
+    scheduleDeferredRemoteRender();
+    return;
+  }
+  __applyRemoteOrderLineInlineBase(dbRow);
+};
+const __applyRemoteBoxInlineBase=applyRemoteBox;
+applyRemoteBox=function(dbRow){
+  if(inlineEntryActive()){
+    if(dbRow?.importer_code&&dbRow?.box_no)deferredRemoteBoxes.set(`${dbRow.importer_code}__${dbRow.box_no}`,dbRow);
+    scheduleDeferredRemoteRender();
+    return;
+  }
+  __applyRemoteBoxInlineBase(dbRow);
+};
+let currentUserRole="user";
+let currentSessionLocked=false;
+let currentSessionFinalizedAt="";
+function currentUserIsAdmin(){return currentUserRole==="admin"}
+async function loadCurrentUserRoleTrial(){
+  currentUserRole="user";
+  if(!supabaseClient||!currentUser){updateLockUITrial();return}
+  const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
+  if(!error&&data?.role)currentUserRole=data.role;
+  updateLockUITrial();
+}
+function setSessionLockStateTrial(session){
+  currentSessionLocked=!!session?.locked;
+  currentSessionFinalizedAt=session?.finalized_at||"";
+  updateLockUITrial();
+}
+function lockBadgeHtml(){
+  if(!currentSessionId)return "";
+  if(currentSessionLocked)return ` <span class="lock-badge">確定ロック中</span>`;
+  return ` <span class="lock-badge open">編集中</span>`;
+}
+function updateLockUITrial(){
+  const finalizeBtn=document.getElementById("finalize-btn");
+  const unlockBtn=document.getElementById("unlock-btn");
+  if(finalizeBtn){
+    finalizeBtn.style.display=currentSessionId?"":"none";
+    finalizeBtn.disabled=!!currentSessionLocked;
+    finalizeBtn.textContent=currentSessionLocked?"売上確定済み":"売上確定";
+  }
+  if(unlockBtn){
+    unlockBtn.style.display=currentSessionLocked&&currentUserIsAdmin()?"":"none";
+  }
+  const info=document.getElementById("cloud-save-info");
+  if(info&&currentSessionId&&!info.dataset.lockDecorated){
+    info.dataset.baseText=info.textContent||"";
+  }
+  if(info&&currentSessionId){
+    if(!info.innerHTML.includes("lock-badge"))info.dataset.baseText=info.textContent||"";
+    const base=info.dataset.baseText||info.textContent||"";
+    const finalized=currentSessionFinalizedAt?` / 確定 ${new Date(currentSessionFinalizedAt).toLocaleString("ja-JP")}`:"";
+    info.innerHTML=`${esc(base)}${finalized}${lockBadgeHtml()}`;
+    info.dataset.lockDecorated="1";
+  }
+  applyLockToInputsTrial();
+}
+function applyLockToInputsTrial(){
+  const locked=!!currentSessionLocked;
+  document.querySelectorAll(".inline-work-input,.inline-box-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.box-size-select,.di-toggle input").forEach(el=>{
+    el.disabled=locked;
+    if(locked)el.title="売上確定済みのため編集できません";
+    else el.removeAttribute("title");
+  });
+  const addBtn=[...document.querySelectorAll("#cloud-save-bar .btn")].find(btn=>btn.textContent==="追加オーダー");
+  if(addBtn)addBtn.disabled=locked;
+}
+function requireEditableTrial(){
+  if(!currentSessionLocked)return true;
+  toast("売上確定済みです。管理者がロック解除すると編集できます");
+  return false;
+}
+function salesRecordPayloadTrial(row){
+  const imp=importerCode(row.importer_id);
+  const box=row._box?(boxMap[imp]?.[row._box]||{}):{};
+  const qty=numberOrNull(row._qty);
+  const price=numberOrNull(row.unit_price);
+  return{
+    session_id:currentSessionId,
+    source_row_no:row._idx+1,
+    finalized_by:currentUser?.id||null,
+    country_code:row.country||null,
+    importer_id:row.importer_id||null,
+    importer_code:imp||null,
+    store_name:row.customer||null,
+    product_id:row.product_id||null,
+    product_name:row.product_name||null,
+    english_name:row.en_name||null,
+    scientific_name:row.sci_name||null,
+    origin:row.origin||null,
+    ordered_qty:numberOrNull(row.csv_qty),
+    ordered_unit:row.unit||null,
+    input_qty:qty,
+    input_unit:row._unit||null,
+    net_weight:numberOrNull(row._net),
+    box_no:row._box||null,
+    gross_weight:numberOrNull(box.gross),
+    dry_ice_enabled:!!box.dry_ice_enabled,
+    dry_ice_weight:numberOrNull(box.dry_ice),
+    box_size:box.box_size||null,
+    unit_price:price,
+    amount:qty!==null&&price!==null?qty*price:null,
+    memo:row._memo||null,
+    is_stockout:!!row._stockout
+  };
+}
+async function finalizeSalesTrial(){
+  if(!currentSessionId){
+    await saveCurrentSessionToSupabase();
+    if(!currentSessionId)return;
+  }
+  if(currentSessionLocked){toast("すでに売上確定済みです");return}
+  if(!(await requireSupabaseLogin()))return;
+  const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
+  if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
+  if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
+  await refreshCurrentSessionFromSupabase();
+  setSaveState("Supabase: 売上確定中...");
+  const payloads=rows.map(salesRecordPayloadTrial);
+  for(let i=0;i<payloads.length;i+=300){
+    const {error}=await supabaseClient.from("sales_records").upsert(payloads.slice(i,i+300),{onConflict:"session_id,source_row_no"});
+    if(error){setSaveState("Supabase: 売上確定失敗",true);toast("売上確定エラー: "+error.message);return}
+  }
+  const {data,error}=await supabaseClient.from("work_sessions").update({locked:true,finalized_at:new Date().toISOString(),finalized_by:currentUser.id,status:"closed"}).eq("id",currentSessionId).select("locked,finalized_at").single();
+  if(error){setSaveState("Supabase: ロック失敗",true);toast("ロック更新エラー: "+error.message);return}
+  setSessionLockStateTrial(data);
+  setSaveState("Supabase: 売上確定済み");
+  toast("売上確定しました");
+}
+async function unlockSessionTrial(){
+  if(!currentSessionId||!currentSessionLocked)return;
+  if(!currentUserIsAdmin()){toast("ロック解除は管理者のみ可能です");return}
+  const reason=prompt("ロック解除理由を入力してください");
+  if(!reason)return;
+  const {data,error}=await supabaseClient.from("work_sessions").update({locked:false,unlocked_at:new Date().toISOString(),unlocked_by:currentUser.id,unlock_reason:reason,status:"active"}).eq("id",currentSessionId).select("locked,finalized_at").single();
+  if(error){toast("ロック解除エラー: "+error.message);return}
+  setSessionLockStateTrial(data);
+  toast("ロック解除しました");
+}
+const __updateSupabaseStatusLockBase=updateSupabaseStatus;
+updateSupabaseStatus=function(){
+  __updateSupabaseStatusLockBase();
+  loadCurrentUserRoleTrial();
+};
+const __openSavedSessionLockBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await __openSavedSessionLockBase(sessionId);
+  if(currentSessionId&&supabaseClient){
+    const {data}=await supabaseClient.from("work_sessions").select("locked,finalized_at").eq("id",currentSessionId).maybeSingle();
+    setSessionLockStateTrial(data);
+  }
+};
+const __refreshCurrentSessionLockBase=refreshCurrentSessionFromSupabase;
+refreshCurrentSessionFromSupabase=async function(){
+  const ok=await __refreshCurrentSessionLockBase();
+  if(ok&&currentSessionId&&supabaseClient){
+    const {data}=await supabaseClient.from("work_sessions").select("locked,finalized_at").eq("id",currentSessionId).maybeSingle();
+    setSessionLockStateTrial(data);
+  }
+  return ok;
+};
+const __saveOrderLineLockBase=saveOrderLineToSupabase;
+saveOrderLineToSupabase=async function(row){if(!requireEditableTrial())return;return __saveOrderLineLockBase(row)};
+const __saveBoxLockBase=saveBoxToSupabase;
+saveBoxToSupabase=async function(imp,bn){if(!requireEditableTrial())return;return __saveBoxLockBase(imp,bn)};
+const __renderP1CellLockBase=renderP1Cell;
+renderP1Cell=function(country,customer){__renderP1CellLockBase(country,customer);applyLockToInputsTrial()};
+const __renderP2ImporterLockBase=renderP2Importer;
+renderP2Importer=function(imp){__renderP2ImporterLockBase(imp);applyLockToInputsTrial()};
+const __addManualOrderLockBase=addManualOrder;
+addManualOrder=function(){if(!requireEditableTrial())return;return __addManualOrderLockBase()};
+const __executeStockoutLockBase=executeStockout;
+executeStockout=function(){if(!requireEditableTrial())return;return __executeStockoutLockBase()};
+const __undoStockoutLockBase=undoStockout;
+undoStockout=function(i){if(!requireEditableTrial())return;return __undoStockoutLockBase(i)};
+const __resetP1RowLockBase=resetP1Row;
+resetP1Row=function(rowIdx){if(!requireEditableTrial())return;return __resetP1RowLockBase(rowIdx)};
+const __resetLocalStateLockBase=resetLocalStateForSession;
+resetLocalStateForSession=function(){
+  __resetLocalStateLockBase();
+  currentSessionLocked=false;
+  currentSessionFinalizedAt="";
+  updateLockUITrial();
+};
+const __mergeAndRenderLockBase=mergeAndRender;
+mergeAndRender=function(){
+  currentSessionLocked=false;
+  currentSessionFinalizedAt="";
+  const result=__mergeAndRenderLockBase();
+  updateLockUITrial();
+  return result;
+};
+function salesLockSetupErrorMessage(error){
+  const msg=String(error?.message||"");
+  if(error?.code==="42P01"||/sales_records|user_roles/i.test(msg))return "売上確定用SQLが未実行です。sales-lock-trial-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"||/locked|finalized_at|schema cache/i.test(msg))return "work_sessionsにロック用カラムがありません。sales-lock-trial-migration.sql を再実行してください。";
+  return msg||"Supabase設定を確認できませんでした。";
+}
+async function checkSalesLockSetupTrial(){
+  if(!(await requireSupabaseLogin()))return false;
+  const {error:sessionError}=await supabaseClient.from("work_sessions").select("id,locked,finalized_at,shipping_fee,shipping_fees").limit(1);
+  if(sessionError){alert(salesLockSetupErrorMessage(sessionError));return false}
+  const {error:salesError}=await supabaseClient.from("sales_records").select("id").limit(1);
+  if(salesError){alert(salesLockSetupErrorMessage(salesError));return false}
+  return true;
+}
+async function upsertSalesRecordsTrial(payloads){
+  for(let i=0;i<payloads.length;i+=200){
+    const chunk=payloads.slice(i,i+200);
+    const {error}=await supabaseClient.from("sales_records").upsert(chunk,{onConflict:"session_id,source_row_no"});
+    if(error)throw error;
+    setSaveState(`Supabase: 売上確定中 ${Math.min(i+200,payloads.length)}/${payloads.length}`);
+  }
+}
+finalizeSalesTrial=async function(){
+  if(!currentSessionId){
+    await saveCurrentSessionToSupabase();
+    if(!currentSessionId)return;
+  }
+  if(currentSessionLocked){toast("すでに売上確定済みです");return}
+  if(!(await checkSalesLockSetupTrial()))return;
+  const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
+  if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
+  if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
+  const shippingImporters=[...new Set(rows.map(r=>importerCode(r.importer_id)).filter(Boolean))].sort();
+  const shippingFees=salesShippingFeesPromptValue(shippingImporters);
+  if(shippingFees===null)return;
+  const shippingFee=salesShippingFeesTotal(shippingFees);
+  const refreshed=await refreshCurrentSessionFromSupabase();
+  if(!refreshed){alert("最新データの取得に失敗したため、売上確定を中止しました。");return}
+  try{
+    setSaveState("Supabase: 売上確定中...");
+    await upsertSalesRecordsTrial(rows.map(salesRecordPayloadTrial));
+    const finalizedAt=new Date().toISOString();
+    const {data,error}=await supabaseClient.from("work_sessions")
+      .update({locked:true,finalized_at:finalizedAt,finalized_by:currentUser.id,status:"closed",shipping_fee:shippingFee,shipping_fees:shippingFees})
+      .eq("id",currentSessionId)
+      .select("locked,finalized_at,shipping_fee,shipping_fees")
+      .single();
+    if(error)throw error;
+    setSessionLockStateTrial(data);
+    setSaveState("Supabase: 売上確定済み");
+    toast("売上確定しました");
+  }catch(error){
+    const message=salesLockSetupErrorMessage(error);
+    setSaveState("Supabase: 売上確定失敗",true);
+    alert("売上確定エラー: "+message);
+  }
+};
+function sessionListStatusLabelTrial(session){
+  if(session?.locked||session?.status==="closed")return "確定済み";
+  return session?.status||"active";
+}
+function sessionListTimeTrial(session){
+  return new Date(session?.finalized_at||session?.updated_at||session?.created_at).toLocaleString("ja-JP");
+}
+function sessionListItemHtmlTrial(session,isFinalized){
+  const name=esc(session.name||"(名称なし)");
+  const status=esc(sessionListStatusLabelTrial(session));
+  const time=esc(sessionListTimeTrial(session));
+  const finalizedClass=isFinalized?" session-finalized":"";
+  const finalizedBadge=isFinalized?`<span class="session-locked-badge">売上確定済み</span>`:`<span class="export-option-badge partial">${status}</span>`;
+  return `<div class="export-option${finalizedClass}"><div class="export-option-left" onclick="openSavedSession('${session.id}')" style="flex:1;cursor:pointer"><span class="export-option-code">${name}</span><span class="export-option-meta">${time}</span></div>${finalizedBadge}<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button></div>`;
+}
+function sessionListEmptyHtmlTrial(text){
+  return `<div class="export-option session-empty"><div class="export-option-meta">${esc(text)}</div></div>`;
+}
+loadSessionList=async function(){
+  if(!(await requireSupabaseLogin()))return;
+  const {data,error}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .order("updated_at",{ascending:false})
+    .limit(80);
+  if(error){toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));return}
+  const sessions=data||[];
+  const active=sessions.filter(s=>!(s.locked||s.status==="closed"));
+  const finalized=sessions.filter(s=>s.locked||s.status==="closed").sort((a,b)=>new Date(b.finalized_at||b.updated_at||b.created_at)-new Date(a.finalized_at||a.updated_at||a.created_at));
+  const wrap=document.getElementById("session-options");
+  wrap.innerHTML=[
+    `<div class="session-section-title"><span>作業中</span><span class="session-section-count">${active.length}件</span></div>`,
+    active.length?active.map(s=>sessionListItemHtmlTrial(s,false)).join(""):sessionListEmptyHtmlTrial("作業中のデータはありません"),
+    `<div class="session-section-title"><span>売上確定済み</span><span class="session-section-count">${finalized.length}件</span></div>`,
+    finalized.length?finalized.map(s=>sessionListItemHtmlTrial(s,true)).join(""):sessionListEmptyHtmlTrial("売上確定済みのデータはありません")
+  ].join("");
+  document.getElementById("session-bg").classList.add("open");
+};
+/* disabled mojibake sales reference block
+let salesReferenceSessionsTrial=[];
+let currentSalesReferenceSessionId="";
+let currentSalesReferenceRows=[];
+function closeSalesReference(){
+  document.getElementById("sales-ref-bg").classList.remove("open");
+}
+function salesRefMoney(v){
+  if(v===null||v===undefined||v==="")return "";
+  const n=Number(v);
+  return Number.isFinite(n)?n.toLocaleString("ja-JP",{maximumFractionDigits:2}):"";
+}
+function salesRefText(v){return v===null||v===undefined?"":String(v)}
+function salesRefSessionLabel(session){
+  const date=session?.finalized_at?new Date(session.finalized_at).toLocaleString("ja-JP"):"確定日時なし";
+  return `${session?.name||"(名称なし)"} / ${date}`;
+}
+async function openSalesReference(){
+  if(!(await requireSupabaseLogin()))return;
+  const bg=document.getElementById("sales-ref-bg");
+  const list=document.getElementById("sales-ref-sessions");
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  bg.classList.add("open");
+  list.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
+  summary.textContent="確定済み作業を読込中...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">左の一覧から売上確定済みデータを選択してください</div>`;
+  currentSalesReferenceSessionId="";
+  currentSalesReferenceRows=[];
+  const {data,error}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .order("finalized_at",{ascending:false,nullsFirst:false})
+    .limit(120);
+  if(error){list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;summary.textContent="読込失敗";return}
+  salesReferenceSessionsTrial=(data||[]).filter(s=>s.locked||s.status==="closed");
+  renderSalesReferenceSessions();
+  if(salesReferenceSessionsTrial.length)await loadSalesReferenceSession(salesReferenceSessionsTrial[0].id);
+  else summary.textContent="売上確定済みデータはありません";
+}
+function renderSalesReferenceSessions(){
+  const list=document.getElementById("sales-ref-sessions");
+  if(!salesReferenceSessionsTrial.length){
+    list.innerHTML=`<div class="sales-ref-empty">売上確定済みデータはありません</div>`;
+    return;
+  }
+  list.innerHTML=salesReferenceSessionsTrial.map(s=>{
+    const active=s.id===currentSalesReferenceSessionId?" active":"";
+    const date=s.finalized_at?new Date(s.finalized_at).toLocaleString("ja-JP"):new Date(s.updated_at||s.created_at).toLocaleString("ja-JP");
+    return `<button class="sales-ref-session${active}" onclick="loadSalesReferenceSession('${s.id}')"><span class="sales-ref-session-name">${esc(s.name||"(名称なし)")}</span><span class="sales-ref-session-meta">${esc(date)}</span></button>`;
+  }).join("");
+}
+async function loadSalesReferenceSession(sessionId){
+  currentSalesReferenceSessionId=sessionId;
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="売上明細を読込中...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
+  const {data,error}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .eq("session_id",sessionId)
+    .order("importer_code",{ascending:true})
+    .order("store_name",{ascending:true})
+    .order("source_row_no",{ascending:true});
+  if(error){summary.textContent="売上明細の読込に失敗";tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;return}
+  currentSalesReferenceRows=data||[];
+  const search=document.getElementById("sales-ref-search");
+  if(search)search.value="";
+  renderSalesReferenceRows();
+}
+function filteredSalesReferenceRows(){
+  const q=(document.getElementById("sales-ref-search")?.value||"").trim().toLowerCase();
+  if(!q)return currentSalesReferenceRows;
+  return currentSalesReferenceRows.filter(r=>[
+    r.importer_code,r.country_code,r.store_name,r.product_id,r.product_name,r.english_name,
+    r.scientific_name,r.origin,r.box_no,r.memo
+  ].some(v=>salesRefText(v).toLowerCase().includes(q)));
+}
+function renderSalesReferenceRows(){
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  const summary=document.getElementById("sales-ref-summary");
+  if(!currentSalesReferenceSessionId){
+    summary.textContent="確定済み作業を選択してください";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">左の一覧から売上確定済みデータを選択してください</div>`;
+    return;
+  }
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const displayRows=filteredSalesReferenceRows();
+  const totalAmount=displayRows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
+  const totalNet=displayRows.reduce((sum,r)=>sum+(Number(r.net_weight)||0),0);
+  summary.innerHTML=[
+    `<span>${esc(salesRefSessionLabel(session))}</span>`,
+    `<span>表示 ${displayRows.length}件 / 全${currentSalesReferenceRows.length}件</span>`,
+    `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
+    `<span>送料 ${salesRefMoney(shippingFee)}</span>`,
+    `<span>会計合計 ${salesRefMoney(accountingTotal)}</span>`,
+    `<span>金額 ${salesRefMoney(totalAmount)}</span>`
+  ].join("");
+  summary.innerHTML+=`<span>送料 ${salesRefMoney(shippingFee)}</span><span>会計合計 ${salesRefMoney(accountingTotal)}</span>`;
+  summary.innerHTML+=`<span>送料 ${salesRefMoney(shippingFee)}</span><span>会計合計 ${salesRefMoney(accountingTotal)}</span>`;
+  if(!displayRows.length){
+    tableWrap.innerHTML=`<div class="sales-ref-empty">該当する売上明細はありません</div>`;
+    return;
+  }
+  tableWrap.innerHTML=`<table class="sales-ref-table"><thead><tr>
+    <th>輸入社</th><th>国</th><th>店名</th><th>商品コード</th><th>商品名</th><th>英名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱番号</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th>
+  </tr></thead><tbody>${displayRows.map(r=>`<tr>
+    <td>${esc(r.importer_code)}</td><td>${esc(r.country_code)}</td><td>${esc(r.store_name)}</td><td>${esc(r.product_id)}</td><td>${esc(r.product_name)}</td><td>${esc(r.english_name)}</td><td>${esc(r.origin)}</td>
+    <td>${esc(salesRefMoney(r.input_qty))}</td><td>${esc(r.input_unit)}</td><td>${esc(salesRefMoney(r.net_weight))}</td><td>${esc(r.box_no)}</td><td>${esc(salesRefMoney(r.unit_price))}</td><td>${esc(salesRefMoney(r.amount))}</td><td>${esc(r.memo)}</td><td>${r.is_stockout?"欠品":""}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function exportSalesReferenceExcel(){
+  if(!currentSalesReferenceSessionId){toast("売上確定済みデータを選択してください");return}
+  if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}
+  const displayRows=filteredSalesReferenceRows();
+  if(!displayRows.length){toast("出力する売上明細がありません");return}
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const wb=XLSX.utils.book_new();
+  const productAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const shippingFee=salesRefShippingFeeForRows(displayRows);
+  const accountingTotal=productAmount+shippingFee;
+  const summaryWs=XLSX.utils.json_to_sheet([
+    {"Item":"Product Amount","Amount":productAmount},
+    {"Item":"Shipping Fee","Amount":shippingFee},
+    {"Item":"Accounting Total","Amount":accountingTotal}
+  ]);
+  summaryWs["!cols"]=[{wch:20},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,summaryWs,"Summary");
+  const data=displayRows.map(r=>({
+    "確定日時":r.finalized_at?new Date(r.finalized_at).toLocaleString("ja-JP"):"",
+    "輸入社":r.importer_code||"",
+    "国コード":r.country_code||"",
+    "店名":r.store_name||"",
+    "商品コード":r.product_id||"",
+    "商品名":r.product_name||"",
+    "英名":r.english_name||"",
+    "学術名":r.scientific_name||"",
+    "産地":r.origin||"",
+    "数量":r.input_qty??"",
+    "単位":r.input_unit||"",
+    "NET重量":r.net_weight??"",
+    "箱番号":r.box_no||"",
+    "グロス重量":r.gross_weight??"",
+    "ドライアイス":r.dry_ice_weight??"",
+    "箱サイズ":r.box_size||"",
+    "単価":r.unit_price??"",
+    "金額":r.amount??"",
+    "メモ":r.memo||"",
+    "欠品":r.is_stockout?"欠品":""
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws["!cols"]=[{wch:20},{wch:10},{wch:8},{wch:24},{wch:14},{wch:24},{wch:24},{wch:24},{wch:14},{wch:10},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12},{wch:28},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws,"売上明細");
+  const safeName=(session?.name||"sales").replace(/[\\/:*?"<>|]/g,"_").slice(0,40);
+  const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
+  XLSX.writeFile(wb,`sales_${safeName}_${d}.xlsx`);
+  toast("売上参照Excelを出力しました");
+}
+*/
+let salesReferenceSessionsTrial=[];
+let currentSalesReferenceSessionId="";
+let currentSalesReferenceRows=[];
+const salesRefLabel="\u58f2\u4e0a\u53c2\u7167";
+function initSalesReferenceLabels(){
+  document.querySelectorAll('[onclick="openSalesReference()"]').forEach(b=>b.textContent=salesRefLabel);
+  const title=document.querySelector(".sales-ref-title");
+  if(title)title.textContent=salesRefLabel;
+  const close=document.querySelector("#sales-ref-bg .export-close");
+  if(close)close.textContent="x";
+  const search=document.getElementById("sales-ref-search");
+  if(search)search.placeholder="店名・商品名・箱番号で検索";
+  const exportBtn=document.querySelector("#sales-ref-bg .sales-ref-toolbar .btn-primary");
+  if(exportBtn)exportBtn.textContent="Excel";
+  const summary=document.getElementById("sales-ref-summary");
+  if(summary)summary.textContent="確定済み売上を選択してください。";
+}
+initSalesReferenceLabels();
+function closeSalesReference(){
+  document.getElementById("sales-ref-bg").classList.remove("open");
+}
+function salesRefMoney(v){
+  if(v===null||v===undefined||v==="")return "";
+  const n=Number(v);
+  return Number.isFinite(n)?n.toLocaleString("ja-JP",{maximumFractionDigits:2}):"";
+}
+function salesRefText(v){return v===null||v===undefined?"":String(v)}
+function salesRefSessionLabel(session){
+  const date=session?.finalized_at?new Date(session.finalized_at).toLocaleString("ja-JP"):"No finalized time";
+  return `${session?.name||"(no name)"} / ${date}`;
+}
+async function openSalesReference(){
+  initSalesReferenceLabels();
+  if(!(await requireSupabaseLogin()))return;
+  const bg=document.getElementById("sales-ref-bg");
+  const list=document.getElementById("sales-ref-sessions");
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  bg.classList.add("open");
+  list.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  summary.textContent="Loading finalized sessions...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Select finalized data from the left list.</div>`;
+  currentSalesReferenceSessionId="";
+  currentSalesReferenceRows=[];
+  const {data,error}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .order("finalized_at",{ascending:false,nullsFirst:false})
+    .limit(120);
+  if(error){
+    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    summary.textContent="Load failed";
+    return;
+  }
+  salesReferenceSessionsTrial=(data||[]).filter(s=>s.locked||s.status==="closed");
+  renderSalesReferenceSessions();
+  if(salesReferenceSessionsTrial.length)await loadSalesReferenceSession(salesReferenceSessionsTrial[0].id);
+  else summary.textContent="No finalized sales data.";
+}
+function renderSalesReferenceSessions(){
+  const list=document.getElementById("sales-ref-sessions");
+  if(!salesReferenceSessionsTrial.length){
+    list.innerHTML=`<div class="sales-ref-empty">No finalized sales data.</div>`;
+    return;
+  }
+  list.innerHTML=salesReferenceSessionsTrial.map(s=>{
+    const active=s.id===currentSalesReferenceSessionId?" active":"";
+    const date=s.finalized_at?new Date(s.finalized_at).toLocaleString("ja-JP"):new Date(s.updated_at||s.created_at).toLocaleString("ja-JP");
+    return `<button class="sales-ref-session${active}" onclick="loadSalesReferenceSession('${s.id}')"><span class="sales-ref-session-name">${esc(s.name||"(no name)")}</span><span class="sales-ref-session-meta">${esc(date)}</span></button>`;
+  }).join("");
+}
+async function loadSalesReferenceSession(sessionId){
+  currentSalesReferenceSessionId=sessionId;
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="Loading sales records...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  const {data,error}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .eq("session_id",sessionId)
+    .order("importer_code",{ascending:true})
+    .order("store_name",{ascending:true})
+    .order("source_row_no",{ascending:true});
+  if(error){
+    summary.textContent="Sales record load failed";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    return;
+  }
+  currentSalesReferenceRows=data||[];
+  const search=document.getElementById("sales-ref-search");
+  if(search)search.value="";
+  renderSalesReferenceRows();
+}
+function filteredSalesReferenceRows(){
+  const q=(document.getElementById("sales-ref-search")?.value||"").trim().toLowerCase();
+  if(!q)return currentSalesReferenceRows;
+  return currentSalesReferenceRows.filter(r=>[
+    r.importer_code,r.country_code,r.store_name,r.product_id,r.product_name,r.english_name,
+    r.scientific_name,r.origin,r.box_no,r.memo
+  ].some(v=>salesRefText(v).toLowerCase().includes(q)));
+}
+function renderSalesReferenceRows(){
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  const summary=document.getElementById("sales-ref-summary");
+  if(!currentSalesReferenceSessionId){
+    summary.textContent="Select finalized data.";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">Select finalized data from the left list.</div>`;
+    return;
+  }
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const displayRows=filteredSalesReferenceRows();
+  const totalAmount=displayRows.reduce((sum,r)=>sum+(Number(r.amount)||0),0);
+  const totalNet=displayRows.reduce((sum,r)=>sum+(Number(r.net_weight)||0),0);
+  summary.innerHTML=[
+    `<span>${esc(salesRefSessionLabel(session))}</span>`,
+    `<span>Rows ${displayRows.length} / ${currentSalesReferenceRows.length}</span>`,
+    `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
+    `<span>Amount ${salesRefMoney(totalAmount)}</span>`
+  ].join("");
+  if(!displayRows.length){
+    tableWrap.innerHTML=`<div class="sales-ref-empty">No matching sales records.</div>`;
+    return;
+  }
+  tableWrap.innerHTML=`<table class="sales-ref-table"><thead><tr>
+    <th>Importer</th><th>Country</th><th>Store</th><th>Product Code</th><th>Product</th><th>English</th><th>Origin</th><th>Qty</th><th>Unit</th><th>NET</th><th>Box</th><th>Unit Price</th><th>Amount</th><th>Memo</th><th>Stockout</th>
+  </tr></thead><tbody>${displayRows.map(r=>`<tr>
+    <td>${esc(r.importer_code)}</td><td>${esc(r.country_code)}</td><td>${esc(r.store_name)}</td><td>${esc(r.product_id)}</td><td>${esc(r.product_name)}</td><td>${esc(r.english_name)}</td><td>${esc(r.origin)}</td>
+    <td>${esc(salesRefMoney(r.input_qty))}</td><td>${esc(r.input_unit)}</td><td>${esc(salesRefMoney(r.net_weight))}</td><td>${esc(r.box_no)}</td><td>${esc(salesRefMoney(r.unit_price))}</td><td>${esc(salesRefMoney(r.amount))}</td><td>${esc(r.memo)}</td><td>${r.is_stockout?"YES":""}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function exportSalesReferenceExcel(){
+  if(!currentSalesReferenceSessionId){toast("Select finalized sales data.");return}
+  if(typeof XLSX==="undefined"){toast("Excel library is not loaded.");return}
+  const displayRows=filteredSalesReferenceRows();
+  if(!displayRows.length){toast("No sales records to export.");return}
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const wb=XLSX.utils.book_new();
+  const data=displayRows.map(r=>({
+    "Finalized At":r.finalized_at?new Date(r.finalized_at).toLocaleString("ja-JP"):"",
+    "Importer":r.importer_code||"",
+    "Country":r.country_code||"",
+    "Store":r.store_name||"",
+    "Product Code":r.product_id||"",
+    "Product":r.product_name||"",
+    "English":r.english_name||"",
+    "Scientific":r.scientific_name||"",
+    "Origin":r.origin||"",
+    "Qty":r.input_qty??"",
+    "Unit":r.input_unit||"",
+    "NET Weight":r.net_weight??"",
+    "Box No":r.box_no||"",
+    "Gross Weight":r.gross_weight??"",
+    "Dry Ice":r.dry_ice_weight??"",
+    "Box Size":r.box_size||"",
+    "Unit Price":r.unit_price??"",
+    "Amount":r.amount??"",
+    "Memo":r.memo||"",
+    "Stockout":r.is_stockout?"YES":""
+  }));
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws["!cols"]=[{wch:20},{wch:10},{wch:8},{wch:24},{wch:14},{wch:24},{wch:24},{wch:24},{wch:14},{wch:10},{wch:8},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12},{wch:28},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws,"Sales Records");
+  const safeName=(session?.name||"sales").replace(/[\\/:*?"<>|]/g,"_").slice(0,40);
+  const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
+  XLSX.writeFile(wb,`sales_${safeName}_${d}.xlsx`);
+  toast("Sales reference Excel exported.");
+}
+/* sales reference cross-filter override */
+let currentSalesReferenceMode="all";
+function salesRefDateOnly(v){
+  if(!v)return "";
+  const d=new Date(v);
+  return Number.isNaN(d.getTime())?"":d.toISOString().slice(0,10);
+}
+function ensureSalesReferenceFilters(){
+  const toolbar=document.querySelector("#sales-ref-bg .sales-ref-toolbar");
+  if(!toolbar||document.getElementById("sales-ref-importer-filter"))return;
+  const search=document.getElementById("sales-ref-search");
+  const importer=document.createElement("select");
+  importer.id="sales-ref-importer-filter";
+  importer.className="sales-ref-filter";
+  importer.title="輸入社コード";
+  importer.onchange=renderSalesReferenceRows;
+  const product=document.createElement("input");
+  product.id="sales-ref-product-filter";
+  product.className="sales-ref-filter";
+  product.placeholder="商品コード";
+  product.title="商品コード";
+  product.setAttribute("list","sales-ref-product-list");
+  product.oninput=renderSalesReferenceRows;
+  const list=document.createElement("datalist");
+  list.id="sales-ref-product-list";
+  const from=document.createElement("input");
+  from.id="sales-ref-date-from";
+  from.className="sales-ref-filter date";
+  from.type="date";
+  from.title="開始日";
+  from.oninput=renderSalesReferenceRows;
+  const to=document.createElement("input");
+  to.id="sales-ref-date-to";
+  to.className="sales-ref-filter date";
+  to.type="date";
+  to.title="終了日";
+  to.oninput=renderSalesReferenceRows;
+  const clear=document.createElement("button");
+  clear.className="btn";
+  clear.type="button";
+  clear.textContent="解除";
+  clear.onclick=clearSalesReferenceFilters;
+  toolbar.insertBefore(importer,search);
+  toolbar.insertBefore(product,search.nextSibling);
+  toolbar.insertBefore(list,product.nextSibling);
+  toolbar.insertBefore(from,product.nextSibling);
+  toolbar.insertBefore(to,from.nextSibling);
+  toolbar.insertBefore(clear,to.nextSibling);
+}
+function updateSalesReferenceFilterOptions(){
+  const importer=document.getElementById("sales-ref-importer-filter");
+  const productList=document.getElementById("sales-ref-product-list");
+  if(importer){
+    const current=importer.value;
+    const importers=[...new Set(currentSalesReferenceRows.map(r=>r.importer_code).filter(Boolean))].sort();
+    importer.innerHTML=`<option value="">全輸入社</option>`+importers.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+    if(importers.includes(current))importer.value=current;
+  }
+  if(productList){
+    const products=[...new Set(currentSalesReferenceRows.map(r=>r.product_id).filter(Boolean))].sort();
+    productList.innerHTML=products.slice(0,800).map(v=>`<option value="${esc(v)}"></option>`).join("");
+  }
+}
+function clearSalesReferenceFilters(){
+  ["sales-ref-search","sales-ref-product-filter","sales-ref-date-from","sales-ref-date-to"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value="";
+  });
+  const importer=document.getElementById("sales-ref-importer-filter");
+  if(importer)importer.value="";
+  renderSalesReferenceRows();
+}
+const __initSalesReferenceLabelsBase=initSalesReferenceLabels;
+initSalesReferenceLabels=function(){
+  __initSalesReferenceLabelsBase();
+  ensureSalesReferenceFilters();
+};
+openSalesReference=async function(){
+  initSalesReferenceLabels();
+  if(!(await requireSupabaseLogin()))return;
+  const bg=document.getElementById("sales-ref-bg");
+  const list=document.getElementById("sales-ref-sessions");
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  bg.classList.add("open");
+  list.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  summary.textContent="Loading finalized sales data...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">Loading...</div>`;
+  currentSalesReferenceSessionId="";
+  currentSalesReferenceRows=[];
+  currentSalesReferenceMode="all";
+  const {data:sessions,error:sessionError}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .order("finalized_at",{ascending:false,nullsFirst:false})
+    .limit(120);
+  if(sessionError){
+    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(sessionError))}</div>`;
+    summary.textContent="Load failed";
+    return;
+  }
+  salesReferenceSessionsTrial=(sessions||[]).filter(s=>s.locked||s.status==="closed");
+  const {data:records,error:recordError}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .order("finalized_at",{ascending:false})
+    .limit(5000);
+  if(recordError){
+    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(recordError))}</div>`;
+    summary.textContent="Load failed";
+    return;
+  }
+  currentSalesReferenceRows=records||[];
+  currentSalesReferenceSessionId="__all__";
+  renderSalesReferenceSessions();
+  updateSalesReferenceFilterOptions();
+  renderSalesReferenceRows();
+};
+renderSalesReferenceSessions=function(){
+  const list=document.getElementById("sales-ref-sessions");
+  const allActive=currentSalesReferenceSessionId==="__all__"?" active":"";
+  const allButton=`<button class="sales-ref-session${allActive}" onclick="loadSalesReferenceAll()"><span class="sales-ref-session-name">全売上</span><span class="sales-ref-session-meta">横断検索</span></button>`;
+  if(!salesReferenceSessionsTrial.length){
+    list.innerHTML=allButton+`<div class="sales-ref-empty">確定済みデータはありません。</div>`;
+    return;
+  }
+  list.innerHTML=allButton+salesReferenceSessionsTrial.map(s=>{
+    const active=s.id===currentSalesReferenceSessionId?" active":"";
+    const date=s.finalized_at?new Date(s.finalized_at).toLocaleString("ja-JP"):new Date(s.updated_at||s.created_at).toLocaleString("ja-JP");
+    return `<button class="sales-ref-session${active}" onclick="loadSalesReferenceSession('${s.id}')"><span class="sales-ref-session-name">${esc(s.name||"(名称なし)")}</span><span class="sales-ref-session-meta">${esc(date)}</span></button>`;
+  }).join("");
+};
+async function loadSalesReferenceAll(){
+  currentSalesReferenceSessionId="__all__";
+  currentSalesReferenceMode="all";
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="全売上を読込中...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
+  const {data,error}=await supabaseClient.from("sales_records").select("*").order("finalized_at",{ascending:false}).limit(5000);
+  if(error){
+    summary.textContent="売上明細の読込に失敗";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    return;
+  }
+  currentSalesReferenceRows=data||[];
+  updateSalesReferenceFilterOptions();
+  renderSalesReferenceRows();
+}
+loadSalesReferenceSession=async function(sessionId){
+  currentSalesReferenceSessionId=sessionId;
+  currentSalesReferenceMode="session";
+  renderSalesReferenceSessions();
+  const summary=document.getElementById("sales-ref-summary");
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  summary.textContent="売上明細を読込中...";
+  tableWrap.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
+  const {data,error}=await supabaseClient
+    .from("sales_records")
+    .select("*")
+    .eq("session_id",sessionId)
+    .order("importer_code",{ascending:true})
+    .order("store_name",{ascending:true})
+    .order("source_row_no",{ascending:true});
+  if(error){
+    summary.textContent="売上明細の読込に失敗";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
+    return;
+  }
+  currentSalesReferenceRows=data||[];
+  updateSalesReferenceFilterOptions();
+  renderSalesReferenceRows();
+};
+filteredSalesReferenceRows=function(){
+  const q=(document.getElementById("sales-ref-search")?.value||"").trim().toLowerCase();
+  const importer=(document.getElementById("sales-ref-importer-filter")?.value||"").trim();
+  const product=(document.getElementById("sales-ref-product-filter")?.value||"").trim().toLowerCase();
+  const from=document.getElementById("sales-ref-date-from")?.value||"";
+  const to=document.getElementById("sales-ref-date-to")?.value||"";
+  return currentSalesReferenceRows.filter(r=>{
+    if(importer&&salesRefText(r.importer_code)!==importer)return false;
+    if(product&&!salesRefText(r.product_id).toLowerCase().includes(product))return false;
+    const d=salesRefDateOnly(r.finalized_at);
+    if(from&&(!d||d<from))return false;
+    if(to&&(!d||d>to))return false;
+    if(q&&![
+      r.importer_code,r.country_code,r.store_name,r.product_id,r.product_name,r.english_name,
+      r.scientific_name,r.origin,r.box_no,r.memo
+    ].some(v=>salesRefText(v).toLowerCase().includes(q)))return false;
+    return true;
+  });
+};
+renderSalesReferenceRows=function(){
+  updateSalesReferenceFilterOptions();
+  const tableWrap=document.getElementById("sales-ref-table-wrap");
+  const summary=document.getElementById("sales-ref-summary");
+  if(!currentSalesReferenceSessionId){
+    summary.textContent="確定済み売上を選択してください。";
+    tableWrap.innerHTML=`<div class="sales-ref-empty">上の一覧から確定済みデータを選択してください。</div>`;
+    renderSalesReferenceAnalysis();
+    return;
+  }
+  const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const displayRows=filteredSalesReferenceRows();
+  const totalAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const totalNet=displayRows.reduce((sum,r)=>sum+salesRefNet(r),0);
+  const shippingFee=salesRefShippingFeeForRows(displayRows);
+  const accountingTotal=totalAmount+shippingFee;
+  const shippingSummaryHtml=`<span>送料 ${salesRefMoney(shippingFee)}</span><span>会計合計 ${salesRefMoney(accountingTotal)}</span>`;
+  const label=currentSalesReferenceSessionId==="__all__"?"全売上":salesRefSessionLabel(session);
+  summary.innerHTML=[
+    `<span>${esc(label)}</span>`,
+    `<span>表示 ${displayRows.length} / 全${currentSalesReferenceRows.length}件</span>`,
+    `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
+    `<span>金額 ${salesRefMoney(totalAmount)}</span>`
+  ].join("")+shippingSummaryHtml;
+  if(!displayRows.length){
+    tableWrap.innerHTML=`<div class="sales-ref-empty">該当する売上明細はありません。</div>`;
+    renderSalesReferenceAnalysis();
+    return;
+  }
+  tableWrap.innerHTML=`<table class="sales-ref-table"><thead><tr>
+    <th>日付</th><th>輸入社</th><th>国</th><th>店名</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th>
+  </tr></thead><tbody>${displayRows.map(r=>`<tr>
+    <td>${esc(salesRefDateOnly(r.finalized_at))}</td><td>${esc(r.importer_code)}</td><td>${esc(r.country_code)}</td><td>${esc(r.store_name)}</td><td>${esc(r.product_id)}</td><td>${esc(r.product_name)}</td><td>${esc(r.origin)}</td>
+    <td>${esc(salesRefMoney(r.input_qty))}</td><td>${esc(r.input_unit)}</td><td>${esc(salesRefMoney(r.net_weight))}</td><td>${esc(r.box_no)}</td><td>${esc(salesRefMoney(r.unit_price))}</td><td>${esc(salesRefMoney(r.amount))}</td><td>${esc(r.memo)}</td><td>${r.is_stockout?"欠品":""}</td>
+  </tr>`).join("")}</tbody></table>`;
+  renderSalesReferenceAnalysis();
+};
+function salesRefAmount(r){return Number(r?.amount)||0}
+function salesRefNet(r){return Number(r?.net_weight)||0}
+function salesRefSessionShippingFee(sessionId,importerCodes){
+  const s=salesReferenceSessionsTrial.find(x=>x.id===sessionId);
+  const fees=s?.shipping_fees;
+  if(fees&&typeof fees==="object"){
+    const codes=importerCodes&&importerCodes.size?importerCodes:new Set(Object.keys(fees));
+    let total=0;
+    codes.forEach(code=>{total+=Number(fees[code])||0});
+    return total;
+  }
+  return Number(s?.shipping_fee)||0;
+}
+function salesRefShippingFeeForRows(displayRows){
+  const importersBySession=new Map();
+  displayRows.forEach(r=>{
+    if(!r.session_id)return;
+    const set=importersBySession.get(r.session_id)||new Set();
+    if(r.importer_code)set.add(r.importer_code);
+    importersBySession.set(r.session_id,set);
+  });
+  if(currentSalesReferenceSessionId&&currentSalesReferenceSessionId!=="__all__"){
+    return salesRefSessionShippingFee(currentSalesReferenceSessionId,importersBySession.get(currentSalesReferenceSessionId));
+  }
+  let total=0;
+  importersBySession.forEach((codes,id)=>{total+=salesRefSessionShippingFee(id,codes)});
+  return total;
+}
+function salesRefMonth(v){
+  const d=salesRefDateOnly(v);
+  return d?d.slice(0,7):"No date";
+}
+function salesRefGroup(rows,keyFn){
+  const map=new Map();
+  rows.forEach(r=>{
+    const key=keyFn(r)||"(blank)";
+    const cur=map.get(key)||{key,amount:0,net:0,count:0};
+    cur.amount+=salesRefAmount(r);
+    cur.net+=salesRefNet(r);
+    cur.count+=1;
+    map.set(key,cur);
+  });
+  return [...map.values()].sort((a,b)=>b.amount-a.amount||b.count-a.count);
+}
+function salesRefRankRows(items,limit){
+  if(!items.length)return `<div class="sales-ref-rank"><span class="sales-ref-rank-name">データなし</span><span class="sales-ref-rank-value"></span></div>`;
+  return items.slice(0,limit).map(x=>`<div class="sales-ref-rank"><span class="sales-ref-rank-name">${esc(x.key)}</span><span class="sales-ref-rank-value">${salesRefMoney(x.amount)}</span></div>`).join("");
+}
+function renderSalesReferenceAnalysis(){
+  const el=document.getElementById("sales-ref-analysis");
+  if(!el)return;
+  const displayRows=filteredSalesReferenceRows();
+  const totalAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const totalNet=displayRows.reduce((sum,r)=>sum+salesRefNet(r),0);
+  const byMonth=salesRefGroup(displayRows,r=>salesRefMonth(r.finalized_at));
+  const byImporter=salesRefGroup(displayRows,r=>r.importer_code);
+  const byProduct=salesRefGroup(displayRows,r=>`${r.product_id||""} ${r.product_name||""}`.trim());
+  const wasOpen=el.querySelector("details")?.open;
+  el.innerHTML=`<details ${wasOpen?"open":""}>
+    <summary><span>分析サマリ</span><span>金額 ${salesRefMoney(totalAmount)} / NET ${salesRefMoney(totalNet)} kg / ${displayRows.length}件</span></summary>
+    <div class="sales-ref-analysis-grid">
+      <div class="sales-ref-card sales-ref-total-card"><div class="sales-ref-card-head"><span>合計</span><span>${displayRows.length}件</span></div><div class="sales-ref-card-body"><div class="sales-ref-rank"><span class="sales-ref-rank-name">金額</span><span class="sales-ref-rank-value">${salesRefMoney(totalAmount)}</span></div><div class="sales-ref-rank"><span class="sales-ref-rank-name">NET kg</span><span class="sales-ref-rank-value">${salesRefMoney(totalNet)}</span></div></div></div>
+      <div class="sales-ref-card"><div class="sales-ref-card-head"><span>月別売上</span><span>金額</span></div><div class="sales-ref-card-body">${salesRefRankRows(byMonth,12)}</div></div>
+      <div class="sales-ref-card"><div class="sales-ref-card-head"><span>輸入社別</span><span>金額</span></div><div class="sales-ref-card-body">${salesRefRankRows(byImporter,12)}</div></div>
+      <div class="sales-ref-card"><div class="sales-ref-card-head"><span>商品別上位</span><span>金額</span></div><div class="sales-ref-card-body">${salesRefRankRows(byProduct,12)}</div></div>
+    </div>
+  </details>`;
+}
+/* disabled customer master mojibake
+let customerMasterRows=[];
+function customerMasterErrorMessage(error){
+  const msg=String(error?.message||"");
+  if(error?.code==="42P01"||/customer_master/i.test(msg))return "customer-master-migration.sql をSupabase SQL Editorで実行してください。";
+  return msg||"得意先マスタを読み込めませんでした。";
+}
+function ensureCustomerMasterUI(){
+  if(!document.querySelector('[data-customer-master-btn="1"]')){
+    const syncUser=document.getElementById("sync-user");
+    if(syncUser){
+      const btn=document.createElement("button");
+      btn.className="sync-btn";
+      btn.type="button";
+      btn.dataset.customerMasterBtn="1";
+      btn.textContent="得意先マスタ";
+      btn.onclick=openCustomerMaster;
+      syncUser.parentNode.insertBefore(btn,syncUser);
+    }
+  }
+  const bar=document.getElementById("cloud-save-bar");
+  if(bar&&!document.getElementById("customer-fix-btn")){
+    const btn=document.createElement("button");
+    btn.className="btn";
+    btn.id="customer-fix-btn";
+    btn.type="button";
+    btn.textContent="得意先補正";
+    btn.onclick=openCustomerMaster;
+    const saveBtn=document.getElementById("cloud-save-btn");
+    bar.insertBefore(btn,saveBtn||bar.lastChild);
+  }
+  if(document.getElementById("customer-master-bg"))return;
+  const bg=document.createElement("div");
+  bg.className="export-bg";
+  bg.id="customer-master-bg";
+  bg.onclick=closeCustomerMaster;
+  bg.innerHTML=`<div class="customer-master-panel" onclick="event.stopPropagation()">
+    <div class="customer-master-head"><div class="customer-master-title">得意先マスタ</div><button class="export-close" onclick="closeCustomerMaster()">x</button></div>
+    <div class="customer-master-body">
+      <div class="customer-master-section">
+        <h3>未取得行の補正</h3>
+        <div class="customer-fix-list" id="customer-fix-list"></div>
+      </div>
+      <div class="customer-master-section">
+        <h3>得意先の追加</h3>
+        <div class="customer-master-form">
+          <input id="cm-importer" placeholder="Importer code">
+          <input id="cm-country" placeholder="Country code">
+          <input class="wide" id="cm-name" placeholder="Customer name">
+          <input class="wide" id="cm-alias" placeholder="Alias / PDF text">
+          <button class="btn btn-primary wide" type="button" onclick="addCustomerMasterFromForm()">追加</button>
+        </div>
+        <h3>登録済み得意先</h3>
+        <input class="sales-ref-search" id="cm-search" placeholder="Search customer" oninput="resetCustomerMasterPage()">
+        <div class="customer-master-list" id="customer-master-list"></div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+}
+ensureCustomerMasterUI();
+function closeCustomerMaster(){
+  document.getElementById("customer-master-bg")?.classList.remove("open");
+}
+function isMissingCustomerName(name){
+  const s=String(name||"").trim();
+  return !s||s==="-"||s==="UNKNOWN_STORE"||s.includes("未取得")||s.toLowerCase().includes("unknown");
+}
+function currentImporterForCustomer(row){
+  return importerCode(row?.importer_id)||row?.country||"";
+}
+async function loadCustomerMaster(){
+  if(!(await requireSupabaseLogin()))return false;
+  const {data,error}=await supabaseClient
+    .from("customer_master")
+    .select("id,customer_code,customer_name,importer_code,country_code,alias_name,active,created_at,updated_at")
+    .eq("active",true)
+    .order("importer_code",{ascending:true})
+    .order("customer_name",{ascending:true});
+  if(error){alert(customerMasterErrorMessage(error));return false}
+  customerMasterRows=data||[];
+  return true;
+}
+async function openCustomerMaster(){
+  ensureCustomerMasterUI();
+  document.getElementById("customer-master-bg").classList.add("open");
+  const ok=await loadCustomerMaster();
+  if(!ok)return;
+  fillCustomerMasterDefaults();
+  renderCustomerFixList();
+  renderCustomerMasterList();
+}
+function fillCustomerMasterDefaults(){
+  const imp=document.getElementById("cm-importer");
+  const country=document.getElementById("cm-country");
+  if(imp&&!imp.value){
+    const r=rows.find(x=>x&&x.importer_id)||rows[0];
+    imp.value=currentImporterForCustomer(r);
+  }
+  if(country&&!country.value){
+    const r=rows.find(x=>x&&x.country)||rows[0];
+    country.value=r?.country||"";
+  }
+}
+function customerMasterCandidates(row){
+  const imp=currentImporterForCustomer(row);
+  const country=row?.country||"";
+  return customerMasterRows.filter(c=>{
+    const ci=String(c.importer_code||"");
+    const cc=String(c.country_code||"");
+    return (!ci||!imp||ci===imp)&&(!cc||!country||cc===country);
+  });
+}
+function renderCustomerFixList(){
+  const list=document.getElementById("customer-fix-list");
+  if(!list)return;
+  const targets=rows.filter(r=>isMissingCustomerName(r.customer));
+  if(!rows.length){
+    list.innerHTML=`<div class="customer-empty">作業データ読込後に補正できます。</div>`;
+    return;
+  }
+  if(!targets.length){
+    list.innerHTML=`<div class="customer-empty">店舗名未取得の行はありません。</div>`;
+    return;
+  }
+  list.innerHTML=targets.map(r=>{
+    const options=customerMasterCandidates(r).map(c=>`<option value="${esc(c.customer_name)}">${esc(c.customer_name)}${c.importer_code?` / ${esc(c.importer_code)}`:""}</option>`).join("");
+    return `<div class="customer-fix-card">
+      <div class="customer-fix-meta">#${r._idx+1} / ${esc(currentImporterForCustomer(r))} / ${esc(r.product_id)} / ${esc(r.product_name)}</div>
+      <select id="cm-select-${r._idx}"><option value="">候補から選択</option>${options}</select>
+      <input id="cm-new-${r._idx}" placeholder="新しい得意先名">
+      <div class="customer-fix-actions"><button class="btn btn-primary" onclick="applyCustomerFix(${r._idx})">反映</button><button class="btn" onclick="applyCustomerFixAndSave(${r._idx})">反映してマスタ保存</button></div>
+    </div>`;
+  }).join("");
+}
+function renderCustomerMasterList(){
+  const list=document.getElementById("customer-master-list");
+  if(!list)return;
+  const q=(document.getElementById("cm-search")?.value||"").trim().toLowerCase();
+  const filtered=customerMasterRows.filter(c=>!q||[c.customer_name,c.customer_code,c.importer_code,c.country_code,c.alias_name].some(v=>String(v||"").toLowerCase().includes(q)));
+  if(!filtered.length){
+    list.innerHTML=`<div class="customer-empty">登録済み得意先がありません。</div>`;
+    return;
+  }
+  list.innerHTML=filtered.slice(0,200).map(c=>`<div class="customer-master-item"><div class="customer-master-name">${esc(c.customer_name)}</div><div class="customer-master-meta">${esc(c.importer_code||"")} ${esc(c.country_code||"")}${c.alias_name?` / ${esc(c.alias_name)}`:""}</div></div>`).join("");
+}
+function normalizeCustomerMasterCsvKey(header){
+  const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
+  const n=normalizeHeaderName(raw);
+  const map={
+    customer_code:["customer_code","customercode","code","得意先コード","得意先cd","顧客コード","店舗コード"],
+    customer_name:["customer_name","customername","name","得意先名","顧客名","店舗名","店名","エンドユーザーの店名","エンドユーザー店名"],
+    importer_code:["importer_code","importercode","importer","輸入社コード","輸入社id","輸入社","cs","c/s"],
+    country_code:["country_code","countrycode","country","国コード","国"],
+    alias_name:["alias_name","alias","pdf_text","別名","略称","表記ゆれ","pdf表記"]
+  };
+  for(const [key,names] of Object.entries(map)){
+    if(names.map(normalizeHeaderName).includes(n))return key;
+  }
+  return raw;
+}
+function parseCustomerMasterCsv(text){
+  const lines=String(text||"").trim().replace(/^\uFEFF/,"").split(/\r?\n/).filter(Boolean);
+  if(lines.length<2)return [];
+  const headers=splitLine(lines[0]).map(normalizeCustomerMasterCsvKey);
+  return lines.slice(1).map(line=>{
+    const cols=splitLine(line);
+    const row={};
+    headers.forEach((h,i)=>row[h]=(cols[i]||"").replace(/^"|"$/g,"").trim());
+    return {
+      customer_code:row.customer_code||null,
+      customer_name:row.customer_name||"",
+      importer_code:row.importer_code||null,
+      country_code:row.country_code||null,
+      alias_name:row.alias_name||null,
+      active:true
+    };
+  }).filter(r=>r.customer_name);
+}
+async function uploadCustomerMasterCsvFile(file){
+  if(!file)return;
+  if(!(await requireSupabaseLogin()))return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const rowsToSave=parseCustomerMasterCsv(decodeCsvBuffer(e.target.result));
+    if(!rowsToSave.length){toast("Customer CSV has no rows.");return}
+    if(!confirm(`得意先マスタ ${rowsToSave.length}件を登録しますか？`))return;
+    setSaveState(`Supabase: customer master uploading ${rowsToSave.length}`);
+    for(let i=0;i<rowsToSave.length;i+=500){
+      const chunk=rowsToSave.slice(i,i+500);
+      const {error}=await supabaseClient.from("customer_master").upsert(chunk,{onConflict:"importer_code,customer_name"});
+      if(error){setSaveState("Supabase: customer master upload failed",true);alert(customerMasterErrorMessage(error));return}
+      setSaveState(`Supabase: customer master ${Math.min(i+500,rowsToSave.length)}/${rowsToSave.length}`);
+    }
+    await loadCustomerMaster();
+    renderCustomerMasterList();
+    renderCustomerFixList();
+    setSaveState("Supabase: customer master uploaded");
+    toast("得意先マスタCSVを登録しました");
+  };
+  reader.readAsArrayBuffer(file);
+}
+function onCustomerMasterCsvChange(input){
+  const file=input.files?.[0];
+  input.value="";
+  uploadCustomerMasterCsvFile(file);
+}
+async function addCustomerMaster(customer){
+  if(!(await requireSupabaseLogin()))return false;
+  const payload={
+    customer_code:customer.customer_code||null,
+    customer_name:customer.customer_name,
+    importer_code:customer.importer_code||null,
+    country_code:customer.country_code||null,
+    alias_name:customer.alias_name||null,
+    active:true
+  };
+  const {error}=await supabaseClient.from("customer_master").upsert(payload,{onConflict:"importer_code,customer_name"});
+  if(error){alert(customerMasterErrorMessage(error));return false}
+  await loadCustomerMaster();
+  renderCustomerMasterList();
+  renderCustomerFixList();
+  return true;
+}
+async function addCustomerMasterFromForm(){
+  const name=(document.getElementById("cm-name")?.value||"").trim();
+  if(!name){toast("得意先名を入力してください");return}
+  const ok=await addCustomerMaster({
+    customer_name:name,
+    importer_code:(document.getElementById("cm-importer")?.value||"").trim(),
+    country_code:(document.getElementById("cm-country")?.value||"").trim(),
+    alias_name:(document.getElementById("cm-alias")?.value||"").trim()
+  });
+  if(ok){
+    document.getElementById("cm-name").value="";
+    document.getElementById("cm-alias").value="";
+    toast("得意先マスタに追加しました");
+  }
+}
+function customerFixValue(idx){
+  return (document.getElementById(`cm-new-${idx}`)?.value||"").trim()||(document.getElementById(`cm-select-${idx}`)?.value||"").trim();
+}
+async function applyCustomerFix(idx){
+  const row=rows[idx];
+  const name=customerFixValue(idx);
+  if(!row||!name){toast("得意先名を選択または入力してください");return}
+  const oldCountry=row.country,oldCustomer=row.customer;
+  row.customer=name;
+  if(orderRows[idx])orderRows[idx].customer=name;
+  if(currentSessionId)await saveOrderLineToSupabase(row);
+  if(oldCountry!==row.country||oldCustomer!==row.customer)buildP1Tabs();
+  else renderP1Cell(row.country,row.customer);
+  renderCustomerFixList();
+  toast("得意先名を反映しました");
+}
+async function applyCustomerFixAndSave(idx){
+  const row=rows[idx];
+  const name=customerFixValue(idx);
+  if(!row||!name){toast("得意先名を選択または入力してください");return}
+  const ok=await addCustomerMaster({
+    customer_name:name,
+    importer_code:currentImporterForCustomer(row),
+    country_code:row.country||"",
+    alias_name:row.customer||""
+  });
+  if(ok)await applyCustomerFix(idx);
+}
+const __mergeAndRenderCustomerMasterBase=mergeAndRender;
+mergeAndRender=function(){
+  const result=__mergeAndRenderCustomerMasterBase();
+  ensureCustomerMasterUI();
+  return result;
+};
+const __openSavedSessionCustomerMasterBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await __openSavedSessionCustomerMasterBase(sessionId);
+  ensureCustomerMasterUI();
+};
+*/
+let customerMasterRows=[];
+const CM_LABEL={
+  master:"\u5f97\u610f\u5148\u30de\u30b9\u30bf",
+  fix:"\u5f97\u610f\u5148\u88dc\u6b63",
+  missing:"\u5e97\u8217\u540d\u672a\u53d6\u5f97",
+  add:"\u8ffd\u52a0",
+  apply:"\u53cd\u6620",
+  applySave:"\u53cd\u6620\u3057\u3066\u30de\u30b9\u30bf\u4fdd\u5b58"
+};
+function customerMasterErrorMessage(error){
+  const msg=String(error?.message||"");
+  if(error?.code==="42P01"||/customer_master/i.test(msg))return "Run customer-master-migration.sql in Supabase SQL Editor.";
+  return msg||"Customer master error.";
+}
+function ensureCustomerMasterUI(){
+  if(!document.querySelector('[data-customer-master-btn="1"]')){
+    const syncUser=document.getElementById("sync-user");
+    if(syncUser){
+      const btn=document.createElement("button");
+      btn.className="sync-btn";
+      btn.type="button";
+      btn.dataset.customerMasterBtn="1";
+      btn.textContent=CM_LABEL.master;
+      btn.onclick=openCustomerMaster;
+      syncUser.parentNode.insertBefore(btn,syncUser);
+    }
+  }
+  const bar=document.getElementById("cloud-save-bar");
+  if(bar&&!document.getElementById("customer-fix-btn")){
+    const btn=document.createElement("button");
+    btn.className="btn";
+    btn.id="customer-fix-btn";
+    btn.type="button";
+    btn.textContent=CM_LABEL.fix;
+    btn.onclick=openCustomerMaster;
+    const saveBtn=document.getElementById("cloud-save-btn");
+    bar.insertBefore(btn,saveBtn||bar.lastChild);
+  }
+  if(document.getElementById("customer-master-bg"))return;
+  const bg=document.createElement("div");
+  bg.className="export-bg";
+  bg.id="customer-master-bg";
+  bg.onclick=closeCustomerMaster;
+  bg.innerHTML=`<div class="customer-master-panel" onclick="event.stopPropagation()">
+    <div class="customer-master-head"><div class="customer-master-title">${CM_LABEL.master}</div><button class="export-close" onclick="closeCustomerMaster()">x</button></div>
+    <div class="customer-master-body">
+      <div class="customer-master-section">
+        <h3>${CM_LABEL.fix}</h3>
+        <button class="btn btn-primary" type="button" style="width:100%;margin-bottom:8px" onclick="applyCustomerMasterAutoFromButton()">マスタ自動補正</button>
+        <div class="customer-fix-list" id="customer-fix-list"></div>
+      </div>
+      <div class="customer-master-section">
+        <h3>${CM_LABEL.add}</h3>
+        <div class="customer-master-form">
+          <input id="cm-importer" placeholder="Importer code">
+          <input id="cm-country" placeholder="Country code">
+          <input class="wide" id="cm-name" placeholder="Customer name">
+          <input class="wide" id="cm-alias" placeholder="Alias / PDF text">
+          <button class="btn btn-primary wide" type="button" onclick="addCustomerMasterFromForm()">${CM_LABEL.add}</button>
+        </div>
+        <h3>Customer list</h3>
+        <label class="btn btn-primary wide" style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;cursor:pointer">
+          CSV Upload
+          <input type="file" accept=".csv" style="display:none" onchange="onCustomerMasterCsvChange(this)">
+        </label>
+        <input class="sales-ref-search" id="cm-search" placeholder="Search customer" oninput="renderCustomerMasterList()">
+        <div class="customer-master-list" id="customer-master-list"></div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+}
+ensureCustomerMasterUI();
+function closeCustomerMaster(){
+  document.getElementById("customer-master-bg")?.classList.remove("open");
+}
+function isMissingCustomerName(name){
+  const s=String(name||"").trim();
+  return !s||s==="-"||s==="UNKNOWN_STORE"||s.includes(CM_LABEL.missing)||s.includes("\u672a\u53d6\u5f97")||s.toLowerCase().includes("unknown");
+}
+function currentImporterForCustomer(row){
+  return importerCode(row?.importer_id)||row?.country||"";
+}
+async function loadCustomerMaster(){
+  if(!(await requireSupabaseLogin()))return false;
+  const {data,error}=await supabaseClient
+    .from("customer_master")
+    .select("id,customer_code,customer_name,importer_code,country_code,alias_name,active,created_at,updated_at")
+    .eq("active",true)
+    .order("importer_code",{ascending:true})
+    .order("customer_name",{ascending:true});
+  if(error){alert(customerMasterErrorMessage(error));return false}
+  customerMasterRows=data||[];
+  return true;
+}
+async function openCustomerMaster(){
+  ensureCustomerMasterUI();
+  document.getElementById("customer-master-bg").classList.add("open");
+  const ok=await loadCustomerMaster();
+  if(!ok)return;
+  fillCustomerMasterDefaults();
+  renderCustomerFixList();
+  renderCustomerMasterList();
+}
+function fillCustomerMasterDefaults(){
+  const imp=document.getElementById("cm-importer");
+  const country=document.getElementById("cm-country");
+  if(imp&&!imp.value){
+    const r=rows.find(x=>x&&x.importer_id)||rows[0];
+    imp.value=currentImporterForCustomer(r);
+  }
+  if(country&&!country.value){
+    const r=rows.find(x=>x&&x.country)||rows[0];
+    country.value=r?.country||"";
+  }
+}
+function customerMasterCandidates(row){
+  const imp=currentImporterForCustomer(row);
+  const country=row?.country||"";
+  return customerMasterRows.filter(c=>{
+    const ci=String(c.importer_code||"");
+    const cc=String(c.country_code||"");
+    return (!ci||!imp||ci===imp)&&(!cc||!country||cc===country);
+  });
+}
+function renderCustomerFixList(){
+  const list=document.getElementById("customer-fix-list");
+  if(!list)return;
+  const targets=rows.filter(r=>isMissingCustomerName(r.customer));
+  if(!rows.length){
+    list.innerHTML=`<div class="customer-empty">Load work data first.</div>`;
+    return;
+  }
+  if(!targets.length){
+    list.innerHTML=`<div class="customer-empty">No missing customer rows.</div>`;
+    return;
+  }
+  list.innerHTML=targets.map(r=>{
+    const options=customerMasterCandidates(r).map(c=>`<option value="${esc(c.customer_name)}">${esc(c.customer_name)}${c.importer_code?` / ${esc(c.importer_code)}`:""}</option>`).join("");
+    return `<div class="customer-fix-card">
+      <div class="customer-fix-meta">#${r._idx+1} / ${esc(currentImporterForCustomer(r))} / ${esc(r.product_id)} / ${esc(r.product_name)}</div>
+      <select id="cm-select-${r._idx}"><option value="">Select candidate</option>${options}</select>
+      <input id="cm-new-${r._idx}" placeholder="New customer name">
+      <div class="customer-fix-actions"><button class="btn btn-primary" onclick="applyCustomerFix(${r._idx})">${CM_LABEL.apply}</button><button class="btn" onclick="applyCustomerFixAndSave(${r._idx})">${CM_LABEL.applySave}</button></div>
+    </div>`;
+  }).join("");
+}
+function renderCustomerMasterList(){
+  const list=document.getElementById("customer-master-list");
+  if(!list)return;
+  const q=(document.getElementById("cm-search")?.value||"").trim().toLowerCase();
+  const filtered=customerMasterRows.filter(c=>!q||[c.customer_name,c.customer_code,c.importer_code,c.country_code,c.alias_name].some(v=>String(v||"").toLowerCase().includes(q)));
+  if(!filtered.length){
+    list.innerHTML=`<div class="customer-empty">No customers.</div>`;
+    return;
+  }
+  list.innerHTML=filtered.slice(0,200).map(c=>`<div class="customer-master-item"><div class="customer-master-name">${esc(c.customer_name)}</div><div class="customer-master-meta">${esc(c.importer_code||"")} ${esc(c.country_code||"")}${c.alias_name?` / ${esc(c.alias_name)}`:""}</div></div>`).join("");
+}
+async function addCustomerMaster(customer){
+  if(!(await requireSupabaseLogin()))return false;
+  const payload={
+    customer_code:customer.customer_code||null,
+    customer_name:customer.customer_name,
+    importer_code:customer.importer_code||null,
+    country_code:customer.country_code||null,
+    alias_name:customer.alias_name||null,
+    active:true
+  };
+  const {error}=await supabaseClient.from("customer_master").upsert(payload,{onConflict:"importer_code,customer_name"});
+  if(error){alert(customerMasterErrorMessage(error));return false}
+  await loadCustomerMaster();
+  renderCustomerMasterList();
+  renderCustomerFixList();
+  return true;
+}
+async function addCustomerMasterFromForm(){
+  const name=(document.getElementById("cm-name")?.value||"").trim();
+  if(!name){toast("Enter customer name.");return}
+  const ok=await addCustomerMaster({
+    customer_name:name,
+    importer_code:(document.getElementById("cm-importer")?.value||"").trim(),
+    country_code:(document.getElementById("cm-country")?.value||"").trim(),
+    alias_name:(document.getElementById("cm-alias")?.value||"").trim()
+  });
+  if(ok){
+    document.getElementById("cm-name").value="";
+    document.getElementById("cm-alias").value="";
+    toast("Customer added.");
+  }
+}
+function customerFixValue(idx){
+  return (document.getElementById(`cm-new-${idx}`)?.value||"").trim()||(document.getElementById(`cm-select-${idx}`)?.value||"").trim();
+}
+async function applyCustomerFix(idx){
+  const row=rows[idx];
+  const name=customerFixValue(idx);
+  if(!row||!name){toast("Select or enter customer name.");return}
+  row.customer=name;
+  if(orderRows[idx])orderRows[idx].customer=name;
+  if(currentSessionId)await saveOrderLineToSupabase(row);
+  buildP1Tabs();
+  renderCustomerFixList();
+  toast("Customer applied.");
+}
+async function applyCustomerFixAndSave(idx){
+  const row=rows[idx];
+  const name=customerFixValue(idx);
+  if(!row||!name){toast("Select or enter customer name.");return}
+  const ok=await addCustomerMaster({
+    customer_name:name,
+    importer_code:currentImporterForCustomer(row),
+    country_code:row.country||"",
+    alias_name:row.customer||""
+  });
+  if(ok)await applyCustomerFix(idx);
+}
+function cmCsvKey(header,index,total){
+  const n=normalizeHeaderName(header);
+  const aliases={
+    customer_code:["customer_code","customercode","code","\u5f97\u610f\u5148\u30b3\u30fc\u30c9","\u9867\u5ba2\u30b3\u30fc\u30c9","\u5e97\u8217\u30b3\u30fc\u30c9"],
+    customer_name:["customer_name","customername","name","\u5f97\u610f\u5148\u540d","\u9867\u5ba2\u540d","\u5e97\u8217\u540d","\u5e97\u540d","\u30a8\u30f3\u30c9\u30e6\u30fc\u30b6\u30fc\u306e\u5e97\u540d"],
+    importer_code:["importer_code","importercode","importer","\u8f38\u5165\u793e\u30b3\u30fc\u30c9","\u8f38\u5165\u793eid","\u8f38\u5165\u793e","cs","c/s"],
+    country_code:["country_code","countrycode","country","\u56fd\u30b3\u30fc\u30c9","\u56fd"],
+    alias_name:["alias_name","alias","pdf_text","\u5225\u540d","\u7565\u79f0","\u8868\u8a18\u3086\u308c","pdf\u8868\u8a18"]
+  };
+  for(const [key,names] of Object.entries(aliases)){
+    if(names.map(normalizeHeaderName).includes(n))return key;
+  }
+  if(total===2&&index===0)return "customer_code";
+  if(total===2&&index===1)return "customer_name";
+  return header;
+}
+function parseCustomerMasterCsv(text){
+  const lines=String(text||"").trim().replace(/^\uFEFF/,"").split(/\r?\n/).filter(Boolean);
+  if(lines.length<2)return [];
+  const rawHeaders=splitLine(lines[0]);
+  const headers=rawHeaders.map((h,i)=>cmCsvKey(h,i,rawHeaders.length));
+  const rowsToSave=lines.slice(1).map(line=>{
+    const cols=splitLine(line);
+    const row={};
+    headers.forEach((h,i)=>row[h]=(cols[i]||"").replace(/^"|"$/g,"").trim());
+    return {
+      customer_code:row.customer_code||null,
+      customer_name:row.customer_name||"",
+      importer_code:row.importer_code||"",
+      country_code:row.country_code||"",
+      alias_name:row.alias_name||null,
+      active:true
+    };
+  }).filter(r=>r.customer_name);
+  const dedup=new Map();
+  rowsToSave.forEach(r=>dedup.set(`${r.importer_code}::${r.customer_name}`,r));
+  return [...dedup.values()];
+}
+async function uploadCustomerMasterCsvFile(file){
+  if(!file)return;
+  if(!(await requireSupabaseLogin()))return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const rowsToSave=parseCustomerMasterCsv(decodeCsvBuffer(e.target.result));
+    if(!rowsToSave.length){toast("Customer CSV has no rows.");return}
+    if(!confirm(`Customer master ${rowsToSave.length} rows upload?`))return;
+    setSaveState(`Supabase: customer master uploading ${rowsToSave.length}`);
+    for(let i=0;i<rowsToSave.length;i+=500){
+      const chunk=rowsToSave.slice(i,i+500);
+      const {error}=await supabaseClient.from("customer_master").upsert(chunk,{onConflict:"importer_code,customer_name"});
+      if(error){setSaveState("Supabase: customer master upload failed",true);alert(customerMasterErrorMessage(error));return}
+      setSaveState(`Supabase: customer master ${Math.min(i+500,rowsToSave.length)}/${rowsToSave.length}`);
+    }
+    await loadCustomerMaster();
+    renderCustomerMasterList();
+    renderCustomerFixList();
+    setSaveState("Supabase: customer master uploaded");
+    toast("Customer CSV uploaded.");
+  };
+  reader.readAsArrayBuffer(file);
+}
+function onCustomerMasterCsvChange(input){
+  const file=input.files?.[0];
+  input.value="";
+  uploadCustomerMasterCsvFile(file);
+}
+function normalizeCustomerMatchText(value){
+  return String(value||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"").replace(/[()（）.,，．・]/g,"");
+}
+function customerRowSearchText(row){
+  return [
+    row?.customer,
+    row?.raw_pdf_text,
+    row?.source_filename,
+    row?.product_id,
+    row?.product_name
+  ].map(v=>String(v||"")).join(" ");
+}
+function customerMasterAppliesToRow(master,row){
+  const mi=String(master.importer_code||"");
+  const ri=currentImporterForCustomer(row);
+  const mc=String(master.country_code||"");
+  const rc=String(row?.country||"");
+  return (!mi||!ri||mi===ri)&&(!mc||!rc||mc===rc);
+}
+function findCustomerMasterMatch(row){
+  const text=normalizeCustomerMatchText(customerRowSearchText(row));
+  const current=normalizeCustomerMatchText(row?.customer);
+  const candidates=customerMasterRows.filter(c=>customerMasterAppliesToRow(c,row));
+  for(const c of candidates){
+    const code=normalizeCustomerMatchText(c.customer_code);
+    if(code&&text.includes(code))return c;
+  }
+  for(const c of candidates){
+    const alias=normalizeCustomerMatchText(c.alias_name);
+    if(alias&&text.includes(alias))return c;
+  }
+  for(const c of candidates){
+    const name=normalizeCustomerMatchText(c.customer_name);
+    if(name&&current&&current.includes(name))return c;
+  }
+  return null;
+}
+async function applyCustomerMasterAuto(options={}){
+  if(!customerMasterRows.length){
+    const ok=await loadCustomerMaster();
+    if(!ok)return 0;
+  }
+  let changed=0;
+  rows.forEach((row,idx)=>{
+    const match=findCustomerMasterMatch(row);
+    if(!match||!match.customer_name)return;
+    if(row.customer===match.customer_name)return;
+    if(!isMissingCustomerName(row.customer)&&!normalizeCustomerMatchText(row.customer).includes(normalizeCustomerMatchText(match.customer_code)))return;
+    row.customer=match.customer_name;
+    if(orderRows[idx])orderRows[idx].customer=match.customer_name;
+    changed++;
+  });
+  if(changed){
+    buildP1Tabs();
+    renderCustomerFixList();
+    if(options.save&&currentSessionId){
+      for(const row of rows.filter(r=>r&&r.customer)){
+        await saveOrderLineToSupabase(row);
+      }
+    }
+    toast(`得意先マスタで${changed}件補正しました`);
+  }else{
+    toast("得意先マスタで補正できる行はありませんでした");
+  }
+  return changed;
+}
+async function applyCustomerMasterAutoFromButton(){
+  await applyCustomerMasterAuto({save:true});
+}
+function normalizeCustomerMatchTextV2(value){
+  return String(value||"")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g,"")
+    .replace(/[()\uFF08\uFF09.,\uFF0C\uFF0E\u30FB]/g,"")
+    .replace(/inc$|ltd$|co$|corp$|corporation$|limited$/g,"");
+}
+function customerMasterUsableV2(master){
+  const s=String(master?.customer_name||"")+String(master?.alias_name||"");
+  return !/使用禁止|禁止|inactive/i.test(s);
+}
+function longestCommonSubstringLengthV2(a,b){
+  a=String(a||"");
+  b=String(b||"");
+  if(!a||!b)return 0;
+  const dp=new Array(b.length+1).fill(0);
+  let best=0;
+  for(let i=1;i<=a.length;i++){
+    for(let j=b.length;j>=1;j--){
+      if(a[i-1]===b[j-1]){
+        dp[j]=dp[j-1]+1;
+        if(dp[j]>best)best=dp[j];
+      }else{
+        dp[j]=0;
+      }
+    }
+  }
+  return best;
+}
+function customerNameSimilarityV2(a,b){
+  a=normalizeCustomerMatchTextV2(a);
+  b=normalizeCustomerMatchTextV2(b);
+  if(!a||!b)return 0;
+  if(a===b)return 1;
+  if(a.length>=5&&b.length>=5&&(a.includes(b)||b.includes(a)))return Math.min(a.length,b.length)/Math.max(a.length,b.length);
+  return longestCommonSubstringLengthV2(a,b)/Math.max(a.length,b.length);
+}
+findCustomerMasterMatch=function(row){
+  const text=normalizeCustomerMatchTextV2(customerRowSearchText(row));
+  const candidates=customerMasterRows.filter(c=>customerMasterUsableV2(c)&&customerMasterAppliesToRow(c,row));
+  for(const c of candidates){
+    const code=normalizeCustomerMatchTextV2(c.customer_code);
+    if(code&&text.includes(code))return Object.assign({_matchScore:1,_matchReason:"code"},c);
+  }
+  for(const c of candidates){
+    const alias=normalizeCustomerMatchTextV2(c.alias_name);
+    if(alias&&text.includes(alias))return Object.assign({_matchScore:.95,_matchReason:"alias"},c);
+  }
+  for(const c of candidates){
+    const name=normalizeCustomerMatchTextV2(c.customer_name);
+    if(name&&text.includes(name))return Object.assign({_matchScore:.92,_matchReason:"name-exact"},c);
+  }
+  let best=null;
+  for(const c of candidates){
+    const score=Math.max(
+      customerNameSimilarityV2(row?.customer,c.customer_name),
+      customerNameSimilarityV2(customerRowSearchText(row),c.customer_name),
+      customerNameSimilarityV2(row?.customer,c.alias_name)
+    );
+    if(score>=.72&&(!best||score>best._matchScore)){
+      best=Object.assign({_matchScore:score,_matchReason:"name-similar"},c);
+    }
+  }
+  return best;
+};
+applyCustomerMasterAuto=async function(options={}){
+  if(!customerMasterRows.length){
+    const ok=await loadCustomerMaster();
+    if(!ok)return 0;
+  }
+  let changed=0;
+  rows.forEach((row,idx)=>{
+    const match=findCustomerMasterMatch(row);
+    if(!match||!match.customer_name)return;
+    if(row.customer===match.customer_name)return;
+    const score=Number(match._matchScore)||0;
+    if(!isMissingCustomerName(row.customer)&&score<.9)return;
+    row.customer=match.customer_name;
+    if(orderRows[idx])orderRows[idx].customer=match.customer_name;
+    changed++;
+  });
+  if(changed){
+    buildP1Tabs();
+    renderCustomerFixList();
+    if(options.save&&currentSessionId){
+      for(const row of rows.filter(r=>r&&r.customer)){
+        await saveOrderLineToSupabase(row);
+      }
+    }
+    toast(`得意先マスタで${changed}件補正しました`);
+  }else{
+    toast("得意先マスタで補正できる行はありませんでした");
+  }
+  return changed;
+};
+/* disabled broken pdf tail parser
+function pdfCustomerLooksLikeProductCodeTail(value){
+  const s=String(value||"").normalize("NFKC").trim();
+  if(!s)return true;
+  if(/[ぁ-んァ-ヶ一-龠]/.test(s))return false;
+  return /^[-－]?[0-9A-Za-z]{1,10}$/.test(s);
+}
+function mergePdfProductCodeTail(row){
+  if(!row||!pdfCustomerLooksLikeProductCodeTail(row.customer))return row;
+  const tail=String(row.customer||"").normalize("NFKC").trim();
+  if(tail&&/^[-－]?[0-9A-Za-z]{1,10}$/.test(tail)){
+    const normalizedTail=tail.replace(/^－/,"-");
+    if(!String(row.product_id||"").endsWith(normalizedTail)){
+      row.product_id=String(row.product_id||"")+normalizedTail;
+    }
+  }
+  row.customer="\u5e97\u8217\u540d\u672a\u53d6\u5f97";
+  return row;
+}
+const __parseOrderPdfTextCustomerTailBase=parseOrderPdfText;
+parseOrderPdfText=function(text,filename,importerCodeValue,pageNo){
+  return __parseOrderPdfTextCustomerTailBase(text,filename,importerCodeValue,pageNo).map(mergePdfProductCodeTail);
+};
+*/
+let customerMasterPage=0;
+const customerMasterPageSize=100;
+function filteredCustomerMasterRows(){
+  const q=(document.getElementById("cm-search")?.value||"").trim().toLowerCase();
+  return customerMasterRows.filter(c=>!q||[c.customer_name,c.customer_code,c.importer_code,c.country_code,c.alias_name].some(v=>String(v||"").toLowerCase().includes(q)));
+}
+function customerMasterTotalPages(total){
+  return Math.max(1,Math.ceil(total/customerMasterPageSize));
+}
+function changeCustomerMasterPage(delta){
+  const total=filteredCustomerMasterRows().length;
+  const pages=customerMasterTotalPages(total);
+  customerMasterPage=Math.min(Math.max(0,customerMasterPage+delta),pages-1);
+  renderCustomerMasterList();
+}
+function resetCustomerMasterPage(){
+  customerMasterPage=0;
+  renderCustomerMasterList();
+}
+renderCustomerMasterList=function(){
+  const list=document.getElementById("customer-master-list");
+  if(!list)return;
+  const filtered=filteredCustomerMasterRows();
+  const pages=customerMasterTotalPages(filtered.length);
+  if(customerMasterPage>=pages)customerMasterPage=pages-1;
+  const start=customerMasterPage*customerMasterPageSize;
+  const pageRows=filtered.slice(start,start+customerMasterPageSize);
+  if(!filtered.length){
+    list.innerHTML=`<div class="customer-empty">登録済み得意先がありません。</div>`;
+    return;
+  }
+  const controls=`<div class="customer-master-item"><div class="customer-master-name">${filtered.length}件</div><div class="customer-master-meta">ページ ${customerMasterPage+1} / ${pages} (${start+1}-${Math.min(start+customerMasterPageSize,filtered.length)})</div><div class="customer-fix-actions" style="margin-top:8px"><button class="btn" type="button" ${customerMasterPage<=0?"disabled":""} onclick="changeCustomerMasterPage(-1)">前へ</button><button class="btn" type="button" ${customerMasterPage>=pages-1?"disabled":""} onclick="changeCustomerMasterPage(1)">次へ</button></div></div>`;
+  list.innerHTML=controls+pageRows.map(c=>`<div class="customer-master-item"><div class="customer-master-name">${esc(c.customer_name)}</div><div class="customer-master-meta">${esc(c.customer_code||"")}${c.importer_code?` / ${esc(c.importer_code)}`:""}${c.country_code?` / ${esc(c.country_code)}`:""}${c.alias_name?` / ${esc(c.alias_name)}`:""}</div></div>`).join("");
+};
+document.addEventListener("input",event=>{
+  if(event.target?.id==="cm-search")customerMasterPage=0;
+});
+const __mergeAndRenderCustomerMasterSafeBase=mergeAndRender;
+mergeAndRender=function(){
+  const result=__mergeAndRenderCustomerMasterSafeBase();
+  ensureCustomerMasterUI();
+  if(supabaseClient&&currentUser){
+    setTimeout(()=>applyCustomerMasterAuto({save:false}),0);
+  }
+  return result;
+};
+const __openSavedSessionCustomerMasterSafeBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await __openSavedSessionCustomerMasterSafeBase(sessionId);
+  ensureCustomerMasterUI();
+};
+let importIdentityConfirmed=false;
+let importReviewOriginalCustomers=[];
+function importReviewIsSuspicious(row){
+  const customer=String(row?.customer||"").trim();
+  const productId=String(row?.product_id||"").normalize("NFKC").trim();
+  return !customer||isMissingCustomerName(customer)||!productId||!/^\d+[A-Z]{0,2}$/i.test(productId);
+}
+function openImportReview(){
+  if(!orderRows.length){toast("先に受注データを読み込んでください");return}
+  if(importIdentityConfirmed){toast("取り込み内容は確定済みです");return}
+  importReviewOriginalCustomers=orderRows.map(r=>String(r.customer||""));
+  const search=document.getElementById("import-review-search");
+  if(search)search.value="";
+  renderImportReview();
+  document.getElementById("import-review-bg")?.classList.add("open");
+}
+function renderImportReview(){
+  const body=document.getElementById("import-review-body");
+  if(!body)return;
+  const q=String(document.getElementById("import-review-search")?.value||"").trim().toLowerCase();
+  const filtered=orderRows.map((row,index)=>({row,index})).filter(({row})=>{
+    if(!q)return true;
+    return [row.customer,row.product_id,row.product_name,row.importer_id,row.source_filename].some(v=>String(v||"").toLowerCase().includes(q));
+  });
+  body.innerHTML=filtered.map(({row,index})=>`<tr class="${importReviewIsSuspicious(row)?"suspicious":""}">
+    <td>${index+1}</td>
+    <td class="import-review-meta">${esc(row.importer_id||row.importer_code||"-")}</td>
+    <td><input class="import-review-input import-review-customer" value="${esc(row.customer||"")}" placeholder="顧客名" oninput="updateImportReviewCustomer(${index},this.value)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
+    <td><input class="import-review-input import-review-code" value="${esc(row.product_id||"")}" placeholder="商品コード" inputmode="text" autocapitalize="characters" oninput="updateImportReviewProductId(${index},this.value)"></td>
+    <td class="import-review-product">${esc(row.product_name||"-")}</td>
+    <td class="import-review-meta">${esc(row.source_filename||"-")}${row.pdf_page?` / ${row.pdf_page}頁`:""}</td>
+  </tr>`).join("");
+  const suspicious=orderRows.filter(importReviewIsSuspicious).length;
+  const count=document.getElementById("import-review-count");
+  if(count)count.textContent=`表示 ${filtered.length} / 全${orderRows.length}件${suspicious?` / 要確認 ${suspicious}件`:""}`;
+}
+function updateImportReviewCustomer(index,value){
+  if(importIdentityConfirmed||!orderRows[index])return;
+  orderRows[index].customer=String(value||"").trimStart();
+}
+function finishImportReviewCustomer(index,value){
+  if(importIdentityConfirmed||!orderRows[index])return;
+  const next=String(value||"").trim();
+  const original=String(importReviewOriginalCustomers[index]||"");
+  orderRows[index].customer=next;
+  if(document.getElementById("import-review-bulk")?.checked&&original&&next&&original!==next){
+    orderRows.forEach((row,i)=>{
+      if(i!==index&&String(importReviewOriginalCustomers[i]||"")===original)row.customer=next;
+    });
+  }
+  renderImportReview();
+}
+function updateImportReviewProductId(index,value){
+  if(importIdentityConfirmed||!orderRows[index])return;
+  orderRows[index].product_id=String(value||"").normalize("NFKC").replace(/\s+/g,"").toUpperCase();
+  const count=document.getElementById("import-review-count");
+  if(count){
+    const suspicious=orderRows.filter(importReviewIsSuspicious).length;
+    count.textContent=`全${orderRows.length}件${suspicious?` / 要確認 ${suspicious}件`:""}`;
+  }
+}
+function cancelImportReview(){
+  if(!confirm("今回取り込んだ受注データを破棄して、取り込みからやり直しますか？"))return;
+  orderRows=[];
+  importReviewOriginalCustomers=[];
+  importIdentityConfirmed=false;
+  document.getElementById("import-review-bg")?.classList.remove("open");
+  document.getElementById("merge-bar").style.display="none";
+  const input=document.getElementById("order-file");
+  if(input)input.value="";
+  const status=document.getElementById("order-status");
+  if(status){status.textContent="未読込";status.classList.remove("ok")}
+}
+function confirmImportReview(){
+  const invalid=orderRows.map((row,index)=>({row,index})).filter(({row})=>importReviewIsSuspicious(row));
+  if(invalid.length){
+    renderImportReview();
+    alert(`未入力または形式を確認できない行が${invalid.length}件あります。黄色の行を確認してください。`);
+    return;
+  }
+  if(!confirm("顧客名と商品コードを確定します。確定後は変更できません。よろしいですか？"))return;
+  orderRows.forEach(row=>{
+    row.customer=String(row.customer||"").trim();
+    row.product_id=String(row.product_id||"").normalize("NFKC").replace(/\s+/g,"").toUpperCase();
+  });
+  importIdentityConfirmed=true;
+  document.getElementById("import-review-bg")?.classList.remove("open");
+  mergeAndRender();
+  toast("取り込み内容を確定しました");
+}
+const __saveCurrentSessionImportLockBase=saveCurrentSessionToSupabase;
+saveCurrentSessionToSupabase=async function(){
+  if(!currentSessionId&&!importIdentityConfirmed){toast("先に取り込み内容を確認・確定してください");return}
+  return __saveCurrentSessionImportLockBase();
+};
+const __openSavedSessionImportLockBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await __openSavedSessionImportLockBase(sessionId);
+  if(rows.length)importIdentityConfirmed=true;
+};
+const __resetLocalStateImportLockBase=resetLocalStateForSession;
+resetLocalStateForSession=function(){
+  __resetLocalStateImportLockBase();
+  importIdentityConfirmed=false;
+  importReviewOriginalCustomers=[];
+  document.getElementById("import-review-bg")?.classList.remove("open");
+};
+const __applyCustomerFixImportLockBase=applyCustomerFix;
+applyCustomerFix=async function(idx){
+  if(importIdentityConfirmed){toast("顧客名は取り込み確定済みのため変更できません");return}
+  return __applyCustomerFixImportLockBase(idx);
+};
+const __applyCustomerFixAndSaveImportLockBase=applyCustomerFixAndSave;
+applyCustomerFixAndSave=async function(idx){
+  if(importIdentityConfirmed){toast("顧客名は取り込み確定済みのため変更できません");return}
+  return __applyCustomerFixAndSaveImportLockBase(idx);
+};
+const __applyCustomerMasterAutoImportLockBase=applyCustomerMasterAuto;
+applyCustomerMasterAuto=async function(options={}){
+  if(importIdentityConfirmed)return 0;
+  return __applyCustomerMasterAutoImportLockBase(options);
+};
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
 </html>
+

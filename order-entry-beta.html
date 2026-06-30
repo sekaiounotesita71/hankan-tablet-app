@@ -1541,6 +1541,25 @@ function setMasterType(type){
   masterType=type;
   renderMasters();
 }
+function clearMasterForm(){
+  ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-importer-code","master-importer-name"].forEach(id=>document.getElementById(id).value="");
+}
+function editMasterItem(index){
+  const item=(getMasters()[masterType]||[])[index];
+  if(!item)return;
+  document.getElementById("master-code").value=item.code||"";
+  document.getElementById("master-name").value=item.name||"";
+  document.getElementById("master-aliases").value=(item.aliases||[]).join(", ");
+  document.getElementById("master-english").value=item.englishName||item.english_name||"";
+  document.getElementById("master-supplier-code").value=item.supplierCode||item.supplier_code||"";
+  document.getElementById("master-supplier-name").value=item.supplierName||item.supplier_name||"";
+  document.getElementById("master-unit-price").value=item.unitPrice||item.unit_price||"";
+  document.getElementById("master-contract-prices").value=formatContractPrices(item.contractPrices||item.importer_prices||{});
+  document.getElementById("master-importer-code").value=item.importerCode||item.importer_code||"";
+  document.getElementById("master-importer-name").value=item.importerName||item.importer_name||"";
+  document.getElementById("master-code").focus();
+  document.getElementById("save-state").textContent=`${item.code||""} を編集中`;
+}
 async function addMasterItem(){
   const code=val("master-code").trim();
   const name=val("master-name").trim();
@@ -1568,7 +1587,7 @@ async function addMasterItem(){
       setDbStatus("DB保存失敗");
     }
   }
-  ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-importer-code","master-importer-name"].forEach(id=>document.getElementById(id).value="");
+  clearMasterForm();
   refreshCustomerLists();
   refreshImporterLists();
   refreshProductLists();
@@ -1609,6 +1628,31 @@ async function deactivateCustomerMaster(index){
   renderMasters();
   alert("得意先マスタを無効化しました。");
 }
+async function deactivateCustomersMissingFromCsv(beforeCustomers,importedItems){
+  if(masterType!=="customers"||!currentUserIsAdmin()||!dbReady||!supabaseClient)return {count:0,message:""};
+  const importedCodes=new Set(importedItems.map(item=>masterCodeKey(item.code)).filter(Boolean));
+  if(!importedCodes.size)return {count:0,message:""};
+  const missing=(beforeCustomers||[]).filter(item=>{
+    const key=masterCodeKey(item.code);
+    return key&&!importedCodes.has(key);
+  });
+  if(!missing.length)return {count:0,message:""};
+  const preview=missing.slice(0,40).map(item=>`${item.code} ${item.name}`).join("\n");
+  const more=missing.length>40?`\n...ほか ${missing.length-40}件`:"";
+  const ok=confirm(`CSVに存在しない得意先コードが ${missing.length}件あります。\n候補から無効化しますか？\n\n${preview}${more}`);
+  if(!ok)return {count:0,message:""};
+  const codes=missing.map(item=>String(item.code||"").trim()).filter(Boolean);
+  for(let i=0;i<codes.length;i+=200){
+    const {error}=await supabaseClient.from("customer_master").update({active:false}).in("customer_code",codes.slice(i,i+200));
+    if(error)throw error;
+  }
+  const saved=savedMastersObject();
+  const missingSet=new Set(codes.map(masterCodeKey));
+  saved.customers=(saved.customers||[]).filter(item=>!missingSet.has(masterCodeKey(item.code)));
+  saveMastersObject(saved);
+  setDbStatus("DB接続中","ok");
+  return {count:missing.length,message:`\nCSVにない得意先 ${missing.length}件を無効化しました。`};
+}
 function renderMasters(){
   const list=document.getElementById("master-list");
   if(!list)return;
@@ -1618,7 +1662,7 @@ function renderMasters(){
   ["customer-importer-code-wrap","customer-importer-name-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
   const masters=getMasters()[masterType]||[];
   const title={products:"商品",customers:"得意先",suppliers:"仕入先",importers:"輸入社"}[masterType];
-  document.getElementById("master-list").innerHTML=masters.map((m,index)=>{
+  document.getElementById("master-list").innerHTML=masters.length?`<div class="hint" style="padding:6px 8px;margin:0;border-bottom:1px solid var(--line)">一覧行をクリックすると上の入力欄へ反映されます。編集後は「マスタ追加/更新」で保存します。</div>`+masters.map((m,index)=>{
     const extra=[
       m.supplierName,
       m.unitPrice||m.unit_price?`通常価格: ${m.unitPrice||m.unit_price}`:"",
@@ -1627,10 +1671,10 @@ function renderMasters(){
       (m.aliases||[]).join(", ")
     ].filter(Boolean).join(" / ");
     const deleteBtn=isCustomer&&currentUserIsAdmin()
-      ?`<button class="small danger" type="button" onclick="deactivateCustomerMaster(${index})">無効化</button>`
+      ?`<button class="small danger" type="button" onclick="event.stopPropagation();deactivateCustomerMaster(${index})">無効化</button>`
       :"";
-    return `<div class="master-item" style="grid-template-columns:90px minmax(0,1fr) auto"><b>${esc(m.code)}</b><div>${esc(m.name)}<br><span class="sub">${esc(extra)}</span></div>${deleteBtn}</div>`;
-  }).join("")||`${title}マスタがありません`;
+    return `<div class="master-item" style="grid-template-columns:90px minmax(0,1fr) auto;cursor:pointer" onclick="editMasterItem(${index})" title="クリックして編集"><b>${esc(m.code)}</b><div>${esc(m.name)}<br><span class="sub">${esc(extra)}</span></div>${deleteBtn}</div>`;
+  }).join(""):`${title}マスタがありません`;
 }
 function exportMasters(){
   const masters=getMasters()[masterType]||[];
@@ -1914,6 +1958,7 @@ function importMastersCsv(input){
     const rows=parseCsv(text);
     if(rows.length<2){alert("CSVのデータ行がありません。");return}
     const headers=rows[0].map(normalizedHeader);
+    const beforeCustomers=masterType==="customers"?(getMasters().customers||[]).map(item=>({...item})):[];
     let count=0,updated=0,skipped=0;
     const importedItems=[];
     rows.slice(1).forEach(row=>{
@@ -1935,12 +1980,23 @@ function importMastersCsv(input){
         setDbStatus("DB保存失敗");
       }
     }
+    let deleteMessage="";
+    if(!dbWarning&&importedItems.length){
+      try{
+        const result=await deactivateCustomersMissingFromCsv(beforeCustomers,importedItems);
+        deleteMessage=result.message||"";
+      }catch(error){
+        dbWarning=dbErrorMessage(error);
+        console.warn(dbWarning,error);
+        setDbStatus("DB保存失敗");
+      }
+    }
     refreshCustomerLists();
     refreshImporterLists();
     refreshProductLists();
     refreshSupplierLists();
     renderMasters();
-    alert(`マスタを取り込みました。追加 ${count}件、更新 ${updated}件、スキップ ${skipped}件${dbWarning?`\n\nDB保存のみ失敗: ${dbWarning}`:""}`);
+    alert(`マスタを取り込みました。追加 ${count}件、更新 ${updated}件、スキップ ${skipped}件${deleteMessage}${dbWarning?`\n\nDB保存のみ失敗: ${dbWarning}`:""}`);
   };
   reader.readAsArrayBuffer(file);
 }
