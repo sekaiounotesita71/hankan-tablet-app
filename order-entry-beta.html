@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <title>受注登録ベータ</title>
 <style>
@@ -47,14 +48,14 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </nav>
   </div>
   <div class="actions">
-    <button class="btn" data-workspace-action="orders" onclick="document.getElementById('order-import-file').click()">受注CSV取込</button>
+    <button class="btn" data-workspace-action="orders" onclick="document.getElementById('order-import-file').click()">受注CSV/PDF取込</button>
     <button class="btn" data-workspace-action="orders" onclick="addOrderRow()">商品追加</button>
     <button class="btn" data-workspace-action="orders" onclick="toggleMasterAdminPanel()">マスタ管理</button>
     <button class="btn blue" data-workspace-action="orders" onclick="confirmCustomerOrder()">受注確定 Ctrl+Enter</button>
     <button class="btn primary" data-workspace-action="orders" onclick="printPurchaseOrders()">発注書PDF</button>
     <button class="btn primary" data-workspace-action="orders" onclick="printPickingTickets()">現品票PDF</button>
     <button class="btn danger" data-workspace-action="orders" onclick="clearAll()">全消去</button>
-    <input id="order-import-file" type="file" accept=".csv,text/csv" style="display:none" onchange="importOrdersCsv(this)">
+    <input id="order-import-file" type="file" accept=".csv,.pdf,text/csv,application/pdf" multiple style="display:none" onchange="importOrdersCsv(this)">
   </div>
 </header>
 <main>
@@ -2493,6 +2494,142 @@ function orderItemFromCsvRow(row,headers,filename){
   if(!item.row.productCode&&!item.row.productName)return null;
   return item;
 }
+function normalizeImporterLabel(value){
+  const raw=String(value||"").normalize("NFKC").trim().replace(/\s+/g," ");
+  const upper=raw.toUpperCase();
+  if(/^DIM\s*VEG$/.test(upper))return "DIM Veg";
+  if(/^DIM\s*FZ$/.test(upper))return "DIM FZ";
+  if(/^FBI\s*VEG$/.test(upper))return "FBI Veg";
+  if(/^FBI\s*FZ$/.test(upper))return "FBI FZ";
+  if(/^DIM$/.test(upper))return "DIM";
+  if(/^FBI$/.test(upper))return "FBI";
+  if(/^JKT$/.test(upper))return "JKT";
+  if(/^BKK$/.test(upper))return "BKK";
+  if(/^KL$/.test(upper))return "KL";
+  if(/^EN$/.test(upper))return "EN";
+  return raw;
+}
+function detectImporterLabelFromText(text){
+  const source=String(text||"");
+  const patterns=[
+    {re:/\bDIM\s*[-_,/ ]*\s*VEG\b/i,label:"DIM Veg"},
+    {re:/\bDIM\s*[-_,/ ]*\s*FZ\b/i,label:"DIM FZ"},
+    {re:/\bFBI\s*[-_,/ ]*\s*VEG\b/i,label:"FBI Veg"},
+    {re:/\bFBI\s*[-_,/ ]*\s*FZ\b/i,label:"FBI FZ"},
+    {re:/\bDIM\b/i,label:"DIM"},
+    {re:/\bFBI\b/i,label:"FBI"},
+    {re:/\bJKT\b/i,label:"JKT"},
+    {re:/\bBKK\b/i,label:"BKK"},
+    {re:/\bKL\b/i,label:"KL"},
+    {re:/\bEN\b/i,label:"EN"}
+  ];
+  for(const pattern of patterns)if(pattern.re.test(source))return pattern.label;
+  return "";
+}
+function splitPdfRecords(text){
+  return String(text||"")
+    .split(/-{20,}/)
+    .map(s=>s.replace(/\s+/g," ").trim())
+    .filter(s=>/^[0-9]/.test(s)&&!s.includes("コード顧客名商品名"));
+}
+function parsePdfCodeBody(raw){
+  const source=String(raw||"").replace(/\s+/g," ").trim();
+  const spaced=source.match(/^(\d+[A-Z]{0,2})\s+(.+)$/i);
+  if(spaced)return {code:spaced[1].toUpperCase(),body:spaced[2].trim()};
+  const joined=source.match(/^(\d+[A-E]{0,2})(.+)$/i);
+  if(joined)return {code:joined[1].toUpperCase(),body:joined[2].trim()};
+  return null;
+}
+function pdfImporterMarkers(text){
+  const markers=[];
+  const re=/\b(DIM|FBI)\s*[-_,/ ]*\s*(VEG|FZ)?\b|\b(JKT|BKK|KL|EN)\b/gi;
+  let match;
+  while((match=re.exec(String(text||"")))){
+    const label=match[1]?normalizeImporterLabel([match[1],match[2]||""].join(" ").trim()):normalizeImporterLabel(match[3]);
+    markers.push({index:match.index,label});
+  }
+  return markers;
+}
+function detectPdfImporterForRecord(raw,fullText,fallback){
+  const direct=detectImporterLabelFromText(raw);
+  if(direct)return direct;
+  const index=String(fullText||"").indexOf(String(raw||""));
+  if(index>=0){
+    const before=pdfImporterMarkers(fullText).filter(marker=>marker.index<=index).pop();
+    if(before)return before.label;
+  }
+  return normalizeImporterLabel(fallback||"PDF");
+}
+function parseOrderPdfTextToRecords(text,filename,fallbackImporter,pageNo){
+  const records=[];
+  for(const raw of splitPdfRecords(text)){
+    const head=parsePdfCodeBody(raw);
+    if(!head)continue;
+    const jp=head.body.search(/[ぁ-んァ-ヶ一-龠〆々]/);
+    if(jp<0)continue;
+    const customer=head.body.slice(0,jp).trim()||"店舗名未取得";
+    const rest=head.body.slice(jp).trim();
+    const qtyMatch=rest.match(/(\d+(?:\.\d+)?)\s*(kg|Kg|KG|Ｋｇ|ＫＧ|本|個|枚|尾|匹|P|Ｐ|PC|pc|pkt|PKT|パック|C\/S|CS|玉)/);
+    const productName=qtyMatch?rest.slice(0,qtyMatch.index).trim():rest;
+    const qty=qtyMatch?qtyMatch[1]:"";
+    const unit=qtyMatch?qtyMatch[2]:"";
+    const tail=qtyMatch?rest.slice(qtyMatch.index+qtyMatch[0].length).trim():"";
+    const prices=[...tail.matchAll(/\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?/g)].map(m=>m[0].replace(/,/g,""));
+    const importerCode=detectPdfImporterForRecord(raw,text,fallbackImporter);
+    records.push({
+      orderDate:val("order-date")||today(),
+      importerCode,
+      customerName:customer,
+      productCode:head.code,
+      productName:productName||"-",
+      qty,
+      unit,
+      unitPrice:prices.length?prices[prices.length-1]:"",
+      memo:`PDF ${pageNo}頁`,
+      sourceFilename:filename
+    });
+  }
+  return records;
+}
+function orderItemFromPdfRecord(record,filename){
+  const customerMaster=findMasterCustomer("",record.customerName);
+  const importerMaster=findMasterImporter(record.importerCode||customerMaster?.importerCode,"",filename);
+  const productMaster=findMasterProduct(record.productCode,record.productName);
+  const supplierCode=productMaster?.supplierCode||"";
+  return {
+    orderDate:record.orderDate||today(),
+    importer:{code:record.importerCode||importerMaster?.code||customerMaster?.importerCode||"",name:importerMaster?.name||customerMaster?.importerName||record.importerCode||""},
+    customer:{code:customerMaster?.code||"",name:record.customerName||customerMaster?.name||""},
+    row:{
+      productCode:record.productCode||productMaster?.code||"",
+      productName:record.productName||productMaster?.name||"",
+      englishName:productMaster?.englishName||"",
+      qty:record.qty||"",
+      unit:record.unit||"",
+      supplierCode,
+      supplierName:supplierNameFor(supplierCode,productMaster?.supplierName||""),
+      memo:record.memo||"",
+      unitPrice:record.unitPrice||productMaster?.unitPrice||""
+    }
+  };
+}
+async function readOrderPdfItems(file){
+  if(!window.pdfjsLib){alert("PDF読込ライブラリを読み込めませんでした。ネット接続を確認してください。");return[]}
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const importerFromFile=detectImporterLabelFromText(file.name)||findMasterImporter("","",file.name)?.code||"PDF";
+  const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  const items=[];
+  for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
+    const page=await pdf.getPage(pageNo);
+    const content=await page.getTextContent();
+    const text=content.items.map(item=>item.str).join(" ");
+    parseOrderPdfTextToRecords(text,file.name,importerFromFile,pageNo)
+      .map(record=>orderItemFromPdfRecord(record,file.name))
+      .filter(item=>item?.row?.productCode||item?.row?.productName)
+      .forEach(item=>items.push(item));
+  }
+  return items;
+}
 function batchKeyFromOrderItem(item){
   return [
     item.orderDate||"",
@@ -2509,60 +2646,81 @@ function applyImportedOrderGroup(group){
   saveLocal();
   render();
 }
-function importOrdersCsv(input){
-  const file=input.files?.[0];
-  input.value="";
-  if(!file)return;
-  if((orders.length||val("batch-customer-code")||val("batch-customer-name"))&&!confirm("現在入力中の受注があります。CSV取込を続けますか？"))return;
-  const reader=new FileReader();
-  reader.onload=async ()=>{
-    const text=decodeCsvBuffer(reader.result);
-    const rowsCsv=parseCsv(text);
-    if(rowsCsv.length<2){alert("CSVのデータ行がありません。");return}
-    const headers=rowsCsv[0].map(normalizedHeader);
-    const items=rowsCsv.slice(1).map(row=>orderItemFromCsvRow(row,headers,file.name)).filter(Boolean);
-    if(!items.length){alert("取り込める受注明細がありません。商品コードまたは商品名の列を確認してください。");return}
-    const groups=new Map();
-    items.forEach(item=>{
-      const key=batchKeyFromOrderItem(item);
-      if(!groups.has(key))groups.set(key,{orderDate:item.orderDate,importer:item.importer,customer:item.customer,rows:[]});
-      groups.get(key).rows.push(item.row);
-    });
-    const grouped=[...groups.values()];
-    if(grouped.length===1){
-      applyImportedOrderGroup(grouped[0]);
-      alert(`受注CSVを取り込みました。\n明細: ${grouped[0].rows.length}件`);
+function readOrderCsvItems(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const text=decodeCsvBuffer(reader.result);
+      const rowsCsv=parseCsv(text);
+      if(rowsCsv.length<2){resolve([]);return}
+      const headers=rowsCsv[0].map(normalizedHeader);
+      resolve(rowsCsv.slice(1).map(row=>orderItemFromCsvRow(row,headers,file.name)).filter(Boolean));
+    };
+    reader.onerror=()=>resolve([]);
+    reader.readAsArrayBuffer(file);
+  });
+}
+async function applyImportedOrderItems(items,sourceNames,sourceType){
+  if(!items.length){alert("取り込める受注明細がありません。商品コードまたは商品名を確認してください。");return}
+  const groups=new Map();
+  items.forEach(item=>{
+    const key=batchKeyFromOrderItem(item);
+    if(!groups.has(key))groups.set(key,{orderDate:item.orderDate,importer:item.importer,customer:item.customer,rows:[]});
+    groups.get(key).rows.push(item.row);
+  });
+  const grouped=[...groups.values()];
+  if(grouped.length===1){
+    applyImportedOrderGroup(grouped[0]);
+    alert(`受注${sourceType}を取り込みました。\n明細: ${grouped[0].rows.length}件`);
+    return;
+  }
+  const importedBatches=grouped.map(group=>({
+    id:`IMP${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    confirmedAt:new Date().toISOString(),
+    orderDate:group.orderDate||today(),
+    shipDate:group.orderDate||today(),
+    note:`${sourceType}取込: ${sourceNames.join(", ")}`,
+    importer:group.importer,
+    customer:group.customer,
+    rows:group.rows
+  }));
+  if(dbReady&&supabaseClient){
+    try{
+      for(const batch of importedBatches){
+        const dbId=await saveConfirmedBatchToDb(batch);
+        if(dbId)batch.id=dbId;
+      }
+    }catch(error){
+      alert(dbErrorMessage(error));
       return;
     }
-    const importedBatches=grouped.map(group=>({
-        id:`CSV${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
-        confirmedAt:new Date().toISOString(),
-        orderDate:group.orderDate||today(),
-        shipDate:group.orderDate||today(),
-        note:`CSV取込: ${file.name}`,
-        importer:group.importer,
-        customer:group.customer,
-        rows:group.rows
-      }));
-    if(dbReady&&supabaseClient){
-      try{
-        for(const batch of importedBatches){
-          const dbId=await saveConfirmedBatchToDb(batch);
-          if(dbId)batch.id=dbId;
-        }
-      }catch(error){
-        alert(dbErrorMessage(error));
-        return;
-      }
+  }
+  confirmedBatches.unshift(...importedBatches);
+  resetCurrentOrderForm();
+  saveConfirmedBatches();
+  saveLocal();
+  render();
+  alert(`受注${sourceType}を取り込みました。\n得意先単位: ${grouped.length}件\n明細: ${items.length}件\n確定済み受注に追加しました。`);
+}
+async function importOrdersCsv(input){
+  const files=[...input.files||[]].filter(Boolean);
+  input.value="";
+  if(!files.length)return;
+  if((orders.length||val("batch-customer-code")||val("batch-customer-name"))&&!confirm("現在入力中の受注があります。取込を続けますか？"))return;
+  const items=[];
+  const failed=[];
+  for(const file of files){
+    try{
+      const fileItems=/\.pdf$/i.test(file.name)?await readOrderPdfItems(file):await readOrderCsvItems(file);
+      if(fileItems.length)items.push(...fileItems);else failed.push(file.name);
+    }catch(error){
+      console.warn(error);
+      failed.push(file.name);
     }
-    confirmedBatches.unshift(...importedBatches);
-    resetCurrentOrderForm();
-    saveConfirmedBatches();
-    saveLocal();
-    render();
-    alert(`受注CSVを取り込みました。\n得意先単位: ${grouped.length}件\n明細: ${items.length}件\n確定済み受注に追加しました。`);
-  };
-  reader.readAsArrayBuffer(file);
+  }
+  if(failed.length)alert(`読み取れないファイルがあります。\n${failed.join("\n")}`);
+  const sourceType=files.some(file=>/\.pdf$/i.test(file.name))?"PDF/CSV":"CSV";
+  await applyImportedOrderItems(items,files.map(file=>file.name),sourceType);
 }
 function importMastersCsv(input){
   const file=input.files?.[0];
