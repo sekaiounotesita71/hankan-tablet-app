@@ -1150,14 +1150,23 @@ async function loadSalesReferenceBoard(){
   const state=document.getElementById("sales-ref-state");
   if(state)state.textContent="売上データを読込中...";
   try{
-    let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).limit(5000);
     const from=val("sales-ref-date-from");
     const to=val("sales-ref-date-to");
-    if(from)query=query.gte("finalized_at",from);
-    if(to)query=query.lt("finalized_at",`${to}T23:59:59.999`);
-    const {data,error}=await query;
-    if(error)throw error;
-    salesReferenceRows=data||[];
+    const pageSize=1000;
+    const maxRows=20000;
+    const allRows=[];
+    for(let offset=0;offset<maxRows;offset+=pageSize){
+      let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).range(offset,offset+pageSize-1);
+      if(from)query=query.gte("finalized_at",from);
+      if(to)query=query.lt("finalized_at",`${to}T23:59:59.999`);
+      const {data,error}=await query;
+      if(error)throw error;
+      const page=data||[];
+      allRows.push(...page);
+      if(state)state.textContent=`売上データを読込中... ${allRows.length}件`;
+      if(page.length<pageSize)break;
+    }
+    salesReferenceRows=allRows;
     if(state)state.textContent=`売上データ ${salesReferenceRows.length}件を読み込みました。`;
     renderSalesReferenceBoard();
   }catch(error){
