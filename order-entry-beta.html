@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <title>受注登録ベータ</title>
 <style>
 :root{
@@ -27,10 +28,11 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-preview{max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
 .master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.panel:has(#master-list){display:none}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .pending-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pending-grid .wide{grid-column:span 2}.pending-grid .full{grid-column:1/-1}.pending-list{display:grid;gap:8px}.pending-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.pending-card.hold{background:#fffaf0}.pending-card.applied{opacity:.68}.pending-card.cancelled{opacity:.52}.pending-main{display:grid;gap:4px}.pending-title{font-weight:900}.pending-meta{color:var(--muted);font-size:12px;font-weight:800}.pending-amount{font-family:Consolas,monospace;font-weight:900}.pending-amount.negative{color:var(--danger)}.pending-actions{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
+.sales-board-tools{display:grid;grid-template-columns:150px 150px 160px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.sales-board-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.sales-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.sales-card-label{color:var(--muted);font-size:12px;font-weight:900}.sales-card-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.sales-board-ranks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.sales-rank{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}.sales-rank-head{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#fbfcfd;color:var(--muted);font-size:12px;font-weight:900}.sales-rank-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-rank-row:last-child{border-bottom:0}.sales-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}.sales-rank-value{font-family:Consolas,monospace;color:var(--muted);font-weight:900}.sales-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.sales-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.sales-table th,.sales-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.sales-table th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-weight:900}.sales-empty{padding:18px;color:var(--muted);font-weight:800;text-align:center}
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}}
+@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks{grid-template-columns:1fr}.sales-table-wrap{max-height:420px}}
 </style>
 </head>
 <body>
@@ -176,6 +178,24 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
+  <section class="panel" id="sales-reference-panel" style="margin-top:12px">
+    <div class="panel-head"><span>売上参照</span><span class="sub">現場タブレットで売上確定した実績を参照</span></div>
+    <div class="panel-body">
+      <div class="sales-board-tools">
+        <label>開始日<input id="sales-ref-date-from" type="date"></label>
+        <label>終了日<input id="sales-ref-date-to" type="date"></label>
+        <label>輸入社<input id="sales-ref-importer" list="importer-code-list" placeholder="例 FBI"></label>
+        <label>検索<input id="sales-ref-search" placeholder="得意先・商品・商品コード・箱番号" oninput="renderSalesReferenceBoard()"></label>
+        <button class="btn" onclick="loadSalesReferenceBoard()">売上読込</button>
+        <button class="btn primary" onclick="exportSalesReferenceBoardExcel()">Excel出力</button>
+      </div>
+      <div class="hint" id="sales-ref-state">売上確定済みデータは現場タブレット側の sales_records から読み込みます。</div>
+      <div class="sales-board-summary" id="sales-ref-summary-cards"></div>
+      <div class="sales-board-ranks" id="sales-ref-ranks"></div>
+      <div class="sales-table-wrap" id="sales-ref-table"><div class="sales-empty">条件を指定して「売上読込」を押してください。</div></div>
+    </div>
+  </section>
+
   <section class="panel" style="margin-top:12px">
     <div class="panel-head"><span>マスタ管理β</span><button class="small" onclick="hideMasterAdminPanel()">閉じる</button></div>
     <div class="panel-body">
@@ -237,6 +257,7 @@ const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 let orders=[];
 let confirmedBatches=[];
 let pendingEntries=[];
+let salesReferenceRows=[];
 let draftRows=[];
 let masterType="products";
 let confirmed=false;
@@ -1063,6 +1084,155 @@ function renderPendingEntries(){
       </div>
     </div>`;
   }).join("");
+}
+function salesRefDateOnly(value){
+  if(!value)return "";
+  return String(value).slice(0,10);
+}
+function salesRefMoney(value){
+  if(value===null||value===undefined||value==="")return "";
+  const n=Number(value);
+  if(!Number.isFinite(n))return String(value);
+  return n.toLocaleString("ja-JP",{maximumFractionDigits:2});
+}
+function salesRefNum(value){
+  const n=Number(value);
+  return Number.isFinite(n)?n:0;
+}
+function salesRefText(value){
+  return value===null||value===undefined?"":String(value);
+}
+function salesRefDbErrorMessage(error){
+  const msg=String(error?.message||error||"");
+  if(error?.code==="42P01"||/relation .* does not exist|sales_records/i.test(msg))return "売上確定用SQLが未実行です。sales-lock-trial-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg))return "売上確定用SQLの反映待ちです。sales-lock-trial-migration.sql を再実行、または少し待って再読込してください。";
+  return msg||"売上データの読込でエラーが発生しました。";
+}
+function salesRefMonth(value){
+  const d=salesRefDateOnly(value);
+  return d.length>=7?d.slice(0,7):"日付なし";
+}
+function salesRefFilteredRows(){
+  const q=val("sales-ref-search").trim().toLowerCase();
+  const importer=val("sales-ref-importer").trim().toLowerCase();
+  const from=val("sales-ref-date-from");
+  const to=val("sales-ref-date-to");
+  return salesReferenceRows.filter(row=>{
+    const d=salesRefDateOnly(row.finalized_at);
+    if(from&&d<from)return false;
+    if(to&&d>to)return false;
+    if(importer&&!salesRefText(row.importer_code).toLowerCase().includes(importer))return false;
+    if(!q)return true;
+    return [
+      row.store_name,row.product_id,row.product_name,row.importer_code,row.origin,row.box_no,row.memo
+    ].some(v=>salesRefText(v).toLowerCase().includes(q));
+  });
+}
+function salesRefGroup(rows,keyFn){
+  const map=new Map();
+  rows.forEach(row=>{
+    const key=keyFn(row)||"未設定";
+    const cur=map.get(key)||{key,count:0,amount:0,net:0};
+    cur.count+=1;
+    cur.amount+=salesRefNum(row.amount);
+    cur.net+=salesRefNum(row.net_weight);
+    map.set(key,cur);
+  });
+  return [...map.values()].sort((a,b)=>b.amount-a.amount||b.net-a.net||String(a.key).localeCompare(String(b.key),"ja"));
+}
+function salesRefRankHtml(title,rows,unitLabel="金額"){
+  const body=rows.length?rows.slice(0,12).map(row=>`<div class="sales-rank-row"><span class="sales-rank-name">${esc(row.key)}</span><span class="sales-rank-value">${esc(salesRefMoney(row.amount))}</span></div>`).join(""):`<div class="sales-rank-row"><span class="sales-rank-name">データなし</span><span class="sales-rank-value"></span></div>`;
+  return `<div class="sales-rank"><div class="sales-rank-head"><span>${esc(title)}</span><span>${esc(unitLabel)}</span></div>${body}</div>`;
+}
+async function loadSalesReferenceBoard(){
+  const client=initSupabase();
+  if(!client){alert("Supabaseを読み込めません。");return}
+  const state=document.getElementById("sales-ref-state");
+  if(state)state.textContent="売上データを読込中...";
+  try{
+    let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).limit(5000);
+    const from=val("sales-ref-date-from");
+    const to=val("sales-ref-date-to");
+    if(from)query=query.gte("finalized_at",from);
+    if(to)query=query.lt("finalized_at",`${to}T23:59:59.999`);
+    const {data,error}=await query;
+    if(error)throw error;
+    salesReferenceRows=data||[];
+    if(state)state.textContent=`売上データ ${salesReferenceRows.length}件を読み込みました。`;
+    renderSalesReferenceBoard();
+  }catch(error){
+    salesReferenceRows=[];
+    if(state)state.textContent=salesRefDbErrorMessage(error);
+    renderSalesReferenceBoard();
+  }
+}
+function renderSalesReferenceBoard(){
+  const table=document.getElementById("sales-ref-table");
+  const summary=document.getElementById("sales-ref-summary-cards");
+  const ranks=document.getElementById("sales-ref-ranks");
+  if(!table||!summary||!ranks)return;
+  const rows=salesRefFilteredRows();
+  const totalAmount=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
+  const totalNet=rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0);
+  const importers=new Set(rows.map(row=>row.importer_code).filter(Boolean));
+  const customers=new Set(rows.map(row=>row.store_name).filter(Boolean));
+  summary.innerHTML=[
+    ["明細",`${rows.length}件`],
+    ["金額",salesRefMoney(totalAmount)],
+    ["NET",`${salesRefMoney(totalNet)} kg`],
+    ["輸入社 / 得意先",`${importers.size} / ${customers.size}`]
+  ].map(([label,value])=>`<div class="sales-card"><div class="sales-card-label">${esc(label)}</div><div class="sales-card-value">${esc(value)}</div></div>`).join("");
+  ranks.innerHTML=[
+    salesRefRankHtml("月別売上",salesRefGroup(rows,row=>salesRefMonth(row.finalized_at))),
+    salesRefRankHtml("輸入社別",salesRefGroup(rows,row=>row.importer_code)),
+    salesRefRankHtml("商品別上位",salesRefGroup(rows,row=>`${row.product_id||""} ${row.product_name||""}`.trim()))
+  ].join("");
+  if(!rows.length){
+    table.innerHTML=`<div class="sales-empty">表示対象の売上データはありません。</div>`;
+    return;
+  }
+  table.innerHTML=`<table class="sales-table"><thead><tr>
+    <th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th>
+  </tr></thead><tbody>${rows.map(row=>`<tr>
+    <td>${esc(salesRefDateOnly(row.finalized_at))}</td><td>${esc(row.importer_code)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
+    <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(row.amount))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function exportSalesReferenceBoardExcel(){
+  if(typeof XLSX==="undefined"){alert("Excel出力ライブラリを読み込めませんでした。");return}
+  const rows=salesRefFilteredRows();
+  if(!rows.length){alert("出力する売上データがありません。");return}
+  const data=rows.map(row=>({
+    "日付":salesRefDateOnly(row.finalized_at),
+    "輸入社":row.importer_code||"",
+    "得意先":row.store_name||"",
+    "商品コード":row.product_id||"",
+    "商品名":row.product_name||"",
+    "英名":row.english_name||"",
+    "産地":row.origin||"",
+    "数量":row.input_qty??"",
+    "単位":row.input_unit||"",
+    "NET":row.net_weight??"",
+    "箱番号":row.box_no||"",
+    "単価":row.unit_price??"",
+    "金額":row.amount??"",
+    "メモ":row.memo||"",
+    "欠品":row.is_stockout?"欠品":""
+  }));
+  const summaryRows=[{
+    "明細件数":rows.length,
+    "金額合計":rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0),
+    "NET合計":rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0),
+    "輸入社数":new Set(rows.map(row=>row.importer_code).filter(Boolean)).size,
+    "得意先数":new Set(rows.map(row=>row.store_name).filter(Boolean)).size
+  }];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summaryRows),"Summary");
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws["!cols"]=[{wch:12},{wch:10},{wch:22},{wch:12},{wch:24},{wch:24},{wch:14},{wch:10},{wch:8},{wch:10},{wch:10},{wch:10},{wch:12},{wch:24},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws,"売上明細");
+  const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
+  XLSX.writeFile(wb,`sales_reference_${d}.xlsx`);
 }
 function init(){
   document.getElementById("order-date").value=today();
@@ -2534,6 +2704,12 @@ function applySearchResult(type,index){
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
     renderPendingEntries();
+  });
+});
+["sales-ref-date-from","sales-ref-date-to","sales-ref-importer","sales-ref-search"].forEach(id=>{
+  document.addEventListener("input",e=>{
+    if(e.target?.id!==id)return;
+    renderSalesReferenceBoard();
   });
 });
 document.addEventListener("keydown",e=>{
