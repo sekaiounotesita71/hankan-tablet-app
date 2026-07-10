@@ -116,7 +116,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .shop-name-cell{font-weight:800;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inline-box-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:center;padding:0 8px}
 .inline-box-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--p2)}
-.inline-work-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:right;padding:0 8px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.inline-work-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--accent)}.inline-work-input.weight{width:104px}
+.inline-work-input{width:92px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:900;text-align:right;padding:0 8px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.inline-work-input:focus{outline:2px solid rgba(9,105,162,.25);border-color:var(--accent)}.inline-work-input.weight{width:104px}.inline-work-input.memo{width:180px;text-align:left;font-family:inherit;font-weight:800}
 .touch-input-cell{display:inline-flex;align-items:center;justify-content:center;min-width:76px;min-height:40px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-weight:800;cursor:pointer}
 .touch-input-cell.empty{background:var(--bg);color:var(--muted);border-style:dashed;font-weight:700}
 .touch-input-cell:active{transform:scale(.97)}
@@ -2511,6 +2511,9 @@ function inlineP1Input(row,field,label){
   const key=P1_KEY[field],value=row[key]||"",integerOnly=field==="box";
   return `<input class="inline-work-input${field==="net"?" weight":""}" data-row-idx="${row._idx}" data-field="${field}" inputmode="${integerOnly?"numeric":"decimal"}" pattern="${integerOnly?"[0-9]*":"[0-9.]*"}" autocomplete="off" enterkeyhint="next" value="${esc(value)}" placeholder="${esc(label)}" onclick="event.stopPropagation()" oninput="updateInlineP1Draft(this)" onblur="commitInlineP1Field(this)" onkeydown="handleInlineWorkKey(event)">`;
 }
+function inlineP1MemoInput(row){
+  return `<input class="inline-work-input memo" data-row-idx="${row._idx}" data-field="memo" inputmode="text" autocomplete="off" enterkeyhint="done" maxlength="200" value="${esc(row._memo||"")}" placeholder="メモ" onclick="event.stopPropagation()" oninput="updateInlineP1MemoDraft(this)" onblur="commitInlineP1Memo(this)" onkeydown="handleInlineWorkKey(event)">`;
+}
 function updateInlineP1Draft(input){
   const row=rows[Number(input.dataset.rowIdx)],field=input.dataset.field;
   if(!row||!P1_KEY[field])return;
@@ -2518,8 +2521,21 @@ function updateInlineP1Draft(input){
   if(input.value!==value)input.value=value;
   row[P1_KEY[field]]=value;
 }
+function updateInlineP1MemoDraft(input){
+  const row=rows[Number(input.dataset.rowIdx)];
+  if(!row)return;
+  row._memo=String(input.value||"").slice(0,200);
+  if(input.value!==row._memo)input.value=row._memo;
+}
 function commitInlineP1Field(input){
   updateInlineP1Draft(input);
+  const row=rows[Number(input.dataset.rowIdx)];
+  if(!row)return;
+  saveOrderLineToSupabase(row);
+  scheduleP1InlineRefresh(row);
+}
+function commitInlineP1Memo(input){
+  updateInlineP1MemoDraft(input);
   const row=rows[Number(input.dataset.rowIdx)];
   if(!row)return;
   saveOrderLineToSupabase(row);
@@ -2529,7 +2545,10 @@ function handleInlineWorkKey(event){
   if(event.key!=="Enter")return;
   event.preventDefault();
   const current=event.currentTarget;
-  if(current.dataset.rowIdx!==undefined)commitInlineP1Field(current);
+  if(current.dataset.rowIdx!==undefined){
+    if(current.dataset.field==="memo")commitInlineP1Memo(current);
+    else commitInlineP1Field(current);
+  }
   else commitInlineBoxField(current);
   const inputs=[...document.querySelectorAll(".inline-work-input")].filter(el=>el.offsetParent!==null&&!el.disabled);
   const next=inputs[inputs.indexOf(current)+1];
@@ -2562,7 +2581,7 @@ renderP1Cell=function(country,customer){
   tbody.innerHTML=cRows.map((r,i)=>{
     if(r._stockout)return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;text-decoration:line-through;color:var(--muted)">${esc(r.product_name)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
     const complete=r._qty&&r._net&&r._box,partial=!complete&&(r._qty||r._net||r._box);
-    return `<tr class="${complete?"done":partial?"partial":"pending"}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${inlineP1Input(r,"qty","数量")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${inlineP1Input(r,"net","NET")}</td><td>${inlineP1Input(r,"box","箱")}</td><td>${memoCell(r._memo)}</td><td>${complete?'<span class="badge badge-done">完了</span>':partial?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
+    return `<tr class="${complete?"done":partial?"partial":"pending"}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${inlineP1Input(r,"qty","数量")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${inlineP1Input(r,"net","NET")}</td><td>${inlineP1Input(r,"box","箱")}</td><td>${inlineP1MemoInput(r)}</td><td>${complete?'<span class="badge badge-done">完了</span>':partial?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
   }).join("");
 };
 renderP2Importer=function(imp){
