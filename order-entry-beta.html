@@ -2560,16 +2560,24 @@ function detectPdfImporterForRecord(raw,fullText,fallback){
   }
   return normalizeImporterLabel(fallback||"PDF");
 }
+function splitPdfCustomerAndProduct(body){
+  const text=String(body||"").replace(/\s+/g," ").trim();
+  const customerMatch=text.match(/^([A-Za-z0-9][A-Za-z0-9._ -]*(?:\([^)]+\))?)\s+(.+)$/);
+  if(customerMatch)return {customer:customerMatch[1].trim(),rest:customerMatch[2].trim()};
+  const jp=text.search(/[ぁ-んァ-ヶ一-龠〆々]/);
+  if(jp>=0)return {customer:text.slice(0,jp).trim()||"店舗名未取得",rest:text.slice(jp).trim()};
+  return {customer:"店舗名未取得",rest:text};
+}
 function parseOrderPdfTextToRecords(text,filename,fallbackImporter,pageNo){
   const records=[];
   for(const raw of splitPdfRecords(text)){
     const head=parsePdfCodeBody(raw);
     if(!head)continue;
-    const jp=head.body.search(/[ぁ-んァ-ヶ一-龠〆々]/);
-    if(jp<0)continue;
-    const customer=head.body.slice(0,jp).trim()||"店舗名未取得";
-    const rest=head.body.slice(jp).trim();
-    const qtyMatch=rest.match(/(\d+(?:\.\d+)?)\s*(kg|Kg|KG|Ｋｇ|ＫＧ|本|個|枚|尾|匹|P|Ｐ|PC|pc|pkt|PKT|パック|C\/S|CS|玉)/);
+    const {customer,rest}=splitPdfCustomerAndProduct(head.body);
+    if(!rest)continue;
+    const qtyRe=/(\d+(?:\.\d+)?)\s*(kg|Kg|KG|Ｋｇ|ＫＧ|本|個|枚|尾|匹|P|Ｐ|PC|pc|pkt|PKT|パック|C\/S|CS|玉)/gi;
+    const qtyMatches=[...rest.matchAll(qtyRe)];
+    const qtyMatch=qtyMatches.length?qtyMatches[qtyMatches.length-1]:null;
     const productName=qtyMatch?rest.slice(0,qtyMatch.index).trim():rest;
     const qty=qtyMatch?qtyMatch[1]:"";
     const unit=qtyMatch?qtyMatch[2]:"";
