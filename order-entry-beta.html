@@ -18,15 +18,15 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .title{font-weight:900;font-size:18px}.sub{color:var(--muted);font-size:12px;font-weight:800}
 .title-wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .app-nav{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:9px;background:#f7f9fb;padding:4px}
-.app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 11px;border-radius:7px;color:var(--muted);text-decoration:none;font-size:12px;font-weight:900;white-space:nowrap}
+.app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--muted);text-decoration:none;font-size:12px;font-weight:900;white-space:nowrap;cursor:pointer}
 .app-nav-link.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
-main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:12px}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
+main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:12px}.workspace-panel{display:none!important}.workspace-panel.active{display:block!important}.workspace-panel.layout.active{display:grid!important}.workspace-action-hidden{display:none!important}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-preview{max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
-.master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.panel:has(#master-list){display:none}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .pending-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pending-grid .wide{grid-column:span 2}.pending-grid .full{grid-column:1/-1}.pending-list{display:grid;gap:8px}.pending-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.pending-card.hold{background:#fffaf0}.pending-card.applied{opacity:.68}.pending-card.cancelled{opacity:.52}.pending-main{display:grid;gap:4px}.pending-title{font-weight:900}.pending-meta{color:var(--muted);font-size:12px;font-weight:800}.pending-amount{font-family:Consolas,monospace;font-weight:900}.pending-amount.negative{color:var(--danger)}.pending-actions{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
 .sales-board-tools{display:grid;grid-template-columns:150px 150px 160px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.sales-board-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.sales-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.sales-card-label{color:var(--muted);font-size:12px;font-weight:900}.sales-card-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.sales-board-ranks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.sales-rank{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}.sales-rank-head{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#fbfcfd;color:var(--muted);font-size:12px;font-weight:900}.sales-rank-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-rank-row:last-child{border-bottom:0}.sales-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}.sales-rank-value{font-family:Consolas,monospace;color:var(--muted);font-weight:900}.sales-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.sales-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.sales-table th,.sales-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.sales-table th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-weight:900}.sales-empty{padding:18px;color:var(--muted);font-weight:800;text-align:center}
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
@@ -41,22 +41,24 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div><div class="title">受注登録ベータ</div><div class="sub">現行アプリとは独立。1得意先ごとに商品を登録して、発注書・現品票を検証します。</div></div>
     <nav class="app-nav" aria-label="アプリ切替">
       <a class="app-nav-link" href="/">作業アプリ</a>
-      <a class="app-nav-link active" href="/order-entry-beta.html">発注入力</a>
+      <button class="app-nav-link" type="button" data-workspace-tab="sales" onclick="switchWorkspaceTab('sales')">売上参照</button>
+      <button class="app-nav-link active" type="button" data-workspace-tab="orders" onclick="switchWorkspaceTab('orders')">発注入力</button>
+      <button class="app-nav-link" type="button" data-workspace-tab="masters" onclick="switchWorkspaceTab('masters')">マスタ</button>
     </nav>
   </div>
   <div class="actions">
-    <button class="btn" onclick="document.getElementById('order-import-file').click()">受注CSV取込</button>
-    <button class="btn" onclick="addOrderRow()">商品追加</button>
-    <button class="btn" onclick="toggleMasterAdminPanel()">マスタ管理</button>
-    <button class="btn blue" onclick="confirmCustomerOrder()">受注確定 Ctrl+Enter</button>
-    <button class="btn primary" onclick="printPurchaseOrders()">発注書PDF</button>
-    <button class="btn primary" onclick="printPickingTickets()">現品票PDF</button>
-    <button class="btn danger" onclick="clearAll()">全消去</button>
+    <button class="btn" data-workspace-action="orders" onclick="document.getElementById('order-import-file').click()">受注CSV取込</button>
+    <button class="btn" data-workspace-action="orders" onclick="addOrderRow()">商品追加</button>
+    <button class="btn" data-workspace-action="orders" onclick="toggleMasterAdminPanel()">マスタ管理</button>
+    <button class="btn blue" data-workspace-action="orders" onclick="confirmCustomerOrder()">受注確定 Ctrl+Enter</button>
+    <button class="btn primary" data-workspace-action="orders" onclick="printPurchaseOrders()">発注書PDF</button>
+    <button class="btn primary" data-workspace-action="orders" onclick="printPickingTickets()">現品票PDF</button>
+    <button class="btn danger" data-workspace-action="orders" onclick="clearAll()">全消去</button>
     <input id="order-import-file" type="file" accept=".csv,text/csv" style="display:none" onchange="importOrdersCsv(this)">
   </div>
 </header>
 <main>
-  <div class="layout">
+  <div class="layout workspace-panel active" data-workspace-panel="orders">
     <section class="panel">
       <div class="panel-head">基本情報</div>
       <div class="panel-body">
@@ -92,7 +94,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </section>
   </div>
 
-  <section class="panel" style="margin-top:12px">
+  <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
     <div class="panel-head"><span>商品明細</span><span class="sub">得意先は基本情報側で管理</span></div>
     <div class="summary" id="summary"></div>
     <div class="table-wrap">
@@ -105,7 +107,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
-  <section class="panel" style="margin-top:12px">
+  <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
     <div class="panel-head"><span>確定済み受注</span><span class="sub">詳細確認・修正戻し・削除</span></div>
     <div class="panel-body">
       <div class="form-grid" style="grid-template-columns:180px 220px auto">
@@ -117,7 +119,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
-  <section class="panel" style="margin-top:12px">
+  <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
     <div class="panel-head"><span>未処理伝票</span><span class="sub">赤伝・訂正・追加請求・先行受注を invoice 反映前に管理</span></div>
     <div class="panel-body">
       <div class="pending-grid">
@@ -178,7 +180,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
-  <section class="panel" id="sales-reference-panel" style="margin-top:12px">
+  <section class="panel workspace-panel" data-workspace-panel="sales" id="sales-reference-panel" style="margin-top:12px">
     <div class="panel-head"><span>売上参照</span><span class="sub">現場タブレットで売上確定した実績を参照</span></div>
     <div class="panel-body">
       <div class="sales-board-tools">
@@ -196,8 +198,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
-  <section class="panel" style="margin-top:12px">
-    <div class="panel-head"><span>マスタ管理β</span><button class="small" onclick="hideMasterAdminPanel()">閉じる</button></div>
+  <section class="panel workspace-panel" data-workspace-panel="masters" id="master-admin-panel" style="margin-top:12px">
+    <div class="panel-head"><span>マスタ管理β</span><button class="small" onclick="hideMasterAdminPanel()">発注入力へ戻る</button></div>
     <div class="panel-body">
       <div class="master-tabs">
         <button class="btn" onclick="setMasterType('products')">商品</button>
@@ -1243,6 +1245,27 @@ function exportSalesReferenceBoardExcel(){
   const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
   XLSX.writeFile(wb,`sales_reference_${d}.xlsx`);
 }
+function initialWorkspaceTab(){
+  const hash=String(location.hash||"").replace(/^#/,"");
+  if(hash==="sales-reference-panel"||hash==="sales")return "sales";
+  if(hash==="master-admin-panel"||hash==="master-list"||hash==="masters")return "masters";
+  return "orders";
+}
+function switchWorkspaceTab(tab){
+  const target=["orders","sales","masters"].includes(tab)?tab:"orders";
+  document.querySelectorAll("[data-workspace-panel]").forEach(panel=>{
+    panel.classList.toggle("active",panel.dataset.workspacePanel===target);
+  });
+  document.querySelectorAll("[data-workspace-tab]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.workspaceTab===target);
+  });
+  document.querySelectorAll("[data-workspace-action]").forEach(button=>{
+    button.classList.toggle("workspace-action-hidden",target!=="orders");
+  });
+  if(target==="sales")renderSalesReferenceBoard();
+  if(target==="masters")renderMasters();
+  window.scrollTo({top:0,behavior:"auto"});
+}
 function init(){
   document.getElementById("order-date").value=today();
   loadConfirmedBatches();
@@ -1256,7 +1279,7 @@ function init(){
   render();
   renderPendingEntries();
   renderMasters();
-  hideMasterAdminPanel();
+  switchWorkspaceTab(initialWorkspaceTab());
   resetPendingForm();
   loadDbData();
 }
@@ -1341,27 +1364,18 @@ function ensureStarterRow(){
   if(!orders.length)orders=[blankOrder()];
 }
 function hideMasterAdminPanel(){
-  const list=document.getElementById("master-list");
-  const panel=list?.closest(".panel");
-  if(panel)panel.style.display="none";
+  switchWorkspaceTab("orders");
 }
 function showMasterAdminPanel(){
   const list=document.getElementById("master-list");
   const panel=list?.closest(".panel");
   if(!panel)return;
-  panel.style.display="block";
+  switchWorkspaceTab("masters");
   renderMasters();
-  requestAnimationFrame(()=>panel.scrollIntoView({behavior:"smooth",block:"start"}));
+  requestAnimationFrame(()=>window.scrollTo({top:0,behavior:"auto"}));
 }
 function toggleMasterAdminPanel(){
-  const list=document.getElementById("master-list");
-  const panel=list?.closest(".panel");
-  if(!panel)return;
-  if(panel.style.display==="none"||getComputedStyle(panel).display==="none"){
-    showMasterAdminPanel();
-  }else{
-    hideMasterAdminPanel();
-  }
+  switchWorkspaceTab("masters");
 }
 function customer(){
   return {code:val("batch-customer-code").trim(),name:val("batch-customer-name").trim()};
