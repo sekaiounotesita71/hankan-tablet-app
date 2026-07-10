@@ -283,6 +283,7 @@ function today(){return new Date().toISOString().slice(0,10)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
 function blankOrder(){return{productCode:"",productName:"",englishName:"",qty:"",unit:"",supplierCode:"",supplierName:"",memo:""}}
 function val(id){return document.getElementById(id)?.value||""}
+function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""))}
 function setDbStatus(text,type="warn"){
   const el=document.getElementById("db-state");
   if(!el)return;
@@ -642,7 +643,7 @@ async function loadMastersFromDb(){
 }
 function batchToDb(batch){
   return {
-    id:String(batch.id||"").startsWith("B")?undefined:batch.id,
+    id:isUuid(batch.id)?batch.id:undefined,
     order_date:batch.orderDate||today(),
     ship_date:batch.shipDate||batch.orderDate||today(),
     importer_code:dbText(batch.importer?.code),
@@ -650,7 +651,7 @@ function batchToDb(batch){
     customer_code:dbText(batch.customer?.code),
     customer_name_snapshot:dbText(batch.customer?.name),
     status:"confirmed",
-    source_type:String(batch.id||"").startsWith("CSV")?"csv":"manual",
+    source_type:String(batch.note||batch.id||"").includes("取込")?"csv":"manual",
     note:dbText(batch.note),
     confirmed_at:batch.confirmedAt||new Date().toISOString()
   };
@@ -1834,7 +1835,7 @@ function clearConfirmedFilters(){
 }
 async function markBatchCancelledInDb(batch){
   if(!dbReady||!supabaseClient||!batch?.id)return;
-  if(String(batch.id).startsWith("B")||String(batch.id).startsWith("CSV"))return;
+  if(!isUuid(batch.id))return;
   const {error}=await supabaseClient.from("order_entry_batches").update({status:"cancelled"}).eq("id",batch.id);
   if(error)throw error;
 }
