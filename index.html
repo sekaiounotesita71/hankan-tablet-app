@@ -59,6 +59,9 @@ header{
 .sync-user{font-size:13px;font-weight:800}
 main{width:min(1280px,100%);margin:0 auto;padding:18px max(14px,env(safe-area-inset-left)) 28px max(14px,env(safe-area-inset-right))}
 .view{display:none}.view.active{display:block}
+.ops-entry-only{display:none!important}
+.work-start-panel{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.work-start-title{font-size:15px;font-weight:900}.work-start-sub{margin-top:3px;color:var(--muted);font-size:12px;font-weight:800;line-height:1.5}.work-start-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.work-start-controls label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}.work-start-controls input{height:42px;min-width:160px;border:1px solid var(--border-strong);border-radius:9px;background:#fff;padding:0 10px;font-weight:800}
 .import-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}
 .import-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .import-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -179,8 +182,10 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   <div class="header-title">オーダー管理</div>
   <div class="header-right">
     <nav class="app-nav" aria-label="アプリ切替">
-      <a class="app-nav-link active" href="/">作業アプリ</a>
-      <a class="app-nav-link" href="/order-entry-beta.html">発注入力</a>
+      <a class="app-nav-link active" href="./index.html">作業アプリ</a>
+      <a class="app-nav-link" href="./order-entry-beta.html#sales">売上参照</a>
+      <a class="app-nav-link" href="./order-entry-beta.html">発注入力</a>
+      <a class="app-nav-link" href="./order-entry-beta.html#masters">マスタ</a>
     </nav>
     <div class="phase-switcher">
       <button class="phase-btn active" id="btn-p1" onclick="switchPhase(1)">Phase 1 入力</button>
@@ -197,7 +202,6 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   <button class="sync-btn primary" onclick="signInSupabase()">ログイン</button>
   <button class="sync-btn" onclick="signOutSupabase()">ログアウト</button>
   <button class="sync-btn" onclick="loadSessionList()">作業一覧</button>
-  <button class="sync-btn" onclick="location.href='/order-entry-beta.html#sales-reference-panel'">売上参照</button>
   <div class="sync-user" id="sync-user"></div>
 </div>
 <div class="export-bg" id="session-bg" onclick="closeSessionPicker()">
@@ -231,7 +235,18 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 </div>
 <main>
   <div class="view active" id="view-p1">
-    <div class="import-grid">
+    <div class="work-start-panel" id="work-start-panel">
+      <div>
+        <div class="work-start-title">作業データを開く</div>
+        <div class="work-start-sub">受注登録・CSV/PDF取込・マスタ更新は発注入力画面で行います。現場では日付を選んで作業を開きます。</div>
+      </div>
+      <div class="work-start-controls">
+        <label>作業日<input id="work-session-date" type="date"></label>
+        <button class="btn btn-primary" type="button" onclick="loadSessionList()">作業一覧を表示</button>
+        <button class="btn" type="button" onclick="location.href='./order-entry-beta.html'">発注入力へ</button>
+      </div>
+    </div>
+    <div class="import-grid ops-entry-only">
       <div class="import-card">
         <div class="import-card-header"><div class="import-card-title">1. 受注CSV</div><div class="import-status" id="order-status">未読込</div></div>
         <label class="drop-zone" id="order-zone"><input type="file" id="order-file" accept=".csv,.pdf" multiple><div class="drop-text">複数CSV/PDFをまとめてドロップ<br><strong>またはタップして選択</strong></div></label>
@@ -247,8 +262,8 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
         </div>
       </div>
     </div>
-    <div class="merge-bar" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="openImportReview()">顧客名・商品コードを確認</button></div>
-    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button><button class="btn btn-primary" id="finalize-btn" onclick="finalizeSalesTrial()">売上確定</button><button class="btn" id="unlock-btn" onclick="unlockSessionTrial()" style="display:none">ロック解除</button></div>
+    <div class="merge-bar ops-entry-only" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="openImportReview()">顧客名・商品コードを確認</button></div>
+    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn ops-entry-only" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button><button class="btn btn-primary" id="finalize-btn" onclick="finalizeSalesTrial()">売上確定</button><button class="btn" id="unlock-btn" onclick="unlockSessionTrial()" style="display:none">ロック解除</button></div>
     <div class="tabs-wrap" id="p1-tabs-wrap" style="display:none"><div class="country-tabs" id="p1-country-tabs"></div><div id="p1-country-panels"></div></div>
   </div>
   <div class="view" id="view-p15">
@@ -2903,20 +2918,36 @@ function sessionListItemHtmlTrial(session,isFinalized){
 function sessionListEmptyHtmlTrial(text){
   return `<div class="export-option session-empty"><div class="export-option-meta">${esc(text)}</div></div>`;
 }
+function localDateValue(date=new Date()){
+  return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+function workSessionDateFilterValue(){
+  return String(document.getElementById("work-session-date")?.value||"").trim();
+}
+function workSessionMatchesDate(session){
+  const selected=workSessionDateFilterValue();
+  if(!selected)return true;
+  const compact=selected.replace(/-/g,"");
+  const slash=selected.replace(/-/g,"/");
+  const name=String(session?.name||"");
+  const dateFields=[session?.created_at,session?.updated_at,session?.finalized_at].filter(Boolean).map(value=>String(value).slice(0,10));
+  return dateFields.includes(selected)||name.includes(selected)||name.includes(slash)||name.includes(compact);
+}
 loadSessionList=async function(){
   if(!(await requireSupabaseLogin()))return;
   const {data,error}=await supabaseClient
     .from("work_sessions")
     .select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
     .order("updated_at",{ascending:false})
-    .limit(80);
+    .limit(200);
   if(error){toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));return}
-  const sessions=data||[];
+  const selectedDate=workSessionDateFilterValue();
+  const sessions=(data||[]).filter(workSessionMatchesDate);
   const active=sessions.filter(s=>!(s.locked||s.status==="closed"));
   const finalized=sessions.filter(s=>s.locked||s.status==="closed").sort((a,b)=>new Date(b.finalized_at||b.updated_at||b.created_at)-new Date(a.finalized_at||a.updated_at||a.created_at));
   const wrap=document.getElementById("session-options");
   wrap.innerHTML=[
-    `<div class="session-section-title"><span>作業中</span><span class="session-section-count">${active.length}件</span></div>`,
+    `<div class="session-section-title"><span>${selectedDate?esc(selectedDate)+" ":""}作業中</span><span class="session-section-count">${active.length}件</span></div>`,
     active.length?active.map(s=>sessionListItemHtmlTrial(s,false)).join(""):sessionListEmptyHtmlTrial("作業中のデータはありません"),
     `<div class="session-section-title"><span>売上確定済み</span><span class="session-section-count">${finalized.length}件</span></div>`,
     finalized.length?finalized.map(s=>sessionListItemHtmlTrial(s,true)).join(""):sessionListEmptyHtmlTrial("売上確定済みのデータはありません")
@@ -4485,6 +4516,33 @@ applyCustomerMasterAuto=async function(options={}){
   if(importIdentityConfirmed)return 0;
   return __applyCustomerMasterAutoImportLockBase(options);
 };
+function setWorkStartPanelVisible(visible){
+  const panel=document.getElementById("work-start-panel");
+  if(panel)panel.style.display=visible?"flex":"none";
+}
+function applyWorkAppLeanMode(){
+  const dateInput=document.getElementById("work-session-date");
+  if(dateInput&&!dateInput.value)dateInput.value=localDateValue();
+  document.querySelectorAll('[data-customer-master-btn="1"]').forEach(button=>button.remove());
+  document.querySelectorAll(".ops-entry-only").forEach(el=>el.style.display="none");
+  if(rows?.length)setWorkStartPanelVisible(false);
+}
+ensureCustomerMasterUI=function(){
+  document.querySelectorAll('[data-customer-master-btn="1"]').forEach(button=>button.remove());
+};
+const __openSavedSessionWorkLeanBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await __openSavedSessionWorkLeanBase(sessionId);
+  if(rows.length)setWorkStartPanelVisible(false);
+  applyWorkAppLeanMode();
+};
+const __resetLocalStateWorkLeanBase=resetLocalStateForSession;
+resetLocalStateForSession=function(){
+  __resetLocalStateWorkLeanBase();
+  setWorkStartPanelVisible(true);
+  applyWorkAppLeanMode();
+};
+applyWorkAppLeanMode();
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
