@@ -26,10 +26,11 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-preview{max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
 .master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.panel:has(#master-list){display:none}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.pending-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pending-grid .wide{grid-column:span 2}.pending-grid .full{grid-column:1/-1}.pending-list{display:grid;gap:8px}.pending-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.pending-card.hold{background:#fffaf0}.pending-card.applied{opacity:.68}.pending-card.cancelled{opacity:.52}.pending-main{display:grid;gap:4px}.pending-title{font-weight:900}.pending-meta{color:var(--muted);font-size:12px;font-weight:800}.pending-amount{font-family:Consolas,monospace;font-weight:900}.pending-amount.negative{color:var(--danger)}.pending-actions{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}}
+@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -115,6 +116,67 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel" style="margin-top:12px">
+    <div class="panel-head"><span>未処理伝票</span><span class="sub">赤伝・訂正・追加請求・先行受注を invoice 反映前に管理</span></div>
+    <div class="panel-body">
+      <div class="pending-grid">
+        <label>種別
+          <select id="pending-entry-type">
+            <option value="advance_order">先行受注</option>
+            <option value="credit_note">赤伝</option>
+            <option value="correction">訂正</option>
+            <option value="extra_charge">追加請求</option>
+            <option value="discount">値引き</option>
+            <option value="shipping_adjustment">送料調整</option>
+          </select>
+        </label>
+        <label>状態
+          <select id="pending-status">
+            <option value="pending">未反映</option>
+            <option value="hold">保留</option>
+            <option value="applied">反映済み</option>
+            <option value="cancelled">取消</option>
+          </select>
+        </label>
+        <label>登録日<input id="pending-entry-date" type="date"></label>
+        <label>予定日<input id="pending-planned-date" type="date"></label>
+        <label>輸入社コード<input id="pending-importer-code" list="importer-code-list"></label>
+        <label>輸入社名<input id="pending-importer-name" list="importer-name-list"></label>
+        <label>得意先コード<input id="pending-customer-code" list="customer-code-list"></label>
+        <label>得意先名<input id="pending-customer-name" list="customer-name-list"></label>
+        <label>商品コード<input id="pending-product-code" list="product-code-list"></label>
+        <label class="wide">商品名・内容<input id="pending-product-name" placeholder="例 大葉 10パック / 前回請求訂正"></label>
+        <label>数量<input id="pending-qty" inputmode="decimal"></label>
+        <label>単位<input id="pending-unit" placeholder="Kg / pkt / PC"></label>
+        <label>単価<input id="pending-unit-price" inputmode="decimal"></label>
+        <label>金額<input id="pending-amount" inputmode="decimal" placeholder="赤伝・値引きはマイナス"></label>
+        <label class="wide">理由<input id="pending-reason" placeholder="前回請求分訂正など"></label>
+        <label class="full">メモ<textarea id="pending-memo" placeholder="invoice反映時に確認したい内容"></textarea></label>
+      </div>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn" onclick="fillPendingFromHeader()">現在の得意先を反映</button>
+        <button class="btn primary" onclick="savePendingEntry()">未処理伝票を保存</button>
+        <button class="btn" onclick="resetPendingForm()">入力クリア</button>
+      </div>
+      <div class="form-grid" style="grid-template-columns:160px 220px 180px auto;margin-top:12px">
+        <label>状態
+          <select id="pending-filter-status">
+            <option value="">全件</option>
+            <option value="pending" selected>未反映</option>
+            <option value="hold">保留</option>
+            <option value="applied">反映済み</option>
+            <option value="cancelled">取消</option>
+          </select>
+        </label>
+        <label>輸入社<input id="pending-filter-importer" list="importer-code-list" placeholder="例 DIM / FBI"></label>
+        <label>得意先<input id="pending-filter-customer" placeholder="コード・店名"></label>
+        <div class="actions" style="align-items:end"><button class="btn" onclick="loadPendingEntries()">再読込</button><button class="btn" onclick="clearPendingFilters()">絞込解除</button></div>
+      </div>
+      <div class="hint" id="pending-state">未処理伝票SQLを実行するとSupabaseに保存されます。未実行時はこの端末のローカル保存で試せます。</div>
+      <div class="pending-list" id="pending-list" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:12px">
     <div class="panel-head"><span>マスタ管理β</span><button class="small" onclick="hideMasterAdminPanel()">閉じる</button></div>
     <div class="panel-body">
       <div class="master-tabs">
@@ -169,10 +231,12 @@ const STORAGE_KEY="order-entry-beta-v2";
 const MASTER_KEY="order-entry-beta-masters-v1";
 const CONFIRMED_KEY="order-entry-beta-confirmed-v1";
 const LINE_DICT_KEY="order-entry-beta-line-dictionary-v1";
+const PENDING_KEY="order-entry-beta-pending-entries-v1";
 const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2Z2pzY3h5am9zanFxaHh1dHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMTc3ODgsImV4cCI6MjA5NDc5Mzc4OH0.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
 let orders=[];
 let confirmedBatches=[];
+let pendingEntries=[];
 let draftRows=[];
 let masterType="products";
 let confirmed=false;
@@ -672,6 +736,14 @@ async function loadDbData(){
   try{
     await loadMastersFromDb();
     await loadConfirmedBatchesFromDb();
+    try{
+      await loadPendingEntriesFromDb();
+    }catch(pendingError){
+      loadPendingLocal();
+      const pendingState=document.getElementById("pending-state");
+      if(pendingState)pendingState.textContent=pendingDbErrorMessage(pendingError)+" ローカル保存を表示します。";
+      console.warn(pendingDbErrorMessage(pendingError),pendingError);
+    }
     dbReady=true;
     setDbStatus("DB接続中","ok");
     refreshCustomerLists();
@@ -679,6 +751,7 @@ async function loadDbData(){
     refreshProductLists();
     refreshSupplierLists();
     render();
+    renderPendingEntries();
     renderMasters();
   }catch(error){
     dbReady=false;
@@ -697,9 +770,304 @@ function loadConfirmedBatches(){
 function saveConfirmedBatches(){
   localStorage.setItem(CONFIRMED_KEY,JSON.stringify(confirmedBatches));
 }
+function pendingEntryTypeLabel(type){
+  return {
+    advance_order:"先行受注",
+    credit_note:"赤伝",
+    correction:"訂正",
+    extra_charge:"追加請求",
+    discount:"値引き",
+    shipping_adjustment:"送料調整"
+  }[type]||type||"";
+}
+function pendingStatusLabel(status){
+  return {pending:"未反映",hold:"保留",applied:"反映済み",cancelled:"取消"}[status]||status||"";
+}
+function numberOrBlank(value){
+  const text=String(value??"").replace(/,/g,"").trim();
+  if(!text)return null;
+  const n=Number(text);
+  return Number.isFinite(n)?n:null;
+}
+function pendingLocalId(){
+  return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+function loadPendingLocal(){
+  try{
+    pendingEntries=JSON.parse(localStorage.getItem(PENDING_KEY)||"[]");
+    if(!Array.isArray(pendingEntries))pendingEntries=[];
+  }catch(e){pendingEntries=[]}
+}
+function savePendingLocal(){
+  localStorage.setItem(PENDING_KEY,JSON.stringify(pendingEntries));
+}
+function pendingDbErrorMessage(error){
+  const msg=String(error?.message||error||"");
+  if(error?.code==="42P01"||/relation .* does not exist/i.test(msg))return "未処理伝票SQLが未実行です。pending-entries-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg))return "未処理伝票SQLの反映待ちです。pending-entries-migration.sql を再実行、または少し待って再読込してください。";
+  return msg||"未処理伝票のDB処理でエラーが発生しました。";
+}
+function dbPendingToEntry(row){
+  return {
+    id:row.id,
+    entryType:row.entry_type,
+    status:row.status,
+    entryDate:row.entry_date,
+    plannedDate:row.planned_date||"",
+    importerCode:row.importer_code||"",
+    importerName:row.importer_name_snapshot||"",
+    customerCode:row.customer_code||"",
+    customerName:row.customer_name_snapshot||"",
+    productCode:row.product_code||"",
+    productName:row.product_name_snapshot||"",
+    description:row.description||"",
+    qty:row.qty??"",
+    unit:row.unit||"",
+    unitPrice:row.unit_price??"",
+    amount:row.amount??0,
+    reason:row.reason||"",
+    memo:row.memo||"",
+    sourceType:row.source_type||"manual",
+    sourceRef:row.source_ref||"",
+    appliedInvoiceNo:row.applied_invoice_no||"",
+    appliedAt:row.applied_at||"",
+    createdAt:row.created_at||""
+  };
+}
+function pendingEntryToDb(entry){
+  return {
+    entry_type:entry.entryType,
+    status:entry.status||"pending",
+    entry_date:entry.entryDate||today(),
+    planned_date:entry.plannedDate||null,
+    importer_code:entry.importerCode,
+    importer_name_snapshot:entry.importerName||null,
+    customer_code:entry.customerCode||null,
+    customer_name_snapshot:entry.customerName,
+    product_code:entry.productCode||null,
+    product_name_snapshot:entry.productName||null,
+    description:entry.description,
+    qty:numberOrBlank(entry.qty),
+    unit:entry.unit||null,
+    unit_price:numberOrBlank(entry.unitPrice),
+    amount:numberOrBlank(entry.amount)||0,
+    reason:entry.reason||null,
+    memo:entry.memo||null,
+    source_type:entry.sourceType||"manual",
+    source_ref:entry.sourceRef||null,
+    created_by:currentUser?.id||null
+  };
+}
+async function loadPendingEntriesFromDb(){
+  if(!supabaseClient)return false;
+  const {data,error}=await supabaseClient
+    .from("pending_entries")
+    .select("*")
+    .order("entry_date",{ascending:false})
+    .order("created_at",{ascending:false})
+    .limit(500);
+  if(error)throw error;
+  pendingEntries=(data||[]).map(dbPendingToEntry);
+  savePendingLocal();
+  return true;
+}
+async function loadPendingEntries(){
+  const state=document.getElementById("pending-state");
+  try{
+    if(dbReady&&supabaseClient){
+      await loadPendingEntriesFromDb();
+      if(state)state.textContent="未処理伝票: Supabaseから読込済み";
+    }else{
+      loadPendingLocal();
+      if(state)state.textContent="未処理伝票: ローカル保存を表示中";
+    }
+  }catch(error){
+    loadPendingLocal();
+    if(state)state.textContent=pendingDbErrorMessage(error)+" ローカル保存を表示します。";
+    console.warn(pendingDbErrorMessage(error),error);
+  }
+  renderPendingEntries();
+}
+function pendingFormEntry(){
+  const productName=val("pending-product-name").trim();
+  return {
+    id:document.getElementById("pending-id")?.value||"",
+    entryType:val("pending-entry-type"),
+    status:val("pending-status")||"pending",
+    entryDate:val("pending-entry-date")||today(),
+    plannedDate:val("pending-planned-date"),
+    importerCode:val("pending-importer-code").trim(),
+    importerName:val("pending-importer-name").trim(),
+    customerCode:val("pending-customer-code").trim(),
+    customerName:val("pending-customer-name").trim(),
+    productCode:val("pending-product-code").trim(),
+    productName,
+    description:productName||val("pending-reason").trim()||val("pending-memo").trim(),
+    qty:val("pending-qty").trim(),
+    unit:val("pending-unit").trim(),
+    unitPrice:val("pending-unit-price").trim(),
+    amount:val("pending-amount").trim(),
+    reason:val("pending-reason").trim(),
+    memo:val("pending-memo").trim(),
+    sourceType:"manual"
+  };
+}
+function setPendingForm(entry){
+  const hidden=document.getElementById("pending-id")||document.createElement("input");
+  hidden.type="hidden";
+  hidden.id="pending-id";
+  if(!hidden.parentNode)document.body.appendChild(hidden);
+  hidden.value=entry?.id||"";
+  document.getElementById("pending-entry-type").value=entry?.entryType||"advance_order";
+  document.getElementById("pending-status").value=entry?.status||"pending";
+  document.getElementById("pending-entry-date").value=entry?.entryDate||today();
+  document.getElementById("pending-planned-date").value=entry?.plannedDate||"";
+  document.getElementById("pending-importer-code").value=entry?.importerCode||"";
+  document.getElementById("pending-importer-name").value=entry?.importerName||"";
+  document.getElementById("pending-customer-code").value=entry?.customerCode||"";
+  document.getElementById("pending-customer-name").value=entry?.customerName||"";
+  document.getElementById("pending-product-code").value=entry?.productCode||"";
+  document.getElementById("pending-product-name").value=entry?.productName||entry?.description||"";
+  document.getElementById("pending-qty").value=entry?.qty??"";
+  document.getElementById("pending-unit").value=entry?.unit||"";
+  document.getElementById("pending-unit-price").value=entry?.unitPrice??"";
+  document.getElementById("pending-amount").value=entry?.amount??"";
+  document.getElementById("pending-reason").value=entry?.reason||"";
+  document.getElementById("pending-memo").value=entry?.memo||"";
+}
+function resetPendingForm(){
+  setPendingForm(null);
+  fillPendingFromHeader();
+}
+function fillPendingFromHeader(){
+  document.getElementById("pending-importer-code").value=val("batch-importer-code");
+  document.getElementById("pending-importer-name").value=val("batch-importer-name");
+  document.getElementById("pending-customer-code").value=val("batch-customer-code");
+  document.getElementById("pending-customer-name").value=val("batch-customer-name");
+}
+async function savePendingEntry(){
+  const entry=pendingFormEntry();
+  if(!entry.importerCode){alert("輸入社コードを入力してください。");return}
+  if(!entry.customerName&&!entry.customerCode){alert("得意先を入力してください。");return}
+  if(!entry.description){alert("商品名・内容を入力してください。");return}
+  if(entry.amount===""&&entry.qty!==""&&entry.unitPrice!==""){
+    const qty=numberOrBlank(entry.qty),price=numberOrBlank(entry.unitPrice);
+    if(qty!==null&&price!==null)entry.amount=qty*price;
+  }
+  try{
+    if(dbReady&&supabaseClient){
+      const payload=pendingEntryToDb(entry);
+      let result;
+      if(entry.id&&!String(entry.id).startsWith("local-")){
+        delete payload.created_by;
+        result=await supabaseClient.from("pending_entries").update(payload).eq("id",entry.id).select("*").single();
+      }else{
+        result=await supabaseClient.from("pending_entries").insert(payload).select("*").single();
+      }
+      if(result.error)throw result.error;
+      const saved=dbPendingToEntry(result.data);
+      const idx=pendingEntries.findIndex(x=>x.id===saved.id||x.id===entry.id);
+      if(idx>=0)pendingEntries[idx]=saved;else pendingEntries.unshift(saved);
+      savePendingLocal();
+      document.getElementById("pending-state").textContent="未処理伝票をSupabaseへ保存しました。";
+    }else{
+      entry.id=entry.id||pendingLocalId();
+      entry.createdAt=entry.createdAt||new Date().toISOString();
+      const idx=pendingEntries.findIndex(x=>x.id===entry.id);
+      if(idx>=0)pendingEntries[idx]=entry;else pendingEntries.unshift(entry);
+      savePendingLocal();
+      document.getElementById("pending-state").textContent="未処理伝票をローカル保存しました。SQL実行後はSupabase保存に切り替わります。";
+    }
+    resetPendingForm();
+    renderPendingEntries();
+  }catch(error){
+    alert(pendingDbErrorMessage(error));
+  }
+}
+function editPendingEntry(id){
+  const entry=pendingEntries.find(x=>String(x.id)===String(id));
+  if(!entry)return;
+  setPendingForm(entry);
+  document.getElementById("pending-entry-type")?.focus();
+}
+async function setPendingStatus(id,status){
+  const entry=pendingEntries.find(x=>String(x.id)===String(id));
+  if(!entry)return;
+  const previous=entry.status;
+  entry.status=status;
+  try{
+    if(dbReady&&supabaseClient&&!String(id).startsWith("local-")){
+      const patch={status};
+      if(status==="applied")patch.applied_at=new Date().toISOString();
+      if(status==="cancelled")patch.cancelled_at=new Date().toISOString();
+      const {error}=await supabaseClient.from("pending_entries").update(patch).eq("id",id);
+      if(error)throw error;
+    }
+    savePendingLocal();
+    renderPendingEntries();
+  }catch(error){
+    entry.status=previous;
+    alert(pendingDbErrorMessage(error));
+  }
+}
+function clearPendingFilters(){
+  document.getElementById("pending-filter-status").value="";
+  document.getElementById("pending-filter-importer").value="";
+  document.getElementById("pending-filter-customer").value="";
+  renderPendingEntries();
+}
+function renderPendingEntries(){
+  const box=document.getElementById("pending-list");
+  if(!box)return;
+  const status=val("pending-filter-status");
+  const importer=val("pending-filter-importer").trim().toLowerCase();
+  const customer=val("pending-filter-customer").trim().toLowerCase();
+  const list=pendingEntries.filter(entry=>{
+    if(status&&entry.status!==status)return false;
+    const importerText=[entry.importerCode,entry.importerName].filter(Boolean).join(" ").toLowerCase();
+    const customerText=[entry.customerCode,entry.customerName].filter(Boolean).join(" ").toLowerCase();
+    return (!importer||importerText.includes(importer))&&(!customer||customerText.includes(customer));
+  });
+  if(!list.length){
+    box.innerHTML=`<div class="hint">表示対象の未処理伝票はありません。</div>`;
+    return;
+  }
+  box.innerHTML=list.map(entry=>{
+    const amount=numberOrBlank(entry.amount);
+    const amountText=amount===null?"":amount.toLocaleString("ja-JP");
+    const amountClass=amount!==null&&amount<0?" negative":"";
+    const qtyText=[entry.qty,entry.unit].filter(v=>v!==""&&v!==null&&v!==undefined).join(" ");
+    const product=[entry.productCode,entry.productName||entry.description].filter(Boolean).join(" ");
+    const meta=[
+      entry.entryDate,
+      entry.plannedDate?`予定 ${entry.plannedDate}`:"",
+      [entry.importerCode,entry.importerName].filter(Boolean).join(" "),
+      [entry.customerCode,entry.customerName].filter(Boolean).join(" "),
+      qtyText
+    ].filter(Boolean).join(" / ");
+    return `<div class="pending-card ${esc(entry.status||"pending")}">
+      <div class="pending-main">
+        <div class="pending-title">${esc(pendingEntryTypeLabel(entry.entryType))} <span class="pill ${entry.status==="pending"?"warn":"blue"}">${esc(pendingStatusLabel(entry.status))}</span></div>
+        <div>${esc(product)}</div>
+        <div class="pending-meta">${esc(meta)}</div>
+        ${entry.reason?`<div class="pending-meta">理由: ${esc(entry.reason)}</div>`:""}
+        ${entry.memo?`<div class="pending-meta">メモ: ${esc(entry.memo)}</div>`:""}
+      </div>
+      <div class="pending-actions">
+        <div class="pending-amount${amountClass}">${esc(amountText)}</div>
+        <button class="small" onclick="editPendingEntry('${esc(entry.id)}')">編集</button>
+        <button class="small" onclick="setPendingStatus('${esc(entry.id)}','pending')">未反映</button>
+        <button class="small" onclick="setPendingStatus('${esc(entry.id)}','hold')">保留</button>
+        <button class="small" onclick="setPendingStatus('${esc(entry.id)}','applied')">反映済</button>
+        <button class="small danger" onclick="setPendingStatus('${esc(entry.id)}','cancelled')">取消</button>
+      </div>
+    </div>`;
+  }).join("");
+}
 function init(){
   document.getElementById("order-date").value=today();
   loadConfirmedBatches();
+  loadPendingLocal();
   loadLocal();
   ensureStarterRow();
   refreshCustomerLists();
@@ -707,8 +1075,10 @@ function init(){
   refreshProductLists();
   refreshSupplierLists();
   render();
+  renderPendingEntries();
   renderMasters();
   hideMasterAdminPanel();
+  resetPendingForm();
   loadDbData();
 }
 function normalizeLineExpression(value){
@@ -2158,6 +2528,12 @@ function applySearchResult(type,index){
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
     renderConfirmedOrders();
+  });
+});
+["pending-filter-status","pending-filter-importer","pending-filter-customer"].forEach(id=>{
+  document.addEventListener("input",e=>{
+    if(e.target?.id!==id)return;
+    renderPendingEntries();
   });
 });
 document.addEventListener("keydown",e=>{
