@@ -242,6 +242,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       </div>
       <div class="work-start-controls">
         <label>作業日<input id="work-session-date" type="date"></label>
+        <button class="btn btn-primary" type="button" onclick="createWorkSessionFromConfirmedOrders()">受注から作業作成</button>
         <button class="btn btn-primary" type="button" onclick="loadSessionList()">作業一覧を表示</button>
         <button class="btn" type="button" onclick="location.href='./order-entry-beta.html'">発注入力へ</button>
       </div>
@@ -4542,6 +4543,100 @@ resetLocalStateForSession=function(){
   setWorkStartPanelVisible(true);
   applyWorkAppLeanMode();
 };
+function orderEntryLineToWorkRow(batch,line,index){
+  const importer=batch.importer_code||batch.importer_name_snapshot||"";
+  return {
+    _idx:index,
+    _qty:"",
+    _net:"",
+    _box:"",
+    _memo:line.purchase_note||"",
+    _unit:"Kg",
+    _stockout:false,
+    customer:batch.customer_name_snapshot||batch.customer_code||"UNKNOWN_STORE",
+    product_id:line.product_code||"",
+    product_name:line.product_name_snapshot||"-",
+    unit:line.order_unit||"",
+    csv_qty:line.order_qty??"",
+    en_name:line.english_name_snapshot||"",
+    sci_name:"",
+    origin:"",
+    unit_price:line.unit_price??"",
+    importer_id:importer,
+    country:countryCode(importer)
+  };
+}
+async function createWorkSessionFromConfirmedOrders(){
+  if(!(await requireSupabaseLogin()))return;
+  const date=workSessionDateFilterValue()||localDateValue();
+  const dateInput=document.getElementById("work-session-date");
+  if(dateInput)dateInput.value=date;
+  if(rows.length||currentSessionId){
+    if(!confirm("現在開いている作業があります。受注から新しい作業を作成すると画面を切り替えます。続けますか？"))return;
+  }
+  const {data:existing,error:existingError}=await supabaseClient
+    .from("work_sessions")
+    .select("id,name,status,locked,created_at,updated_at,finalized_at")
+    .order("updated_at",{ascending:false})
+    .limit(200);
+  if(existingError){toast("作業一覧確認エラー: "+existingError.message);return}
+  const existingActive=(existing||[]).filter(session=>workSessionMatchesDate(session)&&!(session.locked||session.status==="closed"));
+  if(existingActive.length&&!confirm(`${date} の作業中データがすでに ${existingActive.length} 件あります。別作業として新規作成しますか？`))return;
+  setSaveState("受注確定データを読込中...");
+  const {data:batches,error:batchError}=await supabaseClient
+    .from("order_entry_batches")
+    .select("id,order_date,ship_date,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,note,created_at")
+    .eq("status","confirmed")
+    .eq("order_date",date)
+    .order("importer_code",{ascending:true})
+    .order("customer_name_snapshot",{ascending:true});
+  if(batchError){setSaveState("受注読込失敗",true);toast("受注読込エラー: "+batchError.message);return}
+  if(!batches?.length){setSaveState("受注なし");toast(`${date} の確定済み受注がありません`);return}
+  const ids=batches.map(batch=>batch.id);
+  const {data:lines,error:lineError}=await supabaseClient
+    .from("order_entry_lines")
+    .select("*")
+    .in("batch_id",ids)
+    .order("line_no",{ascending:true});
+  if(lineError){setSaveState("受注明細読込失敗",true);toast("受注明細読込エラー: "+lineError.message);return}
+  const byBatch=new Map();
+  (lines||[]).forEach(line=>{
+    if(!byBatch.has(line.batch_id))byBatch.set(line.batch_id,[]);
+    byBatch.get(line.batch_id).push(line);
+  });
+  const nextRows=[];
+  batches.forEach(batch=>{
+    (byBatch.get(batch.id)||[]).forEach(line=>{
+      nextRows.push(orderEntryLineToWorkRow(batch,line,nextRows.length));
+    });
+  });
+  if(!nextRows.length){setSaveState("明細なし");toast(`${date} の受注明細がありません`);return}
+  unsubscribeRealtime();
+  resetLocalStateForSession();
+  currentSessionId=null;
+  currentSessionLocked=false;
+  currentSessionFinalizedAt="";
+  latestOrderFilename=`order-entry:${date}`;
+  latestMasterFilename="Supabase master";
+  rows=nextRows;
+  syncOrderRowsFromRows();
+  const importers=[...new Set(rows.map(row=>importerCode(row.importer_id)).filter(Boolean))].sort();
+  currentSessionName=`${date} ${importers.length?importers.join("/"):"受注"} 作業`;
+  const nameInput=document.getElementById("session-name-input");
+  if(nameInput)nameInput.value=currentSessionName;
+  activeCountry=null;
+  activeCustomer={};
+  buildP1Tabs();
+  document.getElementById("p1-tabs-wrap").style.display="";
+  document.getElementById("p2-tabs-wrap").style.display="none";
+  document.getElementById("p2-empty").style.display="none";
+  document.getElementById("cloud-save-bar").style.display="flex";
+  document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${batches.length}得意先 / ${rows.length}明細`;
+  document.getElementById("export-btn").disabled=false;
+  setWorkStartPanelVisible(false);
+  await saveCurrentSessionToSupabase();
+  applyWorkAppLeanMode();
+}
 applyWorkAppLeanMode();
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>

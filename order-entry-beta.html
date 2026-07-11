@@ -103,7 +103,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <input class="import-review-search" id="import-review-search" type="search" placeholder="得意先・商品コード・商品名で絞り込み" oninput="renderImportReview()">
         <label class="import-review-check"><input type="checkbox" id="import-review-bulk" checked> 同じ得意先名をまとめて修正</label>
         <span class="pill warn" id="import-review-count">0件</span>
-        <button class="btn primary" type="button" onclick="confirmImportedOrderReview()">確定済み受注へ登録</button>
+        <button class="btn primary" type="button" onclick="confirmImportedOrderReview()">取込下書きへ登録</button>
         <button class="btn" type="button" onclick="cancelImportReview()">取込を破棄</button>
       </div>
       <div class="hint">黄色行は得意先名または商品コードを確認できない行です。PDF取込では、ここで確認してから登録します。</div>
@@ -113,6 +113,13 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <tbody id="import-review-body"></tbody>
         </table>
       </div>
+    </div>
+  </section>
+
+  <section class="panel workspace-panel active" data-workspace-panel="orders" id="import-drafts-panel" style="margin-top:12px">
+    <div class="panel-head"><span>取込下書き</span><span class="sub">PDF/CSV取込後、1得意先ずつ受注画面へ展開して確定</span></div>
+    <div class="panel-body">
+      <div id="import-drafts"></div>
     </div>
   </section>
 
@@ -276,6 +283,7 @@ const MASTER_KEY="order-entry-beta-masters-v1";
 const CONFIRMED_KEY="order-entry-beta-confirmed-v1";
 const LINE_DICT_KEY="order-entry-beta-line-dictionary-v1";
 const PENDING_KEY="order-entry-beta-pending-entries-v1";
+const IMPORT_DRAFT_KEY="order-entry-beta-import-drafts-v1";
 const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2Z2pzY3h5am9zanFxaHh1dHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMTc3ODgsImV4cCI6MjA5NDc5Mzc4OH0.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
 let orders=[];
@@ -283,10 +291,12 @@ let confirmedBatches=[];
 let pendingEntries=[];
 let salesReferenceRows=[];
 let draftRows=[];
+let importDraftGroups=[];
 let importReviewItems=[];
 let importReviewSourceNames=[];
 let importReviewSourceType="";
 let importReviewOriginalCustomers=[];
+let currentImportDraftId="";
 let masterType="products";
 let confirmed=false;
 let lastOrderRowIndex=0;
@@ -820,6 +830,103 @@ function loadConfirmedBatches(){
 function saveConfirmedBatches(){
   localStorage.setItem(CONFIRMED_KEY,JSON.stringify(confirmedBatches));
 }
+function loadImportDrafts(){
+  try{
+    importDraftGroups=JSON.parse(localStorage.getItem(IMPORT_DRAFT_KEY)||"[]");
+    if(!Array.isArray(importDraftGroups))importDraftGroups=[];
+  }catch(e){importDraftGroups=[]}
+}
+function saveImportDrafts(){
+  localStorage.setItem(IMPORT_DRAFT_KEY,JSON.stringify(importDraftGroups));
+}
+function importDraftLabel(group){
+  return `${group.customer?.name||group.customer?.code||"得意先未設定"} / ${group.importer?.code||group.importer?.name||"輸入社未設定"}`;
+}
+function renderImportDrafts(){
+  const box=document.getElementById("import-drafts");
+  const panel=document.getElementById("import-drafts-panel");
+  if(!box)return;
+  if(panel)panel.classList.toggle("import-review-hidden",!importDraftGroups.length);
+  if(!importDraftGroups.length){
+    box.innerHTML=`<div class="hint">取込下書きはありません。</div>`;
+    return;
+  }
+  box.innerHTML=importDraftGroups.map((group,index)=>{
+    const rows=group.rows||[];
+    const source=(group.sourceNames||[]).join(", ");
+    const sourceLabel=source?`/ ${esc(source)}`:"";
+    const details=rows.slice(0,8).map((r,idx)=>`<tr><td>${idx+1}</td><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.supplierName||r.supplierCode)}</td></tr>`).join("");
+    const more=rows.length>8?`<tr><td colspan="6" class="sub">ほか ${rows.length-8} 明細</td></tr>`:"";
+    return `<div class="master-item" style="grid-template-columns:minmax(0,1fr) auto">
+      <div>
+        <b>${esc(importDraftLabel(group))}</b><br>
+        <span class="sub">${esc(group.orderDate||"")} / ${rows.length}明細 / ${esc(group.sourceType||"取込")} ${sourceLabel}</span>
+        <details style="margin-top:8px">
+          <summary>明細確認</summary>
+          <div class="table-wrap" style="margin-top:8px">
+            <table class="orders" style="min-width:720px"><thead><tr><th>No.</th><th>コード</th><th>商品名</th><th>数量</th><th>単位</th><th>仕入先</th></tr></thead><tbody>${details}${more}</tbody></table>
+          </div>
+        </details>
+      </div>
+      <div class="actions">
+        <button class="small" onclick="applyImportDraft(${index})">受注画面へ展開</button>
+        <button class="small danger" onclick="deleteImportDraft(${index})">削除</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function addImportedDraftGroups(items,sourceNames,sourceType){
+  const groups=new Map();
+  items.forEach(item=>{
+    const key=batchKeyFromOrderItem(item);
+    if(!groups.has(key))groups.set(key,{orderDate:item.orderDate,importer:item.importer,customer:item.customer,rows:[]});
+    groups.get(key).rows.push(item.row);
+  });
+  const createdAt=new Date().toISOString();
+  const drafts=[...groups.values()].map((group,index)=>({
+    id:`D${Date.now()}-${index}-${Math.random().toString(36).slice(2,8)}`,
+    createdAt,
+    sourceType:sourceType||"PDF/CSV",
+    sourceNames:[...(sourceNames||[])],
+    orderDate:group.orderDate||today(),
+    importer:group.importer||{},
+    customer:group.customer||{},
+    rows:(group.rows||[]).map(row=>({...blankOrder(),...row}))
+  }));
+  importDraftGroups.unshift(...drafts);
+  saveImportDrafts();
+  renderImportDrafts();
+  return drafts;
+}
+function applyImportDraft(index){
+  const group=importDraftGroups[index];
+  if(!group)return;
+  if(activeOrderRows().length||val("batch-customer-code")||val("batch-customer-name")){
+    if(!confirm("現在入力中の受注があります。取込下書きを展開すると上書きされます。続けますか？"))return;
+  }
+  applyImportedOrderGroup(group);
+  currentImportDraftId=group.id;
+  saveLocal();
+  requestAnimationFrame(()=>document.querySelector('[data-row="0"][data-field="productCode"]')?.focus());
+}
+function removeImportDraftById(id){
+  if(!id)return;
+  const before=importDraftGroups.length;
+  importDraftGroups=importDraftGroups.filter(group=>group.id!==id);
+  if(importDraftGroups.length!==before){
+    saveImportDrafts();
+    renderImportDrafts();
+  }
+}
+function deleteImportDraft(index){
+  const group=importDraftGroups[index];
+  if(!group)return;
+  if(!confirm(`${importDraftLabel(group)} の取込下書きを削除しますか？`))return;
+  importDraftGroups.splice(index,1);
+  if(currentImportDraftId===group.id)currentImportDraftId="";
+  saveImportDrafts();
+  renderImportDrafts();
+}
 function pendingEntryTypeLabel(type){
   return {
     advance_order:"先行受注",
@@ -1296,6 +1403,7 @@ function switchWorkspaceTab(tab){
 function init(){
   document.getElementById("order-date").value=today();
   loadConfirmedBatches();
+  loadImportDrafts();
   loadPendingLocal();
   loadLocal();
   ensureStarterRow();
@@ -1453,6 +1561,7 @@ function resetCurrentOrderForm(){
   orders=[blankOrder()];
   draftRows=[];
   confirmed=false;
+  currentImportDraftId="";
   ["batch-importer-code","batch-importer-name","batch-customer-code","batch-customer-name","batch-note","line-text"].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.value="";
@@ -1469,7 +1578,7 @@ function saveLocal(){
   const data={
     orderDate:val("order-date"),shipDate:val("order-date"),batchNote:val("batch-note"),
     importerCode:val("batch-importer-code"),importerName:val("batch-importer-name"),
-    customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),confirmed,orders
+    customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),confirmed,orders,currentImportDraftId
   };
   localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
   document.getElementById("save-state").textContent="端末保存済み";
@@ -1489,6 +1598,7 @@ function loadLocal(){
     document.getElementById("batch-customer-name").value=data.customerName||"";
     confirmed=!!data.confirmed;
     orders=Array.isArray(data.orders)?data.orders:[];
+    currentImportDraftId=data.currentImportDraftId||"";
   }catch(e){}
 }
 function setHeaderCustomer(c){
@@ -1780,9 +1890,12 @@ function clearAll(){
   if(!confirm("受注明細をすべて消しますか？"))return;
   orders=[blankOrder()];
   confirmedBatches=[];
+  importDraftGroups=[];
   confirmed=false;
+  currentImportDraftId="";
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(CONFIRMED_KEY);
+  localStorage.removeItem(IMPORT_DRAFT_KEY);
   document.getElementById("batch-importer-code").value="";
   document.getElementById("batch-importer-name").value="";
   document.getElementById("batch-customer-code").value="";
@@ -1806,6 +1919,7 @@ function render(){
     <td><button class="small" onclick="removeRow(${i})">削除</button></td>
   </tr>`).join("");
   renderSummary();
+  renderImportDrafts();
   renderConfirmedOrders();
 }
 function batchLabel(batch){
@@ -2096,6 +2210,9 @@ async function confirmCustomerOrder(options={}){
   }
   confirmedBatches.unshift(batch);
   saveConfirmedBatches();
+  const completedDraftId=currentImportDraftId;
+  if(completedDraftId)removeImportDraftById(completedDraftId);
+  currentImportDraftId="";
   const message=`受注確定しました${learnedCount?` / 辞書更新 ${learnedCount}件`:""}`;
   if(options.silent)document.getElementById("save-state").textContent=message;
   else alert(message+"。次の得意先を入力してください。");
@@ -2860,7 +2977,10 @@ async function confirmImportedOrderReview(){
   importReviewOriginalCustomers=[];
   const panel=document.getElementById("import-review-panel");
   if(panel)panel.classList.add("import-review-hidden");
-  await applyImportedOrderItems(items,names,type,{skipReview:true,forceConfirmed:true});
+  const drafts=addImportedDraftGroups(items,names,type);
+  render();
+  requestAnimationFrame(()=>document.getElementById("import-drafts-panel")?.scrollIntoView({behavior:"smooth",block:"start"}));
+  alert(`受注${type}を取込下書きへ登録しました。\n得意先単位: ${drafts.length}件\n明細: ${items.length}件\n下書きから1件ずつ受注画面へ展開して確定してください。`);
 }
 async function applyImportedOrderItems(items,sourceNames,sourceType,options={}){
   if(!items.length){alert("取り込める受注明細がありません。商品コードまたは商品名を確認してください。");return}
