@@ -1889,7 +1889,7 @@ function applyProductToRow(i,product){
 function finishOrderProductName(i,value){
   if(!orders[i])return;
   orders[i].productName=String(value||"").trim();
-  if(!orders[i].productCode){
+  if(!orders[i].productCode&&!productExactNameIsAmbiguous(orders[i].productName)){
     const master=resolveProductMaster(orders[i].productName,{allowSingle:true})||inferProduct(orders[i].productName);
     if(master?.code){
       const supplierCode=master.supplierCode||orders[i].supplierCode||"";
@@ -1955,6 +1955,23 @@ function productMatchInfo(p,query){
   });
   return best;
 }
+function productExactNameMatches(value){
+  const q=normalizeMasterSearchText(value);
+  if(!q)return [];
+  return uniqueMasterItems(getMasters().products).filter(p=>
+    [p.name,p.englishName,...(p.aliases||[])].some(v=>normalizeMasterSearchText(v)===q)
+  );
+}
+function distinctProductCodeCount(products){
+  return new Set((products||[]).map(p=>masterCodeKey(p.code)||normalizeMasterSearchText(p.name)).filter(Boolean)).size;
+}
+function singleProductExactName(value){
+  const matches=productExactNameMatches(value);
+  return matches.length&&distinctProductCodeCount(matches)===1?matches[0]:null;
+}
+function productExactNameIsAmbiguous(value){
+  return distinctProductCodeCount(productExactNameMatches(value))>1;
+}
 function resolveProductMaster(value,options={}){
   const raw=String(value||"").trim();
   if(!raw)return null;
@@ -1962,7 +1979,7 @@ function resolveProductMaster(value,options={}){
   const products=uniqueMasterItems(getMasters().products);
   const exactCode=products.find(p=>String(p.code||"").normalize("NFKC").trim().toLowerCase()===codeKey);
   if(exactCode)return exactCode;
-  const exactName=products.find(p=>productMatchInfo(p,raw).score===0);
+  const exactName=singleProductExactName(raw);
   if(exactName)return exactName;
   const matches=productInlineMatches(raw);
   if(options.allowSingle&&matches.length===1)return matches[0];
@@ -2241,6 +2258,7 @@ function inferImporter(text){
 function inferProduct(text){
   const q=normalizeMasterSearchText(text);
   if(!q)return {};
+  if(productExactNameIsAmbiguous(text))return {};
   return uniqueMasterItems(getMasters().products)
     .map((p,index)=>({p,index,...productMatchInfo(p,q)}))
     .filter(row=>row.score<99)
@@ -3061,7 +3079,7 @@ function findMasterProduct(code,name){
   const nameKey=String(name||"").trim();
   const products=uniqueMasterItems(getMasters().products);
   return products.find(p=>codeKey&&String(p.code||"").normalize("NFKC").trim().toLowerCase()===codeKey)
-    ||(nameKey?products.find(p=>productMatchInfo(p,nameKey).score===0):null)
+    ||(nameKey?singleProductExactName(nameKey):null)
     ||null;
 }
 function orderItemFromCsvRow(row,headers,filename){
@@ -3624,7 +3642,7 @@ function exactProductMasterForImportReviewInput(value){
   const codeKey=raw.normalize("NFKC").trim().toLowerCase();
   const products=uniqueMasterItems(getMasters().products);
   return products.find(p=>String(p.code||"").normalize("NFKC").trim().toLowerCase()===codeKey)
-    ||products.find(p=>productMatchInfo(p,raw).score===0)
+    ||singleProductExactName(raw)
     ||null;
 }
 function applyProductMasterToImportReviewItem(item,master){
@@ -3686,7 +3704,7 @@ function finishImportReviewProductName(index,value,el,options={}){
   if(!item)return;
   item.row=item.row||blankOrder();
   item.row.productName=String(value||"").trim();
-  if(options.applyMaster&&!item.row.productCode){
+  if(options.applyMaster&&!item.row.productCode&&!productExactNameIsAmbiguous(item.row.productName)){
     const master=findMasterProduct("",item.row.productName)||inferProduct(item.row.productName);
     if(master?.code){
       item.row.productCode=master.code;
