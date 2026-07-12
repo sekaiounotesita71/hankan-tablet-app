@@ -127,16 +127,16 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px" id="report-output-panel">
-    <div class="panel-head"><span>帳票出力</span><span class="sub">対象の日付と輸入社を指定して発行</span></div>
+    <div class="panel-head"><span>帳票出力</span><span class="sub">日付を指定。輸入社は個別またはALL</span></div>
     <div class="panel-body">
       <div class="report-tools">
         <label>日付<input id="report-filter-date" type="date"></label>
-        <label>輸入社<input id="report-filter-importer" list="importer-code-list" placeholder="例 DIM / FBI"></label>
+        <label>輸入社（任意）<input id="report-filter-importer" list="importer-code-list" placeholder="空欄 / ALL = 全輸入社"></label>
         <div class="report-count"><span id="report-filter-count" class="pill warn">条件を指定してください</span></div>
         <button class="btn primary" type="button" onclick="printPurchaseOrders()">発注書PDF</button>
         <button class="btn primary" type="button" onclick="printPickingTickets()">現品票PDF</button>
       </div>
-      <div class="hint">確定済み受注と現在入力中の明細から、日付・輸入社が両方一致するものだけを出力します。</div>
+      <div class="hint">日付は必須です。輸入社が空欄またはALLなら、その日付の全輸入社を出力します。</div>
     </div>
   </section>
 
@@ -1593,30 +1593,32 @@ function reportFilter(){
 }
 function reportRows(showAlert=false){
   const filter=reportFilter();
-  if(!filter.date||!filter.importer){
-    if(showAlert)alert("帳票出力の日付と輸入社を両方指定してください");
+  if(!filter.date){
+    if(showAlert)alert("帳票出力の日付を指定してください");
     return [];
   }
+  const allImporters=!filter.importer||["all","全て","すべて"].includes(filter.importer);
   const rows=printableRows().filter(r=>{
     const date=(r.orderDate||r.shipDate||"")===filter.date;
     const code=normalizedImporter(r.importerCode);
     const name=normalizedImporter(r.importerName);
-    return date&&(code===filter.importer||name===filter.importer);
+    return date&&(allImporters||code===filter.importer||name===filter.importer);
   });
-  if(showAlert&&!rows.length)alert("指定した日付・輸入社に一致する明細がありません");
+  if(showAlert&&!rows.length)alert("指定した条件に一致する明細がありません");
   return rows;
 }
 function renderReportFilterCount(){
   const badge=document.getElementById("report-filter-count");
   if(!badge)return;
   const filter=reportFilter();
-  if(!filter.date||!filter.importer){
-    badge.textContent="日付・輸入社を指定";
+  if(!filter.date){
+    badge.textContent="日付を指定";
     badge.className="pill warn";
     return;
   }
   const rows=reportRows(false);
-  badge.textContent=`対象 ${rows.length}明細`;
+  const allImporters=!filter.importer||["all","全て","すべて"].includes(filter.importer);
+  badge.textContent=`対象 ${rows.length}明細${allImporters?" / 全輸入社":""}`;
   badge.className=rows.length?"pill blue":"pill warn";
 }
 function resetCurrentOrderForm(){
