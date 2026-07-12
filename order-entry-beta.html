@@ -64,6 +64,14 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 <main>
   <div class="layout workspace-panel active" data-workspace-panel="orders">
     <section class="panel">
+      <div class="panel-head">LINE文面貼り付けβ</div>
+      <div class="panel-body line-parser">
+        <textarea id="line-text" placeholder="LINE文面を貼り付け"></textarea>
+        <div class="actions"><button class="btn primary" onclick="openLineBulkReview()">一括確認へ</button><button class="btn" onclick="parseLineDraft()">現在の得意先で下書き</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
+        <div class="line-preview" id="line-preview">商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。</div>
+      </div>
+    </section>
+    <section class="panel">
       <div class="panel-head">基本情報</div>
       <div class="panel-body">
         <div class="form-grid">
@@ -88,14 +96,6 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <span id="save-state" class="sub">未保存</span>
         </div>
         <div class="hint">手入力はここで輸入社と得意先を1回だけ指定します。下の明細には商品だけを追加します。</div>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="panel-head">LINE文面貼り付けβ</div>
-      <div class="panel-body line-parser">
-        <textarea id="line-text" placeholder="LINE文面を貼り付け"></textarea>
-        <div class="actions"><button class="btn primary" onclick="openLineBulkReview()">一括確認へ</button><button class="btn" onclick="parseLineDraft()">現在の得意先で下書き</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
-        <div class="line-preview" id="line-preview">商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。</div>
       </div>
     </section>
   </div>
