@@ -1875,7 +1875,7 @@ function forceSyncOrderFields(i,fields){
   });
 }
 function applyProductByCode(i,code){
-  const hit=getMasters().products.find(p=>String(p.code).toLowerCase()===String(code||"").toLowerCase());
+  const hit=resolveProductMaster(code,{allowSingle:true});
   if(!hit)return false;
   const supplierCode=hit.supplierCode||"";
   Object.assign(orders[i],{
@@ -1897,6 +1897,28 @@ function applyProductToRow(i,product){
     supplierCode,
     supplierName:supplierNameFor(supplierCode,product.supplierName||orders[i].supplierName)
   });
+  confirmed=false;
+  syncOrderRow(i);
+  forceSyncOrderFields(i,["productCode","productName","supplierCode","supplierName"]);
+  saveLocal();
+  renderSummary();
+}
+function finishOrderProductName(i,value){
+  if(!orders[i])return;
+  orders[i].productName=String(value||"").trim();
+  if(!orders[i].productCode){
+    const master=resolveProductMaster(orders[i].productName,{allowSingle:true})||inferProduct(orders[i].productName);
+    if(master?.code){
+      const supplierCode=master.supplierCode||orders[i].supplierCode||"";
+      Object.assign(orders[i],{
+        productCode:master.code||"",
+        productName:orders[i].productName||master.name||"",
+        englishName:master.englishName||orders[i].englishName||"",
+        supplierCode,
+        supplierName:supplierNameFor(supplierCode,master.supplierName||orders[i].supplierName||"")
+      });
+    }
+  }
   confirmed=false;
   syncOrderRow(i);
   forceSyncOrderFields(i,["productCode","productName","supplierCode","supplierName"]);
@@ -1926,22 +1948,42 @@ function matchScore(values,query){
 function productSearchValues(p){
   return [p.code,p.name,p.englishName,p.supplierCode,p.supplierName,...(p.aliases||[])];
 }
+function productSearchVariants(value){
+  const base=normalizeMasterSearchText(value);
+  if(!base)return [];
+  return [...new Set([base,base.replace(/ホン/g,"")].filter(Boolean))];
+}
 function productMatchInfo(p,query){
-  const q=normalizeMasterSearchText(query);
-  if(!q)return {score:99,length:0};
-  const values=productSearchValues(p).map(normalizeMasterSearchText).filter(Boolean);
+  const queries=productSearchVariants(query);
+  if(!queries.length)return {score:99,length:0};
+  const values=[...new Set(productSearchValues(p).flatMap(productSearchVariants))];
   let best={score:99,length:0};
   values.forEach(v=>{
-    let score=99;
-    if(v===q)score=0;
-    else if(v.startsWith(q)||q.startsWith(v))score=1;
-    else if(v.includes(q)||q.includes(v))score=2;
-    if(score<99){
-      const length=Math.min(v.length,q.length);
-      if(score<best.score||(score===best.score&&length>best.length))best={score,length};
-    }
+    queries.forEach(q=>{
+      let score=99;
+      if(v===q)score=0;
+      else if(v.startsWith(q)||q.startsWith(v))score=1;
+      else if(v.includes(q)||q.includes(v))score=2;
+      if(score<99){
+        const length=Math.min(v.length,q.length);
+        if(score<best.score||(score===best.score&&length>best.length))best={score,length};
+      }
+    });
   });
   return best;
+}
+function resolveProductMaster(value,options={}){
+  const raw=String(value||"").trim();
+  if(!raw)return null;
+  const codeKey=raw.normalize("NFKC").trim().toLowerCase();
+  const products=uniqueMasterItems(getMasters().products);
+  const exactCode=products.find(p=>String(p.code||"").normalize("NFKC").trim().toLowerCase()===codeKey);
+  if(exactCode)return exactCode;
+  const exactName=products.find(p=>productMatchInfo(p,raw).score===0);
+  if(exactName)return exactName;
+  const matches=productInlineMatches(raw);
+  if(options.allowSingle&&matches.length===1)return matches[0];
+  return null;
 }
 function productMatchScore(p,query){
   return productMatchInfo(p,query).score;
@@ -2044,7 +2086,7 @@ function render(){
   body.innerHTML=orders.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td><div class="lookup-cell"><input class="code" autocomplete="off" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
-    <td><input class="name" lang="ja" inputmode="text" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)"></td>
+    <td><input class="name" lang="ja" inputmode="text" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"></td>
     <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
     <td><input class="code" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
     <td><input class="code" list="supplier-code-list" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
@@ -2998,13 +3040,12 @@ function findMasterImporter(code,name,filename){
   )||null;
 }
 function findMasterProduct(code,name){
-  const codeKey=String(code||"").trim().toLowerCase();
-  const nameKey=String(name||"").trim().toLowerCase();
-  return getMasters().products.find(p=>
-    (codeKey&&String(p.code||"").trim().toLowerCase()===codeKey)||
-    (nameKey&&String(p.name||"").trim().toLowerCase()===nameKey)||
-    (nameKey&&(p.aliases||[]).some(a=>String(a||"").trim().toLowerCase()===nameKey))
-  )||null;
+  const codeKey=String(code||"").normalize("NFKC").trim().toLowerCase();
+  const nameKey=String(name||"").trim();
+  const products=uniqueMasterItems(getMasters().products);
+  return products.find(p=>codeKey&&String(p.code||"").normalize("NFKC").trim().toLowerCase()===codeKey)
+    ||(nameKey?products.find(p=>productMatchInfo(p,nameKey).score===0):null)
+    ||null;
 }
 function orderItemFromCsvRow(row,headers,filename){
   const customerCode=orderCsvValue(row,headers,["customer_code","customercode","得意先コード","顧客コード","エンドユーザーコード"]);
@@ -3498,8 +3539,7 @@ function updateImportReviewProductCode(index,value,el){
   item.row=item.row||blankOrder();
   item.row.productCode=next;
   if(el&&el.value!==next)el.value=next;
-  const matches=productInlineMatches(raw);
-  const master=findMasterProduct(item.row.productCode,"")||(matches.length===1?matches[0]:null);
+  const master=resolveProductMaster(raw,{allowSingle:true})||findMasterProduct(item.row.productCode,"");
   if(master){
     item.row.productCode=master.code||item.row.productCode;
     item.row.productName=item.row.productName||master.name||"";
