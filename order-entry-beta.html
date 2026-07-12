@@ -2204,9 +2204,16 @@ function findExactLineImporter(text){
   if(!q)return null;
   return getMasters().importers.find(c=>[c.code,c.name,...(c.aliases||[])].some(w=>normalizeMasterSearchText(w)===q))||null;
 }
+function normalizeLineInputText(value){
+  return String(value||"").normalize("NFKC").replace(/[\u200B-\u200D\u2060\uFEFF]/g,"").trim();
+}
+function stripLineListMarker(value){
+  return normalizeLineInputText(value).replace(/^[■□◆◇●○▪▫▶▷▸▹・*･\-]+\s*/,"").trim();
+}
 function isLineDateOrHeading(text){
-  const t=String(text||"").normalize("NFKC").trim();
+  const t=normalizeLineInputText(text);
   if(!t)return true;
+  if(/注文\s*(?:リスト|一覧|表)/i.test(t))return true;
   return /^(\d{1,2}月\d{1,2}日|20\d{2}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2})(?:\s*[月火水木金土日]曜日?)?(?:\s*着)?$/i.test(t);
 }
 function normalizeLineUnit(unit){
@@ -2219,7 +2226,7 @@ function normalizeLineUnit(unit){
   return u;
 }
 function parseLineOrderPart(part){
-  const raw=String(part||"").normalize("NFKC").replace(/^[・*･\-\s]+/,"").trim();
+  const raw=stripLineListMarker(part);
   if(!raw)return null;
   const match=raw.match(/^(.+?)(?:\s+|　+)?(\d+(?:\.\d+)?)\s*(kg|㎏|本|個|枚|尾|束|袋|PC|pc|pkt|P|p|パック|CS|cs|C\/S|c\/s|ケース)?\s*(?:[（(](.*)[）)])?$/);
   if(!match)return {productText:raw,qty:"",unit:"",memo:""};
@@ -2329,7 +2336,7 @@ function handleProductLookupKey(e){
   clickActiveOption("#product-lookup-results",".lookup-row");
 }
 function lineCustomerFromHeading(value){
-  const name=String(value||"").normalize("NFKC").replace(/^[・*･\-\s]+/,"").replace(/[：:]$/,"").trim();
+  const name=stripLineListMarker(value).replace(/[：:]$/,"").trim();
   if(!name)return {};
   const master=findExactLineCustomer(name)||findMasterCustomer("",name);
   return master?{code:master.code||"",name:master.name||name,importerCode:master.importerCode||"",importerName:master.importerName||""}:{code:"",name};
@@ -2374,15 +2381,20 @@ function lineReviewItem(productText,parsed,currentCustomer,currentImporter,lineN
   };
 }
 function parseLineBulkItems(text){
-  const lines=String(text||"").replace(/\r/g,"").split("\n").map(line=>line.trim()).filter(Boolean);
+  const lines=String(text||"").replace(/\r/g,"").split("\n").map(normalizeLineInputText).filter(Boolean);
   const headerImporter=importer();
   let currentImporter=lineImporterSnapshot((headerImporter.code||headerImporter.name)?headerImporter:inferImporter(text));
   let currentCustomer={};
   let productPrefix="";
   const items=[];
   lines.forEach((raw,index)=>{
-    const line=raw.replace(/^[・*･\-\s]+/,"").trim();
+    const line=stripLineListMarker(raw);
     if(!line||isLineDateOrHeading(line))return;
+    if(/^[※注]/.test(line)){
+      const previous=items[items.length-1];
+      if(previous?.row)previous.row.memo=[previous.row.memo,line].filter(Boolean).join(" / ");
+      return;
+    }
     const importerHit=findExactLineImporter(line);
     if(importerHit){currentImporter=lineImporterSnapshot(importerHit);productPrefix="";return}
     const customerHit=findExactLineCustomer(line);
