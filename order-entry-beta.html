@@ -78,6 +78,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <datalist id="importer-name-list"></datalist>
         <datalist id="product-code-list"></datalist>
         <datalist id="supplier-code-list"></datalist>
+        <datalist id="master-code-list"></datalist>
         <div class="status-line">
           <span id="confirm-state" class="pill warn">未確定</span>
           <span id="db-state" class="pill warn">DB未接続</span>
@@ -238,7 +239,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" onclick="setMasterType('importers')">輸入社</button>
       </div>
       <div class="form-grid">
-        <label>コード<input id="master-code" placeholder="コード"></label>
+        <label>コード<input id="master-code" list="master-code-list" placeholder="コード" onchange="fillMasterFormByCode(this.value)"></label>
         <label>名称<input id="master-name" placeholder="名称"></label>
         <label class="wide">別名・検索語<input id="master-aliases" placeholder="カンマ区切り。LINE文面の推測にも使用"></label>
         <label id="product-en-wrap" class="wide">英名<input id="master-english" placeholder="商品マスタのみ"></label>
@@ -1671,6 +1672,12 @@ function refreshSupplierLists(){
   const masters=getMasters();
   document.getElementById("supplier-code-list").innerHTML=masters.suppliers.map(s=>`<option value="${esc(s.code)}">${esc(s.name)}</option>`).join("");
 }
+function refreshMasterCodeList(){
+  const list=document.getElementById("master-code-list");
+  if(!list)return;
+  const masters=getMasters()[masterType]||[];
+  list.innerHTML=masters.map(item=>`<option value="${esc(item.code)}">${esc(item.name)}</option>`).join("");
+}
 function lookupCustomerByInput(value){
   const s=String(value||"").toLowerCase();
   return getMasters().customers.find(c=>String(c.code).toLowerCase()===s||String(c.name).toLowerCase()===s||((c.aliases||[]).some(a=>String(a).toLowerCase()===s)));
@@ -2427,6 +2434,12 @@ function editMasterItem(index){
   document.getElementById("master-code").focus();
   document.getElementById("save-state").textContent=`${item.code||""} を編集中`;
 }
+function fillMasterFormByCode(code){
+  const key=masterCodeKey(code);
+  if(!key)return;
+  const index=(getMasters()[masterType]||[]).findIndex(item=>masterCodeKey(item.code)===key);
+  if(index>=0)editMasterItem(index);
+}
 async function addMasterItem(){
   const code=val("master-code").trim();
   const name=val("master-name").trim();
@@ -2556,6 +2569,7 @@ async function deactivateMastersMissingFromCsv(beforeItems,importedItems,type=ma
 function renderMasters(){
   const list=document.getElementById("master-list");
   if(!list)return;
+  refreshMasterCodeList();
   const isProduct=masterType==="products";
   const isCustomer=masterType==="customers";
   ["product-en-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
@@ -2630,6 +2644,15 @@ function rowValue(row,headers,names){
   }
   return "";
 }
+function masterTypeFromCsvCell(value){
+  const key=normalizedHeader(value);
+  if(!key)return "";
+  if(["products","product","商品","商品マスタ"].includes(key))return "products";
+  if(["customers","customer","得意先","得意先マスタ","顧客","顧客マスタ"].includes(key))return "customers";
+  if(["suppliers","supplier","仕入先","仕入先マスタ"].includes(key))return "suppliers";
+  if(["importers","importer","輸入社","輸入社マスタ","輸入先","輸入会社"].includes(key))return "importers";
+  return "";
+}
 function aliasesFrom(value){
   return String(value||"").split(/[|,、]/).map(s=>s.trim()).filter(Boolean);
 }
@@ -2693,12 +2716,22 @@ function decodeCsvBuffer(buffer){
   return candidates[0].text;
 }
 function masterItemFromCsvRow(row,headers,type){
-  const code=rowValue(row,headers,["code","コード","商品コード","得意先コード","仕入先コード","輸入社コード","customer_code","supplier_code","importer_code","product_code"])||String(row[0]||"").trim();
-  const name=rowValue(row,headers,["name","名称","名前","商品名","得意先名","仕入先名","輸入社名","customer_name","supplier_name","importer_name","product_name"])||String(row[1]||"").trim();
+  const typeCell=rowValue(row,headers,["type","種別","マスタ種別"]);
+  const csvType=masterTypeFromCsvCell(typeCell);
+  if(csvType&&csvType!==type)return null;
+  const typeColumnLooksLikeCode=!!typeCell&&!csvType&&headers.includes("type");
+  const code=typeColumnLooksLikeCode
+    ?typeCell
+    :rowValue(row,headers,["code","コード","商品コード","得意先コード","仕入先コード","輸入社コード","customer_code","supplier_code","importer_code","product_code"])||String(row[0]||"").trim();
+  const name=typeColumnLooksLikeCode
+    ?rowValue(row,headers,["code","コード","商品コード","得意先コード","仕入先コード","輸入社コード","customer_code","supplier_code","importer_code","product_code"])
+    :rowValue(row,headers,["name","名称","名前","商品名","得意先名","仕入先名","輸入社名","customer_name","supplier_name","importer_name","product_name"])||String(row[1]||"").trim();
   if(!code||!name)return null;
   const item={code,name,aliases:aliasesFrom(rowValue(row,headers,["aliases","alias","別名","検索語","読み","よみ","カナ","kana"]))};
   if(type==="products"){
-    item.englishName=rowValue(row,headers,["english_name","english","英名","英語名","商品英名"]);
+    item.englishName=typeColumnLooksLikeCode
+      ?rowValue(row,headers,["name","名称","名前","商品名","得意先名","仕入先名","輸入社名","customer_name","supplier_name","importer_name","product_name"])||rowValue(row,headers,["english_name","english","英名","英語名","商品英名"])
+      :rowValue(row,headers,["english_name","english","英名","英語名","商品英名"]);
     item.supplierCode=rowValue(row,headers,["supplier_code","仕入先コード","既定仕入先コード"]);
     item.supplierName=rowValue(row,headers,["supplier_name","仕入先名","既定仕入先名"]);
     item.unitPrice=rowValue(row,headers,["unit_price","unitprice","単価","価格","売価","通常単価","商品マスタ価格"]);
@@ -3257,9 +3290,14 @@ function importMastersCsv(input){
     const beforeItems=(getMasters()[importType]||[]).map(item=>({...item}));
     let count=0,updated=0,skipped=0;
     const importedItems=[];
-    rows.slice(1).forEach(row=>{
+    const skippedSamples=[];
+    rows.slice(1).forEach((row,rowIndex)=>{
       const item=masterItemFromCsvRow(row,headers,importType);
-      if(!item){skipped++;return}
+      if(!item){
+        skipped++;
+        if(skippedSamples.length<5)skippedSamples.push(`${rowIndex+2}行目: ${row.slice(0,4).map(v=>String(v||"").trim()).filter(Boolean).join(" / ")}`);
+        return;
+      }
       const result=upsertCustomMaster(importType,item);
       if(result==="updated")updated++;
       else count++;
@@ -3292,7 +3330,8 @@ function importMastersCsv(input){
     refreshProductLists();
     refreshSupplierLists();
     renderMasters();
-    alert(`マスタを取り込みました。追加 ${count}件、更新 ${updated}件、スキップ ${skipped}件${deleteMessage}${dbWarning?`\n\nDB保存のみ失敗: ${dbWarning}`:""}`);
+    const skippedMessage=skippedSamples.length?`\n\nスキップ例:\n${skippedSamples.join("\n")}`:"";
+    alert(`マスタを取り込みました。追加 ${count}件、更新 ${updated}件、スキップ ${skipped}件${deleteMessage}${skippedMessage}${dbWarning?`\n\nDB保存のみ失敗: ${dbWarning}`:""}`);
   };
   reader.readAsArrayBuffer(file);
 }
