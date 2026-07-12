@@ -2686,8 +2686,34 @@ function printPickingTickets(){
   }
   openPrintDoc("オーダー現品票",ticketCss()+pages.join(""));
 }
+function ticketImporterColorKey(value){
+  const known=["DIM","FBI","BKK","KL","JKT","EN"];
+  const values=typeof value==="object"&&value
+    ?[value.importerCode,value.importerName,value.importer_code,value.importer_name]
+    :[value];
+  const keyFromRaw=raw=>{
+    const text=String(raw||"").normalize("NFKC").trim().toUpperCase();
+    if(!text)return "";
+    const compact=normalizeImporterCode(text);
+    if(compact==="DIMVEG"||compact==="DIMFZ")return "DIM";
+    if(compact==="FBIVEG"||compact==="FBIFZ")return "FBI";
+    if(known.includes(compact))return compact;
+    const tokens=text.split(/[^A-Z0-9]+/).filter(Boolean);
+    return known.find(k=>tokens.includes(k))||"";
+  };
+  for(const raw of values){
+    const direct=keyFromRaw(raw);
+    if(direct)return direct;
+  }
+  const lowerValues=values.map(v=>String(v||"").trim().toLowerCase()).filter(Boolean);
+  const master=getMasters().importers.find(item=>{
+    const words=[item.code,item.name,...(item.aliases||[])].map(v=>String(v||"").trim().toLowerCase()).filter(Boolean);
+    return words.some(word=>lowerValues.includes(word));
+  });
+  return keyFromRaw(master?.code)||"OTHER";
+}
 function ticketColorForImporter(value){
-  const code=String(value||"").toUpperCase();
+  const code=ticketImporterColorKey(value);
   const presets={
     DIM:["#111111","#111111","#ffffff"],
     FBI:["#0057d9","#0057d9","#ffffff"],
@@ -2696,14 +2722,12 @@ function ticketColorForImporter(value){
     JKT:["#d71920","#d71920","#ffffff"],
     EN:["#f97316","#f97316","#111111"]
   };
-  const codeTokens=code.split(/[^A-Z0-9]+/).filter(Boolean);
-  const key=Object.keys(presets).find(k=>codeTokens.includes(k));
-  if(key)return presets[key];
+  if(presets[code])return presets[code];
   return ["#7c3aed","#7c3aed","#ffffff"];
 }
 function ticketHtml(r){
   const importer=r.importerCode||r.importerName||"";
-  const [main,bg,contrast]=ticketColorForImporter(importer);
+  const [main,bg,contrast]=ticketColorForImporter(r);
   return `<div class="ticket" style="--ticket-main:${esc(main)};--ticket-bg:${esc(bg)};--ticket-contrast:${esc(contrast)}">
     <div class="ticket-importer"><span>輸入社:</span><strong>${esc(importer)}</strong></div>
     <div><span>得意先:</span><strong>${esc(r.customerName||r.customerCode)}</strong></div>
