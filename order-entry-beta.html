@@ -3233,7 +3233,7 @@ function renderImportReview(){
   body.innerHTML=visible.map(({item,index})=>{
     const status=importReviewStatus(item);
     return `
-    <tr class="review-${status.key}">
+    <tr class="review-${status.key}" data-review-index="${index}">
       <td>${index+1}</td>
       <td><span class="import-review-status ${status.key}" data-review-status>${status.label}</span></td>
       <td><input data-review-field="importer" class="import-review-importer" list="importer-code-list" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
@@ -3469,6 +3469,53 @@ function updateImportReviewRowField(index,field,value,el){
   item.row=item.row||blankOrder();
   item.row[field]=value;
   refreshImportReviewRowState(index,el);
+}
+function importReviewFieldOrder(){
+  return ["importer","customerCode","customerName","productCode","productName","qty","unit","supplierCode","supplierName","memo"];
+}
+function commitImportReviewInput(index,field,input){
+  const value=input?.value||"";
+  if(field==="importer")finishImportReviewImporter(index,value);
+  else if(field==="customerCode")finishImportReviewCustomerCode(index,value,input);
+  else if(field==="customerName")finishImportReviewCustomer(index,value);
+  else if(field==="productCode")updateImportReviewProductCode(index,value,input);
+  else if(field==="productName")finishImportReviewProductName(index,value,input);
+  else if(field==="supplierCode")updateImportReviewSupplierCode(index,value,input);
+  else updateImportReviewRowField(index,field,value,input);
+}
+function focusNextImportReviewField(index,field){
+  const fields=importReviewFieldOrder();
+  const fieldIndex=fields.indexOf(field);
+  if(fieldIndex<0)return;
+  const visibleRows=[...document.querySelectorAll("#import-review-body tr[data-review-index]")];
+  const currentRowPosition=visibleRows.findIndex(row=>Number(row.dataset.reviewIndex)===Number(index));
+  let nextIndex=index;
+  let nextField=fields[fieldIndex+1];
+  if(!nextField){
+    const nextRow=visibleRows[currentRowPosition+1];
+    if(!nextRow)return;
+    nextIndex=Number(nextRow.dataset.reviewIndex);
+    nextField=fields[0];
+  }
+  requestAnimationFrame(()=>{
+    const next=document.querySelector(`#import-review-body tr[data-review-index="${nextIndex}"] [data-review-field="${nextField}"]`);
+    if(!next)return;
+    next.focus();
+    if(typeof next.select==="function")next.select();
+  });
+}
+function handleImportReviewEnter(e){
+  if(e.key!=="Enter"||e.isComposing||e.keyCode===229)return;
+  const input=e.target?.closest?.("#import-review-body input[data-review-field]");
+  if(!input)return;
+  e.preventDefault();
+  e.stopPropagation();
+  const row=input.closest("tr[data-review-index]");
+  const index=Number(row?.dataset.reviewIndex);
+  const field=input.dataset.reviewField;
+  if(!Number.isInteger(index)||!field)return;
+  commitImportReviewInput(index,field,input);
+  focusNextImportReviewField(index,field);
 }
 function cancelImportReview(){
   if(importReviewItems.length&&!confirm("取り込んだ未登録データを破棄しますか？"))return;
@@ -3773,6 +3820,7 @@ function applySearchResult(type,index){
     renderReportFilterCount();
   });
 });
+document.addEventListener("keyup",handleImportReviewEnter);
 ["pending-filter-status","pending-filter-importer","pending-filter-customer"].forEach(id=>{
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
