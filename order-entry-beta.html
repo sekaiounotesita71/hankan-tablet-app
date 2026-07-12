@@ -29,6 +29,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .report-tools{display:grid;grid-template-columns:180px 220px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.report-count{align-self:end;display:flex;align-items:center;min-height:40px}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-parser #line-text{min-height:220px}.line-preview{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
 .workspace-panel.import-review-hidden{display:none!important}.import-review-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.import-review-search{height:38px;min-width:240px;flex:1;border:1px solid var(--line2);border-radius:7px;padding:0 9px;font-weight:700}.import-review-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:900}.import-review-check input{width:auto;min-height:auto}.import-review-table-wrap{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}.import-review-table{width:100%;min-width:1760px;border-collapse:separate;border-spacing:0}.import-review-table th,.import-review-table td{padding:6px 7px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.import-review-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.import-review-table tbody tr.review-error td{background:#fff0ef}.import-review-table tbody tr.review-warning td{background:#fff8e8}.import-review-table tbody tr.review-ready td{background:#f2faf5}.import-review-table input{height:34px;min-height:34px;border-radius:6px}.import-review-importer{width:110px;font-family:Consolas,monospace}.import-review-code{width:105px;font-family:Consolas,monospace;text-transform:uppercase}.import-review-customer-code{width:120px;font-family:Consolas,monospace}.import-review-customer{width:210px}.import-review-product{width:240px}.import-review-qty{width:82px;text-align:right}.import-review-unit{width:76px}.import-review-supplier-code{width:110px;font-family:Consolas,monospace}.import-review-supplier{width:170px}.import-review-memo{width:220px}.import-review-status{font-weight:900}.import-review-status.error{color:#b42318}.import-review-status.warning{color:#a16207}.import-review-status.ready{color:#0f7a3b}.import-review-meta{color:var(--muted);font-weight:800;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.import-review-table tbody tr.review-ready td{background:#eef6ff}.import-review-status.ready{color:var(--blue)}.small.primary{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}.small:disabled{opacity:.45;cursor:not-allowed;background:#f3f5f7;color:var(--muted);border-color:var(--line)}
 .master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .pending-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pending-grid .wide{grid-column:span 2}.pending-grid .full{grid-column:1/-1}.pending-list{display:grid;gap:8px}.pending-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.pending-card.hold{background:#fffaf0}.pending-card.applied{opacity:.68}.pending-card.cancelled{opacity:.52}.pending-main{display:grid;gap:4px}.pending-title{font-weight:900}.pending-meta{color:var(--muted);font-size:12px;font-weight:800}.pending-amount{font-family:Consolas,monospace;font-weight:900}.pending-amount.negative{color:var(--danger)}.pending-actions{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
 .sales-board-tools{display:grid;grid-template-columns:150px 150px 160px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.sales-board-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.sales-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.sales-card-label{color:var(--muted);font-size:12px;font-weight:900}.sales-card-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.sales-board-ranks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.sales-rank{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}.sales-rank-head{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#fbfcfd;color:var(--muted);font-size:12px;font-weight:900}.sales-rank-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-rank-row:last-child{border-bottom:0}.sales-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}.sales-rank-value{font-family:Consolas,monospace;color:var(--muted);font-weight:900}.sales-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.sales-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.sales-table th,.sales-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.sales-table th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-weight:900}.sales-empty{padding:18px;color:var(--muted);font-weight:800;text-align:center}
@@ -110,10 +111,11 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <span class="pill warn" id="import-review-count">0件</span>
         <button class="btn" type="button" onclick="addImportReviewRow()">明細追加</button>
         <button class="btn primary" id="import-review-direct-btn" type="button" onclick="confirmImportReviewDirect()">全件受注確定</button>
+        <button class="btn blue" id="import-review-ready-btn" type="button" onclick="confirmImportReviewReadyGroups()">確定可を一括確定</button>
         <button class="btn" id="import-review-draft-btn" type="button" onclick="confirmImportedOrderReview()">取込下書きへ登録</button>
         <button class="btn" type="button" onclick="cancelImportReview()">取込を破棄</button>
       </div>
-      <div class="hint">赤は必須項目不足、黄は数量または仕入先の確認が必要、緑は確定可能です。商品コードを選ぶと商品名・仕入先をマスタから反映します。</div>
+      <div class="hint">赤は必須項目不足、黄は数量または仕入先の確認が必要、青は確定可能です。商品コードを選ぶと商品名・仕入先をマスタから反映します。</div>
       <div class="import-review-table-wrap">
         <table class="import-review-table">
           <thead><tr><th>No.</th><th>状態</th><th>輸入社</th><th>得意先コード</th><th>得意先名</th><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>仕入先コード</th><th>仕入先名</th><th>備考</th><th>取込元</th><th></th></tr></thead>
@@ -3310,14 +3312,62 @@ function showImportReview(items,sourceNames,sourceType){
   if(title)title.textContent=`${sourceType||"取込"}内容の一括確認`;
   const isLine=String(sourceType||"").toUpperCase()==="LINE";
   const directBtn=document.getElementById("import-review-direct-btn");
+  const readyBtn=document.getElementById("import-review-ready-btn");
   const draftBtn=document.getElementById("import-review-draft-btn");
-  if(directBtn)directBtn.style.display=isLine?"none":"inline-flex";
+  if(directBtn)directBtn.style.display="inline-flex";
+  if(readyBtn)readyBtn.style.display="inline-flex";
   if(draftBtn){
-    draftBtn.classList.toggle("primary",isLine);
-    draftBtn.textContent=isLine?"得意先ごとに下書き登録":"取込下書きへ登録";
+    draftBtn.classList.remove("primary");
+    draftBtn.textContent=isLine?"確認を保留":"取込下書きへ登録";
   }
   renderImportReview();
   requestAnimationFrame(()=>panel?.scrollIntoView({behavior:"smooth",block:"start"}));
+}
+function importReviewGroups(indexes){
+  const allowed=Array.isArray(indexes)?new Set(indexes.map(Number)):null;
+  const groups=new Map();
+  importReviewItems.forEach((item,index)=>{
+    if(allowed&&!allowed.has(index))return;
+    const normalized=normalizeImportReviewItem(item);
+    const key=batchKeyFromOrderItem(normalized);
+    if(!groups.has(key)){
+      groups.set(key,{
+        key,
+        indexes:[],
+        items:[],
+        orderDate:normalized.orderDate||today(),
+        importer:{...(normalized.importer||{})},
+        customer:{...(normalized.customer||{})}
+      });
+    }
+    const group=groups.get(key);
+    group.indexes.push(index);
+    group.items.push(normalized);
+  });
+  return [...groups.values()];
+}
+function importReviewGroupForIndex(index){
+  const target=Number(index);
+  return importReviewGroups().find(group=>group.indexes.includes(target))||null;
+}
+function importReviewGroupCheck(group){
+  const items=group?.items||[];
+  const errors=items.filter(importReviewIsSuspicious).length;
+  const warnings=items.filter(item=>!importReviewIsSuspicious(item)&&importReviewNeedsAttention(item)).length;
+  return {ready:!!items.length&&!errors&&!warnings,errors,warnings,lines:items.length};
+}
+function importReviewGroupActionText(check){
+  if(check.ready)return "この得意先を確定";
+  const parts=[];
+  if(check.errors)parts.push(`要修正 ${check.errors}`);
+  if(check.warnings)parts.push(`要確認 ${check.warnings}`);
+  return parts.join(" / ")||"要確認";
+}
+function importReviewGroupLabel(group){
+  if(!group)return "この得意先";
+  const importer=group.importer?.code||group.importer?.name||"輸入社未設定";
+  const customer=[group.customer?.code,group.customer?.name].filter(Boolean).join(" ");
+  return `${importer} / ${customer||"得意先未設定"}`;
 }
 function updateImportReviewCount(){
   const count=document.getElementById("import-review-count");
@@ -3325,15 +3375,22 @@ function updateImportReviewCount(){
   const visible=importReviewItems.filter(importReviewMatchesSearch).length;
   const errors=importReviewItems.filter(importReviewIsSuspicious).length;
   const warnings=importReviewItems.filter(item=>!importReviewIsSuspicious(item)&&importReviewNeedsAttention(item)).length;
-  count.textContent=`表示 ${visible} / 全${importReviewItems.length}件${errors?` / 要修正 ${errors}件`:""}${warnings?` / 要確認 ${warnings}件`:""}`;
+  const groups=importReviewGroups();
+  const readyGroups=groups.filter(group=>importReviewGroupCheck(group).ready).length;
+  count.textContent=`表示 ${visible} / 全${importReviewItems.length}件 / 得意先 ${groups.length}件 / 確定可 ${readyGroups}件${errors?` / 要修正 ${errors}件`:""}${warnings?` / 要確認 ${warnings}件`:""}`;
 }
 function renderImportReview(){
   const body=document.getElementById("import-review-body");
   if(!body)return;
   const visible=importReviewItems.map((item,index)=>({item,index})).filter(({item})=>importReviewMatchesSearch(item));
+  const groupsByIndex=new Map();
+  importReviewGroups().forEach(group=>group.indexes.forEach(index=>groupsByIndex.set(index,group)));
   updateImportReviewCount();
   body.innerHTML=visible.map(({item,index})=>{
     const status=importReviewStatus(item);
+    const group=groupsByIndex.get(index);
+    const groupCheck=importReviewGroupCheck(group);
+    const groupActionText=importReviewGroupActionText(groupCheck);
     return `
     <tr class="review-${status.key}" data-review-index="${index}">
       <td>${index+1}</td>
@@ -3349,7 +3406,7 @@ function renderImportReview(){
       <td><input data-review-field="supplierName" class="import-review-supplier" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierName||"")}" oninput="updateImportReviewRowField(${index},'supplierName',this.value,this)"></td>
       <td><input data-review-field="memo" class="import-review-memo" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.memo||"")}" oninput="updateImportReviewRowField(${index},'memo',this.value,this)"></td>
       <td class="import-review-meta" title="${esc(item.sourceFilename||"")}">${esc(item.sourceFilename||"")}</td>
-      <td><button class="small danger" type="button" onclick="removeImportReviewRow(${index})">削除</button></td>
+      <td><div class="row-actions"><button class="small ${groupCheck.ready?"primary":""}" data-review-group-action type="button" onclick="confirmImportReviewGroup(${index})" ${groupCheck.ready?"":"disabled"} title="${esc(importReviewGroupLabel(group))}">${esc(groupActionText)}</button><button class="small danger" type="button" onclick="removeImportReviewRow(${index})">削除</button></div></td>
     </tr>
   `}).join("")||`<tr><td colspan="14" class="import-review-meta">条件に一致する取込行はありません。</td></tr>`;
 }
@@ -3387,6 +3444,21 @@ function refreshImportReviewRowState(index,el){
     if(label){label.className=`import-review-status ${status.key}`;label.textContent=status.label}
   }
   updateImportReviewCount();
+  refreshImportReviewGroupActions(index);
+}
+function refreshImportReviewGroupActions(index){
+  const group=importReviewGroupForIndex(index);
+  if(!group)return;
+  const check=importReviewGroupCheck(group);
+  const text=importReviewGroupActionText(check);
+  group.indexes.forEach(rowIndex=>{
+    const button=document.querySelector(`#import-review-body tr[data-review-index="${rowIndex}"] [data-review-group-action]`);
+    if(!button)return;
+    button.disabled=!check.ready;
+    button.textContent=text;
+    button.classList.toggle("primary",check.ready);
+    button.title=importReviewGroupLabel(group);
+  });
 }
 function syncImportReviewRowFields(index,el){
   const item=importReviewItems[index];
@@ -3682,37 +3754,127 @@ function importReviewOrderItems(){
     };
   });
 }
-async function confirmImportReviewDirect(){
-  if(appBusy)return;
-  if(String(importReviewSourceType||"").toUpperCase()==="LINE"){
-    await confirmImportedOrderReview();
-    return;
+function groupedImportedOrderItems(items){
+  const groups=new Map();
+  items.forEach(item=>{
+    const key=batchKeyFromOrderItem(item);
+    if(!groups.has(key))groups.set(key,{orderDate:item.orderDate,importer:item.importer,customer:item.customer,rows:[]});
+    groups.get(key).rows.push(item.row);
+  });
+  return [...groups.values()];
+}
+function importedBatchesFromGroups(grouped,sourceNames,sourceType){
+  return grouped.map(group=>({
+    id:`IMP${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    confirmedAt:new Date().toISOString(),
+    orderDate:group.orderDate||today(),
+    shipDate:group.orderDate||today(),
+    note:`${sourceType}取込: ${sourceNames.join(", ")}`,
+    importer:group.importer,
+    customer:group.customer,
+    rows:group.rows
+  }));
+}
+async function persistImportedConfirmedBatches(importedBatches){
+  if(dbReady&&supabaseClient){
+    for(const batch of importedBatches){
+      const dbId=await saveConfirmedBatchToDb(batch);
+      if(dbId)batch.id=dbId;
+    }
   }
-  if(!importReviewItems.length){alert("確定する取込データがありません。");return}
-  const errors=importReviewItems.filter(importReviewIsSuspicious);
-  const warnings=importReviewItems.filter(item=>!importReviewIsSuspicious(item)&&importReviewNeedsAttention(item));
-  if(errors.length||warnings.length){
-    renderImportReview();
-    alert(`赤または黄色の行を確認してください。\n要修正: ${errors.length}件\n要確認: ${warnings.length}件`);
-    return;
-  }
-  const items=importReviewOrderItems();
-  const names=[...importReviewSourceNames];
-  const type=importReviewSourceType||"取込";
-  const groups=new Set(items.map(batchKeyFromOrderItem)).size;
-  if(!confirm(`${type}の受注を全件確定します。\n得意先単位: ${groups}件\n明細: ${items.length}件\nよろしいですか？`))return;
+  confirmedBatches.unshift(...importedBatches);
+  resetCurrentOrderForm();
+  saveConfirmedBatches();
+  saveLocal();
+  clearConfirmedFilters();
+  render();
+}
+function removeImportReviewRowsByIndexes(indexes){
+  [...new Set(indexes.map(Number))].filter(Number.isInteger).sort((a,b)=>b-a).forEach(index=>{
+    if(!importReviewItems[index])return;
+    importReviewItems.splice(index,1);
+    importReviewOriginalCustomers.splice(index,1);
+    importReviewOriginalImporters.splice(index,1);
+  });
+}
+async function confirmImportReviewGroupList(groups,successLabel){
+  if(appBusy)return false;
+  const indexes=[...new Set(groups.flatMap(group=>group.indexes))].sort((a,b)=>a-b);
+  const items=indexes.map(index=>{
+    const normalized=normalizeImportReviewItem(importReviewItems[index]);
+    return {
+      orderDate:normalized.orderDate||today(),
+      importer:{...(normalized.importer||{})},
+      customer:{...(normalized.customer||{})},
+      row:{...blankOrder(),...(normalized.row||{})}
+    };
+  });
+  const sourceType=importReviewSourceType||"取込";
+  const sourceNames=[...importReviewSourceNames];
+  const grouped=groupedImportedOrderItems(items);
+  const batches=importedBatchesFromGroups(grouped,sourceNames,sourceType);
   setAppBusy(true);
   try{
-    const success=await applyImportedOrderItems(items,names,type,{skipReview:true,forceConfirmed:true});
-    if(!success)return;
+    await persistImportedConfirmedBatches(batches);
     const learned=learnLineDictionaryFromOrders(items.map(item=>item.row));
-    clearImportReviewState();
-    if(learned)document.getElementById("save-state").textContent=`一括確定済み / 辞書更新 ${learned}件`;
+    removeImportReviewRowsByIndexes(indexes);
+    if(importReviewItems.length)renderImportReview();
+    else clearImportReviewState();
+    const message=`${successLabel}\n得意先単位: ${grouped.length}件\n明細: ${items.length}件${learned?`\n辞書更新: ${learned}件`:""}`;
+    const saveState=document.getElementById("save-state");
+    if(saveState)saveState.textContent=successLabel.replace(/\n/g," ");
+    alert(message);
+    return true;
   }catch(error){
     alert(dbErrorMessage(error));
+    return false;
   }finally{
     setAppBusy(false);
   }
+}
+async function confirmImportReviewGroup(index){
+  if(appBusy)return;
+  const group=importReviewGroupForIndex(index);
+  const check=importReviewGroupCheck(group);
+  if(!group){alert("確定する得意先が見つかりません。");return}
+  if(!check.ready){
+    renderImportReview();
+    alert(`この得意先はまだ確定できません。\n要修正: ${check.errors}件\n要確認: ${check.warnings}件`);
+    return;
+  }
+  const label=importReviewGroupLabel(group);
+  if(!confirm(`${label} を受注確定します。\n明細: ${check.lines}件\nよろしいですか？`))return;
+  await confirmImportReviewGroupList([group],`${label} を受注確定しました。`);
+}
+async function confirmImportReviewReadyGroups(){
+  if(appBusy)return;
+  const groups=importReviewGroups();
+  const readyGroups=groups.filter(group=>importReviewGroupCheck(group).ready);
+  if(!readyGroups.length){
+    renderImportReview();
+    alert("確定可能な得意先がありません。青い行になるまで確認してください。");
+    return;
+  }
+  const lineCount=readyGroups.reduce((sum,group)=>sum+group.items.length,0);
+  if(!confirm(`確定可能な得意先だけ受注確定します。\n得意先単位: ${readyGroups.length}件\n明細: ${lineCount}件\n未確認の得意先は確認画面に残します。\nよろしいですか？`))return;
+  await confirmImportReviewGroupList(readyGroups,"確定可能な受注を一括確定しました。");
+}
+async function confirmImportReviewDirect(){
+  if(appBusy)return;
+  if(!importReviewItems.length){alert("確定する取込データがありません。");return}
+  const groups=importReviewGroups();
+  const blocked=groups.filter(group=>!importReviewGroupCheck(group).ready);
+  if(blocked.length){
+    const errors=importReviewItems.filter(importReviewIsSuspicious).length;
+    const warnings=importReviewItems.filter(item=>!importReviewIsSuspicious(item)&&importReviewNeedsAttention(item)).length;
+    renderImportReview();
+    alert(`赤または黄色の行を確認してください。\n要修正: ${errors}件\n要確認: ${warnings}件`);
+    return;
+  }
+  const type=importReviewSourceType||"取込";
+  const lineCount=groups.reduce((sum,group)=>sum+group.items.length,0);
+  if(!confirm(`${type}の受注を全件確定します。\n得意先単位: ${groups.length}件\n明細: ${lineCount}件\nよろしいですか？`))return;
+  await confirmImportReviewGroupList(groups,`${type}の受注を全件確定しました。`);
 }
 async function confirmImportedOrderReview(){
   if(!importReviewItems.length){alert("登録する取込データがありません。");return}
