@@ -35,6 +35,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
 @media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks{grid-template-columns:1fr}.sales-table-wrap{max-height:420px}}
 </style>
 </head>
@@ -297,6 +298,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </div>
 </div>
+<div id="app-busy-overlay" class="app-busy-overlay" aria-hidden="true" role="status" aria-live="assertive" tabindex="-1">
+  <div class="app-busy-box"><span class="app-busy-spinner" aria-hidden="true"></span><span id="app-busy-message">受注を確定しています。画面を閉じないでください。</span></div>
+</div>
 <script>
 const STORAGE_KEY="order-entry-beta-v2";
 const MASTER_KEY="order-entry-beta-masters-v1";
@@ -327,6 +331,7 @@ let currentUser=null;
 let currentUserRole="user";
 let dbReady=false;
 let dbLoadInFlight=false;
+let appBusy=false;
 
 const baseMasters={
   products:[],
@@ -345,6 +350,18 @@ function setDbStatus(text,type="warn"){
   if(!el)return;
   el.textContent=text;
   el.className=`pill ${type==="ok"?"blue":"warn"}`;
+}
+function setAppBusy(active,message="受注を確定しています。画面を閉じないでください。"){
+  appBusy=!!active;
+  const overlay=document.getElementById("app-busy-overlay");
+  const label=document.getElementById("app-busy-message");
+  if(label)label.textContent=message;
+  if(overlay){
+    overlay.classList.toggle("open",appBusy);
+    overlay.setAttribute("aria-hidden",appBusy?"false":"true");
+    if(appBusy)overlay.focus();
+  }
+  document.body.classList.toggle("app-busy-active",appBusy);
 }
 function initSupabase(){
   if(supabaseClient)return supabaseClient;
@@ -2499,7 +2516,7 @@ async function confirmCustomerOrder(options={}){
 function groupedBySupplier(rows){
   const map=new Map();
   rows.forEach(r=>{
-    const key=(r.importerCode||"NO_IMPORTER")+"|"+(r.supplierCode||"NO_CODE")+" "+(r.supplierName||"仕入先未設定");
+    const key=(r.supplierCode||"NO_CODE")+" "+(r.supplierName||"仕入先未設定");
     if(!map.has(key))map.set(key,[]);
     map.get(key).push(r);
   });
@@ -2514,11 +2531,14 @@ function printPurchaseOrders(){
 }
 function purchaseOrderPage(supplier,rows,no){
   const first=rows[0]||{};
-  const supplierName=String(supplier).split("|").slice(1).join("|")||supplier;
-  const importerLabel=first.importerName||first.importerCode||"";
+  const supplierName=String(supplier||"");
+  const importers=[...new Set(rows.map(r=>r.importerName||r.importerCode||"").filter(Boolean))];
+  const importerCodes=[...new Set(rows.map(r=>r.importerCode||r.importerName||"").filter(Boolean))];
+  const importerLabel=importers.join(" / ");
+  const orderCode=importerCodes.length===1?importerCodes[0]:"ALL";
   return `<section class="po-page">
     <div class="po-title">発注書</div>
-    <div class="po-meta"><div>発注No. ${esc(first.importerCode||"BETA")}-${String(no).padStart(3,"0")}</div><div>発注日 ${esc(first.orderDate||val("order-date"))}</div></div>
+    <div class="po-meta"><div>発注No. ${esc(orderCode||"BETA")}-${String(no).padStart(3,"0")}</div><div>発注日 ${esc(first.orderDate||val("order-date"))}</div></div>
     <div class="po-importer">輸入社: ${esc(importerLabel)}</div>
     <div class="po-supplier">${esc(supplierName)}</div>
     <table><colgroup><col class="po-code"><col class="po-name"><col class="po-qty"><col class="po-unit"><col class="po-customer"><col class="po-memo"></colgroup><thead><tr><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>得意先</th><th>備考</th></tr></thead><tbody>
@@ -3542,6 +3562,7 @@ function importReviewOrderItems(){
   }));
 }
 async function confirmImportReviewDirect(){
+  if(appBusy)return;
   if(!importReviewItems.length){alert("確定する取込データがありません。");return}
   const errors=importReviewItems.filter(importReviewIsSuspicious);
   const warnings=importReviewItems.filter(item=>!importReviewIsSuspicious(item)&&importReviewNeedsAttention(item));
@@ -3555,11 +3576,18 @@ async function confirmImportReviewDirect(){
   const type=importReviewSourceType||"取込";
   const groups=new Set(items.map(batchKeyFromOrderItem)).size;
   if(!confirm(`${type}の受注を全件確定します。\n得意先単位: ${groups}件\n明細: ${items.length}件\nよろしいですか？`))return;
-  const success=await applyImportedOrderItems(items,names,type,{skipReview:true,forceConfirmed:true});
-  if(!success)return;
-  const learned=learnLineDictionaryFromOrders(items.map(item=>item.row));
-  clearImportReviewState();
-  if(learned)document.getElementById("save-state").textContent=`一括確定済み / 辞書更新 ${learned}件`;
+  setAppBusy(true);
+  try{
+    const success=await applyImportedOrderItems(items,names,type,{skipReview:true,forceConfirmed:true});
+    if(!success)return;
+    const learned=learnLineDictionaryFromOrders(items.map(item=>item.row));
+    clearImportReviewState();
+    if(learned)document.getElementById("save-state").textContent=`一括確定済み / 辞書更新 ${learned}件`;
+  }catch(error){
+    alert(dbErrorMessage(error));
+  }finally{
+    setAppBusy(false);
+  }
 }
 async function confirmImportedOrderReview(){
   if(!importReviewItems.length){alert("登録する取込データがありません。");return}
@@ -3823,6 +3851,11 @@ function applySearchResult(type,index){
   });
 });
 document.addEventListener("keyup",handleImportReviewEnter);
+document.addEventListener("keydown",e=>{
+  if(!appBusy)return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+},true);
 ["pending-filter-status","pending-filter-importer","pending-filter-customer"].forEach(id=>{
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
