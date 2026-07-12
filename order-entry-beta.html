@@ -23,7 +23,7 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .app-nav-link.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
 main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:1fr;gap:12px}.workspace-panel{display:none!important}.workspace-panel.active{display:block!important}.workspace-panel.layout.active{display:grid!important}.workspace-action-hidden{display:none!important}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.ime-ja{ime-mode:active}.ime-en{ime-mode:inactive}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
 .report-tools{display:grid;grid-template-columns:180px 220px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.report-count{align-self:end;display:flex;align-items:center;min-height:40px}
@@ -67,7 +67,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <section class="panel">
       <div class="panel-head">LINE文面貼り付けβ</div>
       <div class="panel-body line-parser">
-        <textarea id="line-text" placeholder="LINE文面を貼り付け"></textarea>
+        <textarea id="line-text" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="LINE文面を貼り付け"></textarea>
         <div class="actions"><button class="btn primary" onclick="openLineBulkReview()">一括確認へ</button><button class="btn" onclick="parseLineDraft()">現在の得意先で下書き</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
         <div class="line-preview" id="line-preview">商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。</div>
       </div>
@@ -80,8 +80,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <label>輸入社コード<input id="batch-importer-code" list="importer-code-list" autocomplete="off" placeholder="自動反映後に修正可"></label>
           <label>輸入社名<input id="batch-importer-name" list="importer-name-list" autocomplete="off" placeholder="自動反映後に修正可"></label>
           <label>得意先コード<input id="batch-customer-code" autocomplete="off" placeholder="例 01-002"></label>
-          <label>得意先名<input id="batch-customer-name" autocomplete="off" placeholder="得意先名"></label>
-          <label class="wide">メモ<textarea id="batch-note" placeholder="この受注全体のメモ"></textarea></label>
+          <label>得意先名<input id="batch-customer-name" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="得意先名"></label>
+          <label class="wide">メモ<textarea id="batch-note" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="この受注全体のメモ"></textarea></label>
         </div>
         <datalist id="customer-code-list"></datalist>
         <datalist id="customer-name-list"></datalist>
@@ -310,6 +310,7 @@ const CONFIRMED_KEY="order-entry-beta-confirmed-v1";
 const LINE_DICT_KEY="order-entry-beta-line-dictionary-v1";
 const PENDING_KEY="order-entry-beta-pending-entries-v1";
 const IMPORT_DRAFT_KEY="order-entry-beta-import-drafts-v1";
+const PRODUCT_DATALIST_LIMIT=300;
 const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2Z2pzY3h5am9zanFxaHh1dHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMTc3ODgsImV4cCI6MjA5NDc5Mzc4OH0.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
 let orders=[];
@@ -1741,8 +1742,9 @@ function refreshImporterLists(){
 }
 function refreshProductLists(){
   const masters=getMasters();
-  document.getElementById("product-code-list").innerHTML=masters.products.map(p=>`<option value="${esc(p.code)}">${esc(p.name)}</option>`).join("");
-  document.getElementById("product-name-list").innerHTML=masters.products.map(p=>`<option value="${esc(p.name)}">${esc(p.code)}</option>`).join("");
+  const products=uniqueMasterItems(masters.products).slice(0,PRODUCT_DATALIST_LIMIT);
+  document.getElementById("product-code-list").innerHTML=products.map(p=>`<option value="${esc(p.code)}">${esc(p.name)}</option>`).join("");
+  document.getElementById("product-name-list").innerHTML=products.map(p=>`<option value="${esc(p.name)}">${esc(p.code)}</option>`).join("");
 }
 function refreshSupplierLists(){
   const masters=getMasters();
@@ -2065,13 +2067,13 @@ function render(){
   const body=document.getElementById("order-body");
   body.innerHTML=orders.map((r,i)=>`<tr>
     <td>${i+1}</td>
-    <td><div class="lookup-cell"><input class="code" autocomplete="off" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
-    <td><input class="name" lang="ja" inputmode="text" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"></td>
+    <td><div class="lookup-cell"><input class="code ime-ja" autocomplete="off" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
+    <td><input class="name ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"></td>
     <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
-    <td><input class="code" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
-    <td><input class="code" list="supplier-code-list" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
-    <td><input class="supplier" data-order-input data-row="${i}" data-field="supplierName" value="${esc(r.supplierName)}" oninput="setRow(${i},'supplierName',this.value)"></td>
-    <td><input class="memo" data-order-input data-row="${i}" data-field="memo" value="${esc(r.memo)}" oninput="setRow(${i},'memo',this.value)"></td>
+    <td><input class="code ime-en" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
+    <td><input class="code ime-en" list="supplier-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
+    <td><input class="supplier ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierName" value="${esc(r.supplierName)}" oninput="setRow(${i},'supplierName',this.value)"></td>
+    <td><input class="memo ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="memo" value="${esc(r.memo)}" oninput="setRow(${i},'memo',this.value)"></td>
     <td><button class="small" onclick="removeRow(${i})">削除</button></td>
   </tr>`).join("");
   renderSummary();
@@ -3395,16 +3397,16 @@ function renderImportReview(){
     <tr class="review-${status.key}" data-review-index="${index}">
       <td>${index+1}</td>
       <td><span class="import-review-status ${status.key}" data-review-status>${status.label}</span></td>
-      <td><input data-review-field="importer" class="import-review-importer" list="importer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
-      <td><input data-review-field="customerCode" class="import-review-customer-code" list="customer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.code||"")}" oninput="updateImportReviewCustomerCode(${index},this.value,this)" onblur="finishImportReviewCustomerCode(${index},this.value,this)"></td>
-      <td><input data-review-field="customerName" class="import-review-customer" list="customer-name-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.name||"")}" oninput="updateImportReviewCustomer(${index},this.value,this)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
-      <td><input data-review-field="productCode" class="import-review-code" list="product-code-list" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)" onblur="finishImportReviewProductCode(${index},this.value,this)"></td>
-      <td><input data-review-field="productName" class="import-review-product" list="product-name-list" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productName||"")}" oninput="updateImportReviewProductName(${index},this.value,this)" onblur="finishImportReviewProductName(${index},this.value,this)"></td>
+      <td><input data-review-field="importer" class="import-review-importer ime-en" list="importer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
+      <td><input data-review-field="customerCode" class="import-review-customer-code ime-en" list="customer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.code||"")}" oninput="updateImportReviewCustomerCode(${index},this.value,this)" onblur="finishImportReviewCustomerCode(${index},this.value,this)"></td>
+      <td><input data-review-field="customerName" class="import-review-customer ime-ja" list="customer-name-list" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.name||"")}" oninput="updateImportReviewCustomer(${index},this.value,this)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
+      <td><input data-review-field="productCode" class="import-review-code ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)" onblur="finishImportReviewProductCode(${index},this.value,this)"></td>
+      <td><input data-review-field="productName" class="import-review-product ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productName||"")}" oninput="updateImportReviewProductName(${index},this.value,this)" onblur="finishImportReviewProductName(${index},this.value,this)"></td>
       <td><input data-review-field="qty" class="import-review-qty" type="number" step="0.01" value="${esc(item.row?.qty||"")}" oninput="updateImportReviewRowField(${index},'qty',this.value,this)"></td>
-      <td><input data-review-field="unit" class="import-review-unit" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.unit||"")}" oninput="updateImportReviewRowField(${index},'unit',this.value,this)"></td>
-      <td><input data-review-field="supplierCode" class="import-review-supplier-code" list="supplier-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierCode||"")}" oninput="updateImportReviewSupplierCode(${index},this.value,this)"></td>
-      <td><input data-review-field="supplierName" class="import-review-supplier" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierName||"")}" oninput="updateImportReviewRowField(${index},'supplierName',this.value,this)"></td>
-      <td><input data-review-field="memo" class="import-review-memo" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.memo||"")}" oninput="updateImportReviewRowField(${index},'memo',this.value,this)"></td>
+      <td><input data-review-field="unit" class="import-review-unit ime-en" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.unit||"")}" oninput="updateImportReviewRowField(${index},'unit',this.value,this)"></td>
+      <td><input data-review-field="supplierCode" class="import-review-supplier-code ime-en" list="supplier-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierCode||"")}" oninput="updateImportReviewSupplierCode(${index},this.value,this)"></td>
+      <td><input data-review-field="supplierName" class="import-review-supplier ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierName||"")}" oninput="updateImportReviewRowField(${index},'supplierName',this.value,this)"></td>
+      <td><input data-review-field="memo" class="import-review-memo ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.memo||"")}" oninput="updateImportReviewRowField(${index},'memo',this.value,this)"></td>
       <td class="import-review-meta" title="${esc(item.sourceFilename||"")}">${esc(item.sourceFilename||"")}</td>
       <td><div class="row-actions"><button class="small ${groupCheck.ready?"primary":""}" data-review-group-action type="button" onclick="confirmImportReviewGroup(${index})" ${groupCheck.ready?"":"disabled"} title="${esc(importReviewGroupLabel(group))}">${esc(groupActionText)}</button><button class="small danger" type="button" onclick="removeImportReviewRow(${index})">削除</button></div></td>
     </tr>
@@ -4268,11 +4270,33 @@ document.addEventListener("keydown",e=>{
   if(!orders.length)addOrderRow();
   focusOrderCell(0,"productCode");
 });
+function applyImeHint(target){
+  if(!(target instanceof HTMLInputElement||target instanceof HTMLTextAreaElement))return;
+  const field=target.dataset?.field||target.dataset?.reviewField||target.id||"";
+  const jaFields=new Set(["line-text","batch-customer-name","batch-note","customerName","productCode","productName","supplierName","memo"]);
+  const enFields=new Set(["batch-importer-code","batch-importer-name","batch-customer-code","importer","customerCode","unit","supplierCode"]);
+  if(jaFields.has(field)){
+    target.classList.add("ime-ja");
+    target.classList.remove("ime-en");
+    target.lang="ja-JP";
+    target.inputMode="text";
+    target.autocomplete="off";
+    target.autocapitalize="off";
+    target.spellcheck=false;
+  }else if(enFields.has(field)){
+    target.classList.add("ime-en");
+    target.classList.remove("ime-ja");
+    target.lang="en";
+    target.inputMode="latin";
+    target.autocapitalize="off";
+    target.spellcheck=false;
+  }
+}
 document.addEventListener("focusin",e=>{
   const target=e.target;
+  applyImeHint(target);
   if(!(target instanceof HTMLInputElement))return;
-  if(!target.matches("[data-order-input]"))return;
-  lastOrderRowIndex=Number(target.dataset.row||0);
+  if(target.matches("[data-order-input]"))lastOrderRowIndex=Number(target.dataset.row||0);
 });
 document.addEventListener("pointerdown",e=>{
   if(e.target?.closest?.(".lookup-cell"))return;
