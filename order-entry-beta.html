@@ -1428,8 +1428,17 @@ function initialWorkspaceTab(){
   if(hash==="master-admin-panel"||hash==="master-list"||hash==="masters")return "masters";
   return "orders";
 }
-function switchWorkspaceTab(tab){
+function hasPendingImportReview(){
+  return Array.isArray(importReviewItems)&&importReviewItems.length>0;
+}
+function confirmLeaveImportReview(){
+  if(!hasPendingImportReview())return true;
+  return confirm("取込内容の確認作業が未完了です。\nこのまま移動すると、確認中の内容が見えなくなります。\n移動しますか？");
+}
+function switchWorkspaceTab(tab,options={}){
   const target=["orders","sales","masters"].includes(tab)?tab:"orders";
+  const current=document.querySelector("[data-workspace-panel].active")?.dataset.workspacePanel||"orders";
+  if(target!==current&&!options.skipConfirm&&!confirmLeaveImportReview())return false;
   document.querySelectorAll("[data-workspace-panel]").forEach(panel=>{
     panel.classList.toggle("active",panel.dataset.workspacePanel===target);
   });
@@ -1442,6 +1451,7 @@ function switchWorkspaceTab(tab){
   if(target==="sales")renderSalesReferenceBoard();
   if(target==="masters")renderMasters();
   window.scrollTo({top:0,behavior:"auto"});
+  return true;
 }
 function init(){
   document.getElementById("order-date").value=today();
@@ -1459,7 +1469,7 @@ function init(){
   renderPendingEntries();
   renderMasters();
   renderReportFilterCount();
-  switchWorkspaceTab(initialWorkspaceTab());
+  switchWorkspaceTab(initialWorkspaceTab(),{skipConfirm:true});
   resetPendingForm();
   loadDbData();
 }
@@ -1550,7 +1560,7 @@ function showMasterAdminPanel(){
   const list=document.getElementById("master-list");
   const panel=list?.closest(".panel");
   if(!panel)return;
-  switchWorkspaceTab("masters");
+  if(!switchWorkspaceTab("masters"))return;
   renderMasters();
   requestAnimationFrame(()=>window.scrollTo({top:0,behavior:"auto"}));
 }
@@ -4120,6 +4130,21 @@ document.addEventListener("pointerdown",e=>{
   if(e.target?.closest?.(".inline-product-suggest"))return;
   hideAllProductSuggestions();
   hideCustomerSuggestions();
+});
+document.addEventListener("click",e=>{
+  const link=e.target?.closest?.("a[href]");
+  if(!link||link.hasAttribute("download"))return;
+  const href=String(link.getAttribute("href")||"");
+  if(!href||href.startsWith("#")||href.startsWith("blob:")||href.startsWith("data:"))return;
+  if(!confirmLeaveImportReview()){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+});
+window.addEventListener("beforeunload",e=>{
+  if(!hasPendingImportReview())return;
+  e.preventDefault();
+  e.returnValue="";
 });
 document.addEventListener("scroll",hideAllProductSuggestions,true);
 window.addEventListener("resize",hideAllProductSuggestions);
