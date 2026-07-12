@@ -4544,7 +4544,7 @@ resetLocalStateForSession=function(){
   applyWorkAppLeanMode();
 };
 function orderEntryLineToWorkRow(batch,line,index){
-  const importer=batch.importer_code||batch.importer_name_snapshot||"";
+  const importer=batch.importer_name_snapshot||batch.importer_code||"";
   return {
     _idx:index,
     _qty:"",
