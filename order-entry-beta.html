@@ -109,8 +109,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label class="import-review-check"><input type="checkbox" id="import-review-importer-bulk" checked> 同じ輸入社をまとめて修正</label>
         <span class="pill warn" id="import-review-count">0件</span>
         <button class="btn" type="button" onclick="addImportReviewRow()">明細追加</button>
-        <button class="btn primary" type="button" onclick="confirmImportReviewDirect()">全件受注確定</button>
-        <button class="btn" type="button" onclick="confirmImportedOrderReview()">取込下書きへ登録</button>
+        <button class="btn primary" id="import-review-direct-btn" type="button" onclick="confirmImportReviewDirect()">全件受注確定</button>
+        <button class="btn" id="import-review-draft-btn" type="button" onclick="confirmImportedOrderReview()">取込下書きへ登録</button>
         <button class="btn" type="button" onclick="cancelImportReview()">取込を破棄</button>
       </div>
       <div class="hint">赤は必須項目不足、黄は数量または仕入先の確認が必要、緑は確定可能です。商品コードを選ぶと商品名・仕入先をマスタから反映します。</div>
@@ -2043,8 +2043,8 @@ function render(){
   const body=document.getElementById("order-body");
   body.innerHTML=orders.map((r,i)=>`<tr>
     <td>${i+1}</td>
-    <td><div class="lookup-cell"><input class="code" autocomplete="off" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
-    <td><input class="name" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)"></td>
+    <td><div class="lookup-cell"><input class="code" autocomplete="off" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
+    <td><input class="name" lang="ja" inputmode="text" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)"></td>
     <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
     <td><input class="code" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
     <td><input class="code" list="supplier-code-list" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
@@ -2168,6 +2168,27 @@ function moveOrderFocus(current){
   }else{
     focusOrderCell(rowIndex+1,fields[0]);
   }
+}
+function moveOrderFocusPrevious(current){
+  const fields=["productCode","productName","qty","unit","supplierCode","supplierName","memo"];
+  const rowIndex=Number(current.dataset.row);
+  const field=current.dataset.field;
+  const fieldIndex=fields.indexOf(field);
+  if(fieldIndex>0){
+    focusOrderCell(rowIndex,fields[fieldIndex-1]);
+    return;
+  }
+  if(rowIndex>0){
+    focusOrderCell(rowIndex-1,fields[fields.length-1]);
+  }
+}
+function isCaretAtEdge(input,direction){
+  const start=input.selectionStart;
+  const end=input.selectionEnd;
+  const length=String(input.value||"").length;
+  if(start===null||end===null)return true;
+  if(start!==end)return true;
+  return direction>0?end>=length:start<=0;
 }
 function renderSummary(){
   const activeRows=activeOrderRows();
@@ -3268,6 +3289,14 @@ function showImportReview(items,sourceNames,sourceType){
   if(panel)panel.classList.remove("import-review-hidden");
   const title=document.getElementById("import-review-title");
   if(title)title.textContent=`${sourceType||"取込"}内容の一括確認`;
+  const isLine=String(sourceType||"").toUpperCase()==="LINE";
+  const directBtn=document.getElementById("import-review-direct-btn");
+  const draftBtn=document.getElementById("import-review-draft-btn");
+  if(directBtn)directBtn.style.display=isLine?"none":"inline-flex";
+  if(draftBtn){
+    draftBtn.classList.toggle("primary",isLine);
+    draftBtn.textContent=isLine?"得意先ごとに下書き登録":"取込下書きへ登録";
+  }
   renderImportReview();
   requestAnimationFrame(()=>panel?.scrollIntoView({behavior:"smooth",block:"start"}));
 }
@@ -3293,7 +3322,7 @@ function renderImportReview(){
       <td><input data-review-field="importer" class="import-review-importer" list="importer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
       <td><input data-review-field="customerCode" class="import-review-customer-code" list="customer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.code||"")}" oninput="updateImportReviewCustomerCode(${index},this.value,this)" onblur="finishImportReviewCustomerCode(${index},this.value,this)"></td>
       <td><input data-review-field="customerName" class="import-review-customer" list="customer-name-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.name||"")}" oninput="updateImportReviewCustomer(${index},this.value,this)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
-      <td><input data-review-field="productCode" class="import-review-code" list="product-code-list" lang="en" inputmode="latin" autocapitalize="characters" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)"></td>
+      <td><input data-review-field="productCode" class="import-review-code" list="product-code-list" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)"></td>
       <td><input data-review-field="productName" class="import-review-product" list="product-name-list" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productName||"")}" oninput="updateImportReviewProductName(${index},this.value,this)" onblur="finishImportReviewProductName(${index},this.value,this)"></td>
       <td><input data-review-field="qty" class="import-review-qty" type="number" step="0.01" value="${esc(item.row?.qty||"")}" oninput="updateImportReviewRowField(${index},'qty',this.value,this)"></td>
       <td><input data-review-field="unit" class="import-review-unit" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.unit||"")}" oninput="updateImportReviewRowField(${index},'unit',this.value,this)"></td>
@@ -3464,11 +3493,13 @@ function finishImportReviewCustomer(index,value){
 function updateImportReviewProductCode(index,value,el){
   const item=importReviewItems[index];
   if(!item)return;
-  const next=normalizeImportReviewCode(value);
+  const raw=String(value||"").trim();
+  const next=normalizeImportReviewCode(raw);
   item.row=item.row||blankOrder();
   item.row.productCode=next;
   if(el&&el.value!==next)el.value=next;
-  const master=findMasterProduct(item.row.productCode,"");
+  const matches=productInlineMatches(raw);
+  const master=findMasterProduct(item.row.productCode,"")||(matches.length===1?matches[0]:null);
   if(master){
     item.row.productCode=master.code||item.row.productCode;
     item.row.productName=item.row.productName||master.name||"";
@@ -3558,6 +3589,27 @@ function focusNextImportReviewField(index,field){
     if(typeof next.select==="function")next.select();
   });
 }
+function focusPrevImportReviewField(index,field){
+  const fields=importReviewFieldOrder();
+  const fieldIndex=fields.indexOf(field);
+  if(fieldIndex<0)return;
+  const visibleRows=[...document.querySelectorAll("#import-review-body tr[data-review-index]")];
+  const currentRowPosition=visibleRows.findIndex(row=>Number(row.dataset.reviewIndex)===Number(index));
+  let prevIndex=index;
+  let prevField=fields[fieldIndex-1];
+  if(!prevField){
+    const prevRow=visibleRows[currentRowPosition-1];
+    if(!prevRow)return;
+    prevIndex=Number(prevRow.dataset.reviewIndex);
+    prevField=fields[fields.length-1];
+  }
+  requestAnimationFrame(()=>{
+    const prev=document.querySelector(`#import-review-body tr[data-review-index="${prevIndex}"] [data-review-field="${prevField}"]`);
+    if(!prev)return;
+    prev.focus();
+    if(typeof prev.select==="function")prev.select();
+  });
+}
 function handleImportReviewEnter(e){
   if(e.key!=="Enter"||e.isComposing||e.keyCode===229)return;
   const input=e.target?.closest?.("#import-review-body input[data-review-field]");
@@ -3570,6 +3622,22 @@ function handleImportReviewEnter(e){
   if(!Number.isInteger(index)||!field)return;
   commitImportReviewInput(index,field,input);
   focusNextImportReviewField(index,field);
+}
+function handleImportReviewArrow(e){
+  if(!["ArrowRight","ArrowLeft"].includes(e.key)||e.isComposing)return;
+  const input=e.target?.closest?.("#import-review-body input[data-review-field]");
+  if(!input)return;
+  const direction=e.key==="ArrowRight"?1:-1;
+  if(!isCaretAtEdge(input,direction))return;
+  e.preventDefault();
+  e.stopPropagation();
+  const row=input.closest("tr[data-review-index]");
+  const index=Number(row?.dataset.reviewIndex);
+  const field=input.dataset.reviewField;
+  if(!Number.isInteger(index)||!field)return;
+  commitImportReviewInput(index,field,input);
+  if(direction>0)focusNextImportReviewField(index,field);
+  else focusPrevImportReviewField(index,field);
 }
 function cancelImportReview(){
   if(importReviewItems.length&&!confirm("取り込んだ未登録データを破棄しますか？"))return;
@@ -3598,6 +3666,10 @@ function importReviewOrderItems(){
 }
 async function confirmImportReviewDirect(){
   if(appBusy)return;
+  if(String(importReviewSourceType||"").toUpperCase()==="LINE"){
+    await confirmImportedOrderReview();
+    return;
+  }
   if(!importReviewItems.length){alert("確定する取込データがありません。");return}
   const errors=importReviewItems.filter(importReviewIsSuspicious);
   const warnings=importReviewItems.filter(item=>!importReviewIsSuspicious(item)&&importReviewNeedsAttention(item));
@@ -3886,6 +3958,7 @@ function applySearchResult(type,index){
   });
 });
 document.addEventListener("keyup",handleImportReviewEnter);
+document.addEventListener("keydown",handleImportReviewArrow);
 document.addEventListener("keydown",e=>{
   if(!appBusy)return;
   e.preventDefault();
@@ -3904,7 +3977,7 @@ document.addEventListener("keydown",e=>{
   });
 });
 document.addEventListener("keydown",e=>{
-  if(!["Enter","ArrowDown","ArrowUp","Escape"].includes(e.key)||e.isComposing)return;
+  if(!["Enter","ArrowDown","ArrowUp","ArrowRight","ArrowLeft","Escape"].includes(e.key)||e.isComposing)return;
   if(isProductLookupOpen()){
     if(e.key==="Escape"){
       e.preventDefault();
@@ -3930,6 +4003,15 @@ document.addEventListener("keydown",e=>{
   const target=e.target;
   if(!(target instanceof HTMLInputElement))return;
   if(target.matches("[data-order-input]")){
+    if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+      const direction=e.key==="ArrowRight"?1:-1;
+      if(isCaretAtEdge(target,direction)){
+        e.preventDefault();
+        if(direction>0)moveOrderFocus(target);
+        else moveOrderFocusPrevious(target);
+        return;
+      }
+    }
     if(target.dataset.field==="productCode"){
       if(e.key==="ArrowDown"||e.key==="ArrowUp"){
         if(moveActiveOption(`#product-suggest-${target.dataset.row}`,"button",e.key==="ArrowDown"?1:-1)){
