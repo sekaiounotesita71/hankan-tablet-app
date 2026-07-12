@@ -1799,6 +1799,7 @@ function normalizeMasterSearchText(value){
   let text=String(value||"").normalize("NFKC").toLowerCase().trim();
   text=text.replace(/[ぁ-ゖ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60));
   text=text
+    .replace(/海老/g,"エビ")
     .replace(/鮪/g,"マグロ")
     .replace(/本マグロ/g,"ホンマグロ")
     .replace(/[蓄畜]養/g,"チクヨウ")
@@ -1817,13 +1818,33 @@ function matchScore(values,query){
 function productSearchValues(p){
   return [p.code,p.name,p.englishName,p.supplierCode,p.supplierName,...(p.aliases||[])];
 }
+function productMatchInfo(p,query){
+  const q=normalizeMasterSearchText(query);
+  if(!q)return {score:99,length:0};
+  const values=productSearchValues(p).map(normalizeMasterSearchText).filter(Boolean);
+  let best={score:99,length:0};
+  values.forEach(v=>{
+    let score=99;
+    if(v===q)score=0;
+    else if(v.startsWith(q)||q.startsWith(v))score=1;
+    else if(v.includes(q)||q.includes(v))score=2;
+    if(score<99){
+      const length=Math.min(v.length,q.length);
+      if(score<best.score||(score===best.score&&length>best.length))best={score,length};
+    }
+  });
+  return best;
+}
+function productMatchScore(p,query){
+  return productMatchInfo(p,query).score;
+}
 function productInlineMatches(query){
   const q=normalizeMasterSearchText(query);
   if(!q)return [];
   return uniqueMasterItems(getMasters().products)
-    .map((p,index)=>({p,index,score:matchScore(productSearchValues(p),q)}))
+    .map((p,index)=>({p,index,...productMatchInfo(p,q)}))
     .filter(row=>row.score<99)
-    .sort((a,b)=>a.score-b.score||String(a.p.name||"").localeCompare(String(b.p.name||""),"ja")||a.index-b.index)
+    .sort((a,b)=>a.score-b.score||b.length-a.length||String(a.p.name||"").localeCompare(String(b.p.name||""),"ja")||a.index-b.index)
     .slice(0,10)
     .map(row=>row.p);
 }
@@ -2073,7 +2094,47 @@ function inferImporter(text){
 }
 function inferProduct(text){
   const q=normalizeMasterSearchText(text);
-  return getMasters().products.find(p=>productSearchValues(p).some(w=>q.includes(normalizeMasterSearchText(w))))||{};
+  if(!q)return {};
+  return uniqueMasterItems(getMasters().products)
+    .map((p,index)=>({p,index,...productMatchInfo(p,q)}))
+    .filter(row=>row.score<99)
+    .sort((a,b)=>a.score-b.score||b.length-a.length||String(a.p.name||"").localeCompare(String(b.p.name||""),"ja")||a.index-b.index)[0]?.p||{};
+}
+function findExactLineCustomer(text){
+  const q=normalizeMasterSearchText(text);
+  if(!q)return null;
+  return getMasters().customers.find(c=>[c.code,c.name,...(c.aliases||[])].some(w=>normalizeMasterSearchText(w)===q))||null;
+}
+function findExactLineImporter(text){
+  const q=normalizeMasterSearchText(text);
+  if(!q)return null;
+  return getMasters().importers.find(c=>[c.code,c.name,...(c.aliases||[])].some(w=>normalizeMasterSearchText(w)===q))||null;
+}
+function isLineDateOrHeading(text){
+  const t=String(text||"").normalize("NFKC").trim();
+  if(!t)return true;
+  return /^(\d{1,2}月\d{1,2}日|20\d{2}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2})(?:\s*[月火水木金土日]曜日?)?(?:\s*着)?$/i.test(t);
+}
+function normalizeLineUnit(unit){
+  const u=String(unit||"").normalize("NFKC").trim();
+  if(!u)return "";
+  if(/^kg$/i.test(u)||u==="㎏")return "Kg";
+  if(/^(pkt|p|パック)$/i.test(u))return "pkt";
+  if(/^(pc|本|個|枚|尾|束|袋)$/i.test(u))return "PC";
+  if(/^(cs|c\/s|ケース)$/i.test(u))return "CS";
+  return u;
+}
+function parseLineOrderPart(part){
+  const raw=String(part||"").normalize("NFKC").replace(/^[・*･\-\s]+/,"").trim();
+  if(!raw)return null;
+  const match=raw.match(/^(.+?)(?:\s+|　+)?(\d+(?:\.\d+)?)\s*(kg|㎏|本|個|枚|尾|束|袋|PC|pc|pkt|P|p|パック|CS|cs|C\/S|c\/s|ケース)?\s*(?:[（(](.*)[）)])?$/);
+  if(!match)return {productText:raw,qty:"",unit:"",memo:""};
+  return {
+    productText:String(match[1]||"").trim(),
+    qty:match[2]||"",
+    unit:normalizeLineUnit(match[3]||""),
+    memo:String(match[4]||"").trim()
+  };
 }
 function productLookupMatches(){
   const q=normalizeMasterSearchText(val("product-lookup-search"));
@@ -2181,23 +2242,46 @@ function parseLineDraft(){
   if(inferredImporter.code||inferredImporter.name)setHeaderImporter(inferredImporter);
   if(inferredCustomer.code||inferredCustomer.name)setHeaderCustomer(inferredCustomer);
   const parts=text.replace(/[、，]/g,",").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
-  draftRows=parts.map(part=>{
-    const learned=lookupLineDictionary(part);
+  let headerApplied=!!(inferredCustomer.code||inferredCustomer.name);
+  const rows=[];
+  parts.forEach((part,index)=>{
+    if(isLineDateOrHeading(part))return;
+    const importerHit=findExactLineImporter(part);
+    if(importerHit){
+      setHeaderImporter(importerHit);
+      return;
+    }
+    const customerHit=findExactLineCustomer(part);
+    if(customerHit){
+      setHeaderCustomer(customerHit);
+      headerApplied=true;
+      return;
+    }
+    const parsed=parseLineOrderPart(part);
+    if(!parsed?.productText)return;
+    const learned=lookupLineDictionary(parsed.productText)||lookupLineDictionary(part);
     const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
-    const p=learnedProduct||inferProduct(part);
-    const q=part.match(/(\d+(?:\.\d+)?)\s*(kg|Kg|KG|本|個|PC|pc|pkt|P|パック|CS|C\/S)?/);
-    return {
+    const inferredProduct=inferProduct(parsed.productText);
+    const p=learnedProduct||((inferredProduct.code||inferredProduct.name)?inferredProduct:inferProduct(part));
+    if(!parsed.qty&&!p.code&&index===0&&!headerApplied){
+      setHeaderCustomer({name:part});
+      headerApplied=true;
+      return;
+    }
+    if(!parsed.qty&&!p.code)return;
+    rows.push({
       productCode:p.code||"",
-      productName:p.name||part.replace(/\d.*$/,"").trim(),
+      productName:p.name||parsed.productText,
       englishName:p.englishName||"",
-      qty:q?q[1]:"",
-      unit:q?(q[2]||""):"",
+      qty:parsed.qty||"",
+      unit:parsed.unit||"",
       supplierCode:p.supplierCode||"",
       supplierName:p.supplierName||"",
-      memo:learned?"辞書":(p.code?"":"要確認"),
-      sourceExpression:part
-    };
-  }).filter(r=>r.productName);
+      memo:[learned?"辞書":(p.code?"":"要確認"),parsed.memo].filter(Boolean).join(" / "),
+      sourceExpression:parsed.productText
+    });
+  });
+  draftRows=rows.filter(r=>r.productName);
   saveLocal();
   document.getElementById("line-preview").textContent=draftRows.map((r,i)=>`${i+1}. ${r.productCode||"商品コード未推測"} ${r.productName} ${r.qty}${r.unit} / ${r.supplierName||"仕入先未推測"} ${r.memo}`).join("\n")||"候補を作れませんでした。";
 }
