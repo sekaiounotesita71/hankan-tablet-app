@@ -479,6 +479,7 @@ function masterItemToDb(type,item){
     default_supplier_code:dbText(item.supplierCode),
     default_supplier_name:dbText(item.supplierName),
     unit_price:dbNumber(item.unitPrice),
+    is_active:true,
     source_filename:"order-entry-beta"
   };
 }
@@ -531,6 +532,7 @@ function productMasterPayload(item,minimal=false){
     payload.aliases=item.aliases||[];
     payload.default_supplier_code=dbText(item.supplierCode);
     payload.default_supplier_name=dbText(item.supplierName);
+    payload.is_active=true;
   }
   return payload;
 }
@@ -650,13 +652,16 @@ async function saveMastersToDb(type,items){
 }
 async function loadMastersFromDb(){
   if(!supabaseClient)return;
-  const [importersRes,suppliersRes,customersRes,productsRes,contractRes]=await Promise.all([
+  let [importersRes,suppliersRes,customersRes,productsRes,contractRes]=await Promise.all([
     supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code"),
     supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code"),
     supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,alias_name,active").eq("active",true).order("customer_code"),
-    supabaseClient.from("product_master").select("product_id,product_name,english_name,unit_price,aliases,default_supplier_code,default_supplier_name").order("product_id",{ascending:true}).limit(10000),
+    supabaseClient.from("product_master").select("product_id,product_name,english_name,unit_price,aliases,default_supplier_code,default_supplier_name,is_active").eq("is_active",true).order("product_id",{ascending:true}).limit(10000),
     supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price")
   ]);
+  if(productsRes.error&&isMissingColumnError(productsRes.error)){
+    productsRes=await supabaseClient.from("product_master").select("product_id,product_name,english_name,unit_price,aliases,default_supplier_code,default_supplier_name").order("product_id",{ascending:true}).limit(10000);
+  }
   const firstError=[importersRes,suppliersRes,customersRes,productsRes].find(r=>r.error)?.error;
   if(firstError)throw firstError;
   const importerNames=Object.fromEntries((importersRes.data||[]).map(r=>[r.importer_code,r.importer_name]));
@@ -2463,21 +2468,47 @@ function removeLocalMasterItem(type,item){
   saved[type]=(saved[type]||[]).filter(existing=>masterCodeKey(existing.code)!==codeKey);
   saveMastersObject(saved);
 }
-async function deactivateCustomerMaster(index){
-  if(!currentUserIsAdmin()){alert("得意先マスタの削除は管理者のみ可能です。");return}
-  const item=(getMasters().customers||[])[index];
+function masterTypeLabel(type){
+  return {products:"商品",customers:"得意先",suppliers:"仕入先",importers:"輸入社"}[type]||"マスタ";
+}
+function masterDbConfig(type){
+  return {
+    products:{table:"product_master",codeColumn:"product_id",activeColumn:"is_active"},
+    customers:{table:"customer_master",codeColumn:"customer_code",activeColumn:"active"},
+    suppliers:{table:"supplier_master",codeColumn:"supplier_code",activeColumn:"is_active"},
+    importers:{table:"importer_master",codeColumn:"importer_code",activeColumn:"is_active"}
+  }[type]||null;
+}
+function refreshMasterDependentLists(){
+  refreshCustomerLists();
+  refreshImporterLists();
+  refreshProductLists();
+  refreshSupplierLists();
+}
+async function setDbMasterActive(type,codes,active){
+  const cfg=masterDbConfig(type);
+  const targets=[...new Set((codes||[]).map(code=>String(code||"").trim()).filter(Boolean))];
+  if(!cfg||!dbReady||!supabaseClient||!targets.length)return;
+  for(let i=0;i<targets.length;i+=200){
+    const {error}=await supabaseClient
+      .from(cfg.table)
+      .update({[cfg.activeColumn]:active})
+      .in(cfg.codeColumn,targets.slice(i,i+200));
+    if(error)throw error;
+  }
+}
+async function deactivateMasterItem(index){
+  if(!currentUserIsAdmin()){alert("マスタの無効化は管理者のみ可能です。");return}
+  const type=masterType;
+  const label=masterTypeLabel(type);
+  const item=(getMasters()[type]||[])[index];
   if(!item)return;
-  if(!confirm(`${item.code} ${item.name} を無効化しますか？\n受注履歴は残り、今後の候補からは非表示になります。`))return;
+  const code=String(item.code||"").trim();
+  if(!code){alert("コードがないマスタは無効化できません。");return}
+  if(!confirm(`${label}マスタ ${item.code} ${item.name} を無効化しますか？\n過去データは残り、今後の候補からは非表示になります。`))return;
   if(dbReady&&supabaseClient){
     try{
-      let query=supabaseClient.from("customer_master").update({active:false});
-      if(String(item.code||"").trim()){
-        query=query.eq("customer_code",item.code);
-      }else{
-        query=query.eq("importer_code",item.importerCode||"").eq("customer_name",item.name||"");
-      }
-      const {error}=await query;
-      if(error)throw error;
+      await setDbMasterActive(type,[code],false);
       setDbStatus("DB接続中","ok");
     }catch(error){
       alert(dbErrorMessage(error));
@@ -2485,35 +2516,42 @@ async function deactivateCustomerMaster(index){
       return;
     }
   }
-  removeLocalMasterItem("customers",item);
-  refreshCustomerLists();
+  removeLocalMasterItem(type,item);
+  refreshMasterDependentLists();
   renderMasters();
-  alert("得意先マスタを無効化しました。");
+  alert(`${label}マスタを無効化しました。`);
 }
-async function deactivateCustomersMissingFromCsv(beforeCustomers,importedItems){
-  if(masterType!=="customers"||!currentUserIsAdmin()||!dbReady||!supabaseClient)return {count:0,message:""};
+async function deactivateCustomerMaster(index){
+  const previous=masterType;
+  masterType="customers";
+  try{
+    await deactivateMasterItem(index);
+  }finally{
+    masterType=previous;
+  }
+}
+async function deactivateMastersMissingFromCsv(beforeItems,importedItems,type=masterType){
+  if(!currentUserIsAdmin()||!dbReady||!supabaseClient)return {count:0,message:""};
   const importedCodes=new Set(importedItems.map(item=>masterCodeKey(item.code)).filter(Boolean));
   if(!importedCodes.size)return {count:0,message:""};
-  const missing=(beforeCustomers||[]).filter(item=>{
+  const missing=(beforeItems||[]).filter(item=>{
     const key=masterCodeKey(item.code);
     return key&&!importedCodes.has(key);
   });
   if(!missing.length)return {count:0,message:""};
+  const label=masterTypeLabel(type);
   const preview=missing.slice(0,40).map(item=>`${item.code} ${item.name}`).join("\n");
   const more=missing.length>40?`\n...ほか ${missing.length-40}件`:"";
-  const ok=confirm(`CSVに存在しない得意先コードが ${missing.length}件あります。\n候補から無効化しますか？\n\n${preview}${more}`);
+  const ok=confirm(`CSVに存在しない${label}コードが ${missing.length}件あります。\n候補から無効化しますか？\n\n${preview}${more}`);
   if(!ok)return {count:0,message:""};
   const codes=missing.map(item=>String(item.code||"").trim()).filter(Boolean);
-  for(let i=0;i<codes.length;i+=200){
-    const {error}=await supabaseClient.from("customer_master").update({active:false}).in("customer_code",codes.slice(i,i+200));
-    if(error)throw error;
-  }
+  await setDbMasterActive(type,codes,false);
   const saved=savedMastersObject();
   const missingSet=new Set(codes.map(masterCodeKey));
-  saved.customers=(saved.customers||[]).filter(item=>!missingSet.has(masterCodeKey(item.code)));
+  saved[type]=(saved[type]||[]).filter(item=>!missingSet.has(masterCodeKey(item.code)));
   saveMastersObject(saved);
   setDbStatus("DB接続中","ok");
-  return {count:missing.length,message:`\nCSVにない得意先 ${missing.length}件を無効化しました。`};
+  return {count:missing.length,message:`\nCSVにない${label} ${missing.length}件を無効化しました。`};
 }
 function renderMasters(){
   const list=document.getElementById("master-list");
@@ -2532,8 +2570,8 @@ function renderMasters(){
       m.importerCode||m.importerName?`輸入社: ${[m.importerCode,m.importerName].filter(Boolean).join(" ")}`:"",
       (m.aliases||[]).join(", ")
     ].filter(Boolean).join(" / ");
-    const deleteBtn=isCustomer&&currentUserIsAdmin()
-      ?`<button class="small danger" type="button" onclick="event.stopPropagation();deactivateCustomerMaster(${index})">無効化</button>`
+    const deleteBtn=currentUserIsAdmin()
+      ?`<button class="small danger" type="button" onclick="event.stopPropagation();deactivateMasterItem(${index})">無効化</button>`
       :"";
     return `<div class="master-item" style="grid-template-columns:90px minmax(0,1fr) auto;cursor:pointer" onclick="editMasterItem(${index})" title="クリックして編集"><b>${esc(m.code)}</b><div>${esc(m.name)}<br><span class="sub">${esc(extra)}</span></div>${deleteBtn}</div>`;
   }).join(""):`${title}マスタがありません`;
@@ -3209,19 +3247,20 @@ function importMastersCsv(input){
   const file=input.files?.[0];
   input.value="";
   if(!file)return;
+  const importType=masterType;
   const reader=new FileReader();
   reader.onload=async ()=>{
     const text=decodeCsvBuffer(reader.result);
     const rows=parseCsv(text);
     if(rows.length<2){alert("CSVのデータ行がありません。");return}
     const headers=rows[0].map(normalizedHeader);
-    const beforeCustomers=masterType==="customers"?(getMasters().customers||[]).map(item=>({...item})):[];
+    const beforeItems=(getMasters()[importType]||[]).map(item=>({...item}));
     let count=0,updated=0,skipped=0;
     const importedItems=[];
     rows.slice(1).forEach(row=>{
-      const item=masterItemFromCsvRow(row,headers,masterType);
+      const item=masterItemFromCsvRow(row,headers,importType);
       if(!item){skipped++;return}
-      const result=upsertCustomMaster(masterType,item);
+      const result=upsertCustomMaster(importType,item);
       if(result==="updated")updated++;
       else count++;
       importedItems.push(item);
@@ -3229,7 +3268,7 @@ function importMastersCsv(input){
     let dbWarning="";
     if(dbReady&&supabaseClient&&importedItems.length){
       try{
-        await saveMastersToDb(masterType,importedItems);
+        await saveMastersToDb(importType,importedItems);
         setDbStatus("DB接続中","ok");
       }catch(error){
         dbWarning=dbErrorMessage(error);
@@ -3240,7 +3279,7 @@ function importMastersCsv(input){
     let deleteMessage="";
     if(!dbWarning&&importedItems.length){
       try{
-        const result=await deactivateCustomersMissingFromCsv(beforeCustomers,importedItems);
+        const result=await deactivateMastersMissingFromCsv(beforeItems,importedItems,importType);
         deleteMessage=result.message||"";
       }catch(error){
         dbWarning=dbErrorMessage(error);

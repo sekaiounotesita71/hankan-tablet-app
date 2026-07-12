@@ -45,6 +45,7 @@ create table if not exists public.product_master (
   scientific_name text,
   origin text,
   unit_price numeric,
+  is_active boolean not null default true,
   source_filename text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -53,7 +54,8 @@ create table if not exists public.product_master (
 alter table public.product_master
   add column if not exists aliases text[] not null default '{}',
   add column if not exists default_supplier_code text,
-  add column if not exists default_supplier_name text;
+  add column if not exists default_supplier_name text,
+  add column if not exists is_active boolean not null default true;
 
 create table if not exists public.product_price_contracts (
   product_id text not null references public.product_master(product_id) on delete cascade,
