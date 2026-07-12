@@ -57,7 +57,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <button class="btn blue" data-workspace-action="orders" onclick="confirmCustomerOrder()">受注確定 Ctrl+Enter</button>
     <button class="btn primary" data-workspace-action="orders" onclick="printPurchaseOrders()">発注書PDF</button>
     <button class="btn primary" data-workspace-action="orders" onclick="printPickingTickets()">現品票PDF</button>
-    <button class="btn danger" data-workspace-action="orders" onclick="clearAll()">全消去</button>
+    <button class="btn danger" data-workspace-action="orders" onclick="clearAll()">入力クリア</button>
     <input id="order-import-file" type="file" accept=".csv,.pdf,text/csv,application/pdf" multiple style="display:none" onchange="importOrdersCsv(this)">
   </div>
 </header>
@@ -2015,22 +2015,9 @@ function removeRow(i){
   render();
 }
 function clearAll(){
-  if(!confirm("受注明細をすべて消しますか？"))return;
-  orders=[blankOrder()];
-  confirmedBatches=[];
-  importDraftGroups=[];
-  confirmed=false;
-  currentImportDraftId="";
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(CONFIRMED_KEY);
-  localStorage.removeItem(IMPORT_DRAFT_KEY);
-  document.getElementById("batch-importer-code").value="";
-  document.getElementById("batch-importer-name").value="";
-  document.getElementById("batch-customer-code").value="";
-  document.getElementById("batch-customer-name").value="";
-  document.getElementById("batch-note").value="";
-  render();
-  saveLocal();
+  if(!confirm("現在入力中の内容だけをクリアしますか？\n確定済み受注・取込下書き・マスタ・DBは削除されません。"))return;
+  clearImportReviewState();
+  resetCurrentOrderForm();
 }
 function render(){
   hideAllProductSuggestions();
