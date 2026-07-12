@@ -2638,18 +2638,33 @@ function groupedBySupplier(rows){
   });
   return map;
 }
+function compareReportProductCode(a,b){
+  const codeA=String(a?.productCode||"").normalize("NFKC").trim();
+  const codeB=String(b?.productCode||"").normalize("NFKC").trim();
+  if(codeA&&!codeB)return -1;
+  if(!codeA&&codeB)return 1;
+  const codeCompare=codeA.localeCompare(codeB,"ja",{numeric:true,sensitivity:"base"});
+  if(codeCompare)return codeCompare;
+  const nameCompare=String(a?.productName||"").localeCompare(String(b?.productName||""),"ja",{numeric:true,sensitivity:"base"});
+  if(nameCompare)return nameCompare;
+  return String(a?.customerName||a?.customerCode||"").localeCompare(String(b?.customerName||b?.customerCode||""),"ja",{numeric:true,sensitivity:"base"});
+}
+function sortRowsByProductCode(rows){
+  return [...(rows||[])].sort(compareReportProductCode);
+}
 function printPurchaseOrders(){
-  const rows=reportRows(true);
+  const rows=sortRowsByProductCode(reportRows(true));
   if(!rows.length)return;
   const groups=groupedBySupplier(rows);
   const pages=[...groups.entries()].map(([supplier,rows],idx)=>purchaseOrderPage(supplier,rows,idx+1)).join("");
   openPrintDoc("発注書",purchaseOrderCss()+pages);
 }
 function purchaseOrderPage(supplier,rows,no){
-  const first=rows[0]||{};
+  const sortedRows=sortRowsByProductCode(rows);
+  const first=sortedRows[0]||{};
   const supplierName=String(supplier||"");
-  const importers=[...new Set(rows.map(r=>r.importerName||r.importerCode||"").filter(Boolean))];
-  const importerCodes=[...new Set(rows.map(r=>r.importerCode||r.importerName||"").filter(Boolean))];
+  const importers=[...new Set(sortedRows.map(r=>r.importerName||r.importerCode||"").filter(Boolean))];
+  const importerCodes=[...new Set(sortedRows.map(r=>r.importerCode||r.importerName||"").filter(Boolean))];
   const importerLabel=importers.join(" / ");
   const orderCode=importerCodes.length===1?importerCodes[0]:"ALL";
   return `<section class="po-page">
@@ -2658,12 +2673,12 @@ function purchaseOrderPage(supplier,rows,no){
     <div class="po-importer">輸入社: ${esc(importerLabel)}</div>
     <div class="po-supplier">${esc(supplierName)}</div>
     <table><colgroup><col class="po-code"><col class="po-name"><col class="po-qty"><col class="po-unit"><col class="po-customer"><col class="po-memo"></colgroup><thead><tr><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>得意先</th><th>備考</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.customerName||r.customerCode)}</td><td>${esc(r.memo)}</td></tr>`).join("")}
+      ${sortedRows.map(r=>`<tr><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.customerName||r.customerCode)}</td><td>${esc(r.memo)}</td></tr>`).join("")}
     </tbody></table>
   </section>`;
 }
 function printPickingTickets(){
-  const rows=reportRows(true);
+  const rows=sortRowsByProductCode(reportRows(true));
   if(!rows.length)return;
   const pages=[];
   for(let i=0;i<rows.length;i+=8){
