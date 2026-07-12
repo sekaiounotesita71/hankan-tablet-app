@@ -291,7 +291,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="modal-body">
       <div class="search-grid" style="grid-template-columns:minmax(220px,1fr) auto">
         <label>商品検索
-          <input id="product-lookup-search" placeholder="商品コード・商品名・別名で検索" oninput="renderProductLookup()" onkeydown="handleProductLookupKey(event)">
+          <input id="product-lookup-search" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="商品コード・商品名・別名で検索" oninput="renderProductLookup()" onkeydown="handleProductLookupKey(event)">
         </label>
         <button class="btn" onclick="document.getElementById('product-lookup-search').value='';renderProductLookup();document.getElementById('product-lookup-search').focus()">クリア</button>
       </div>
@@ -329,6 +329,7 @@ let masterType="products";
 let confirmed=false;
 let lastOrderRowIndex=0;
 let productLookupRowIndex=0;
+let productLookupTarget={type:"order",index:0};
 let supabaseClient=null;
 let currentUser=null;
 let currentUserRole="user";
@@ -2326,6 +2327,7 @@ function clickActiveOption(containerSelector,rowSelector){
   return true;
 }
 function openProductLookup(rowIndex){
+  productLookupTarget={type:"order",index:rowIndex};
   productLookupRowIndex=rowIndex;
   lastOrderRowIndex=rowIndex;
   const current=orders[rowIndex]?.productCode||orders[rowIndex]?.productName||"";
@@ -2338,9 +2340,30 @@ function openProductLookup(rowIndex){
     input.select();
   });
 }
+function openImportReviewProductLookup(index){
+  const item=importReviewItems[index];
+  if(!item)return;
+  productLookupTarget={type:"importReview",index};
+  productLookupRowIndex=index;
+  const current=item.row?.productCode||item.row?.productName||"";
+  document.getElementById("product-lookup-search").value=current;
+  document.getElementById("product-lookup-modal").classList.add("open");
+  renderProductLookup();
+  requestAnimationFrame(()=>{
+    const input=document.getElementById("product-lookup-search");
+    input.focus();
+    input.select();
+  });
+}
 function closeProductLookup(){
   document.getElementById("product-lookup-modal").classList.remove("open");
-  focusOrderCell(productLookupRowIndex,"productCode");
+  if(productLookupTarget.type==="importReview"){
+    const target=document.querySelector(`#import-review-body tr[data-review-index="${productLookupTarget.index}"] [data-review-field="productCode"]`);
+    target?.focus();
+    target?.select?.();
+  }else{
+    focusOrderCell(productLookupRowIndex,"productCode");
+  }
 }
 function isProductLookupOpen(){
   return document.getElementById("product-lookup-modal")?.classList.contains("open");
@@ -2364,9 +2387,21 @@ function chooseProductLookup(index){
   try{items=JSON.parse(document.getElementById("product-lookup-results").dataset.payload||"[]")}catch(e){}
   const item=items[index];
   if(!item)return;
-  applyProductToRow(productLookupRowIndex,item);
+  if(productLookupTarget.type==="importReview"){
+    applyProductToImportReviewRow(productLookupTarget.index,item);
+  }else{
+    applyProductToRow(productLookupRowIndex,item);
+  }
   closeProductLookup();
-  focusOrderCell(productLookupRowIndex,"qty");
+  if(productLookupTarget.type==="importReview"){
+    requestAnimationFrame(()=>{
+      const qty=document.querySelector(`#import-review-body tr[data-review-index="${productLookupTarget.index}"] [data-review-field="qty"]`);
+      qty?.focus();
+      qty?.select?.();
+    });
+  }else{
+    focusOrderCell(productLookupRowIndex,"qty");
+  }
 }
 function handleProductLookupKey(e){
   if(e.key==="Escape"){
@@ -3400,7 +3435,7 @@ function renderImportReview(){
       <td><input data-review-field="importer" class="import-review-importer ime-en" list="importer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
       <td><input data-review-field="customerCode" class="import-review-customer-code ime-en" list="customer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.code||"")}" oninput="updateImportReviewCustomerCode(${index},this.value,this)" onblur="finishImportReviewCustomerCode(${index},this.value,this)"></td>
       <td><input data-review-field="customerName" class="import-review-customer ime-ja" list="customer-name-list" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.name||"")}" oninput="updateImportReviewCustomer(${index},this.value,this)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
-      <td><input data-review-field="productCode" class="import-review-code ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)" onblur="finishImportReviewProductCode(${index},this.value,this)"></td>
+      <td><div class="lookup-cell"><input data-review-field="productCode" class="import-review-code ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)" onblur="finishImportReviewProductCode(${index},this.value,this)"><button class="lookup-btn" type="button" onclick="openImportReviewProductLookup(${index})">+</button></div></td>
       <td><input data-review-field="productName" class="import-review-product ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productName||"")}" oninput="updateImportReviewProductName(${index},this.value,this)" onblur="finishImportReviewProductName(${index},this.value,this)"></td>
       <td><input data-review-field="qty" class="import-review-qty" type="number" step="0.01" value="${esc(item.row?.qty||"")}" oninput="updateImportReviewRowField(${index},'qty',this.value,this)"></td>
       <td><input data-review-field="unit" class="import-review-unit ime-en" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.unit||"")}" oninput="updateImportReviewRowField(${index},'unit',this.value,this)"></td>
@@ -3602,6 +3637,20 @@ function applyProductMasterToImportReviewItem(item,master){
   item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
   item.row.unitPrice=item.row.unitPrice||master.unitPrice||"";
 }
+function applyProductToImportReviewRow(index,product){
+  const item=importReviewItems[index];
+  if(!item||!product)return;
+  item.row=item.row||blankOrder();
+  const supplierCode=product.supplierCode||item.row.supplierCode||"";
+  item.row.productCode=product.code||product.productCode||item.row.productCode||"";
+  item.row.productName=product.name||product.productName||item.row.productName||"";
+  item.row.englishName=product.englishName||item.row.englishName||"";
+  item.row.supplierCode=supplierCode;
+  item.row.supplierName=supplierNameFor(supplierCode,product.supplierName||item.row.supplierName||"");
+  item.row.unitPrice=item.row.unitPrice||product.unitPrice||"";
+  const row=document.querySelector(`#import-review-body tr[data-review-index="${index}"]`);
+  syncImportReviewRowFields(index,row||document.activeElement);
+}
 function updateImportReviewProductCode(index,value,el){
   const item=importReviewItems[index];
   if(!item)return;
@@ -3609,17 +3658,19 @@ function updateImportReviewProductCode(index,value,el){
   const next=normalizeImportReviewCode(raw);
   item.row=item.row||blankOrder();
   item.row.productCode=next;
-  const exactCode=findMasterProduct(item.row.productCode,"");
-  if(exactCode)applyProductMasterToImportReviewItem(item,exactCode);
   syncImportReviewRowFields(index,el);
 }
-function finishImportReviewProductCode(index,value,el){
+function finishImportReviewProductCode(index,value,el,options={}){
   const item=importReviewItems[index];
   if(!item)return;
   item.row=item.row||blankOrder();
-  const master=exactProductMasterForImportReviewInput(value);
-  if(master)applyProductMasterToImportReviewItem(item,master);
-  else item.row.productCode=normalizeImportReviewCode(value);
+  if(options.applyMaster){
+    const master=exactProductMasterForImportReviewInput(value);
+    if(master)applyProductMasterToImportReviewItem(item,master);
+    else item.row.productCode=normalizeImportReviewCode(value);
+  }else{
+    item.row.productCode=normalizeImportReviewCode(value);
+  }
   if(el&&el.value!==item.row.productCode)el.value=item.row.productCode||"";
   syncImportReviewRowFields(index,el);
 }
@@ -3630,12 +3681,12 @@ function updateImportReviewProductName(index,value,el){
   item.row.productName=String(value||"").trimStart();
   refreshImportReviewRowState(index,el);
 }
-function finishImportReviewProductName(index,value,el){
+function finishImportReviewProductName(index,value,el,options={}){
   const item=importReviewItems[index];
   if(!item)return;
   item.row=item.row||blankOrder();
   item.row.productName=String(value||"").trim();
-  if(!item.row.productCode){
+  if(options.applyMaster&&!item.row.productCode){
     const master=findMasterProduct("",item.row.productName)||inferProduct(item.row.productName);
     if(master?.code){
       item.row.productCode=master.code;
@@ -3670,13 +3721,13 @@ function updateImportReviewRowField(index,field,value,el){
 function importReviewFieldOrder(){
   return ["importer","customerCode","customerName","productCode","productName","qty","unit","supplierCode","supplierName","memo"];
 }
-function commitImportReviewInput(index,field,input){
+function commitImportReviewInput(index,field,input,options={}){
   const value=input?.value||"";
   if(field==="importer")finishImportReviewImporter(index,value);
   else if(field==="customerCode")finishImportReviewCustomerCode(index,value,input);
   else if(field==="customerName")finishImportReviewCustomer(index,value);
-  else if(field==="productCode")finishImportReviewProductCode(index,value,input);
-  else if(field==="productName")finishImportReviewProductName(index,value,input);
+  else if(field==="productCode")finishImportReviewProductCode(index,value,input,options);
+  else if(field==="productName")finishImportReviewProductName(index,value,input,options);
   else if(field==="supplierCode")updateImportReviewSupplierCode(index,value,input);
   else updateImportReviewRowField(index,field,value,input);
 }
@@ -3732,7 +3783,7 @@ function handleImportReviewEnter(e){
   const index=Number(row?.dataset.reviewIndex);
   const field=input.dataset.reviewField;
   if(!Number.isInteger(index)||!field)return;
-  commitImportReviewInput(index,field,input);
+  commitImportReviewInput(index,field,input,{applyMaster:true});
   focusNextImportReviewField(index,field);
 }
 function handleImportReviewArrow(e){
@@ -3747,7 +3798,7 @@ function handleImportReviewArrow(e){
   const index=Number(row?.dataset.reviewIndex);
   const field=input.dataset.reviewField;
   if(!Number.isInteger(index)||!field)return;
-  commitImportReviewInput(index,field,input);
+  commitImportReviewInput(index,field,input,{applyMaster:false});
   if(direction>0)focusNextImportReviewField(index,field);
   else focusPrevImportReviewField(index,field);
 }
