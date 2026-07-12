@@ -2689,24 +2689,22 @@ function printPickingTickets(){
 function ticketColorForImporter(value){
   const code=String(value||"").toUpperCase();
   const presets={
-    DIM:["#111827","#f3f4f6"],
-    FBI:["#174ea6","#eaf2ff"],
-    BKK:["#a16207","#fef3c7"],
-    JKT:["#b42318","#fff1f0"],
-    KL:["#0f7a3b","#e8f4ee"],
-    EN:["#6d28d9","#f3e8ff"]
+    DIM:["#111111","#111111","#ffffff"],
+    FBI:["#0057d9","#0057d9","#ffffff"],
+    BKK:["#ffd400","#ffd400","#111111"],
+    KL:["#008a3d","#008a3d","#ffffff"],
+    JKT:["#d71920","#d71920","#ffffff"],
+    EN:["#f97316","#f97316","#111111"]
   };
-  const key=Object.keys(presets).find(k=>code.includes(k));
+  const codeTokens=code.split(/[^A-Z0-9]+/).filter(Boolean);
+  const key=Object.keys(presets).find(k=>codeTokens.includes(k));
   if(key)return presets[key];
-  let hash=0;
-  for(let i=0;i<code.length;i++)hash=(hash*31+code.charCodeAt(i))>>>0;
-  const palette=[["#0f766e","#e6fffb"],["#be123c","#fff1f2"],["#4338ca","#eef2ff"],["#a16207","#fefce8"],["#0369a1","#e0f2fe"]];
-  return palette[hash%palette.length];
+  return ["#7c3aed","#7c3aed","#ffffff"];
 }
 function ticketHtml(r){
   const importer=r.importerCode||r.importerName||"";
-  const [main,bg]=ticketColorForImporter(importer);
-  return `<div class="ticket" style="--ticket-main:${esc(main)};--ticket-bg:${esc(bg)}">
+  const [main,bg,contrast]=ticketColorForImporter(importer);
+  return `<div class="ticket" style="--ticket-main:${esc(main)};--ticket-bg:${esc(bg)};--ticket-contrast:${esc(contrast)}">
     <div class="ticket-importer"><span>輸入社:</span><strong>${esc(importer)}</strong></div>
     <div><span>得意先:</span><strong>${esc(r.customerName||r.customerCode)}</strong></div>
     <div><span>商品名:</span><strong>${esc(r.productName)}</strong></div>
@@ -2722,7 +2720,7 @@ function purchaseOrderCss(){
   return printBaseCss()+`<style>.po-page{min-height:281mm;padding:3mm 4mm}.po-title{text-align:center;font-size:17pt;font-weight:900;letter-spacing:2px}.po-meta{display:flex;justify-content:space-between;margin:4mm 0 2.5mm;font-size:9pt}.po-importer{font-size:9.5pt;font-weight:900;margin-bottom:1.2mm}.po-supplier{font-size:12pt;font-weight:900;margin-bottom:3mm;border-bottom:1px solid #000;padding-bottom:1.2mm}table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:8.5pt}th,td{border:1px solid #000;padding:1.4mm 1.2mm;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center;white-space:nowrap}.po-code{width:12%}.po-name{width:27%}.po-qty{width:8%}.po-unit{width:7%}.po-customer{width:23%}.po-memo{width:23%}td:nth-child(3),td:nth-child(4){text-align:center}</style>`;
 }
 function ticketCss(){
-  return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm;break-after:page}.ticket-page:last-child{break-after:auto}.ticket{border:1.5px solid var(--ticket-main,#000);border-left-width:6mm;padding:2.6mm 3.6mm;overflow:hidden;font-size:10.5pt;line-height:1.16;background:linear-gradient(90deg,var(--ticket-bg,#fff) 0 14mm,#fff 14mm);print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:1.7mm}.ticket span{display:inline-block;min-width:18mm;font-size:9pt;font-weight:900}.ticket strong{font-weight:900;overflow-wrap:anywhere}.ticket .ticket-importer{margin:-1.2mm -2mm 2mm -2mm;padding:1.4mm 2mm;background:var(--ticket-bg,#fff);color:var(--ticket-main,#000);border-bottom:1px solid var(--ticket-main,#000);font-size:11pt;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .en{font-size:7.5pt;line-height:1.08;margin-left:18mm;min-height:7mm}.ticket .ticket-memo{display:grid;grid-template-columns:18mm minmax(0,1fr);gap:0;margin-bottom:0}.ticket .ticket-memo span{min-width:0}</style>`;
+  return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm;break-after:page}.ticket-page:last-child{break-after:auto}.ticket{border:1.5px solid var(--ticket-main,#000);border-left-width:7mm;padding:2.6mm 3.6mm;overflow:hidden;font-size:10.5pt;line-height:1.16;background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:1.7mm}.ticket span{display:inline-block;min-width:18mm;font-size:9pt;font-weight:900}.ticket strong{font-weight:900;overflow-wrap:anywhere}.ticket .ticket-importer{margin:-1.2mm -2mm 2mm -2mm;padding:1.4mm 2mm;background:var(--ticket-main,#000);color:var(--ticket-contrast,#fff);border-bottom:1px solid var(--ticket-main,#000);font-size:11pt;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .en{font-size:7.5pt;line-height:1.08;margin-left:18mm;min-height:7mm}.ticket .ticket-memo{display:grid;grid-template-columns:18mm minmax(0,1fr);gap:0;margin-bottom:0}.ticket .ticket-memo span{min-width:0}</style>`;
 }
 function openPrintDoc(title,html){
   const w=window.open("","_blank");
