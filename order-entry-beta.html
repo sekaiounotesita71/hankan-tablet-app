@@ -3398,7 +3398,7 @@ function renderImportReview(){
       <td><input data-review-field="importer" class="import-review-importer" list="importer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
       <td><input data-review-field="customerCode" class="import-review-customer-code" list="customer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.code||"")}" oninput="updateImportReviewCustomerCode(${index},this.value,this)" onblur="finishImportReviewCustomerCode(${index},this.value,this)"></td>
       <td><input data-review-field="customerName" class="import-review-customer" list="customer-name-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.name||"")}" oninput="updateImportReviewCustomer(${index},this.value,this)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
-      <td><input data-review-field="productCode" class="import-review-code" list="product-code-list" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)"></td>
+      <td><input data-review-field="productCode" class="import-review-code" list="product-code-list" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)" onblur="finishImportReviewProductCode(${index},this.value,this)"></td>
       <td><input data-review-field="productName" class="import-review-product" list="product-name-list" lang="ja" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productName||"")}" oninput="updateImportReviewProductName(${index},this.value,this)" onblur="finishImportReviewProductName(${index},this.value,this)"></td>
       <td><input data-review-field="qty" class="import-review-qty" type="number" step="0.01" value="${esc(item.row?.qty||"")}" oninput="updateImportReviewRowField(${index},'qty',this.value,this)"></td>
       <td><input data-review-field="unit" class="import-review-unit" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.unit||"")}" oninput="updateImportReviewRowField(${index},'unit',this.value,this)"></td>
@@ -3581,6 +3581,25 @@ function finishImportReviewCustomer(index,value){
   }
   renderImportReview();
 }
+function exactProductMasterForImportReviewInput(value){
+  const raw=String(value||"").trim();
+  if(!raw)return null;
+  const codeKey=raw.normalize("NFKC").trim().toLowerCase();
+  const products=uniqueMasterItems(getMasters().products);
+  return products.find(p=>String(p.code||"").normalize("NFKC").trim().toLowerCase()===codeKey)
+    ||products.find(p=>productMatchInfo(p,raw).score===0)
+    ||null;
+}
+function applyProductMasterToImportReviewItem(item,master){
+  if(!item||!master)return;
+  item.row=item.row||blankOrder();
+  item.row.productCode=master.code||item.row.productCode||"";
+  item.row.productName=item.row.productName||master.name||"";
+  item.row.englishName=master.englishName||item.row.englishName||"";
+  item.row.supplierCode=master.supplierCode||item.row.supplierCode||"";
+  item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
+  item.row.unitPrice=item.row.unitPrice||master.unitPrice||"";
+}
 function updateImportReviewProductCode(index,value,el){
   const item=importReviewItems[index];
   if(!item)return;
@@ -3588,17 +3607,18 @@ function updateImportReviewProductCode(index,value,el){
   const next=normalizeImportReviewCode(raw);
   item.row=item.row||blankOrder();
   item.row.productCode=next;
-  if(el&&el.value!==next)el.value=next;
-  const master=resolveProductMaster(raw,{allowSingle:true})||findMasterProduct(item.row.productCode,"");
-  if(master){
-    item.row.productCode=master.code||item.row.productCode;
-    item.row.productName=item.row.productName||master.name||"";
-    item.row.englishName=master.englishName||item.row.englishName||"";
-    item.row.supplierCode=master.supplierCode||item.row.supplierCode||"";
-    item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
-    item.row.unitPrice=item.row.unitPrice||master.unitPrice||"";
-    if(el&&el.value!==item.row.productCode)el.value=item.row.productCode;
-  }
+  const exactCode=findMasterProduct(item.row.productCode,"");
+  if(exactCode)applyProductMasterToImportReviewItem(item,exactCode);
+  syncImportReviewRowFields(index,el);
+}
+function finishImportReviewProductCode(index,value,el){
+  const item=importReviewItems[index];
+  if(!item)return;
+  item.row=item.row||blankOrder();
+  const master=exactProductMasterForImportReviewInput(value);
+  if(master)applyProductMasterToImportReviewItem(item,master);
+  else item.row.productCode=normalizeImportReviewCode(value);
+  if(el&&el.value!==item.row.productCode)el.value=item.row.productCode||"";
   syncImportReviewRowFields(index,el);
 }
 function updateImportReviewProductName(index,value,el){
@@ -3653,7 +3673,7 @@ function commitImportReviewInput(index,field,input){
   if(field==="importer")finishImportReviewImporter(index,value);
   else if(field==="customerCode")finishImportReviewCustomerCode(index,value,input);
   else if(field==="customerName")finishImportReviewCustomer(index,value);
-  else if(field==="productCode")updateImportReviewProductCode(index,value,input);
+  else if(field==="productCode")finishImportReviewProductCode(index,value,input);
   else if(field==="productName")finishImportReviewProductName(index,value,input);
   else if(field==="supplierCode")updateImportReviewSupplierCode(index,value,input);
   else updateImportReviewRowField(index,field,value,input);
