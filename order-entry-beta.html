@@ -791,28 +791,13 @@ async function ensureBatchMastersInDb(batch){
   const customerName=String(batch.customer?.name||customerCode).trim();
   if(customerCode)await saveMasterItemToDb("customers",{code:customerCode,name:customerName||customerCode,aliases:[customerName].filter(Boolean),importerCode,importerName});
   const supplierMap=new Map();
-  const productMap=new Map();
   (batch.rows||[]).forEach(row=>{
     const supplierCode=String(row.supplierCode||"").trim();
     if(supplierCode&&!supplierMap.has(supplierCode)){
       supplierMap.set(supplierCode,{code:supplierCode,name:String(row.supplierName||supplierCode).trim()||supplierCode,aliases:[]});
     }
-    const productCode=String(row.productCode||"").trim();
-    if(productCode&&!productMap.has(productCode)){
-      productMap.set(productCode,{
-        code:productCode,
-        name:String(row.productName||productCode).trim()||productCode,
-        englishName:row.englishName||"",
-        aliases:[],
-        supplierCode,
-        supplierName:String(row.supplierName||"").trim(),
-        unitPrice:row.unitPrice||"",
-        contractPrices:{}
-      });
-    }
   });
   for(const item of supplierMap.values())await saveMasterItemToDb("suppliers",item);
-  for(const item of productMap.values())await saveMasterItemToDb("products",item);
 }
 async function loadConfirmedBatchesFromDb(){
   if(!supabaseClient)return;
