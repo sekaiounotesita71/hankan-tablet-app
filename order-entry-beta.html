@@ -1687,11 +1687,30 @@ function loadLocal(){
 }
 function setHeaderCustomer(c,options={}){
   if(!c)return;
-  if(c.code)document.getElementById("batch-customer-code").value=c.code;
-  if(c.name)document.getElementById("batch-customer-name").value=c.name;
-  if(!options.skipImporter&&(c.importerCode||c.importerName)){
-    setHeaderImporter({code:c.importerCode||"",name:c.importerName||""});
+  const resolved=resolveCustomerWithImporter(c);
+  if(resolved.customer.code)document.getElementById("batch-customer-code").value=resolved.customer.code;
+  if(resolved.customer.name)document.getElementById("batch-customer-name").value=resolved.customer.name;
+  if(!options.skipImporter&&(resolved.importer.code||resolved.importer.name)){
+    setHeaderImporter(resolved.importer);
   }
+}
+function resolveCustomerWithImporter(c){
+  const source=c||{};
+  const master=findMasterCustomer(source.code,source.name);
+  const customer={
+    code:master?.code||source.code||"",
+    name:master?.name||source.name||""
+  };
+  const importer={
+    code:master?.importerCode||source.importerCode||"",
+    name:master?.importerName||source.importerName||""
+  };
+  if(importer.code||importer.name){
+    const resolvedImporter=resolveImporter(importer);
+    importer.code=resolvedImporter.code||importer.code;
+    importer.name=resolvedImporter.name||importer.name||importer.code;
+  }
+  return {customer,importer,master};
 }
 function resolveImporter(input){
   const code=String(input?.code||"").trim();
@@ -2341,16 +2360,16 @@ function lineReviewItem(productText,parsed,currentCustomer,currentImporter,lineN
   const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
   const inferredProduct=inferProduct(productText);
   const product=learnedProduct||inferredProduct||{};
-  const customerMaster=findMasterCustomer(currentCustomer?.code,currentCustomer?.name);
+  const resolvedCustomer=resolveCustomerWithImporter(currentCustomer||{});
   const importer=lineImporterSnapshot({
-    code:currentImporter?.code||customerMaster?.importerCode||currentCustomer?.importerCode||"",
-    name:currentImporter?.name||customerMaster?.importerName||currentCustomer?.importerName||""
+    code:resolvedCustomer.importer.code||currentImporter?.code||"",
+    name:resolvedCustomer.importer.name||currentImporter?.name||""
   });
   const supplierCode=product.supplierCode||"";
   return {
     orderDate:val("order-date")||today(),
     importer,
-    customer:{code:customerMaster?.code||currentCustomer?.code||"",name:customerMaster?.name||currentCustomer?.name||""},
+    customer:resolvedCustomer.customer,
     row:{
       productCode:product.code||"",
       productName:product.name||productText,
@@ -3213,9 +3232,25 @@ function importReviewMatchesSearch(item){
     item.row?.supplierCode,item.row?.supplierName,item.row?.memo,item.sourceFilename
   ].some(v=>String(v||"").toLowerCase().includes(q));
 }
+function normalizeImportReviewItem(item){
+  const next={
+    ...item,
+    importer:{...(item?.importer||{})},
+    customer:{...(item?.customer||{})},
+    row:{...blankOrder(),...(item?.row||{})}
+  };
+  const resolved=resolveCustomerWithImporter(next.customer);
+  next.customer={...next.customer,...resolved.customer};
+  if(!next._importerManual&&(resolved.importer.code||resolved.importer.name)){
+    next.importer={...next.importer,...resolved.importer};
+  }else{
+    applyImportReviewImporterMaster(next);
+  }
+  return next;
+}
 function showImportReview(items,sourceNames,sourceType){
   importReviewItems=items.map((item,index)=>({
-    ...item,
+    ...normalizeImportReviewItem(item),
     _reviewIndex:index,
     sourceFilename:item.sourceFilename||item.row?.sourceFilename||sourceNames.join(", ")
   }));
@@ -3325,13 +3360,10 @@ function syncImportReviewRowFields(index,el){
 function applyImportReviewCustomerMaster(item){
   if(!item)return;
   item.customer=item.customer||{};
-  const master=findMasterCustomer(item.customer.code,item.customer.name);
-  if(master?.code)item.customer.code=master.code;
-  if(master?.importerCode){
-    item.importer={
-      code:master.importerCode,
-      name:master.importerName||master.importerCode
-    };
+  const resolved=resolveCustomerWithImporter(item.customer);
+  item.customer={...item.customer,...resolved.customer};
+  if(resolved.importer.code||resolved.importer.name){
+    item.importer={...item.importer,...resolved.importer};
   }
 }
 function applyImportReviewImporterMaster(item){
@@ -3348,6 +3380,7 @@ function updateImportReviewImporter(index,value,el){
   if(!item)return;
   const next=normalizeImportReviewImporter(value);
   item.importer=item.importer||{};
+  item._importerManual=true;
   item.importer.code=next;
   item.importer.name="";
   applyImportReviewImporterMaster(item);
@@ -3359,6 +3392,7 @@ function finishImportReviewImporter(index,value){
   if(!item)return;
   const next=normalizeImportReviewImporter(value);
   item.importer=item.importer||{};
+  item._importerManual=true;
   item.importer.code=next;
   item.importer.name="";
   applyImportReviewImporterMaster(item);
@@ -3368,6 +3402,7 @@ function finishImportReviewImporter(index,value){
     importReviewItems.forEach((other,otherIndex)=>{
       if(importReviewOriginalImporters[otherIndex]!==original)return;
       other.importer=other.importer||{};
+      other._importerManual=true;
       other.importer.code=next;
       other.importer.name=item.importer.name||"";
       applyImportReviewImporterMaster(other);
@@ -3379,6 +3414,7 @@ function updateImportReviewCustomer(index,value,el){
   const item=importReviewItems[index];
   if(!item)return;
   item.customer=item.customer||{};
+  item._importerManual=false;
   item.customer.name=String(value||"").trimStart();
   applyImportReviewCustomerMaster(item);
   refreshImportReviewRowState(index,el);
@@ -3387,13 +3423,9 @@ function updateImportReviewCustomerCode(index,value,el){
   const item=importReviewItems[index];
   if(!item)return;
   item.customer=item.customer||{};
+  item._importerManual=false;
   item.customer.code=String(value||"").trim();
-  const master=findMasterCustomer(item.customer.code,"");
-  if(master){
-    item.customer.code=master.code||item.customer.code;
-    item.customer.name=master.name||item.customer.name||"";
-    if(master.importerCode)item.importer={code:master.importerCode,name:master.importerName||master.importerCode};
-  }
+  applyImportReviewCustomerMaster(item);
   syncImportReviewRowFields(index,el);
 }
 function finishImportReviewCustomerCode(index,value,el){
@@ -3414,6 +3446,7 @@ function finishImportReviewCustomer(index,value){
   if(!item)return;
   const next=String(value||"").trim();
   item.customer=item.customer||{};
+  item._importerManual=false;
   item.customer.name=next;
   applyImportReviewCustomerMaster(item);
   const bulk=document.getElementById("import-review-bulk")?.checked;
@@ -3553,12 +3586,15 @@ function clearImportReviewState(){
   renderImportReview();
 }
 function importReviewOrderItems(){
-  return importReviewItems.map(item=>({
-    orderDate:item.orderDate||today(),
-    importer:{...(item.importer||{})},
-    customer:{...(item.customer||{})},
-    row:{...blankOrder(),...(item.row||{})}
-  }));
+  return importReviewItems.map(item=>{
+    const normalized=normalizeImportReviewItem(item);
+    return {
+      orderDate:normalized.orderDate||today(),
+      importer:{...(normalized.importer||{})},
+      customer:{...(normalized.customer||{})},
+      row:{...blankOrder(),...(normalized.row||{})}
+    };
+  });
 }
 async function confirmImportReviewDirect(){
   if(appBusy)return;
