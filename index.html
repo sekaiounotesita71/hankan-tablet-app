@@ -4618,6 +4618,7 @@ async function createWorkSessionFromConfirmedOrders(){
   currentSessionFinalizedAt="";
   latestOrderFilename=`order-entry:${date}`;
   latestMasterFilename="Supabase master";
+  importIdentityConfirmed=true;
   rows=nextRows;
   syncOrderRowsFromRows();
   const importers=[...new Set(rows.map(row=>importerCode(row.importer_id)).filter(Boolean))].sort();
@@ -4634,7 +4635,9 @@ async function createWorkSessionFromConfirmedOrders(){
   document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${batches.length}得意先 / ${rows.length}明細`;
   document.getElementById("export-btn").disabled=false;
   setWorkStartPanelVisible(false);
-  await saveCurrentSessionToSupabase();
+  updateCloudSaveButton();
+  setSaveState("受注読込完了: 作業名を確認して保存してください");
+  toast("受注データを読み込みました。作業名を確認して保存してください");
   applyWorkAppLeanMode();
 }
 applyWorkAppLeanMode();
