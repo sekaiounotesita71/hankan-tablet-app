@@ -26,6 +26,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
+.report-tools{display:grid;grid-template-columns:180px 220px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.report-count{align-self:end;display:flex;align-items:center;min-height:40px}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-preview{max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
 .workspace-panel.import-review-hidden{display:none!important}.import-review-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.import-review-search{height:38px;min-width:240px;flex:1;border:1px solid var(--line2);border-radius:7px;padding:0 9px;font-weight:700}.import-review-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:900}.import-review-check input{width:auto;min-height:auto}.import-review-table-wrap{max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:8px}.import-review-table{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.import-review-table th,.import-review-table td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.import-review-table th{position:sticky;top:0;z-index:1;background:#f7f9fb;color:var(--muted);font-weight:900}.import-review-table tbody tr.suspicious td{background:#fff6e6}.import-review-table input{height:34px;min-height:34px;border-radius:6px}.import-review-importer{width:116px;font-family:Consolas,monospace}.import-review-code{width:120px;font-family:Consolas,monospace;text-transform:uppercase}.import-review-customer{width:260px}.import-review-product{font-weight:800;max-width:360px;overflow:hidden;text-overflow:ellipsis}.import-review-meta{color:var(--muted);font-weight:800}
 .master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
@@ -34,7 +35,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks{grid-template-columns:1fr}.sales-table-wrap{max-height:420px}}
+@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks{grid-template-columns:1fr}.sales-table-wrap{max-height:420px}}
 </style>
 </head>
 <body>
@@ -122,6 +123,20 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-head"><span>取込下書き</span><span class="sub">PDF/CSV取込後、1得意先ずつ受注画面へ展開して確定</span></div>
     <div class="panel-body">
       <div id="import-drafts"></div>
+    </div>
+  </section>
+
+  <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px" id="report-output-panel">
+    <div class="panel-head"><span>帳票出力</span><span class="sub">対象の日付と輸入社を指定して発行</span></div>
+    <div class="panel-body">
+      <div class="report-tools">
+        <label>日付<input id="report-filter-date" type="date"></label>
+        <label>輸入社<input id="report-filter-importer" list="importer-code-list" placeholder="例 DIM / FBI"></label>
+        <div class="report-count"><span id="report-filter-count" class="pill warn">条件を指定してください</span></div>
+        <button class="btn primary" type="button" onclick="printPurchaseOrders()">発注書PDF</button>
+        <button class="btn primary" type="button" onclick="printPickingTickets()">現品票PDF</button>
+      </div>
+      <div class="hint">確定済み受注と現在入力中の明細から、日付・輸入社が両方一致するものだけを出力します。</div>
     </div>
   </section>
 
@@ -1410,6 +1425,7 @@ function switchWorkspaceTab(tab){
 }
 function init(){
   document.getElementById("order-date").value=today();
+  document.getElementById("report-filter-date").value=today();
   loadConfirmedBatches();
   loadImportDrafts();
   loadPendingLocal();
@@ -1422,6 +1438,7 @@ function init(){
   render();
   renderPendingEntries();
   renderMasters();
+  renderReportFilterCount();
   switchWorkspaceTab(initialWorkspaceTab());
   resetPendingForm();
   loadDbData();
@@ -1564,6 +1581,43 @@ function printableRows(){
     customerName:val("batch-customer-name")
   }));
   return [...confirmedRows,...currentRows];
+}
+function normalizedImporter(value){
+  return String(value||"").normalize("NFKC").trim().toLowerCase();
+}
+function reportFilter(){
+  return {
+    date:val("report-filter-date"),
+    importer:normalizedImporter(val("report-filter-importer"))
+  };
+}
+function reportRows(showAlert=false){
+  const filter=reportFilter();
+  if(!filter.date||!filter.importer){
+    if(showAlert)alert("帳票出力の日付と輸入社を両方指定してください");
+    return [];
+  }
+  const rows=printableRows().filter(r=>{
+    const date=(r.orderDate||r.shipDate||"")===filter.date;
+    const code=normalizedImporter(r.importerCode);
+    const name=normalizedImporter(r.importerName);
+    return date&&(code===filter.importer||name===filter.importer);
+  });
+  if(showAlert&&!rows.length)alert("指定した日付・輸入社に一致する明細がありません");
+  return rows;
+}
+function renderReportFilterCount(){
+  const badge=document.getElementById("report-filter-count");
+  if(!badge)return;
+  const filter=reportFilter();
+  if(!filter.date||!filter.importer){
+    badge.textContent="日付・輸入社を指定";
+    badge.className="pill warn";
+    return;
+  }
+  const rows=reportRows(false);
+  badge.textContent=`対象 ${rows.length}明細`;
+  badge.className=rows.length?"pill blue":"pill warn";
 }
 function resetCurrentOrderForm(){
   orders=[blankOrder()];
@@ -1972,6 +2026,7 @@ function render(){
   renderSummary();
   renderImportDrafts();
   renderConfirmedOrders();
+  renderReportFilterCount();
 }
 function batchLabel(batch){
   return `${batch.customer?.name||batch.customer?.code||"得意先未設定"} / ${batch.importer?.code||batch.importer?.name||"輸入社未設定"}`;
@@ -2333,9 +2388,9 @@ async function confirmCustomerOrder(options={}){
   resetCurrentOrderForm();
   return true;
 }
-function groupedBySupplier(){
+function groupedBySupplier(rows){
   const map=new Map();
-  printableRows().forEach(r=>{
+  rows.forEach(r=>{
     const key=(r.importerCode||"NO_IMPORTER")+"|"+(r.supplierCode||"NO_CODE")+" "+(r.supplierName||"仕入先未設定");
     if(!map.has(key))map.set(key,[]);
     map.get(key).push(r);
@@ -2343,8 +2398,9 @@ function groupedBySupplier(){
   return map;
 }
 function printPurchaseOrders(){
-  if(!printableRows().length){alert("明細がありません");return}
-  const groups=groupedBySupplier();
+  const rows=reportRows(true);
+  if(!rows.length)return;
+  const groups=groupedBySupplier(rows);
   const pages=[...groups.entries()].map(([supplier,rows],idx)=>purchaseOrderPage(supplier,rows,idx+1)).join("");
   openPrintDoc("発注書",purchaseOrderCss()+pages);
 }
@@ -2357,15 +2413,19 @@ function purchaseOrderPage(supplier,rows,no){
     <div class="po-meta"><div>発注No. ${esc(first.importerCode||"BETA")}-${String(no).padStart(3,"0")}</div><div>発注日 ${esc(first.orderDate||val("order-date"))}</div></div>
     <div class="po-importer">輸入社: ${esc(importerLabel)}</div>
     <div class="po-supplier">${esc(supplierName)}</div>
-    <table><thead><tr><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>得意先</th><th>備考</th></tr></thead><tbody>
+    <table><colgroup><col class="po-code"><col class="po-name"><col class="po-qty"><col class="po-unit"><col class="po-customer"><col class="po-memo"></colgroup><thead><tr><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>得意先</th><th>備考</th></tr></thead><tbody>
       ${rows.map(r=>`<tr><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.customerName||r.customerCode)}</td><td>${esc(r.memo)}</td></tr>`).join("")}
     </tbody></table>
   </section>`;
 }
 function printPickingTickets(){
-  const rows=printableRows();
-  if(!rows.length){alert("明細がありません");return}
-  openPrintDoc("オーダー現品票",ticketCss()+`<section class="ticket-page">${rows.map(ticketHtml).join("")}</section>`);
+  const rows=reportRows(true);
+  if(!rows.length)return;
+  const pages=[];
+  for(let i=0;i<rows.length;i+=8){
+    pages.push(`<section class="ticket-page">${rows.slice(i,i+8).map(ticketHtml).join("")}</section>`);
+  }
+  openPrintDoc("オーダー現品票",ticketCss()+pages.join(""));
 }
 function ticketColorForImporter(value){
   const code=String(value||"").toUpperCase();
@@ -2393,22 +2453,24 @@ function ticketHtml(r){
     <div><span>商品名:</span><strong>${esc(r.productName)}</strong></div>
     <div class="en">${esc(r.englishName)}</div>
     <div><span>数量:</span><strong>${esc(r.qty)} ${esc(r.unit)}</strong></div>
-    <div><span>備考:</span><strong>${esc(r.memo)}</strong></div>
+    <div class="ticket-memo"><span>備考:</span><strong>${esc(r.memo)}</strong></div>
   </div>`;
 }
 function printBaseCss(){
   return `<style>@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;color:#000;font-family:Arial,"Helvetica Neue",Meiryo,sans-serif}.po-page,.ticket-page{page-break-after:always}</style>`;
 }
 function purchaseOrderCss(){
-  return printBaseCss()+`<style>.po-page{min-height:281mm;padding:5mm}.po-title{text-align:center;font-size:18pt;font-weight:900;letter-spacing:3px}.po-meta{display:flex;justify-content:space-between;margin:6mm 0 3mm;font-size:9.5pt}.po-importer{font-size:10pt;font-weight:900;margin-bottom:1.5mm}.po-supplier{font-size:13pt;font-weight:900;margin-bottom:4mm;border-bottom:1px solid #000;padding-bottom:1.5mm}table{width:100%;border-collapse:collapse;font-size:9pt}th,td{border:1px solid #000;padding:1.6mm 1.2mm;text-align:left;vertical-align:top}th{background:#eee}</style>`;
+  return printBaseCss()+`<style>.po-page{min-height:281mm;padding:3mm 4mm}.po-title{text-align:center;font-size:17pt;font-weight:900;letter-spacing:2px}.po-meta{display:flex;justify-content:space-between;margin:4mm 0 2.5mm;font-size:9pt}.po-importer{font-size:9.5pt;font-weight:900;margin-bottom:1.2mm}.po-supplier{font-size:12pt;font-weight:900;margin-bottom:3mm;border-bottom:1px solid #000;padding-bottom:1.2mm}table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:8.5pt}th,td{border:1px solid #000;padding:1.4mm 1.2mm;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center;white-space:nowrap}.po-code{width:12%}.po-name{width:27%}.po-qty{width:8%}.po-unit{width:7%}.po-customer{width:23%}.po-memo{width:23%}td:nth-child(3),td:nth-child(4){text-align:center}</style>`;
 }
 function ticketCss(){
-  return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm}.ticket{border:2px solid var(--ticket-main,#000);border-left-width:7mm;padding:3.2mm 4.2mm;overflow:hidden;font-size:12pt;line-height:1.18;background:linear-gradient(90deg,var(--ticket-bg,#fff) 0 15mm,#fff 15mm);print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:2.2mm}.ticket span{display:inline-block;min-width:19mm;font-weight:900}.ticket strong{font-weight:900}.ticket .ticket-importer{margin:-1.6mm -2.6mm 2.4mm -2.6mm;padding:1.6mm 2.6mm;background:var(--ticket-bg,#fff);color:var(--ticket-main,#000);border-bottom:1px solid var(--ticket-main,#000);print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .en{font-size:8.5pt;line-height:1.1;margin-left:19mm;min-height:9mm}</style>`;
+  return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm;break-after:page}.ticket-page:last-child{break-after:auto}.ticket{border:1.5px solid var(--ticket-main,#000);border-left-width:6mm;padding:2.6mm 3.6mm;overflow:hidden;font-size:10.5pt;line-height:1.16;background:linear-gradient(90deg,var(--ticket-bg,#fff) 0 14mm,#fff 14mm);print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:1.7mm}.ticket span{display:inline-block;min-width:18mm;font-size:9pt;font-weight:900}.ticket strong{font-weight:900;overflow-wrap:anywhere}.ticket .ticket-importer{margin:-1.2mm -2mm 2mm -2mm;padding:1.4mm 2mm;background:var(--ticket-bg,#fff);color:var(--ticket-main,#000);border-bottom:1px solid var(--ticket-main,#000);font-size:11pt;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .en{font-size:7.5pt;line-height:1.08;margin-left:18mm;min-height:7mm}.ticket .ticket-memo{display:grid;grid-template-columns:18mm minmax(0,1fr);gap:0;margin-bottom:0}.ticket .ticket-memo span{min-width:0}</style>`;
 }
 function openPrintDoc(title,html){
   const w=window.open("","_blank");
   if(!w){alert("ポップアップがブロックされました");return}
-  w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title>${html.match(/^<style[\s\S]*?<\/style>/)?.[0]||""}</head><body>${html.replace(/^<style[\s\S]*?<\/style>/,"")}<script>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+  const styles=(html.match(/<style[\s\S]*?<\/style>/g)||[]).join("");
+  const body=html.replace(/<style[\s\S]*?<\/style>/g,"");
+  w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title>${styles}</head><body>${body}<script>setTimeout(()=>window.print(),300)<\/script></body></html>`);
   w.document.close();
 }
 function setMasterType(type){
@@ -3443,6 +3505,12 @@ function applySearchResult(type,index){
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
     renderConfirmedOrders();
+  });
+});
+["report-filter-date","report-filter-importer"].forEach(id=>{
+  document.addEventListener("input",e=>{
+    if(e.target?.id!==id)return;
+    renderReportFilterCount();
   });
 });
 ["pending-filter-status","pending-filter-importer","pending-filter-customer"].forEach(id=>{
