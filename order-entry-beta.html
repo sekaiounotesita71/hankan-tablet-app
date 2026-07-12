@@ -129,6 +129,19 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
+  <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
+    <div class="panel-head"><span>商品明細</span><span class="sub">得意先は基本情報側で管理</span></div>
+    <div class="summary" id="summary"></div>
+    <div class="table-wrap">
+      <table class="orders">
+        <thead><tr>
+          <th>No.</th><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>仕入先コード</th><th>仕入先名</th><th>備考</th><th></th>
+        </tr></thead>
+        <tbody id="order-body"></tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px" id="report-output-panel">
     <div class="panel-head"><span>帳票出力</span><span class="sub">日付を指定。輸入社は個別またはALL</span></div>
     <div class="panel-body">
@@ -144,20 +157,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
-    <div class="panel-head"><span>商品明細</span><span class="sub">得意先は基本情報側で管理</span></div>
-    <div class="summary" id="summary"></div>
-    <div class="table-wrap">
-      <table class="orders">
-        <thead><tr>
-          <th>No.</th><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>仕入先コード</th><th>仕入先名</th><th>備考</th><th></th>
-        </tr></thead>
-        <tbody id="order-body"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
-    <div class="panel-head"><span>確定済み受注</span><span class="sub">詳細確認・修正戻し・削除</span></div>
+    <div class="panel-head"><span>確定済み受注</span><span class="sub">条件を指定した時だけ表示</span></div>
     <div class="panel-body">
       <div class="form-grid" style="grid-template-columns:180px 220px auto">
         <label>日付<input id="confirmed-filter-date" type="date"></label>
@@ -2040,12 +2040,16 @@ function batchLabel(batch){
 function renderConfirmedOrders(){
   const box=document.getElementById("confirmed-orders");
   if(!box)return;
+  const dateFilter=val("confirmed-filter-date");
+  const importerFilter=val("confirmed-filter-importer").trim().toLowerCase();
+  if(!dateFilter&&!importerFilter){
+    box.innerHTML=`<div class="hint">日付または輸入社を指定すると、確定済み受注を表示します。</div>`;
+    return;
+  }
   if(!confirmedBatches.length){
     box.innerHTML=`<div class="hint">確定済み受注はまだありません。</div>`;
     return;
   }
-  const dateFilter=val("confirmed-filter-date");
-  const importerFilter=val("confirmed-filter-importer").trim().toLowerCase();
   const batches=confirmedBatches.map((batch,index)=>({batch,index})).filter(({batch})=>{
     const dateOk=!dateFilter||(batch.orderDate||"")===dateFilter;
     const importerText=[batch.importer?.code,batch.importer?.name].filter(Boolean).join(" ").toLowerCase();
