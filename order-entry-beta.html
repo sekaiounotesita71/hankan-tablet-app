@@ -3439,7 +3439,7 @@ function updateImportReviewProductCode(index,value,el){
   const master=findMasterProduct(item.row.productCode,"");
   if(master){
     item.row.productCode=master.code||item.row.productCode;
-    item.row.productName=master.name||item.row.productName;
+    item.row.productName=item.row.productName||master.name||"";
     item.row.englishName=master.englishName||item.row.englishName||"";
     item.row.supplierCode=master.supplierCode||item.row.supplierCode||"";
     item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
