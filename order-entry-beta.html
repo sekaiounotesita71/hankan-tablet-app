@@ -3440,14 +3440,16 @@ function finishImportReviewProductName(index,value,el){
   if(!item)return;
   item.row=item.row||blankOrder();
   item.row.productName=String(value||"").trim();
-  const master=findMasterProduct("",item.row.productName)||inferProduct(item.row.productName);
-  if(master?.code){
-    item.row.productCode=master.code;
-    item.row.productName=master.name||item.row.productName;
-    item.row.englishName=master.englishName||item.row.englishName||"";
-    item.row.supplierCode=master.supplierCode||item.row.supplierCode||"";
-    item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
-    item.row.unitPrice=item.row.unitPrice||master.unitPrice||"";
+  if(!item.row.productCode){
+    const master=findMasterProduct("",item.row.productName)||inferProduct(item.row.productName);
+    if(master?.code){
+      item.row.productCode=master.code;
+      item.row.productName=master.name||item.row.productName;
+      item.row.englishName=master.englishName||item.row.englishName||"";
+      item.row.supplierCode=master.supplierCode||item.row.supplierCode||"";
+      item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
+      item.row.unitPrice=item.row.unitPrice||master.unitPrice||"";
+    }
   }
   syncImportReviewRowFields(index,el);
 }
