@@ -759,7 +759,6 @@ function dbBatchToBatch(row,lines){
 }
 async function saveConfirmedBatchToDb(batch){
   if(!dbReady||!supabaseClient)return null;
-  await ensureBatchMastersInDb(batch);
   const {data,error}=await supabaseClient.from("order_entry_batches").insert(batchToDb(batch)).select("id").single();
   if(error)throw error;
   const batchId=data.id;
@@ -782,22 +781,6 @@ async function saveConfirmedBatchToDb(batch){
     if(lineError)throw lineError;
   }
   return batchId;
-}
-async function ensureBatchMastersInDb(batch){
-  const importerCode=String(batch.importer?.code||"").trim();
-  const importerName=String(batch.importer?.name||importerCode).trim();
-  if(importerCode)await saveMasterItemToDb("importers",{code:importerCode,name:importerName||importerCode,aliases:[importerCode,importerName].filter(Boolean)});
-  const customerCode=String(batch.customer?.code||"").trim();
-  const customerName=String(batch.customer?.name||customerCode).trim();
-  if(customerCode)await saveMasterItemToDb("customers",{code:customerCode,name:customerName||customerCode,aliases:[customerName].filter(Boolean),importerCode,importerName});
-  const supplierMap=new Map();
-  (batch.rows||[]).forEach(row=>{
-    const supplierCode=String(row.supplierCode||"").trim();
-    if(supplierCode&&!supplierMap.has(supplierCode)){
-      supplierMap.set(supplierCode,{code:supplierCode,name:String(row.supplierName||supplierCode).trim()||supplierCode,aliases:[]});
-    }
-  });
-  for(const item of supplierMap.values())await saveMasterItemToDb("suppliers",item);
 }
 async function loadConfirmedBatchesFromDb(){
   if(!supabaseClient)return;
