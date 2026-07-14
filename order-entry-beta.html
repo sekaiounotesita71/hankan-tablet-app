@@ -1555,16 +1555,43 @@ function loadLineDictionary(){
 function saveLineDictionary(list){
   localStorage.setItem(LINE_DICT_KEY,JSON.stringify(list));
 }
-function lookupLineDictionary(expression){
+function lineDictionaryCustomerKey(customerInfo){
+  const source=customerInfo||{};
+  const code=String(source.code||source.customerCode||"").normalize("NFKC").trim().toLowerCase();
+  const name=String(source.name||source.customerName||"").normalize("NFKC").trim().toLowerCase();
+  return [code,name].filter(Boolean).join("|");
+}
+function lineDictionaryCustomerLabel(customerInfo){
+  const source=customerInfo||{};
+  const code=String(source.code||source.customerCode||"").normalize("NFKC").trim();
+  const name=String(source.name||source.customerName||"").normalize("NFKC").trim();
+  return [code,name].filter(Boolean).join(" ");
+}
+function lineDictionaryScopeLabel(item){
+  return item?.customerKey?"得意先辞書":"共通辞書";
+}
+function lookupLineDictionary(expression,customerInfo={}){
   const key=normalizeLineExpression(expression);
   if(!key)return null;
-  return loadLineDictionary()
+  const customerKey=lineDictionaryCustomerKey(customerInfo);
+  const found=loadLineDictionary()
     .filter(x=>x.active!==false&&x.key===key&&x.productCode)
-    .sort((a,b)=>(b.count||0)-(a.count||0)||(String(b.lastUsedAt||"").localeCompare(String(a.lastUsedAt||""))))[0]||null;
+    .map(item=>{
+      const entryCustomerKey=String(item.customerKey||"");
+      const scopeScore=entryCustomerKey?(customerKey&&entryCustomerKey===customerKey?2:0):1;
+      return {...item,_scopeScore:scopeScore};
+    })
+    .filter(item=>item._scopeScore>0)
+    .sort((a,b)=>(b._scopeScore||0)-(a._scopeScore||0)||(b.count||0)-(a.count||0)||(String(b.lastUsedAt||"").localeCompare(String(a.lastUsedAt||""))))[0]||null;
+  return found?{...found,scopeLabel:lineDictionaryScopeLabel(found)}:null;
 }
-function learnLineDictionaryFromOrders(rows){
+function learnLineDictionaryFromOrders(rows,customerInfo={}){
   const list=loadLineDictionary();
   const now=new Date().toISOString();
+  const customerKey=lineDictionaryCustomerKey(customerInfo);
+  const customerLabel=lineDictionaryCustomerLabel(customerInfo);
+  const customerCode=String(customerInfo?.code||customerInfo?.customerCode||"").normalize("NFKC").trim();
+  const customerName=String(customerInfo?.name||customerInfo?.customerName||"").normalize("NFKC").trim();
   let changed=0;
   rows.forEach(row=>{
     const expression=row.sourceExpression||row.lineExpression||"";
@@ -1572,11 +1599,11 @@ function learnLineDictionaryFromOrders(rows){
     const productCode=String(row.productCode||"").trim();
     if(!key||!productCode)return;
     const productName=String(row.productName||"").trim();
-    const idx=list.findIndex(x=>x.key===key&&String(x.productCode||"").trim().toLowerCase()===productCode.toLowerCase());
+    const idx=list.findIndex(x=>x.key===key&&String(x.productCode||"").trim().toLowerCase()===productCode.toLowerCase()&&String(x.customerKey||"")===customerKey);
     if(idx>=0){
-      list[idx]={...list[idx],expression:expression.trim(),productCode,productName,count:(Number(list[idx].count)||0)+1,lastUsedAt:now,active:true};
+      list[idx]={...list[idx],expression:expression.trim(),productCode,productName,customerKey,customerCode,customerName,customerLabel,scope:customerKey?"customer":"common",count:(Number(list[idx].count)||0)+1,lastUsedAt:now,active:true};
     }else{
-      list.push({key,expression:expression.trim(),productCode,productName,count:1,lastUsedAt:now,active:true});
+      list.push({key,expression:expression.trim(),productCode,productName,customerKey,customerCode,customerName,customerLabel,scope:customerKey?"customer":"common",count:1,lastUsedAt:now,active:true});
     }
     changed++;
   });
@@ -1600,8 +1627,9 @@ function renderLineDictionaryPreview(){
     return;
   }
   preview.innerHTML=list.slice(0,80).map(item=>`
-    <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 70px 46px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:5px 0">
+    <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1fr) 70px 46px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:5px 0">
       <span>${esc(item.expression||item.key)}</span>
+      <span>${esc(item.customerLabel||lineDictionaryScopeLabel(item))}</span>
       <span><b>${esc(item.productCode)}</b> ${esc(item.productName||"")}</span>
       <span>${Number(item.count)||0}回</span>
       <button class="small" type="button" onclick="deleteLineDictionaryEntry(${item.index})">削除</button>
@@ -2552,11 +2580,11 @@ function lineImporterSnapshot(value){
   };
 }
 function lineReviewItem(productText,parsed,currentCustomer,currentImporter,lineNo){
-  const learned=lookupLineDictionary(productText);
+  const resolvedCustomer=resolveCustomerWithImporter(currentCustomer||{});
+  const learned=lookupLineDictionary(productText,resolvedCustomer.customer);
   const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
   const inferredProduct=inferProduct(productText);
   const product=learnedProduct||inferredProduct||{};
-  const resolvedCustomer=resolveCustomerWithImporter(currentCustomer||{});
   const importer=lineImporterSnapshot({
     code:resolvedCustomer.importer.code||currentImporter?.code||"",
     name:resolvedCustomer.importer.name||currentImporter?.name||""
@@ -2665,7 +2693,8 @@ function parseLineDraft(){
     }
     const parsed=parseLineOrderPart(part);
     if(!parsed?.productText)return;
-    const learned=lookupLineDictionary(parsed.productText)||lookupLineDictionary(part);
+    const currentCustomer=customer();
+    const learned=lookupLineDictionary(parsed.productText,currentCustomer)||lookupLineDictionary(part,currentCustomer);
     const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
     const inferredProduct=inferProduct(parsed.productText);
     const p=learnedProduct||((inferredProduct.code||inferredProduct.name)?inferredProduct:inferProduct(part));
@@ -2683,7 +2712,7 @@ function parseLineDraft(){
       unit:parsed.unit||"",
       supplierCode:p.supplierCode||"",
       supplierName:p.supplierName||"",
-      memo:[learned?"辞書":(p.code?"":"要確認"),parsed.memo].filter(Boolean).join(" / "),
+      memo:[learned?learned.scopeLabel:(p.code?"":"要確認"),parsed.memo].filter(Boolean).join(" / "),
       sourceExpression:parsed.productText
     });
   });
@@ -2705,7 +2734,7 @@ async function confirmCustomerOrder(options={}){
   if(!im.code&&!im.name){alert("輸入社を入力してください。");return}
   if(!c.code&&!c.name){alert("得意先を入力してください。");return}
   if(!activeOrderRows().length){alert("商品明細がありません。");return}
-  const learnedCount=learnLineDictionaryFromOrders(activeOrderRows());
+  const learnedCount=learnLineDictionaryFromOrders(activeOrderRows(),c);
   const batch=currentBatch();
   if(dbReady&&supabaseClient){
     try{
@@ -4042,7 +4071,7 @@ async function confirmImportReviewGroupList(groups,successLabel){
   setAppBusy(true);
   try{
     await persistImportedConfirmedBatches(batches);
-    const learned=learnLineDictionaryFromOrders(items.map(item=>item.row));
+    const learned=grouped.reduce((sum,group)=>sum+learnLineDictionaryFromOrders(group.rows,group.customer),0);
     removeImportReviewRowsByIndexes(indexes);
     if(importReviewItems.length)renderImportReview();
     else clearImportReviewState();
