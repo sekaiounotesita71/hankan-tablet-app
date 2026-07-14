@@ -35,6 +35,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .pending-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pending-grid .wide{grid-column:span 2}.pending-grid .full{grid-column:1/-1}.pending-list{display:grid;gap:8px}.pending-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.pending-card.hold{background:#fffaf0}.pending-card.applied{opacity:.68}.pending-card.cancelled{opacity:.52}.pending-main{display:grid;gap:4px}.pending-title{font-weight:900}.pending-meta{color:var(--muted);font-size:12px;font-weight:800}.pending-amount{font-family:Consolas,monospace;font-weight:900}.pending-amount.negative{color:var(--danger)}.pending-actions{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
 .pending-save-note{display:flex;align-items:center;min-height:40px;color:var(--muted);font-size:12px;font-weight:900}
 .sales-board-tools{display:grid;grid-template-columns:150px 150px 160px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.sales-board-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.sales-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.sales-card-label{color:var(--muted);font-size:12px;font-weight:900}.sales-card-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.sales-board-ranks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:10px}.sales-rank{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}.sales-rank-head{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#fbfcfd;color:var(--muted);font-size:12px;font-weight:900}.sales-rank-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-rank-row:last-child{border-bottom:0}.sales-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}.sales-rank-value{font-family:Consolas,monospace;color:var(--muted);font-weight:900}.sales-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.sales-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.sales-table th,.sales-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.sales-table th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-weight:900}.sales-empty{padding:18px;color:var(--muted);font-weight:800;text-align:center}
+.historical-sales-import{margin-top:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.historical-sales-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.historical-sales-review{max-height:260px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:#fff}.historical-sales-review table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.historical-sales-review th,.historical-sales-review td{padding:6px 7px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.historical-sales-review th{position:sticky;top:0;background:#f7f9fb;color:var(--muted);font-weight:900}.historical-sales-review .warn td{background:#fff8e8}.historical-sales-review .error td{background:#fff0ef}
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -253,6 +254,17 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" onclick="loadSalesReferenceBoard()">売上読込</button>
         <button class="btn primary" onclick="exportSalesReferenceBoardExcel()">Excel出力</button>
       </div>
+      <div class="historical-sales-import">
+        <div class="historical-sales-tools">
+          <button class="btn" type="button" onclick="document.getElementById('historical-sales-file').click()">過去売上CSV取込</button>
+          <button class="btn primary" type="button" onclick="saveHistoricalSalesImport()">過去売上を登録</button>
+          <button class="btn" type="button" onclick="clearHistoricalSalesImport()">取込内容クリア</button>
+          <input id="historical-sales-file" type="file" accept=".csv,text/csv" multiple style="display:none" onchange="importHistoricalSalesCsv(this)">
+          <span class="pill warn" id="historical-sales-state">過去売上CSVを取り込めます。</span>
+        </div>
+        <div class="hint">CSV列名例: 日付, 輸入社コード, 得意先名, 商品コード, 商品名, 産地, 数量, 単位, NET, 単価, 金額, 備考</div>
+        <div class="historical-sales-review" id="historical-sales-review" style="display:none"></div>
+      </div>
       <div class="hint" id="sales-ref-state">条件を指定して売上を読み込みます。</div>
       <div class="sales-board-summary" id="sales-ref-summary-cards"></div>
       <div class="sales-board-ranks" id="sales-ref-ranks"></div>
@@ -327,6 +339,7 @@ let confirmedBatches=[];
 let pendingEntries=[];
 let salesReferenceRows=[];
 let salesReferenceSessions=[];
+let historicalSalesImportRows=[];
 let draftRows=[];
 let importDraftGroups=[];
 let importReviewItems=[];
@@ -1466,9 +1479,202 @@ function salesRefText(value){
 function salesRefDbErrorMessage(error){
   const msg=String(error?.message||error||"");
   if(error?.status===401||/invalid api key|jwt/i.test(msg))return "Supabase APIキーが無効です。SupabaseのProject Settings > APIから新しい anon public key を取得して差し替えてください。";
+  if(/historical_sales_records/i.test(msg))return "過去売上用SQLが未実行です。historical-sales-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42P01"||/relation .* does not exist|sales_records/i.test(msg))return "売上確定用SQLが未実行です。sales-lock-trial-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg))return "売上確定用SQLの反映待ちです。sales-lock-trial-migration.sql を再実行、または少し待って再読込してください。";
   return msg||"売上データの読込でエラーが発生しました。";
+}
+function setHistoricalSalesState(text,type="warn"){
+  const el=document.getElementById("historical-sales-state");
+  if(!el)return;
+  el.textContent=text;
+  el.className=`pill ${type==="ok"?"blue":"warn"}`;
+}
+function normalizeHistoricalSalesHeader(value){
+  return String(value??"").trim().toLowerCase().replace(/[\s_\-　]/g,"").replace(/[()（）［］\[\]「」]/g,"");
+}
+const HISTORICAL_SALES_HEADER_ALIASES={
+  finalized_at:["日付","売上日","出荷日","作業日","確定日","date","salesdate","finalizedat"],
+  importer_code:["輸入社","輸入社コード","インポーター","importer","importercode","importer_code","cs"],
+  country_code:["国","国コード","country","countrycode"],
+  customer_code:["得意先コード","顧客コード","customer_code","customercode"],
+  store_name:["得意先","得意先名","顧客名","店名","customer","customername","storename","store_name"],
+  product_id:["商品コード","品番","productcode","product_code","productid","product_id","code"],
+  product_name:["商品名","品名","日本語商品名","product","productname","product_name","name"],
+  english_name:["英名","英文名","english","englishname","english_name"],
+  origin:["産地","原産地","origin"],
+  input_qty:["数量","qty","quantity","inputqty","input_qty"],
+  input_unit:["単位","unit","inputunit","input_unit"],
+  net_weight:["net","netkg","net重量","正味重量","重量","kg","net_weight"],
+  box_no:["箱番号","箱no","box","boxno","box_no"],
+  unit_price:["単価","売価","価格","price","unitprice","unit_price"],
+  amount:["金額","売上","売上金額","合計","amount","salesamount","total"],
+  memo:["備考","メモ","note","memo","remarks"],
+  source_filename:["元ファイル","source","sourcefile","sourcefilename","source_filename"]
+};
+function historicalSalesHeaderMap(headers){
+  const normalized=headers.map(normalizeHistoricalSalesHeader);
+  const map={};
+  Object.entries(HISTORICAL_SALES_HEADER_ALIASES).forEach(([field,aliases])=>{
+    const keys=aliases.map(normalizeHistoricalSalesHeader);
+    const idx=normalized.findIndex(header=>keys.includes(header));
+    if(idx>=0)map[field]=idx;
+  });
+  return map;
+}
+function historicalSalesCell(cells,map,field){
+  const idx=map[field];
+  return idx===undefined?"":String(cells[idx]??"").trim();
+}
+function historicalSalesNumber(value){
+  const text=String(value??"").replace(/[￥¥,]/g,"").trim();
+  if(!text)return null;
+  const n=Number(text);
+  return Number.isFinite(n)?n:null;
+}
+function historicalSalesDate(value){
+  const raw=String(value??"").trim();
+  if(!raw)return "";
+  if(/^\d+(\.\d+)?$/.test(raw)){
+    const serial=Number(raw);
+    if(serial>20000&&serial<80000){
+      const date=new Date(Math.round((serial-25569)*86400*1000));
+      return date.toISOString().slice(0,10);
+    }
+  }
+  if(/^\d{8}$/.test(raw))return `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`;
+  const text=raw.replace(/[年月\.\/]/g,"-").replace(/日/g,"").replace(/--+/g,"-");
+  const m=text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m)return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+  const d=new Date(raw);
+  return Number.isNaN(d.getTime())?"":d.toISOString().slice(0,10);
+}
+function historicalSalesRowFromCsv(cells,map,index,filename){
+  const qty=historicalSalesNumber(historicalSalesCell(cells,map,"input_qty"));
+  const unitPrice=historicalSalesNumber(historicalSalesCell(cells,map,"unit_price"));
+  let amount=historicalSalesNumber(historicalSalesCell(cells,map,"amount"));
+  if(amount===null&&qty!==null&&unitPrice!==null)amount=qty*unitPrice;
+  const finalizedAt=historicalSalesDate(historicalSalesCell(cells,map,"finalized_at"));
+  const productId=historicalSalesCell(cells,map,"product_id");
+  const productName=historicalSalesCell(cells,map,"product_name");
+  const storeName=historicalSalesCell(cells,map,"store_name");
+  const row={
+    finalized_at:finalizedAt,
+    country_code:historicalSalesCell(cells,map,"country_code"),
+    importer_code:historicalSalesCell(cells,map,"importer_code").toUpperCase(),
+    customer_code:historicalSalesCell(cells,map,"customer_code"),
+    store_name:storeName,
+    product_id:productId,
+    product_name:productName,
+    english_name:historicalSalesCell(cells,map,"english_name"),
+    origin:historicalSalesCell(cells,map,"origin"),
+    input_qty:qty,
+    input_unit:historicalSalesCell(cells,map,"input_unit"),
+    net_weight:historicalSalesNumber(historicalSalesCell(cells,map,"net_weight")),
+    box_no:historicalSalesCell(cells,map,"box_no"),
+    unit_price:unitPrice,
+    amount,
+    memo:historicalSalesCell(cells,map,"memo"),
+    is_stockout:false,
+    source_filename:historicalSalesCell(cells,map,"source_filename")||filename,
+    source_row_no:index+1,
+    source_type:"過去データ"
+  };
+  const errors=[];
+  const warnings=[];
+  if(!row.finalized_at)errors.push("日付なし");
+  if(!row.importer_code)warnings.push("輸入社なし");
+  if(!row.store_name&&!row.customer_code)warnings.push("得意先なし");
+  if(!row.product_id&&!row.product_name)warnings.push("商品なし");
+  if(row.amount===null)warnings.push("金額なし");
+  row._status=errors.length?"error":warnings.length?"warn":"ok";
+  row._message=[...errors,...warnings].join(" / ");
+  return row;
+}
+async function importHistoricalSalesCsv(input){
+  const files=[...(input?.files||[])];
+  if(!files.length)return;
+  const imported=[];
+  for(const file of files){
+    const text=await file.text();
+    const rows=parseCsv(text).filter(row=>row.some(cell=>String(cell??"").trim()));
+    if(rows.length<2)continue;
+    const map=historicalSalesHeaderMap(rows[0]);
+    rows.slice(1).forEach((cells,index)=>{
+      imported.push(historicalSalesRowFromCsv(cells,map,index,file.name));
+    });
+  }
+  historicalSalesImportRows=imported;
+  renderHistoricalSalesImportReview();
+  if(input)input.value="";
+}
+function renderHistoricalSalesImportReview(){
+  const box=document.getElementById("historical-sales-review");
+  if(!box)return;
+  const rows=historicalSalesImportRows||[];
+  const errors=rows.filter(row=>row._status==="error").length;
+  const warnings=rows.filter(row=>row._status==="warn").length;
+  setHistoricalSalesState(rows.length?`取込 ${rows.length}件 / エラー ${errors}件 / 警告 ${warnings}件`:"過去売上CSVを取り込めます。",errors?"warn":"ok");
+  if(!rows.length){
+    box.style.display="none";
+    box.innerHTML="";
+    return;
+  }
+  box.style.display="block";
+  const shown=rows.slice(0,300);
+  const more=rows.length>shown.length?`<tr><td colspan="12">ほか ${rows.length-shown.length}件</td></tr>`:"";
+  box.innerHTML=`<table><thead><tr><th>状態</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>単価</th><th>金額</th><th>元ファイル</th></tr></thead><tbody>${shown.map(row=>`<tr class="${row._status==="error"?"error":row._status==="warn"?"warn":""}"><td>${esc(row._message||"OK")}</td><td>${esc(row.finalized_at)}</td><td>${esc(row.importer_code)}</td><td>${esc(row.store_name||row.customer_code)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td><td>${esc(row.input_qty??"")}</td><td>${esc(row.input_unit)}</td><td>${esc(row.unit_price??"")}</td><td>${esc(row.amount??"")}</td><td>${esc(row.source_filename)}</td></tr>`).join("")}${more}</tbody></table>`;
+}
+function clearHistoricalSalesImport(){
+  historicalSalesImportRows=[];
+  renderHistoricalSalesImportReview();
+}
+async function saveHistoricalSalesImport(){
+  const client=initSupabase();
+  if(!client){alert("Supabaseを読み込めません。");return}
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  const rows=(historicalSalesImportRows||[]).filter(row=>row._status!=="error");
+  if(!rows.length){alert("登録できる過去売上データがありません。");return}
+  const skipped=(historicalSalesImportRows||[]).length-rows.length;
+  if(!confirm(`過去売上 ${rows.length}件を登録します。${skipped?` エラー ${skipped}件は除外します。`:""}よろしいですか？`))return;
+  setHistoricalSalesState(`登録中... 0/${rows.length}`);
+  try{
+    const payloads=rows.map(row=>({
+      finalized_at:row.finalized_at,
+      country_code:row.country_code||null,
+      importer_code:row.importer_code||null,
+      customer_code:row.customer_code||null,
+      store_name:row.store_name||null,
+      product_id:row.product_id||null,
+      product_name:row.product_name||null,
+      english_name:row.english_name||null,
+      origin:row.origin||null,
+      input_qty:row.input_qty,
+      input_unit:row.input_unit||null,
+      net_weight:row.net_weight,
+      box_no:row.box_no||null,
+      unit_price:row.unit_price,
+      amount:row.amount,
+      memo:row.memo||null,
+      is_stockout:false,
+      source_filename:row.source_filename,
+      source_row_no:row.source_row_no,
+      imported_by:user.id
+    }));
+    for(let i=0;i<payloads.length;i+=300){
+      const chunk=payloads.slice(i,i+300);
+      const {error}=await client.from("historical_sales_records").upsert(chunk,{onConflict:"source_filename,source_row_no"});
+      if(error)throw error;
+      setHistoricalSalesState(`登録中... ${Math.min(i+300,payloads.length)}/${payloads.length}`);
+    }
+    setHistoricalSalesState(`過去売上 ${rows.length}件を登録しました。`,"ok");
+    clearHistoricalSalesImport();
+    await loadSalesReferenceBoard();
+  }catch(error){
+    setHistoricalSalesState(salesRefDbErrorMessage(error));
+    alert(salesRefDbErrorMessage(error));
+  }
 }
 function salesRefMonth(value){
   const d=salesRefDateOnly(value);
@@ -1566,11 +1772,35 @@ async function loadSalesReferenceBoard(){
       if(state)state.textContent=`売上データを読込中... ${allRows.length}件`;
       if(page.length<pageSize)break;
     }
+    const historicalRows=[];
+    try{
+      for(let offset=0;offset<maxRows;offset+=pageSize){
+        const {data,error}=await client
+          .from("historical_sales_records")
+          .select("*")
+          .order("finalized_at",{ascending:false})
+          .range(offset,offset+pageSize-1);
+        if(error)throw error;
+        const page=data||[];
+        historicalRows.push(...page);
+        if(state)state.textContent=`売上データを読込中... 現場 ${allRows.length}件 / 過去 ${historicalRows.length}件`;
+        if(page.length<pageSize)break;
+      }
+    }catch(historyError){
+      const msg=String(historyError?.message||historyError||"");
+      if(/historical_sales_records|relation .* does not exist/i.test(msg)){
+        shippingWarning=[shippingWarning,"過去売上SQL未実行"].filter(Boolean).join(" / ");
+      }else{
+        throw historyError;
+      }
+    }
     const sessionMap=new Map(salesReferenceSessions.map(session=>[session.id,session]));
-    salesReferenceRows=allRows.map(row=>{
+    const currentRows=allRows.map(row=>{
       const session=sessionMap.get(row.session_id);
-      return {...row,finalized_at:row.finalized_at||session?.finalized_at||session?.updated_at||session?.created_at||""};
+      return {...row,source_type:"現場確定",finalized_at:row.finalized_at||session?.finalized_at||session?.updated_at||session?.created_at||""};
     });
+    const pastRows=historicalRows.map(row=>({...row,source_type:"過去データ",session_id:row.session_id||""}));
+    salesReferenceRows=[...currentRows,...pastRows].sort((a,b)=>String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
     if(state)state.textContent=`売上データ ${salesReferenceRows.length}件を読み込みました。${shippingWarning?` 送料情報: ${shippingWarning}`:""}`;
     renderSalesReferenceBoard();
   }catch(error){
@@ -1611,9 +1841,9 @@ function renderSalesReferenceBoard(){
     return;
   }
   table.innerHTML=`<table class="sales-table"><thead><tr>
-    <th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th>
+    <th>区分</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th>
   </tr></thead><tbody>${rows.map(row=>`<tr>
-    <td>${esc(salesRefDateOnly(row.finalized_at))}</td><td>${esc(row.importer_code)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
+    <td>${esc(row.source_type||"現場確定")}</td><td>${esc(salesRefDateOnly(row.finalized_at))}</td><td>${esc(row.importer_code)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
     <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(row.amount))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
   </tr>`).join("")}</tbody></table>`;
 }
@@ -1624,6 +1854,7 @@ function exportSalesReferenceBoardExcel(){
   const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
   const shippingSales=salesRefShippingFeeForRows(rows);
   const data=rows.map(row=>({
+    "区分":row.source_type||"現場確定",
     "日付":salesRefDateOnly(row.finalized_at),
     "輸入社":row.importer_code||"",
     "得意先":row.store_name||"",
@@ -1659,7 +1890,7 @@ function exportSalesReferenceBoardExcel(){
   }));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(dailyRows),"日別売上");
   const ws=XLSX.utils.json_to_sheet(data);
-  ws["!cols"]=[{wch:12},{wch:10},{wch:22},{wch:12},{wch:24},{wch:24},{wch:14},{wch:10},{wch:8},{wch:10},{wch:10},{wch:10},{wch:12},{wch:24},{wch:8}];
+  ws["!cols"]=[{wch:10},{wch:12},{wch:10},{wch:22},{wch:12},{wch:24},{wch:24},{wch:14},{wch:10},{wch:8},{wch:10},{wch:10},{wch:10},{wch:12},{wch:24},{wch:8}];
   XLSX.utils.book_append_sheet(wb,ws,"売上明細");
   const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
   XLSX.writeFile(wb,`sales_reference_${d}.xlsx`);
