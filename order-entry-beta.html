@@ -6,7 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<title>受注登録ベータ</title>
+<title>受注登録</title>
 <style>
 :root{
   --bg:#f5f6f7;--panel:#fff;--line:#d8dde3;--line2:#b8c0ca;--text:#15181c;--muted:#64707d;
@@ -43,7 +43,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 <body>
 <header>
   <div class="title-wrap">
-    <div><div class="title">受注登録ベータ</div><div class="sub">現行アプリとは独立。1得意先ごとに商品を登録して、発注書・現品票を検証します。</div></div>
+    <div><div class="title">受注登録</div></div>
     <nav class="app-nav" aria-label="アプリ切替">
       <a class="app-nav-link" href="./index.html">作業アプリ</a>
       <button class="app-nav-link" type="button" data-workspace-tab="sales" onclick="switchWorkspaceTab('sales')">売上参照</button>
@@ -65,11 +65,11 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 <main>
   <div class="layout workspace-panel active" data-workspace-panel="orders">
     <section class="panel">
-      <div class="panel-head">LINE文面貼り付けβ</div>
+      <div class="panel-head">LINE文面貼り付け</div>
       <div class="panel-body line-parser">
         <textarea id="line-text" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="LINE文面を貼り付け"></textarea>
         <div class="actions"><button class="btn primary" onclick="openLineBulkReview()">一括確認へ</button><button class="btn" onclick="parseLineDraft()">現在の得意先で下書き</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
-        <div class="line-preview" id="line-preview">商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。</div>
+        <div class="line-preview" id="line-preview">LINE文面を貼り付けてください。</div>
       </div>
     </section>
     <section class="panel">
@@ -77,8 +77,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="panel-body">
         <div class="form-grid">
           <label class="wide">日付<input id="order-date" type="date"></label>
-          <label>輸入社コード<input id="batch-importer-code" list="importer-code-list" autocomplete="off" placeholder="自動反映後に修正可"></label>
-          <label>輸入社名<input id="batch-importer-name" list="importer-name-list" autocomplete="off" placeholder="自動反映後に修正可"></label>
+          <label>輸入社コード<input id="batch-importer-code" list="importer-code-list" autocomplete="off" placeholder="輸入社コード"></label>
+          <label>輸入社名<input id="batch-importer-name" list="importer-name-list" autocomplete="off" placeholder="輸入社名"></label>
           <label>得意先コード<input id="batch-customer-code" autocomplete="off" placeholder="例 01-002"></label>
           <label>得意先名<input id="batch-customer-name" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="得意先名"></label>
           <label class="wide">メモ<textarea id="batch-note" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="この受注全体のメモ"></textarea></label>
@@ -96,13 +96,12 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <span id="db-state" class="pill warn">DB未接続</span>
           <span id="save-state" class="sub">未保存</span>
         </div>
-        <div class="hint">手入力はここで輸入社と得意先を1回だけ指定します。下の明細には商品だけを追加します。</div>
       </div>
     </section>
   </div>
 
   <section class="panel workspace-panel active import-review-hidden" data-workspace-panel="orders" id="import-review-panel" style="margin-top:12px">
-    <div class="panel-head"><span id="import-review-title">取込内容の確認</span><span class="sub">輸入社・得意先・商品・仕入先を確認してから登録</span></div>
+    <div class="panel-head"><span id="import-review-title">取込内容の確認</span></div>
     <div class="panel-body">
       <div class="import-review-tools">
         <input class="import-review-search" id="import-review-search" type="search" placeholder="輸入社・得意先・商品コード・商品名で絞り込み" oninput="renderImportReview()">
@@ -115,7 +114,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" id="import-review-draft-btn" type="button" onclick="confirmImportedOrderReview()">取込下書きへ登録</button>
         <button class="btn" type="button" onclick="cancelImportReview()">取込を破棄</button>
       </div>
-      <div class="hint">赤は必須項目不足、黄は数量または仕入先の確認が必要、青は確定可能です。商品コードを選ぶと商品名・仕入先をマスタから反映します。</div>
+      <div class="hint">赤・黄の行を修正してください。青の行は確定できます。</div>
       <div class="import-review-table-wrap">
         <table class="import-review-table">
           <thead><tr><th>No.</th><th>状態</th><th>輸入社</th><th>得意先コード</th><th>得意先名</th><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>仕入先コード</th><th>仕入先名</th><th>備考</th><th>取込元</th><th></th></tr></thead>
@@ -126,14 +125,14 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel active" data-workspace-panel="orders" id="import-drafts-panel" style="margin-top:12px">
-    <div class="panel-head"><span>取込下書き</span><span class="sub">PDF/CSV取込後、1得意先ずつ受注画面へ展開して確定</span></div>
+    <div class="panel-head"><span>取込下書き</span></div>
     <div class="panel-body">
       <div id="import-drafts"></div>
     </div>
   </section>
 
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
-    <div class="panel-head"><span>商品明細</span><span class="sub">得意先は基本情報側で管理</span></div>
+    <div class="panel-head"><span>商品明細</span></div>
     <div class="summary" id="summary"></div>
     <div class="table-wrap">
       <table class="orders">
@@ -146,7 +145,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px" id="report-output-panel">
-    <div class="panel-head"><span>帳票出力</span><span class="sub">日付を指定。輸入社は個別またはALL</span></div>
+    <div class="panel-head"><span>帳票出力</span></div>
     <div class="panel-body">
       <div class="report-tools">
         <label>日付<input id="report-filter-date" type="date"></label>
@@ -156,12 +155,12 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn primary" type="button" onclick="printPurchaseOrders()">発注書PDF</button>
         <button class="btn primary" type="button" onclick="printPickingTickets()">現品票PDF</button>
       </div>
-      <div class="hint">日付は必須です。輸入社・発注先が空欄またはALLなら、その日付の全件を出力します。</div>
+      <div class="hint">日付必須。輸入社・発注先は任意。</div>
     </div>
   </section>
 
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
-    <div class="panel-head"><span>確定済み受注</span><span class="sub">条件を指定した時だけ表示</span></div>
+    <div class="panel-head"><span>確定済み受注</span></div>
     <div class="panel-body">
       <div class="form-grid" style="grid-template-columns:180px 220px auto">
         <label>日付<input id="confirmed-filter-date" type="date"></label>
@@ -173,7 +172,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
-    <div class="panel-head"><span>未処理伝票</span><span class="sub">赤伝・訂正・追加請求・先行受注を invoice 反映前に管理</span></div>
+    <div class="panel-head"><span>未処理伝票</span></div>
     <div class="panel-body">
       <div class="pending-grid">
         <label>種別
@@ -228,13 +227,13 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>得意先<input id="pending-filter-customer" placeholder="コード・店名"></label>
         <div class="actions" style="align-items:end"><button class="btn" onclick="loadPendingEntries()">再読込</button><button class="btn" onclick="clearPendingFilters()">絞込解除</button></div>
       </div>
-      <div class="hint" id="pending-state">未処理伝票SQLを実行するとSupabaseに保存されます。未実行時はこの端末のローカル保存で試せます。</div>
+      <div class="hint" id="pending-state">未処理伝票を管理します。</div>
       <div class="pending-list" id="pending-list" style="margin-top:10px"></div>
     </div>
   </section>
 
   <section class="panel workspace-panel" data-workspace-panel="sales" id="sales-reference-panel" style="margin-top:12px">
-    <div class="panel-head"><span>売上参照</span><span class="sub">現場タブレットで売上確定した実績を参照</span></div>
+    <div class="panel-head"><span>売上参照</span></div>
     <div class="panel-body">
       <div class="sales-board-tools">
         <label>開始日<input id="sales-ref-date-from" type="date"></label>
@@ -244,7 +243,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" onclick="loadSalesReferenceBoard()">売上読込</button>
         <button class="btn primary" onclick="exportSalesReferenceBoardExcel()">Excel出力</button>
       </div>
-      <div class="hint" id="sales-ref-state">売上確定済みデータは現場タブレット側の sales_records から読み込みます。</div>
+      <div class="hint" id="sales-ref-state">条件を指定して売上を読み込みます。</div>
       <div class="sales-board-summary" id="sales-ref-summary-cards"></div>
       <div class="sales-board-ranks" id="sales-ref-ranks"></div>
       <div class="sales-table-wrap" id="sales-ref-table"><div class="sales-empty">条件を指定して「売上読込」を押してください。</div></div>
@@ -252,7 +251,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel" data-workspace-panel="masters" id="master-admin-panel" style="margin-top:12px">
-    <div class="panel-head"><span>マスタ管理β</span><button class="small" onclick="hideMasterAdminPanel()">発注入力へ戻る</button></div>
+    <div class="panel-head"><span>マスタ管理</span><button class="small" onclick="hideMasterAdminPanel()">発注入力へ戻る</button></div>
     <div class="panel-body">
       <div class="master-tabs">
         <button class="btn" onclick="setMasterType('products')">商品</button>
@@ -278,7 +277,6 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" onclick="exportMasters()">マスタCSV出力</button>
         <input id="master-import-file" type="file" accept=".csv,text/csv" style="display:none" onchange="importMastersCsv(this)">
       </div>
-      <div class="hint">本番ではこの内容をSupabase側のDBで管理し、現場アプリ・受注入力・Excel出力が同じマスタを見る形にします。</div>
       <div class="master-list" id="master-list" style="margin-top:10px"></div>
     </div>
   </section>
