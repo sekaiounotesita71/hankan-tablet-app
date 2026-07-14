@@ -23,6 +23,7 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .app-nav-link.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
 main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:1fr;gap:12px}.workspace-panel{display:none!important}.workspace-panel.active{display:block!important}.workspace-panel.layout.active{display:grid!important}.workspace-action-hidden{display:none!important}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
+.auth-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}.auth-bar input{width:220px;min-height:36px}.auth-bar .btn{height:36px}.auth-bar .pill{min-height:28px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.ime-ja{ime-mode:active}.ime-en{ime-mode:inactive}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
@@ -63,6 +64,13 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </div>
 </header>
 <main>
+  <div class="auth-bar">
+    <input id="order-login-email" type="email" autocomplete="username" placeholder="メール">
+    <input id="order-login-password" type="password" autocomplete="current-password" placeholder="パスワード">
+    <button class="btn" type="button" onclick="signInSupabase()">ログイン</button>
+    <button class="btn" type="button" onclick="signOutSupabase()">ログアウト</button>
+    <span id="auth-state" class="pill warn">未ログイン</span>
+  </div>
   <div class="layout workspace-panel active" data-workspace-panel="orders">
     <section class="panel">
       <div class="panel-head">LINE文面貼り付け</div>
@@ -355,6 +363,17 @@ function setDbStatus(text,type="warn"){
   el.textContent=text;
   el.className=`pill ${type==="ok"?"blue":"warn"}`;
 }
+function updateAuthStatus(){
+  const el=document.getElementById("auth-state");
+  if(!el)return;
+  if(currentUser){
+    el.textContent=currentUser.email||"ログイン済み";
+    el.className="pill blue";
+  }else{
+    el.textContent="未ログイン";
+    el.className="pill warn";
+  }
+}
 function setAppBusy(active,message="受注を確定しています。画面を閉じないでください。"){
   appBusy=!!active;
   const overlay=document.getElementById("app-busy-overlay");
@@ -373,18 +392,47 @@ function initSupabase(){
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   supabaseClient.auth.getSession().then(({data})=>{
     currentUser=data.session?.user||null;
+    updateAuthStatus();
     loadCurrentUserRole();
   });
   supabaseClient.auth.onAuthStateChange((_event,session)=>{
     currentUser=session?.user||null;
+    updateAuthStatus();
     loadCurrentUserRole();
+    if(currentUser)loadDbData();
   });
   return supabaseClient;
+}
+async function ensureCurrentUser(){
+  const client=initSupabase();
+  if(!client)return null;
+  const {data}=await client.auth.getSession();
+  currentUser=data.session?.user||null;
+  updateAuthStatus();
+  return currentUser;
+}
+async function signInSupabase(){
+  const client=initSupabase();
+  if(!client){alert("Supabaseを読み込めません。");return}
+  const email=val("order-login-email").trim();
+  const password=val("order-login-password");
+  if(!email||!password){alert("メールとパスワードを入力してください。");return}
+  const {error}=await client.auth.signInWithPassword({email,password});
+  if(error){alert("ログインできません: "+error.message);return}
+  const passwordEl=document.getElementById("order-login-password");
+  if(passwordEl)passwordEl.value="";
+}
+async function signOutSupabase(){
+  const client=initSupabase();
+  if(!client)return;
+  await client.auth.signOut();
+  dbReady=false;
+  setDbStatus("DB未ログイン");
 }
 function currentUserIsAdmin(){return currentUserRole==="admin"}
 async function loadCurrentUserRole(){
   currentUserRole="user";
-  if(!supabaseClient||!currentUser){renderMasters();return}
+  if(!supabaseClient||!currentUser){updateAuthStatus();renderMasters();return}
   try{
     const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
     if(!error&&data?.role)currentUserRole=data.role;
@@ -806,6 +854,12 @@ async function loadDbData(){
   if(dbLoadInFlight)return;
   const client=initSupabase();
   if(!client)return;
+  const user=await ensureCurrentUser();
+  if(!user){
+    dbReady=false;
+    setDbStatus("DB未ログイン");
+    return;
+  }
   dbLoadInFlight=true;
   setDbStatus("DB読込中");
   try{
@@ -1357,6 +1411,14 @@ async function loadSalesReferenceBoard(){
   const client=initSupabase();
   if(!client){alert("Supabaseを読み込めません。");return}
   const state=document.getElementById("sales-ref-state");
+  const user=await ensureCurrentUser();
+  if(!user){
+    salesReferenceRows=[];
+    salesReferenceSessions=[];
+    if(state)state.textContent="ログインしてください。";
+    renderSalesReferenceBoard();
+    return;
+  }
   if(state)state.textContent="売上データを読込中...";
   try{
     const pageSize=1000;
