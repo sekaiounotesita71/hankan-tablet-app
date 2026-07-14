@@ -451,6 +451,10 @@ async function loadCurrentUserRole(){
   try{
     const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
     if(!error&&data?.role)currentUserRole=data.role;
+    else if(!error){
+      const {data:admins,error:adminError}=await supabaseClient.from("user_roles").select("user_id").eq("role","admin").limit(1);
+      if(!adminError&&!(admins||[]).length)currentUserRole="admin";
+    }
   }catch(e){}
   renderMasters();
 }
@@ -467,27 +471,43 @@ function savedMastersObject(){
     saved.customers=saved.customers||[];
     saved.suppliers=saved.suppliers||[];
     saved.importers=saved.importers||[];
+    saved.deleted=saved.deleted||{};
+    saved.deleted.products=saved.deleted.products||[];
+    saved.deleted.customers=saved.deleted.customers||[];
+    saved.deleted.suppliers=saved.deleted.suppliers||[];
+    saved.deleted.importers=saved.deleted.importers||[];
     return saved;
   }catch(e){
-    return {products:[],customers:[],suppliers:[],importers:[]};
+    return {products:[],customers:[],suppliers:[],importers:[],deleted:{products:[],customers:[],suppliers:[],importers:[]}};
   }
 }
 function saveMastersObject(saved){
+  let previous={deleted:{products:[],customers:[],suppliers:[],importers:[]}};
+  try{previous=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}")}catch(e){}
   saved.products=saved.products||[];
   saved.customers=saved.customers||[];
   saved.suppliers=saved.suppliers||[];
   saved.importers=saved.importers||[];
+  saved.deleted=saved.deleted||previous.deleted||{};
+  saved.deleted.products=saved.deleted.products||[];
+  saved.deleted.customers=saved.deleted.customers||[];
+  saved.deleted.suppliers=saved.deleted.suppliers||[];
+  saved.deleted.importers=saved.deleted.importers||[];
   localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
 }
 function getMasters(){
   try{
-    const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
+    const saved=savedMastersObject();
     const mergeList=(type)=>{
       const map=new Map();
-      (baseMasters[type]||[]).forEach(item=>map.set(masterCodeKey(item.code),item));
+      const deleted=new Set((saved.deleted?.[type]||[]).map(masterCodeKey));
+      (baseMasters[type]||[]).forEach(item=>{
+        const key=masterCodeKey(item.code);
+        if(key&&!deleted.has(key))map.set(key,item);
+      });
       (saved[type]||[]).forEach(item=>{
         const key=masterCodeKey(item.code);
-        if(key)map.set(key,item);
+        if(key&&!deleted.has(key))map.set(key,item);
       });
       return [...map.values()];
     };
@@ -500,14 +520,12 @@ function getMasters(){
   }catch(e){return JSON.parse(JSON.stringify(baseMasters))}
 }
 function saveCustomMaster(type,item){
-  const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
-  saved.products=saved.products||[];
-  saved.customers=saved.customers||[];
-  saved.suppliers=saved.suppliers||[];
-  saved.importers=saved.importers||[];
+  const saved=savedMastersObject();
   const list=saved[type];
   const idx=list.findIndex(x=>String(x.code).toLowerCase()===String(item.code).toLowerCase());
   if(idx>=0)list[idx]=item;else list.push(item);
+  const key=masterCodeKey(item.code);
+  saved.deleted[type]=(saved.deleted[type]||[]).filter(code=>masterCodeKey(code)!==key);
   localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
 }
 function masterCodeKey(code){
@@ -528,22 +546,17 @@ function masterCodeExists(type,code){
 }
 function appendCustomMaster(type,item){
   if(masterCodeExists(type,item.code))return false;
-  const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
-  saved.products=saved.products||[];
-  saved.customers=saved.customers||[];
-  saved.suppliers=saved.suppliers||[];
-  saved.importers=saved.importers||[];
+  const saved=savedMastersObject();
+  const key=masterCodeKey(item.code);
+  saved.deleted[type]=(saved.deleted[type]||[]).filter(code=>masterCodeKey(code)!==key);
   saved[type].push(item);
   localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
   return true;
 }
 function upsertCustomMaster(type,item){
-  const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
-  saved.products=saved.products||[];
-  saved.customers=saved.customers||[];
-  saved.suppliers=saved.suppliers||[];
-  saved.importers=saved.importers||[];
+  const saved=savedMastersObject();
   const key=masterCodeKey(item.code);
+  saved.deleted[type]=(saved.deleted[type]||[]).filter(code=>masterCodeKey(code)!==key);
   const list=saved[type];
   const idx=list.findIndex(existing=>masterCodeKey(existing.code)===key);
   if(idx>=0){
@@ -3403,6 +3416,9 @@ function removeLocalMasterItem(type,item){
   const saved=savedMastersObject();
   const codeKey=masterCodeKey(item.code);
   saved[type]=(saved[type]||[]).filter(existing=>masterCodeKey(existing.code)!==codeKey);
+  if(codeKey&&!(saved.deleted[type]||[]).some(code=>masterCodeKey(code)===codeKey)){
+    saved.deleted[type].push(item.code);
+  }
   saveMastersObject(saved);
 }
 function masterTypeLabel(type){
@@ -3486,6 +3502,7 @@ async function deactivateMastersMissingFromCsv(beforeItems,importedItems,type=ma
   const saved=savedMastersObject();
   const missingSet=new Set(codes.map(masterCodeKey));
   saved[type]=(saved[type]||[]).filter(item=>!missingSet.has(masterCodeKey(item.code)));
+  saved.deleted[type]=[...new Set([...(saved.deleted[type]||[]),...codes].map(code=>String(code||"").trim()).filter(Boolean))];
   saveMastersObject(saved);
   setDbStatus("DB接続中","ok");
   return {count:missing.length,message:`\nCSVにない${label} ${missing.length}件を無効化しました。`};
