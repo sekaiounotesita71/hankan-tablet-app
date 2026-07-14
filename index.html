@@ -3254,7 +3254,18 @@ function exportSalesReferenceExcel(){
   const displayRows=filteredSalesReferenceRows();
   if(!displayRows.length){toast("No sales records to export.");return}
   const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
+  const netSales=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const shippingSales=salesRefShippingFeeForRows(displayRows);
+  const totalSales=netSales+shippingSales;
+  const totalNet=displayRows.reduce((sum,r)=>sum+salesRefNet(r),0);
   const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{
+    "総売上":totalSales,
+    "純売上":netSales,
+    "送料売上":shippingSales,
+    "NET合計":totalNet,
+    "明細件数":displayRows.length
+  }]),"Summary");
   const data=displayRows.map(r=>({
     "Finalized At":r.finalized_at?new Date(r.finalized_at).toLocaleString("ja-JP"):"",
     "Importer":r.importer_code||"",
@@ -3501,18 +3512,19 @@ renderSalesReferenceRows=function(){
   }
   const session=salesReferenceSessionsTrial.find(s=>s.id===currentSalesReferenceSessionId);
   const displayRows=filteredSalesReferenceRows();
-  const totalAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const netSales=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
   const totalNet=displayRows.reduce((sum,r)=>sum+salesRefNet(r),0);
-  const shippingFee=salesRefShippingFeeForRows(displayRows);
-  const accountingTotal=totalAmount+shippingFee;
-  const shippingSummaryHtml=`<span>送料 ${salesRefMoney(shippingFee)}</span><span>会計合計 ${salesRefMoney(accountingTotal)}</span>`;
+  const shippingSales=salesRefShippingFeeForRows(displayRows);
+  const totalSales=netSales+shippingSales;
   const label=currentSalesReferenceSessionId==="__all__"?"全売上":salesRefSessionLabel(session);
   summary.innerHTML=[
     `<span>${esc(label)}</span>`,
     `<span>表示 ${displayRows.length} / 全${currentSalesReferenceRows.length}件</span>`,
     `<span>NET ${salesRefMoney(totalNet)} kg</span>`,
-    `<span>金額 ${salesRefMoney(totalAmount)}</span>`
-  ].join("")+shippingSummaryHtml;
+    `<span>総売上 ${salesRefMoney(totalSales)}</span>`,
+    `<span>純売上 ${salesRefMoney(netSales)}</span>`,
+    `<span>送料売上 ${salesRefMoney(shippingSales)}</span>`
+  ].join("");
   if(!displayRows.length){
     tableWrap.innerHTML=`<div class="sales-ref-empty">該当する売上明細はありません。</div>`;
     renderSalesReferenceAnalysis();
@@ -3578,16 +3590,18 @@ function renderSalesReferenceAnalysis(){
   const el=document.getElementById("sales-ref-analysis");
   if(!el)return;
   const displayRows=filteredSalesReferenceRows();
-  const totalAmount=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const netSales=displayRows.reduce((sum,r)=>sum+salesRefAmount(r),0);
+  const shippingSales=salesRefShippingFeeForRows(displayRows);
+  const totalSales=netSales+shippingSales;
   const totalNet=displayRows.reduce((sum,r)=>sum+salesRefNet(r),0);
   const byMonth=salesRefGroup(displayRows,r=>salesRefMonth(r.finalized_at));
   const byImporter=salesRefGroup(displayRows,r=>r.importer_code);
   const byProduct=salesRefGroup(displayRows,r=>`${r.product_id||""} ${r.product_name||""}`.trim());
   const wasOpen=el.querySelector("details")?.open;
   el.innerHTML=`<details ${wasOpen?"open":""}>
-    <summary><span>分析サマリ</span><span>金額 ${salesRefMoney(totalAmount)} / NET ${salesRefMoney(totalNet)} kg / ${displayRows.length}件</span></summary>
+    <summary><span>分析サマリ</span><span>総売上 ${salesRefMoney(totalSales)} / 純売上 ${salesRefMoney(netSales)} / 送料売上 ${salesRefMoney(shippingSales)} / NET ${salesRefMoney(totalNet)} kg / ${displayRows.length}件</span></summary>
     <div class="sales-ref-analysis-grid">
-      <div class="sales-ref-card sales-ref-total-card"><div class="sales-ref-card-head"><span>合計</span><span>${displayRows.length}件</span></div><div class="sales-ref-card-body"><div class="sales-ref-rank"><span class="sales-ref-rank-name">金額</span><span class="sales-ref-rank-value">${salesRefMoney(totalAmount)}</span></div><div class="sales-ref-rank"><span class="sales-ref-rank-name">NET kg</span><span class="sales-ref-rank-value">${salesRefMoney(totalNet)}</span></div></div></div>
+      <div class="sales-ref-card sales-ref-total-card"><div class="sales-ref-card-head"><span>合計</span><span>${displayRows.length}件</span></div><div class="sales-ref-card-body"><div class="sales-ref-rank"><span class="sales-ref-rank-name">総売上</span><span class="sales-ref-rank-value">${salesRefMoney(totalSales)}</span></div><div class="sales-ref-rank"><span class="sales-ref-rank-name">純売上</span><span class="sales-ref-rank-value">${salesRefMoney(netSales)}</span></div><div class="sales-ref-rank"><span class="sales-ref-rank-name">送料売上</span><span class="sales-ref-rank-value">${salesRefMoney(shippingSales)}</span></div><div class="sales-ref-rank"><span class="sales-ref-rank-name">NET kg</span><span class="sales-ref-rank-value">${salesRefMoney(totalNet)}</span></div></div></div>
       <div class="sales-ref-card"><div class="sales-ref-card-head"><span>月別売上</span><span>金額</span></div><div class="sales-ref-card-body">${salesRefRankRows(byMonth,12)}</div></div>
       <div class="sales-ref-card"><div class="sales-ref-card-head"><span>輸入社別</span><span>金額</span></div><div class="sales-ref-card-body">${salesRefRankRows(byImporter,12)}</div></div>
       <div class="sales-ref-card"><div class="sales-ref-card-head"><span>商品別上位</span><span>金額</span></div><div class="sales-ref-card-body">${salesRefRankRows(byProduct,12)}</div></div>
