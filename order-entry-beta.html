@@ -259,6 +259,13 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <button class="btn" type="button" onclick="document.getElementById('historical-sales-file').click()">過去売上CSV取込</button>
           <button class="btn primary" type="button" onclick="saveHistoricalSalesImport()">過去売上を登録</button>
           <button class="btn" type="button" onclick="clearHistoricalSalesImport()">取込内容クリア</button>
+          <select id="historical-sales-filter" onchange="renderHistoricalSalesImportReview()" aria-label="過去売上取込の表示">
+            <option value="problem" selected>警告・エラー</option>
+            <option value="warn">警告のみ</option>
+            <option value="error">エラーのみ</option>
+            <option value="all">全件</option>
+          </select>
+          <button class="btn" type="button" onclick="downloadHistoricalSalesIssues()">警告CSV出力</button>
           <input id="historical-sales-file" type="file" accept=".csv,text/csv" multiple style="display:none" onchange="importHistoricalSalesCsv(this)">
           <span class="pill warn" id="historical-sales-state">過去売上CSVを取り込めます。</span>
         </div>
@@ -1638,8 +1645,27 @@ async function importHistoricalSalesCsv(input){
     });
   }
   historicalSalesImportRows=imported;
+  const filter=document.getElementById("historical-sales-filter");
+  if(filter)filter.value="problem";
   renderHistoricalSalesImportReview();
   if(input)input.value="";
+}
+function historicalSalesFilterLabel(mode){
+  if(mode==="all")return "全件";
+  if(mode==="warn")return "警告のみ";
+  if(mode==="error")return "エラーのみ";
+  return "警告・エラー";
+}
+function historicalSalesRowsForFilter(rows,mode){
+  if(mode==="all")return rows;
+  if(mode==="warn")return rows.filter(row=>row._status==="warn");
+  if(mode==="error")return rows.filter(row=>row._status==="error");
+  return rows.filter(row=>row._status!=="ok");
+}
+function historicalSalesStatusLabel(row){
+  if(row?._status==="error")return "エラー";
+  if(row?._status==="warn")return "警告";
+  return "OK";
 }
 function renderHistoricalSalesImportReview(){
   const box=document.getElementById("historical-sales-review");
@@ -1647,16 +1673,45 @@ function renderHistoricalSalesImportReview(){
   const rows=historicalSalesImportRows||[];
   const errors=rows.filter(row=>row._status==="error").length;
   const warnings=rows.filter(row=>row._status==="warn").length;
-  setHistoricalSalesState(rows.length?`取込 ${rows.length}件 / エラー ${errors}件 / 警告 ${warnings}件`:"過去売上CSVを取り込めます。",errors?"warn":"ok");
+  const mode=val("historical-sales-filter")||"problem";
+  const filtered=historicalSalesRowsForFilter(rows,mode);
+  setHistoricalSalesState(rows.length?`取込 ${rows.length}件 / エラー ${errors}件 / 警告 ${warnings}件 / 表示 ${filtered.length}件（${historicalSalesFilterLabel(mode)}）`:"過去売上CSVを取り込めます。",errors||warnings?"warn":"ok");
   if(!rows.length){
     box.style.display="none";
     box.innerHTML="";
     return;
   }
   box.style.display="block";
-  const shown=rows.slice(0,300);
-  const more=rows.length>shown.length?`<tr><td colspan="12">ほか ${rows.length-shown.length}件</td></tr>`:"";
-  box.innerHTML=`<table><thead><tr><th>状態</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>単価</th><th>金額</th><th>元ファイル</th></tr></thead><tbody>${shown.map(row=>`<tr class="${row._status==="error"?"error":row._status==="warn"?"warn":""}"><td>${esc(row._message||"OK")}</td><td>${esc(row.finalized_at)}</td><td>${esc(row.importer_code)}</td><td>${esc(row.store_name||row.customer_code)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td><td>${esc(row.input_qty??"")}</td><td>${esc(row.input_unit)}</td><td>${esc(row.unit_price??"")}</td><td>${esc(row.amount??"")}</td><td>${esc(row.source_filename)}</td></tr>`).join("")}${more}</tbody></table>`;
+  if(!filtered.length){
+    box.innerHTML=`<div class="sales-empty">${esc(historicalSalesFilterLabel(mode))}に該当する行はありません。</div>`;
+    return;
+  }
+  const shown=filtered.slice(0,500);
+  const more=filtered.length>shown.length?`<tr><td colspan="13">ほか ${filtered.length-shown.length}件。全件確認する場合は「警告CSV出力」を使ってください。</td></tr>`:"";
+  box.innerHTML=`<div class="hint" style="padding:8px">表示 ${shown.length}/${filtered.length}件。警告・エラーの全件確認は「警告CSV出力」を使ってください。</div><table><thead><tr><th>状態</th><th>CSV行</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>単価</th><th>金額</th><th>元ファイル</th></tr></thead><tbody>${shown.map(row=>`<tr class="${row._status==="error"?"error":row._status==="warn"?"warn":""}"><td>${esc(`${historicalSalesStatusLabel(row)}: ${row._message||"OK"}`)}</td><td>${esc(row.source_row_no??"")}</td><td>${esc(row.finalized_at)}</td><td>${esc(row.importer_code)}</td><td>${esc(row.store_name||row.customer_code)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td><td>${esc(row.input_qty??"")}</td><td>${esc(row.input_unit)}</td><td>${esc(row.unit_price??"")}</td><td>${esc(row.amount??"")}</td><td>${esc(row.source_filename)}</td></tr>`).join("")}${more}</tbody></table>`;
+}
+function historicalSalesCsvCell(value){
+  return `"${String(value??"").replace(/"/g,'""')}"`;
+}
+function downloadHistoricalSalesIssues(){
+  const rows=(historicalSalesImportRows||[]).filter(row=>row._status!=="ok");
+  if(!rows.length){
+    alert("警告・エラー行はありません。");
+    return;
+  }
+  const header=["状態","内容","CSV行","日付","輸入社コード","得意先コード","得意先名","商品コード","商品名","産地","数量","単位","NET","単価","金額","備考","元ファイル"];
+  const body=rows.map(row=>[
+    historicalSalesStatusLabel(row),row._message||"",row.source_row_no||"",row.finalized_at||"",row.importer_code||"",
+    row.customer_code||"",row.store_name||"",row.product_id||"",row.product_name||"",row.origin||"",
+    row.input_qty??"",row.input_unit||"",row.net_weight??"",row.unit_price??"",row.amount??"",row.memo||"",row.source_filename||""
+  ]);
+  const csv=[header,...body].map(line=>line.map(historicalSalesCsvCell).join(",")).join("\r\n");
+  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`historical-sales-import-issues-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 function clearHistoricalSalesImport(){
   historicalSalesImportRows=[];
