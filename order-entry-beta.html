@@ -26,7 +26,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.ime-ja{ime-mode:active}.ime-en{ime-mode:inactive}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
-.report-tools{display:grid;grid-template-columns:180px 220px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.report-count{align-self:end;display:flex;align-items:center;min-height:40px}
+.report-tools{display:grid;grid-template-columns:180px 220px 220px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.report-count{align-self:end;display:flex;align-items:center;min-height:40px}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-parser #line-text{min-height:220px}.line-preview{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
 .workspace-panel.import-review-hidden{display:none!important}.import-review-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.import-review-search{height:38px;min-width:240px;flex:1;border:1px solid var(--line2);border-radius:7px;padding:0 9px;font-weight:700}.import-review-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:900}.import-review-check input{width:auto;min-height:auto}.import-review-table-wrap{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}.import-review-table{width:100%;min-width:1760px;border-collapse:separate;border-spacing:0}.import-review-table th,.import-review-table td{padding:6px 7px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.import-review-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.import-review-table tbody tr.review-error td{background:#fff0ef}.import-review-table tbody tr.review-warning td{background:#fff8e8}.import-review-table tbody tr.review-ready td{background:#f2faf5}.import-review-table input{height:34px;min-height:34px;border-radius:6px}.import-review-importer{width:110px;font-family:Consolas,monospace}.import-review-code{width:105px;font-family:Consolas,monospace;text-transform:uppercase}.import-review-customer-code{width:120px;font-family:Consolas,monospace}.import-review-customer{width:210px}.import-review-product{width:240px}.import-review-qty{width:82px;text-align:right}.import-review-unit{width:76px}.import-review-supplier-code{width:110px;font-family:Consolas,monospace}.import-review-supplier{width:170px}.import-review-memo{width:220px}.import-review-status{font-weight:900}.import-review-status.error{color:#b42318}.import-review-status.warning{color:#a16207}.import-review-status.ready{color:#0f7a3b}.import-review-meta{color:var(--muted);font-weight:800;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .import-review-table tbody tr.review-ready td{background:#eef6ff}.import-review-status.ready{color:var(--blue)}.small.primary{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}.small:disabled{opacity:.45;cursor:not-allowed;background:#f3f5f7;color:var(--muted);border-color:var(--line)}
@@ -151,11 +151,12 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="report-tools">
         <label>日付<input id="report-filter-date" type="date"></label>
         <label>輸入社（任意）<input id="report-filter-importer" list="importer-code-list" placeholder="空欄 / ALL = 全輸入社"></label>
+        <label>発注先（任意）<input id="report-filter-supplier" list="supplier-code-list" placeholder="空欄 / ALL = 全発注先"></label>
         <div class="report-count"><span id="report-filter-count" class="pill warn">条件を指定してください</span></div>
         <button class="btn primary" type="button" onclick="printPurchaseOrders()">発注書PDF</button>
         <button class="btn primary" type="button" onclick="printPickingTickets()">現品票PDF</button>
       </div>
-      <div class="hint">日付は必須です。輸入社が空欄またはALLなら、その日付の全輸入社を出力します。</div>
+      <div class="hint">日付は必須です。輸入社・発注先が空欄またはALLなら、その日付の全件を出力します。</div>
     </div>
   </section>
 
@@ -1681,7 +1682,8 @@ function normalizedImporter(value){
 function reportFilter(){
   return {
     date:val("report-filter-date"),
-    importer:normalizedImporter(val("report-filter-importer"))
+    importer:normalizedImporter(val("report-filter-importer")),
+    supplier:normalizedImporter(val("report-filter-supplier"))
   };
 }
 function reportRows(showAlert=false){
@@ -1691,11 +1693,15 @@ function reportRows(showAlert=false){
     return [];
   }
   const allImporters=!filter.importer||["all","全て","すべて"].includes(filter.importer);
+  const allSuppliers=!filter.supplier||["all","全て","すべて"].includes(filter.supplier);
   const rows=printableRows().filter(r=>{
     const date=(r.orderDate||r.shipDate||"")===filter.date;
     const code=normalizedImporter(r.importerCode);
     const name=normalizedImporter(r.importerName);
-    return date&&(allImporters||code===filter.importer||name===filter.importer);
+    const supplierText=[r.supplierCode,r.supplierName].filter(Boolean).join(" ");
+    const supplier=normalizedImporter(supplierText);
+    const supplierOk=allSuppliers||supplier.includes(filter.supplier);
+    return date&&(allImporters||code===filter.importer||name===filter.importer)&&supplierOk;
   });
   if(showAlert&&!rows.length)alert("指定した条件に一致する明細がありません");
   return rows;
@@ -1711,7 +1717,8 @@ function renderReportFilterCount(){
   }
   const rows=reportRows(false);
   const allImporters=!filter.importer||["all","全て","すべて"].includes(filter.importer);
-  badge.textContent=`対象 ${rows.length}明細${allImporters?" / 全輸入社":""}`;
+  const allSuppliers=!filter.supplier||["all","全て","すべて"].includes(filter.supplier);
+  badge.textContent=`対象 ${rows.length}明細${allImporters?" / 全輸入社":""}${allSuppliers?" / 全発注先":` / 発注先: ${val("report-filter-supplier")}`}`;
   badge.className=rows.length?"pill blue":"pill warn";
 }
 function resetCurrentOrderForm(){
@@ -4350,7 +4357,7 @@ function applySearchResult(type,index){
     renderConfirmedOrders();
   });
 });
-["report-filter-date","report-filter-importer"].forEach(id=>{
+["report-filter-date","report-filter-importer","report-filter-supplier"].forEach(id=>{
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
     renderReportFilterCount();
