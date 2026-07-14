@@ -33,6 +33,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .import-review-table tbody tr.review-ready td{background:#eef6ff}.import-review-status.ready{color:var(--blue)}.small.primary{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}.small:disabled{opacity:.45;cursor:not-allowed;background:#f3f5f7;color:var(--muted);border-color:var(--line)}
 .master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .pending-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pending-grid .wide{grid-column:span 2}.pending-grid .full{grid-column:1/-1}.pending-list{display:grid;gap:8px}.pending-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.pending-card.hold{background:#fffaf0}.pending-card.applied{opacity:.68}.pending-card.cancelled{opacity:.52}.pending-main{display:grid;gap:4px}.pending-title{font-weight:900}.pending-meta{color:var(--muted);font-size:12px;font-weight:800}.pending-amount{font-family:Consolas,monospace;font-weight:900}.pending-amount.negative{color:var(--danger)}.pending-actions{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
+.pending-save-note{display:flex;align-items:center;min-height:40px;color:var(--muted);font-size:12px;font-weight:900}
 .sales-board-tools{display:grid;grid-template-columns:150px 150px 160px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.sales-board-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.sales-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.sales-card-label{color:var(--muted);font-size:12px;font-weight:900}.sales-card-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.sales-board-ranks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:10px}.sales-rank{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}.sales-rank-head{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#fbfcfd;color:var(--muted);font-size:12px;font-weight:900}.sales-rank-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-rank-row:last-child{border-bottom:0}.sales-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}.sales-rank-value{font-family:Consolas,monospace;color:var(--muted);font-weight:900}.sales-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.sales-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.sales-table th,.sales-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.sales-table th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-weight:900}.sales-empty{padding:18px;color:var(--muted);font-weight:800;text-align:center}
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
@@ -184,7 +185,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-body">
       <div class="pending-grid">
         <label>種別
-          <select id="pending-entry-type">
+          <select id="pending-entry-type" data-pending-input data-pending-field="entryType">
             <option value="advance_order">先行受注</option>
             <option value="credit_note">赤伝</option>
             <option value="correction">訂正</option>
@@ -194,32 +195,33 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           </select>
         </label>
         <label>状態
-          <select id="pending-status">
+          <select id="pending-status" data-pending-input data-pending-field="status">
             <option value="pending">未反映</option>
             <option value="hold">保留</option>
             <option value="applied">反映済み</option>
             <option value="cancelled">取消</option>
           </select>
         </label>
-        <label>登録日<input id="pending-entry-date" type="date"></label>
-        <label>予定日<input id="pending-planned-date" type="date"></label>
-        <label>輸入社コード<input id="pending-importer-code" list="importer-code-list"></label>
-        <label>輸入社名<input id="pending-importer-name" list="importer-name-list"></label>
-        <label>得意先コード<input id="pending-customer-code" list="customer-code-list"></label>
-        <label>得意先名<input id="pending-customer-name" list="customer-name-list"></label>
-        <label>商品コード<input id="pending-product-code" list="product-code-list"></label>
-        <label class="wide">商品名・内容<input id="pending-product-name" placeholder="例 大葉 10パック / 前回請求訂正"></label>
-        <label>数量<input id="pending-qty" inputmode="decimal"></label>
-        <label>単位<input id="pending-unit" placeholder="Kg / pkt / PC"></label>
-        <label>単価<input id="pending-unit-price" inputmode="decimal"></label>
-        <label>金額<input id="pending-amount" inputmode="decimal" placeholder="赤伝・値引きはマイナス"></label>
-        <label class="wide">理由<input id="pending-reason" placeholder="前回請求分訂正など"></label>
-        <label class="full">メモ<textarea id="pending-memo" placeholder="invoice反映時に確認したい内容"></textarea></label>
+        <label>登録日<input id="pending-entry-date" type="date" data-pending-input data-pending-field="entryDate"></label>
+        <label>予定日<input id="pending-planned-date" type="date" data-pending-input data-pending-field="plannedDate"></label>
+        <label>輸入社コード<input id="pending-importer-code" class="ime-en" list="importer-code-list" data-pending-input data-pending-field="importerCode" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+        <label>輸入社名<input id="pending-importer-name" list="importer-name-list" data-pending-input data-pending-field="importerName" autocomplete="off"></label>
+        <label>得意先コード<input id="pending-customer-code" class="ime-en" list="customer-code-list" data-pending-input data-pending-field="customerCode" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+        <label>得意先名<input id="pending-customer-name" class="ime-ja" lang="ja-JP" inputmode="text" list="customer-name-list" data-pending-input data-pending-field="customerName" autocomplete="off"></label>
+        <label>商品コード<div class="lookup-cell"><input id="pending-product-code" class="ime-ja" lang="ja-JP" inputmode="text" list="product-code-list" data-pending-input data-pending-field="productCode" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="lookup-btn" type="button" onclick="openPendingProductLookup()">+</button></div></label>
+        <label class="wide">商品名・内容<input id="pending-product-name" class="ime-ja" lang="ja-JP" inputmode="text" list="product-name-list" data-pending-input data-pending-field="productName" autocomplete="off" placeholder="例 大葉 10パック / 前回請求訂正"></label>
+        <label>数量<input id="pending-qty" data-pending-input data-pending-field="qty" inputmode="decimal"></label>
+        <label>単位<input id="pending-unit" class="ime-en" data-pending-input data-pending-field="unit" placeholder="Kg / pkt / PC"></label>
+        <label>単価<input id="pending-unit-price" data-pending-input data-pending-field="unitPrice" inputmode="decimal"></label>
+        <label>金額<input id="pending-amount" data-pending-input data-pending-field="amount" inputmode="decimal" placeholder="赤伝・値引きはマイナス"></label>
+        <label class="wide">理由<input id="pending-reason" class="ime-ja" lang="ja-JP" inputmode="text" data-pending-input data-pending-field="reason" placeholder="前回請求分訂正など"></label>
+        <label class="full">メモ<textarea id="pending-memo" class="ime-ja" lang="ja-JP" inputmode="text" data-pending-input data-pending-field="memo" placeholder="invoice反映時に確認したい内容"></textarea></label>
       </div>
       <div class="actions" style="margin-top:8px">
         <button class="btn" onclick="fillPendingFromHeader()">現在の得意先を反映</button>
-        <button class="btn primary" onclick="savePendingEntry()">未処理伝票を保存</button>
+        <button class="btn primary" onclick="savePendingEntry()" id="pending-save-btn">この内容で登録</button>
         <button class="btn" onclick="resetPendingForm()">入力クリア</button>
+        <span class="pending-save-note" id="pending-save-note">保存すると下の一覧に追加されます。</span>
       </div>
       <div class="form-grid" style="grid-template-columns:160px 220px 180px auto;margin-top:12px">
         <label>状態
@@ -1138,6 +1140,122 @@ function pendingFormEntry(){
     sourceType:"manual"
   };
 }
+function pendingInputOrder(){
+  return [
+    "pending-entry-type","pending-status","pending-entry-date","pending-planned-date",
+    "pending-importer-code","pending-importer-name","pending-customer-code","pending-customer-name",
+    "pending-product-code","pending-product-name","pending-qty","pending-unit",
+    "pending-unit-price","pending-amount","pending-reason","pending-memo"
+  ].map(id=>document.getElementById(id)).filter(Boolean);
+}
+function focusNextPendingInput(current,delta=1){
+  const list=pendingInputOrder();
+  const idx=list.indexOf(current);
+  if(idx<0)return false;
+  const next=list[(idx+delta+list.length)%list.length];
+  next.focus();
+  next.select?.();
+  return true;
+}
+function updatePendingSaveLabel(){
+  const hasId=!!document.getElementById("pending-id")?.value;
+  const btn=document.getElementById("pending-save-btn");
+  const note=document.getElementById("pending-save-note");
+  if(btn)btn.textContent=hasId?"この内容で更新":"この内容で登録";
+  if(note)note.textContent=hasId?"保存すると下の一覧の内容を更新します。":"保存すると下の一覧に追加されます。";
+}
+function setPendingValue(id,value){
+  const el=document.getElementById(id);
+  if(el)el.value=value??"";
+}
+function applyPendingImporter(value,sourceId=""){
+  const raw=String(value||"").trim();
+  const hit=lookupImporterByInput(raw);
+  if(hit?.code||hit?.name){
+    setPendingValue("pending-importer-code",hit.code||String(value||"").trim());
+    setPendingValue("pending-importer-name",hit.name||"");
+    return true;
+  }
+  if(sourceId==="pending-importer-code"){
+    setPendingValue("pending-importer-code",normalizeImporterLabel(raw));
+    return false;
+  }
+  if(sourceId==="pending-importer-name"){
+    setPendingValue("pending-importer-name",raw);
+    return false;
+  }
+  return false;
+}
+function applyPendingCustomer(value){
+  const hit=lookupCustomerByInput(value)||findMasterCustomer(value,value);
+  if(!hit)return false;
+  setPendingValue("pending-customer-code",hit.code||"");
+  setPendingValue("pending-customer-name",hit.name||"");
+  if(hit.importerCode||hit.importerName){
+    setPendingValue("pending-importer-code",hit.importerCode||"");
+    setPendingValue("pending-importer-name",hit.importerName||"");
+  }
+  return true;
+}
+function applyPendingProduct(product){
+  if(!product)return false;
+  setPendingValue("pending-product-code",product.code||product.productCode||"");
+  setPendingValue("pending-product-name",product.name||product.productName||"");
+  if(product.unitPrice!==undefined&&product.unitPrice!==null&&val("pending-unit-price")==="")setPendingValue("pending-unit-price",product.unitPrice);
+  updatePendingAmount();
+  return true;
+}
+function applyPendingProductInput(value){
+  const master=resolveProductMaster(value,{allowSingle:true})||findMasterProduct(value,value);
+  return applyPendingProduct(master);
+}
+function updatePendingAmount(){
+  const qty=numberOrBlank(val("pending-qty"));
+  const price=numberOrBlank(val("pending-unit-price"));
+  const amountEl=document.getElementById("pending-amount");
+  if(amountEl&&amountEl.value===""&&qty!==null&&price!==null)amountEl.value=String(qty*price);
+}
+function handlePendingInput(e){
+  const target=e.target;
+  if(!(target instanceof HTMLElement)||!target.matches("[data-pending-input]"))return;
+  const value=target.value;
+  const commit=e.type==="change"||e.type==="blur";
+  if(target.id==="pending-importer-code"||target.id==="pending-importer-name")applyPendingImporter(value,target.id);
+  if(target.id==="pending-customer-code"||target.id==="pending-customer-name")applyPendingCustomer(value);
+  if(commit&&target.id==="pending-product-code")applyPendingProductInput(value);
+  if(commit&&target.id==="pending-product-name"&&!val("pending-product-code"))applyPendingProductInput(value);
+  if(target.id==="pending-qty"||target.id==="pending-unit-price")updatePendingAmount();
+}
+function handlePendingKey(e){
+  const target=e.target;
+  if(!(target instanceof HTMLElement)||!target.matches("[data-pending-input]"))return;
+  if(e.isComposing||e.keyCode===229)return;
+  if(e.key==="Enter"&&e.ctrlKey){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    savePendingEntry();
+    return;
+  }
+  if(e.key==="Enter"){
+    if(target instanceof HTMLTextAreaElement)return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if(target.id==="pending-product-code"||target.id==="pending-product-name")applyPendingProductInput(target.value);
+    if(target.id==="pending-importer-code"||target.id==="pending-importer-name")applyPendingImporter(target.value,target.id);
+    if(target.id==="pending-customer-code"||target.id==="pending-customer-name")applyPendingCustomer(target.value);
+    if(target.id==="pending-qty"||target.id==="pending-unit-price")updatePendingAmount();
+    focusNextPendingInput(target,1);
+    return;
+  }
+  if((e.key==="ArrowRight"||e.key==="ArrowLeft")&&target instanceof HTMLInputElement){
+    const direction=e.key==="ArrowRight"?1:-1;
+    if(isCaretAtEdge(target,direction)){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      focusNextPendingInput(target,direction);
+    }
+  }
+}
 function setPendingForm(entry){
   const hidden=document.getElementById("pending-id")||document.createElement("input");
   hidden.type="hidden";
@@ -1160,6 +1278,7 @@ function setPendingForm(entry){
   document.getElementById("pending-amount").value=entry?.amount??"";
   document.getElementById("pending-reason").value=entry?.reason||"";
   document.getElementById("pending-memo").value=entry?.memo||"";
+  updatePendingSaveLabel();
 }
 function resetPendingForm(){
   setPendingForm(null);
@@ -1170,6 +1289,7 @@ function fillPendingFromHeader(){
   document.getElementById("pending-importer-name").value=val("batch-importer-name");
   document.getElementById("pending-customer-code").value=val("batch-customer-code");
   document.getElementById("pending-customer-name").value=val("batch-customer-name");
+  updatePendingSaveLabel();
 }
 async function savePendingEntry(){
   const entry=pendingFormEntry();
@@ -1195,14 +1315,14 @@ async function savePendingEntry(){
       const idx=pendingEntries.findIndex(x=>x.id===saved.id||x.id===entry.id);
       if(idx>=0)pendingEntries[idx]=saved;else pendingEntries.unshift(saved);
       savePendingLocal();
-      document.getElementById("pending-state").textContent="未処理伝票をSupabaseへ保存しました。";
+      document.getElementById("pending-state").textContent="未処理伝票を保存しました。";
     }else{
       entry.id=entry.id||pendingLocalId();
       entry.createdAt=entry.createdAt||new Date().toISOString();
       const idx=pendingEntries.findIndex(x=>x.id===entry.id);
       if(idx>=0)pendingEntries[idx]=entry;else pendingEntries.unshift(entry);
       savePendingLocal();
-      document.getElementById("pending-state").textContent="未処理伝票をローカル保存しました。SQL実行後はSupabase保存に切り替わります。";
+      document.getElementById("pending-state").textContent="未処理伝票をこの端末に保存しました。";
     }
     resetPendingForm();
     renderPendingEntries();
@@ -1215,6 +1335,7 @@ function editPendingEntry(id){
   if(!entry)return;
   setPendingForm(entry);
   document.getElementById("pending-entry-type")?.focus();
+  document.getElementById("pending-entry-type")?.scrollIntoView({behavior:"smooth",block:"center"});
 }
 async function setPendingStatus(id,status){
   const entry=pendingEntries.find(x=>String(x.id)===String(id));
@@ -2556,10 +2677,27 @@ function openImportReviewProductLookup(index){
     input.select();
   });
 }
+function openPendingProductLookup(){
+  productLookupTarget={type:"pending",index:0};
+  productLookupRowIndex=0;
+  const current=val("pending-product-code")||val("pending-product-name")||"";
+  document.getElementById("product-lookup-search").value=current;
+  document.getElementById("product-lookup-modal").classList.add("open");
+  renderProductLookup();
+  requestAnimationFrame(()=>{
+    const input=document.getElementById("product-lookup-search");
+    input.focus();
+    input.select();
+  });
+}
 function closeProductLookup(){
   document.getElementById("product-lookup-modal").classList.remove("open");
   if(productLookupTarget.type==="importReview"){
     const target=document.querySelector(`#import-review-body tr[data-review-index="${productLookupTarget.index}"] [data-review-field="productCode"]`);
+    target?.focus();
+    target?.select?.();
+  }else if(productLookupTarget.type==="pending"){
+    const target=document.getElementById("pending-product-code");
     target?.focus();
     target?.select?.();
   }else{
@@ -2590,6 +2728,8 @@ function chooseProductLookup(index){
   if(!item)return;
   if(productLookupTarget.type==="importReview"){
     applyProductToImportReviewRow(productLookupTarget.index,item);
+  }else if(productLookupTarget.type==="pending"){
+    applyPendingProduct(item);
   }else{
     applyProductToRow(productLookupRowIndex,item);
   }
@@ -2597,6 +2737,12 @@ function chooseProductLookup(index){
   if(productLookupTarget.type==="importReview"){
     requestAnimationFrame(()=>{
       const qty=document.querySelector(`#import-review-body tr[data-review-index="${productLookupTarget.index}"] [data-review-field="qty"]`);
+      qty?.focus();
+      qty?.select?.();
+    });
+  }else if(productLookupTarget.type==="pending"){
+    requestAnimationFrame(()=>{
+      const qty=document.getElementById("pending-qty");
       qty?.focus();
       qty?.select?.();
     });
@@ -4456,6 +4602,10 @@ document.addEventListener("keydown",e=>{
   e.preventDefault();
   e.stopImmediatePropagation();
 },true);
+document.addEventListener("keydown",handlePendingKey);
+document.addEventListener("input",handlePendingInput);
+document.addEventListener("change",handlePendingInput);
+document.addEventListener("blur",handlePendingInput,true);
 ["pending-filter-status","pending-filter-importer","pending-filter-customer"].forEach(id=>{
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
