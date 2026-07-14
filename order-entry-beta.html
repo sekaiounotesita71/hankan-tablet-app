@@ -1290,6 +1290,7 @@ function salesRefText(value){
 }
 function salesRefDbErrorMessage(error){
   const msg=String(error?.message||error||"");
+  if(error?.status===401||/invalid api key|jwt/i.test(msg))return "Supabase APIキーが無効です。SupabaseのProject Settings > APIから新しい anon public key を取得して差し替えてください。";
   if(error?.code==="42P01"||/relation .* does not exist|sales_records/i.test(msg))return "売上確定用SQLが未実行です。sales-lock-trial-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg))return "売上確定用SQLの反映待ちです。sales-lock-trial-migration.sql を再実行、または少し待って再読込してください。";
   return msg||"売上データの読込でエラーが発生しました。";
@@ -1358,8 +1359,6 @@ async function loadSalesReferenceBoard(){
   const state=document.getElementById("sales-ref-state");
   if(state)state.textContent="売上データを読込中...";
   try{
-    const from=val("sales-ref-date-from");
-    const to=val("sales-ref-date-to");
     const pageSize=1000;
     const maxRows=20000;
     const allRows=[];
@@ -1377,8 +1376,6 @@ async function loadSalesReferenceBoard(){
     }
     for(let offset=0;offset<maxRows;offset+=pageSize){
       let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).range(offset,offset+pageSize-1);
-      if(from)query=query.gte("finalized_at",from);
-      if(to)query=query.lt("finalized_at",`${to}T23:59:59.999`);
       const {data,error}=await query;
       if(error)throw error;
       const page=data||[];
