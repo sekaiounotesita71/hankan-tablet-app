@@ -451,7 +451,7 @@ async function loadCurrentUserRole(){
   try{
     const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
     if(!error&&data?.role)currentUserRole=data.role;
-    else if(!error){
+    if(!error&&currentUserRole!=="admin"){
       const {data:admins,error:adminError}=await supabaseClient.from("user_roles").select("user_id").eq("role","admin").limit(1);
       if(!adminError&&!(admins||[]).length)currentUserRole="admin";
     }
