@@ -1490,6 +1490,26 @@ function setHistoricalSalesState(text,type="warn"){
   el.textContent=text;
   el.className=`pill ${type==="ok"?"blue":"warn"}`;
 }
+function csvDecodeScore(text){
+  const head=String(text||"").slice(0,3000);
+  const headers=["商品コード","得意先名","商品名","産地","数量","単位","単価","金額","日付","輸入社コード"];
+  let score=0;
+  headers.forEach(key=>{if(head.includes(key))score+=10});
+  score-=((head.match(/\uFFFD/g)||[]).length*4);
+  score-=((head.match(/[�]/g)||[]).length*4);
+  return score;
+}
+async function readCsvFileText(file){
+  const buffer=await file.arrayBuffer();
+  const utf8=new TextDecoder("utf-8",{fatal:false}).decode(buffer);
+  let sjis="";
+  try{
+    sjis=new TextDecoder("shift_jis",{fatal:false}).decode(buffer);
+  }catch(e){
+    return utf8;
+  }
+  return csvDecodeScore(sjis)>csvDecodeScore(utf8)?sjis:utf8;
+}
 function normalizeHistoricalSalesHeader(value){
   return String(value??"").trim().toLowerCase().replace(/[\s_\-　]/g,"").replace(/[()（）［］\[\]「」]/g,"");
 }
@@ -1596,7 +1616,7 @@ async function importHistoricalSalesCsv(input){
   if(!files.length)return;
   const imported=[];
   for(const file of files){
-    const text=await file.text();
+    const text=await readCsvFileText(file);
     const rows=parseCsv(text).filter(row=>row.some(cell=>String(cell??"").trim()));
     if(rows.length<2)continue;
     const map=historicalSalesHeaderMap(rows[0]);
