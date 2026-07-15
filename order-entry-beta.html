@@ -24,7 +24,7 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
 main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:1fr;gap:12px}.workspace-panel{display:none!important}.workspace-panel.active{display:block!important}.workspace-panel.layout.active{display:grid!important}.workspace-action-hidden{display:none!important}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
 .auth-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}.auth-bar input{width:220px;min-height:36px}.auth-bar .btn{height:36px}.auth-bar .pill{min-height:28px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.ime-ja{ime-mode:active}.ime-en{ime-mode:inactive}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:980px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
 .report-tools{display:grid;grid-template-columns:180px 220px 220px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.report-count{align-self:end;display:flex;align-items:center;min-height:40px}
@@ -81,7 +81,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <section class="panel">
       <div class="panel-head">LINE文面貼り付け</div>
       <div class="panel-body line-parser">
-        <textarea id="line-text" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="LINE文面を貼り付け"></textarea>
+        <textarea id="line-text" class="ime-ja" autocomplete="off" placeholder="LINE文面を貼り付け"></textarea>
         <div class="actions"><button class="btn primary" onclick="openLineBulkReview()">一括確認へ</button><button class="btn" onclick="parseLineDraft()">現在の得意先で下書き</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
         <div class="line-preview" id="line-preview">LINE文面を貼り付けてください。</div>
       </div>
@@ -94,8 +94,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <label>輸入社コード<input id="batch-importer-code" list="importer-code-list" autocomplete="off" placeholder="輸入社コード"></label>
           <label>輸入社名<input id="batch-importer-name" list="importer-name-list" autocomplete="off" placeholder="輸入社名"></label>
           <label>得意先コード<input id="batch-customer-code" autocomplete="off" placeholder="例 01-002"></label>
-          <label>得意先名<input id="batch-customer-name" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="得意先名"></label>
-          <label class="wide">メモ<textarea id="batch-note" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" placeholder="この受注全体のメモ"></textarea></label>
+          <label>得意先名<input id="batch-customer-name" class="ime-ja" autocomplete="off" placeholder="得意先名"></label>
+          <label class="wide">メモ<textarea id="batch-note" class="ime-ja" autocomplete="off" placeholder="この受注全体のメモ"></textarea></label>
         </div>
         <datalist id="customer-code-list"></datalist>
         <datalist id="customer-name-list"></datalist>
@@ -212,15 +212,15 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>輸入社コード<input id="pending-importer-code" class="ime-en" list="importer-code-list" data-pending-input data-pending-field="importerCode" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
         <label>輸入社名<input id="pending-importer-name" list="importer-name-list" data-pending-input data-pending-field="importerName" autocomplete="off"></label>
         <label>得意先コード<input id="pending-customer-code" class="ime-en" list="customer-code-list" data-pending-input data-pending-field="customerCode" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
-        <label>得意先名<input id="pending-customer-name" class="ime-ja" lang="ja-JP" inputmode="text" list="customer-name-list" data-pending-input data-pending-field="customerName" autocomplete="off"></label>
-        <label>商品コード<div class="lookup-cell"><input id="pending-product-code" class="ime-ja" lang="ja-JP" inputmode="text" list="product-code-list" data-pending-input data-pending-field="productCode" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="lookup-btn" type="button" onclick="openPendingProductLookup()">+</button></div></label>
-        <label class="wide">商品名・内容<input id="pending-product-name" class="ime-ja" lang="ja-JP" inputmode="text" list="product-name-list" data-pending-input data-pending-field="productName" autocomplete="off" placeholder="例 大葉 10パック / 前回請求訂正"></label>
+        <label>得意先名<input id="pending-customer-name" class="ime-ja" list="customer-name-list" data-pending-input data-pending-field="customerName" autocomplete="off"></label>
+        <label>商品コード<div class="lookup-cell"><input id="pending-product-code" class="ime-ja" list="product-code-list" data-pending-input data-pending-field="productCode" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="lookup-btn" type="button" onclick="openPendingProductLookup()">+</button></div></label>
+        <label class="wide">商品名・内容<input id="pending-product-name" class="ime-ja" list="product-name-list" data-pending-input data-pending-field="productName" autocomplete="off" placeholder="例 大葉 10パック / 前回請求訂正"></label>
         <label>数量<input id="pending-qty" data-pending-input data-pending-field="qty" inputmode="decimal"></label>
         <label>単位<input id="pending-unit" class="ime-en" data-pending-input data-pending-field="unit" placeholder="Kg / pkt / PC"></label>
         <label>単価<input id="pending-unit-price" data-pending-input data-pending-field="unitPrice" inputmode="decimal"></label>
         <label>金額<input id="pending-amount" data-pending-input data-pending-field="amount" inputmode="decimal" placeholder="赤伝・値引きはマイナス"></label>
-        <label class="wide">理由<input id="pending-reason" class="ime-ja" lang="ja-JP" inputmode="text" data-pending-input data-pending-field="reason" placeholder="前回請求分訂正など"></label>
-        <label class="full">メモ<textarea id="pending-memo" class="ime-ja" lang="ja-JP" inputmode="text" data-pending-input data-pending-field="memo" placeholder="invoice反映時に確認したい内容"></textarea></label>
+        <label class="wide">理由<input id="pending-reason" class="ime-ja" data-pending-input data-pending-field="reason" placeholder="前回請求分訂正など"></label>
+        <label class="full">メモ<textarea id="pending-memo" class="ime-ja" data-pending-input data-pending-field="memo" placeholder="invoice反映時に確認したい内容"></textarea></label>
       </div>
       <div class="actions" style="margin-top:8px">
         <button class="btn" onclick="fillPendingFromHeader()">現在の得意先を反映</button>
@@ -293,8 +293,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           </select>
         </label>
         <label>対象年<input id="product-guide-year" type="number" inputmode="numeric" min="2020" max="2100"></label>
-        <label>シーズン<input id="product-guide-season" class="ime-ja" lang="ja-JP" inputmode="text" placeholder="例 夏"></label>
-        <label>テンプレート名<input id="product-guide-template-name" class="ime-ja" lang="ja-JP" inputmode="text" placeholder="例 夏の商品案内"></label>
+        <label>シーズン<input id="product-guide-season" class="ime-ja" placeholder="例 夏"></label>
+        <label>テンプレート名<input id="product-guide-template-name" class="ime-ja" placeholder="例 夏の商品案内"></label>
         <button class="btn" type="button" onclick="openProductGuideTemplate()">選択版を開く</button>
         <button class="btn primary" type="button" onclick="createProductGuideFromAllProducts()">全商品から新規作成</button>
         <button class="btn" type="button" onclick="createProductGuideFromTemplate()">選択版を複製</button>
@@ -398,7 +398,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="modal-body">
       <div class="search-grid" style="grid-template-columns:minmax(220px,1fr) auto">
         <label>商品検索
-          <input id="product-lookup-search" class="ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="商品コード・商品名・別名で検索" oninput="renderProductLookup()" onkeydown="handleProductLookupKey(event)">
+          <input id="product-lookup-search" class="ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="商品コード・商品名・別名で検索" oninput="renderProductLookup()" onkeydown="handleProductLookupKey(event)">
         </label>
         <button class="btn" onclick="document.getElementById('product-lookup-search').value='';renderProductLookup();document.getElementById('product-lookup-search').focus()">クリア</button>
       </div>
@@ -3890,7 +3890,7 @@ function toggleProductGuideRowDetail(index){
 function productGuideDetailRowHtml(row,fileId,candidateClass){
   if(!expandedProductGuideRowIds.has(row.rowId))return "";
   const imageControl=`<div class="guide-detail-image">${row.imageUrl?`<img class="guide-image-thumb" src="${esc(row.imageUrl)}" alt="">`:`<span class="guide-image-empty">未設定</span>`}<input class="guide-image" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="imageUrl" inputmode="url" value="${esc(row.imageUrl||"")}" oninput="updateProductGuideRow(${row.index},'imageUrl',this.value);updateProductGuideRow(${row.index},'imageStatus',this.value?'URL設定':'未設定')"><button class="small" type="button" onclick="fetchProductGuideRowImage(${row.index})">候補</button><button class="small" type="button" onclick="document.getElementById('${fileId}').click()">登録</button><input id="${fileId}" type="file" accept="image/*" style="display:none" onchange="uploadProductGuideImage(${row.index},this)"></div>`;
-  const memoControl=`<div class="guide-detail-meta"><div class="guide-detail-label">メモ</div><input class="guide-memo ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="memo" lang="ja-JP" inputmode="text" value="${esc(row.memo)}" oninput="updateProductGuideRow(${row.index},'memo',this.value)"></div>`;
+  const memoControl=`<div class="guide-detail-meta"><div class="guide-detail-label">メモ</div><input class="guide-memo ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="memo" value="${esc(row.memo)}" oninput="updateProductGuideRow(${row.index},'memo',this.value)"></div>`;
   const detail=(label,value)=>`<div class="guide-detail-meta"><div class="guide-detail-label">${esc(label)}</div><div class="guide-detail-value" title="${esc(value||"")}">${esc(value||"未設定")}</div></div>`;
   return `<tr class="guide-detail-row ${candidateClass}" data-guide-detail-row-id="${esc(row.rowId||"")}"><td colspan="10"><div class="guide-detail-grid"><div><div class="guide-detail-label">画像</div>${imageControl}</div>${memoControl}${detail("輸入社",row.importers)}${detail("仕入先",[row.supplierCode,row.supplierName].filter(Boolean).join(" "))}${detail("候補元",row.priceSource)}</div></td></tr>`;
 }
@@ -3901,13 +3901,13 @@ function productGuideEditorRowHtml(row){
   return `<tr class="${candidateClass}" data-guide-row-id="${esc(row.rowId||"")}" data-guide-variant-id="${esc(row.variantId||"")}">
     <td class="guide-check guide-sticky-select"><span class="guide-rank">${esc(row.rank)}</span><input type="checkbox" ${row.selected!==false?"checked":""} onchange="updateProductGuideRow(${row.index},'selected',this.checked);renderProductGuide()"></td>
     <td class="guide-sticky-code"><input class="guide-code" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="productCode" value="${esc(row.productCode||"")}" autocomplete="off" oninput="updateProductGuideRow(${row.index},'productCode',this.value)" onchange="applyProductGuideProductMaster(${row.index},this.value)"></td>
-    <td><input class="guide-name ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="guideName" lang="ja-JP" inputmode="text" value="${esc(row.guideName)}" oninput="updateProductGuideRow(${row.index},'guideName',this.value)"><div class="guide-name-meta" title="${esc(row.englishName||"")}">${esc(row.englishName||"英名未設定")}</div></td>
-    <td><input class="guide-category ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="category" lang="ja-JP" inputmode="text" value="${esc(row.category||"")}" oninput="updateProductGuideRow(${row.index},'category',this.value)" onchange="renderProductGuide()"></td>
-    <td><input class="ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="origin" lang="ja-JP" inputmode="text" value="${esc(row.origin)}" oninput="updateProductGuideOrigin(${row.index},this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
-    <td><input class="guide-spec ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="spec" lang="ja-JP" inputmode="text" value="${esc(row.spec||"")}" oninput="updateProductGuideRow(${row.index},'spec',this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
+    <td><input class="guide-name ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="guideName" value="${esc(row.guideName)}" oninput="updateProductGuideRow(${row.index},'guideName',this.value)"><div class="guide-name-meta" title="${esc(row.englishName||"")}">${esc(row.englishName||"英名未設定")}</div></td>
+    <td><input class="guide-category ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="category" value="${esc(row.category||"")}" oninput="updateProductGuideRow(${row.index},'category',this.value)" onchange="renderProductGuide()"></td>
+    <td><input class="ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="origin" value="${esc(row.origin)}" oninput="updateProductGuideOrigin(${row.index},this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
+    <td><input class="guide-spec ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="spec" value="${esc(row.spec||"")}" oninput="updateProductGuideRow(${row.index},'spec',this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
     <td><div class="guide-price-range-editor"><input class="guide-num" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="basePriceMinJpy" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMinJpy||"")}" aria-label="価格候補下限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMinJpy',this.value)"><span>～</span><input class="guide-num" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="basePriceMaxJpy" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMaxJpy||"")}" aria-label="価格候補上限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMaxJpy',this.value)"></div></td>
     <td><input class="guide-num" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="pricingNetWeight" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.pricingNetWeight||1)}" oninput="updateProductGuidePricingNet(${row.index},this.value)"></td>
-    <td><input class="guide-price" data-guide-index="${row.index}" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="guidePriceRange" inputmode="text" value="${esc(row.guidePriceRange||"")}" oninput="updateProductGuideRow(${row.index},'guidePriceRange',this.value)"></td>
+    <td><input class="guide-price" data-guide-index="${row.index}" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="guidePriceRange" value="${esc(row.guidePriceRange||"")}" oninput="updateProductGuideRow(${row.index},'guidePriceRange',this.value)"></td>
     <td class="guide-sticky-actions"><div class="guide-row-actions"><button class="small" type="button" title="画像・仕入先などを表示" aria-expanded="${detailOpen}" onclick="toggleProductGuideRowDetail(${row.index})">詳細</button><button class="small" type="button" title="この行を複製" onclick="duplicateProductGuideRow(${row.index})">複製</button><button class="small danger" type="button" title="この案内から外す" onclick="removeProductGuideRow(${row.index})">外す</button></div></td>
   </tr>${productGuideDetailRowHtml(row,fileId,candidateClass)}`;
 }
@@ -4807,13 +4807,13 @@ function render(){
   const body=document.getElementById("order-body");
   body.innerHTML=orders.map((r,i)=>`<tr>
     <td>${i+1}</td>
-    <td><div class="lookup-cell"><input class="code ime-ja" autocomplete="off" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
-    <td><input class="name ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"></td>
+    <td><div class="lookup-cell"><input class="code ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
+    <td><input class="name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"></td>
     <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
-    <td><input class="code ime-en" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
-    <td><input class="code ime-en" list="supplier-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
-    <td><input class="supplier ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierName" value="${esc(r.supplierName)}" oninput="setRow(${i},'supplierName',this.value)"></td>
-    <td><input class="memo ime-ja" lang="ja-JP" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="memo" value="${esc(r.memo)}" oninput="setRow(${i},'memo',this.value)"></td>
+    <td><input class="code ime-en" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
+    <td><input class="code ime-en" list="supplier-code-list" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
+    <td><input class="supplier ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierName" value="${esc(r.supplierName)}" oninput="setRow(${i},'supplierName',this.value)"></td>
+    <td><input class="memo ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="memo" value="${esc(r.memo)}" oninput="setRow(${i},'memo',this.value)"></td>
     <td><button class="small" onclick="removeRow(${i})">削除</button></td>
   </tr>`).join("");
   renderSummary();
@@ -6327,16 +6327,16 @@ function renderImportReview(){
     <tr class="review-${status.key}" data-review-index="${index}">
       <td>${index+1}</td>
       <td><span class="import-review-status ${status.key}" data-review-status>${status.label}</span></td>
-      <td><input data-review-field="importer" class="import-review-importer ime-en" list="importer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
-      <td><input data-review-field="customerCode" class="import-review-customer-code ime-en" list="customer-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.code||"")}" oninput="updateImportReviewCustomerCode(${index},this.value,this)" onblur="finishImportReviewCustomerCode(${index},this.value,this)"></td>
-      <td><input data-review-field="customerName" class="import-review-customer ime-ja" list="customer-name-list" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.name||"")}" oninput="updateImportReviewCustomer(${index},this.value,this)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
-      <td><div class="lookup-cell"><input data-review-field="productCode" class="import-review-code ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)" onblur="finishImportReviewProductCode(${index},this.value,this)"><button class="lookup-btn" type="button" onclick="openImportReviewProductLookup(${index})">+</button></div></td>
-      <td><input data-review-field="productName" class="import-review-product ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productName||"")}" oninput="updateImportReviewProductName(${index},this.value,this)" onblur="finishImportReviewProductName(${index},this.value,this)"></td>
+      <td><input data-review-field="importer" class="import-review-importer ime-en" list="importer-code-list" autocapitalize="off" spellcheck="false" value="${esc(item.importer?.code||item.importer?.name||"")}" oninput="updateImportReviewImporter(${index},this.value,this)" onblur="finishImportReviewImporter(${index},this.value)"></td>
+      <td><input data-review-field="customerCode" class="import-review-customer-code ime-en" list="customer-code-list" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.code||"")}" oninput="updateImportReviewCustomerCode(${index},this.value,this)" onblur="finishImportReviewCustomerCode(${index},this.value,this)"></td>
+      <td><input data-review-field="customerName" class="import-review-customer ime-ja" list="customer-name-list" autocapitalize="off" spellcheck="false" value="${esc(item.customer?.name||"")}" oninput="updateImportReviewCustomer(${index},this.value,this)" onblur="finishImportReviewCustomer(${index},this.value)"></td>
+      <td><div class="lookup-cell"><input data-review-field="productCode" class="import-review-code ime-ja" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productCode||"")}" oninput="updateImportReviewProductCode(${index},this.value,this)" onblur="finishImportReviewProductCode(${index},this.value,this)"><button class="lookup-btn" type="button" onclick="openImportReviewProductLookup(${index})">+</button></div></td>
+      <td><input data-review-field="productName" class="import-review-product ime-ja" autocapitalize="off" spellcheck="false" value="${esc(item.row?.productName||"")}" oninput="updateImportReviewProductName(${index},this.value,this)" onblur="finishImportReviewProductName(${index},this.value,this)"></td>
       <td><input data-review-field="qty" class="import-review-qty" type="number" step="0.01" value="${esc(item.row?.qty||"")}" oninput="updateImportReviewRowField(${index},'qty',this.value,this)"></td>
-      <td><input data-review-field="unit" class="import-review-unit ime-en" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.unit||"")}" oninput="updateImportReviewRowField(${index},'unit',this.value,this)"></td>
-      <td><input data-review-field="supplierCode" class="import-review-supplier-code ime-en" list="supplier-code-list" lang="en" inputmode="latin" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierCode||"")}" oninput="updateImportReviewSupplierCode(${index},this.value,this)"></td>
-      <td><input data-review-field="supplierName" class="import-review-supplier ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierName||"")}" oninput="updateImportReviewRowField(${index},'supplierName',this.value,this)"></td>
-      <td><input data-review-field="memo" class="import-review-memo ime-ja" lang="ja-JP" inputmode="text" autocapitalize="off" spellcheck="false" value="${esc(item.row?.memo||"")}" oninput="updateImportReviewRowField(${index},'memo',this.value,this)"></td>
+      <td><input data-review-field="unit" class="import-review-unit ime-en" autocapitalize="off" spellcheck="false" value="${esc(item.row?.unit||"")}" oninput="updateImportReviewRowField(${index},'unit',this.value,this)"></td>
+      <td><input data-review-field="supplierCode" class="import-review-supplier-code ime-en" list="supplier-code-list" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierCode||"")}" oninput="updateImportReviewSupplierCode(${index},this.value,this)"></td>
+      <td><input data-review-field="supplierName" class="import-review-supplier ime-ja" autocapitalize="off" spellcheck="false" value="${esc(item.row?.supplierName||"")}" oninput="updateImportReviewRowField(${index},'supplierName',this.value,this)"></td>
+      <td><input data-review-field="memo" class="import-review-memo ime-ja" autocapitalize="off" spellcheck="false" value="${esc(item.row?.memo||"")}" oninput="updateImportReviewRowField(${index},'memo',this.value,this)"></td>
       <td class="import-review-meta" title="${esc(item.sourceFilename||"")}">${esc(item.sourceFilename||"")}</td>
       <td><div class="row-actions"><button class="small ${groupCheck.ready?"primary":""}" data-review-group-action type="button" onclick="confirmImportReviewGroup(${index})" ${groupCheck.ready?"":"disabled"} title="${esc(importReviewGroupLabel(group))}">${esc(groupActionText)}</button><button class="small danger" type="button" onclick="removeImportReviewRow(${index})">削除</button></div></td>
     </tr>
@@ -7105,7 +7105,7 @@ function applySearchResult(type,index){
     renderReportFilterCount();
   });
 });
-document.addEventListener("keyup",handleImportReviewEnter);
+document.addEventListener("keydown",handleImportReviewEnter);
 document.addEventListener("keydown",handleImportReviewArrow);
 document.addEventListener("keydown",e=>{
   if(!appBusy)return;
@@ -7237,31 +7237,8 @@ document.addEventListener("keydown",e=>{
   if(!orders.length)addOrderRow();
   focusOrderCell(0,"productCode");
 });
-function applyImeHint(target){
-  if(!(target instanceof HTMLInputElement||target instanceof HTMLTextAreaElement))return;
-  const field=target.dataset?.field||target.dataset?.reviewField||target.id||"";
-  const jaFields=new Set(["line-text","batch-customer-name","batch-note","customerName","productCode","productName","supplierName","memo"]);
-  const enFields=new Set(["batch-importer-code","batch-importer-name","batch-customer-code","importer","customerCode","unit","supplierCode"]);
-  if(jaFields.has(field)){
-    target.classList.add("ime-ja");
-    target.classList.remove("ime-en");
-    target.lang="ja-JP";
-    target.inputMode="text";
-    target.autocomplete="off";
-    target.autocapitalize="off";
-    target.spellcheck=false;
-  }else if(enFields.has(field)){
-    target.classList.add("ime-en");
-    target.classList.remove("ime-ja");
-    target.lang="en";
-    target.inputMode="latin";
-    target.autocapitalize="off";
-    target.spellcheck=false;
-  }
-}
 document.addEventListener("focusin",e=>{
   const target=e.target;
-  applyImeHint(target);
   if(!(target instanceof HTMLInputElement))return;
   if(target.matches("[data-order-input]"))lastOrderRowIndex=Number(target.dataset.row||0);
 });
