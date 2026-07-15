@@ -62,6 +62,7 @@ main{width:min(1280px,100%);margin:0 auto;padding:18px max(14px,env(safe-area-in
 .ops-entry-only{display:none!important}
 .work-start-panel{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
 .work-start-title{font-size:15px;font-weight:900}.work-start-sub{margin-top:3px;color:var(--muted);font-size:12px;font-weight:800;line-height:1.5}.work-start-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.work-start-controls label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}.work-start-controls input{height:42px;min-width:160px;border:1px solid var(--border-strong);border-radius:9px;background:#fff;padding:0 10px;font-weight:800}
+.work-price-file{min-width:220px}.work-price-file input{display:none}.work-price-file-button{display:flex;align-items:center;justify-content:center;height:42px;padding:0 12px;border:1px solid var(--border-strong);border-radius:9px;background:#fff;color:var(--text);cursor:pointer}.work-price-file-status{display:block;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:800}.work-price-file-status.ok{color:var(--success)}.work-price-file-status.error{color:var(--danger)}
 .import-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}
 .import-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .import-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -242,6 +243,11 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       </div>
       <div class="work-start-controls">
         <label>作業日<input id="work-session-date" type="date"></label>
+        <label class="work-price-file">価格・産地Excel
+          <span class="work-price-file-button">ファイルを選択</span>
+          <input id="work-price-origin-file" type="file" accept=".xlsx,.xls" onchange="loadWorkPriceOriginFile(this)">
+          <span class="work-price-file-status" id="work-price-origin-status">未選択</span>
+        </label>
         <button class="btn btn-primary" type="button" onclick="createWorkSessionFromConfirmedOrders()">受注から作業作成</button>
         <button class="btn btn-primary" type="button" onclick="loadSessionList()">作業一覧を表示</button>
         <button class="btn" type="button" onclick="location.href='./order-entry-beta.html'">発注入力へ</button>
@@ -4587,6 +4593,189 @@ resetLocalStateForSession=function(){
   setWorkStartPanelVisible(true);
   applyWorkAppLeanMode();
 };
+let workPriceOriginEntries=[];
+let workPriceOriginFilename="";
+let workPriceOriginLoadError="";
+let workPriceOriginLoadPromise=Promise.resolve();
+function workPriceOriginNumber(value){
+  if(typeof value==="number")return Number.isFinite(value)?value:null;
+  const text=String(value??"").normalize("NFKC").replace(/,/g,"").trim();
+  if(!text||!/^-?\d+(?:\.\d+)?$/.test(text))return null;
+  const number=Number(text);
+  return Number.isFinite(number)?number:null;
+}
+function workPriceOriginNormalize(value){
+  let text=String(value||"").normalize("NFKC").toLowerCase().trim();
+  text=text.replace(/\bleft\s*:.*$/i,"");
+  text=text.replace(/[ぁ-ゖ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60));
+  text=text
+    .replace(/海老|蝦/g,"エビ")
+    .replace(/鮪/g,"マグロ")
+    .replace(/本マグロ/g,"ホンマグロ")
+    .replace(/[蓄畜]養/g,"チクヨウ")
+    .replace(/[\s\u200B-\u200D\u2060\uFEFF\u3000・･\/／,，.。:：;；（）()\[\]【】「」『』"'`_~〜～!?！？\-]/g,"");
+  return text;
+}
+function workPriceOriginUnit(value){
+  const unit=String(value||"").normalize("NFKC").trim();
+  if(!unit)return "";
+  if(/^kg$/i.test(unit)||unit==="㎏")return "Kg";
+  if(/^(pkt|pack|p|パック)$/i.test(unit))return "pkt";
+  if(/^(pc|pcs|個|本|枚|尾|玉)$/i.test(unit))return "PC";
+  if(/^(cs|case|c\/s|ケース)$/i.test(unit))return "CS";
+  return "";
+}
+function workPriceOriginParseSheet(workbook,sheetName,vegetable){
+  const actualName=(workbook.SheetNames||[]).find(name=>String(name).trim()===sheetName);
+  if(!actualName)return [];
+  const data=XLSX.utils.sheet_to_json(workbook.Sheets[actualName],{header:1,defval:"",raw:true});
+  return data.slice(2).map((cells,index)=>{
+    const name=String(cells[1]||"").trim();
+    if(!name||/^【.*】$/.test(name))return null;
+    const basePriceLow=workPriceOriginNumber(cells[4]);
+    const basePriceHigh=workPriceOriginNumber(cells[5]);
+    const fbiLowIndex=vegetable?37:36;
+    const fbiHighIndex=vegetable?43:42;
+    const fbiPriceLow=basePriceLow===null?null:workPriceOriginNumber(cells[fbiLowIndex]);
+    const fbiPriceHigh=basePriceHigh===null?null:workPriceOriginNumber(cells[fbiHighIndex]);
+    const weight=workPriceOriginNumber(cells[6]);
+    const unit=vegetable
+      ?workPriceOriginUnit(cells[7])
+      :(weight!==null&&weight!==1?"PC":"Kg");
+    return {
+      sheetName:actualName,
+      sheetRow:index+3,
+      vegetable,
+      name,
+      nameKey:workPriceOriginNormalize(name),
+      origin:String(cells[2]||"").trim(),
+      originKey:workPriceOriginNormalize(cells[2]),
+      spec:String(cells[3]||"").trim(),
+      specKey:workPriceOriginNormalize(cells[3]),
+      basePriceLow,
+      basePriceHigh,
+      fbiPriceLow,
+      fbiPriceHigh,
+      unit
+    };
+  }).filter(entry=>entry?.nameKey&&(entry.origin||entry.unit||entry.basePriceLow!==null||entry.basePriceHigh!==null));
+}
+function parseWorkPriceOriginWorkbook(workbook){
+  return [
+    ...workPriceOriginParseSheet(workbook,"Master Special",false),
+    ...workPriceOriginParseSheet(workbook,"Master Special 野菜",true)
+  ];
+}
+function setWorkPriceOriginStatus(message,state=""){
+  const status=document.getElementById("work-price-origin-status");
+  if(!status)return;
+  status.textContent=message;
+  status.className=`work-price-file-status${state?` ${state}`:""}`;
+  status.title=message;
+}
+async function loadWorkPriceOriginFile(input){
+  const file=input?.files?.[0];
+  workPriceOriginEntries=[];
+  workPriceOriginFilename="";
+  workPriceOriginLoadError="";
+  if(!file){setWorkPriceOriginStatus("未選択");return}
+  if(typeof XLSX==="undefined"){
+    workPriceOriginLoadError="Excel読込ライブラリを読み込めませんでした。";
+    setWorkPriceOriginStatus(workPriceOriginLoadError,"error");
+    return;
+  }
+  setWorkPriceOriginStatus("読込中...");
+  workPriceOriginLoadPromise=(async()=>{
+    try{
+      const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:false});
+      const entries=parseWorkPriceOriginWorkbook(workbook);
+      if(!entries.length)throw new Error("Master Special / Master Special 野菜の明細を読み取れませんでした。");
+      workPriceOriginEntries=entries;
+      workPriceOriginFilename=file.name;
+      const fish=entries.filter(entry=>!entry.vegetable).length;
+      const vegetables=entries.length-fish;
+      setWorkPriceOriginStatus(`${file.name} / 鮮魚 ${fish}件・野菜 ${vegetables}件`,"ok");
+    }catch(error){
+      workPriceOriginEntries=[];
+      workPriceOriginFilename="";
+      workPriceOriginLoadError=error?.message||String(error);
+      setWorkPriceOriginStatus(`読込失敗: ${workPriceOriginLoadError}`,"error");
+    }
+  })();
+  await workPriceOriginLoadPromise;
+}
+function workPriceOriginIsFbi(value){
+  return /^FBI(?:$|[^A-Z0-9])/.test(String(importerCode(value)||value||"").normalize("NFKC").toUpperCase().trim());
+}
+function workPriceOriginPrices(entry,importer){
+  const source=workPriceOriginIsFbi(importer)
+    ?[entry.fbiPriceLow,entry.fbiPriceHigh]
+    :[entry.basePriceLow,entry.basePriceHigh];
+  const prices=[];
+  source.forEach(value=>{
+    if(value===null||value===undefined||!Number.isFinite(Number(value)))return;
+    const number=Number(value);
+    if(!prices.includes(number))prices.push(number);
+  });
+  return prices;
+}
+function workPriceOriginFingerprint(entry,importer){
+  return [entry.origin,entry.spec,entry.unit,...workPriceOriginPrices(entry,importer)].join("|");
+}
+function workPriceOriginMatch(row){
+  const productKey=workPriceOriginNormalize(row.product_name);
+  const sourceKey=workPriceOriginNormalize([row.product_name,row._priceSourceText,row._memo].filter(Boolean).join(" "));
+  if(!productKey)return {entry:null,ambiguous:false};
+  const scored=workPriceOriginEntries.map(entry=>{
+    let score=999;
+    if(productKey===entry.nameKey)score=0;
+    else if(entry.nameKey.length>=4&&sourceKey.includes(entry.nameKey))score=20-Math.min(entry.nameKey.length,12);
+    else if(productKey.length>=4&&entry.nameKey.includes(productKey))score=32-Math.min(productKey.length,12);
+    if(score>=999)return null;
+    if(entry.originKey&&sourceKey.includes(entry.originKey))score-=8;
+    if(entry.specKey&&sourceKey.includes(entry.specKey))score-=5;
+    return {entry,score};
+  }).filter(Boolean).sort((a,b)=>a.score-b.score||b.entry.nameKey.length-a.entry.nameKey.length||a.entry.sheetRow-b.entry.sheetRow);
+  if(!scored.length)return {entry:null,ambiguous:false};
+  const bestScore=scored[0].score;
+  const best=scored.filter(item=>item.score===bestScore);
+  if(best.length===1)return {entry:best[0].entry,ambiguous:false};
+  const fingerprints=new Set(best.map(item=>workPriceOriginFingerprint(item.entry,row.importer_id)));
+  return fingerprints.size===1
+    ?{entry:best[0].entry,ambiguous:false}
+    :{entry:null,ambiguous:true};
+}
+function workPriceOriginFormatPrice(value){
+  return Number(value).toLocaleString("ja-JP",{maximumFractionDigits:2});
+}
+function workPriceOriginAppendMemo(current,prices){
+  if(prices.length<2)return String(current||"");
+  const note=`価格候補: ${prices.map(workPriceOriginFormatPrice).join(" / ")}`;
+  const memo=String(current||"").trim();
+  return memo.includes(note)?memo:[memo,note].filter(Boolean).join(" / ");
+}
+function applyWorkPriceOriginToRows(targetRows){
+  if(!workPriceOriginEntries.length)return null;
+  const summary={total:targetRows.length,matched:0,unmatched:0,ambiguous:0,origin:0,price:0,unit:0,twoPrices:0};
+  targetRows.forEach(row=>{
+    const match=workPriceOriginMatch(row);
+    if(match.ambiguous){summary.ambiguous++;return}
+    if(!match.entry){summary.unmatched++;return}
+    const entry=match.entry;
+    const prices=workPriceOriginPrices(entry,row.importer_id);
+    summary.matched++;
+    if(entry.origin){row.origin=entry.origin;summary.origin++}
+    if(prices.length){row.unit_price=prices[0];summary.price++}
+    if(entry.unit){row._unit=entry.unit;summary.unit++}
+    if(prices.length>1){row._memo=workPriceOriginAppendMemo(row._memo,prices);summary.twoPrices++}
+    row._priceOriginSource=`${workPriceOriginFilename} / ${entry.sheetName}!${entry.sheetRow}`;
+  });
+  return summary;
+}
+function workPriceOriginSummaryText(summary){
+  if(!summary)return "";
+  return `価格表照合 ${summary.matched}/${summary.total}件（未一致 ${summary.unmatched}・候補複数 ${summary.ambiguous}）`;
+}
 function orderEntryLineToWorkRow(batch,line,index){
   const importer=batch.importer_name_snapshot||batch.importer_code||"";
   return {
@@ -4595,6 +4784,7 @@ function orderEntryLineToWorkRow(batch,line,index){
     _net:"",
     _box:"",
     _memo:line.purchase_note||"",
+    _priceSourceText:line.source_text||"",
     _unit:"Kg",
     _stockout:false,
     customer:batch.customer_name_snapshot||batch.customer_code||"UNKNOWN_STORE",
@@ -4612,6 +4802,11 @@ function orderEntryLineToWorkRow(batch,line,index){
 }
 async function createWorkSessionFromConfirmedOrders(){
   if(!(await requireSupabaseLogin()))return;
+  await workPriceOriginLoadPromise;
+  if(workPriceOriginLoadError){
+    alert(`価格・産地Excelを読み込めません。\n${workPriceOriginLoadError}`);
+    return;
+  }
   const date=workSessionDateFilterValue()||localDateValue();
   const dateInput=document.getElementById("work-session-date");
   if(dateInput)dateInput.value=date;
@@ -4655,13 +4850,14 @@ async function createWorkSessionFromConfirmedOrders(){
     });
   });
   if(!nextRows.length){setSaveState("明細なし");toast(`${date} の受注明細がありません`);return}
+  const priceOriginSummary=applyWorkPriceOriginToRows(nextRows);
   unsubscribeRealtime();
   resetLocalStateForSession();
   currentSessionId=null;
   currentSessionLocked=false;
   currentSessionFinalizedAt="";
   latestOrderFilename=`order-entry:${date}`;
-  latestMasterFilename="Supabase master";
+  latestMasterFilename=workPriceOriginFilename?`Supabase master + ${workPriceOriginFilename}`:"Supabase master";
   importIdentityConfirmed=true;
   rows=nextRows;
   syncOrderRowsFromRows();
@@ -4676,12 +4872,13 @@ async function createWorkSessionFromConfirmedOrders(){
   document.getElementById("p2-tabs-wrap").style.display="none";
   document.getElementById("p2-empty").style.display="none";
   document.getElementById("cloud-save-bar").style.display="flex";
-  document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${batches.length}得意先 / ${rows.length}明細`;
+  const priceOriginText=workPriceOriginSummaryText(priceOriginSummary);
+  document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${batches.length}得意先 / ${rows.length}明細${priceOriginText?` / ${priceOriginText}`:""}`;
   document.getElementById("export-btn").disabled=false;
   setWorkStartPanelVisible(false);
   updateCloudSaveButton();
-  setSaveState("受注読込完了: 作業名を確認して保存してください");
-  toast("受注データを読み込みました。作業名を確認して保存してください");
+  setSaveState(`受注読込完了${priceOriginText?` / ${priceOriginText}`:""}: 作業名を確認して保存してください`);
+  toast(priceOriginText?`受注データを読み込みました。${priceOriginText}`:"受注データを読み込みました。作業名を確認して保存してください");
   applyWorkAppLeanMode();
 }
 applyWorkAppLeanMode();
