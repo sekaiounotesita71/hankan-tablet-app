@@ -3207,6 +3207,33 @@ function productGuideVariantPayload(variant){
     updated_at:new Date().toISOString()
   };
 }
+function productGuideCloudErrorText(error){
+  return [error?.message,error?.details,error?.hint,error?.code].filter(Boolean).join(" / ")||String(error||"不明なエラー");
+}
+async function deleteObsoleteProductGuideRows(activeIds){
+  const templateId=currentProductGuideTemplate?.id;
+  if(!templateId)return;
+  if(!activeIds.length){
+    const result=await supabaseClient.from("product_guide_template_rows").delete().eq("template_id",templateId);
+    if(result.error)throw result.error;
+    return;
+  }
+  const keep=new Set(activeIds);
+  const existing=[];
+  const pageSize=1000;
+  for(let from=0;;from+=pageSize){
+    const result=await supabaseClient.from("product_guide_template_rows").select("id").eq("template_id",templateId).order("id",{ascending:true}).range(from,from+pageSize-1);
+    if(result.error)throw result.error;
+    const page=result.data||[];
+    existing.push(...page.map(item=>item.id));
+    if(page.length<pageSize)break;
+  }
+  const obsolete=existing.filter(id=>!keep.has(id));
+  for(let i=0;i<obsolete.length;i+=100){
+    const result=await supabaseClient.from("product_guide_template_rows").delete().in("id",obsolete.slice(i,i+100));
+    if(result.error)throw result.error;
+  }
+}
 async function saveProductGuideTemplate(){
   if(!currentProductGuideTemplate){
     alert("先に「全商品から新規作成」または「選択版を複製」を押してください。");
@@ -3232,30 +3259,30 @@ async function saveProductGuideTemplate(){
     return;
   }
   setAppBusy(true,"商品案内テンプレートを保存しています...");
+  let saveStage="テンプレート本体";
   try{
     const templateResult=await supabaseClient.from("product_guide_templates").upsert(productGuideTemplatePayload(),{onConflict:"id"});
     if(templateResult.error)throw templateResult.error;
     const uniqueVariants=[...new Map(variants.map(item=>[item.id,item])).values()];
+    saveStage="画像バリエーション";
     for(let i=0;i<uniqueVariants.length;i+=200){
       const result=await supabaseClient.from("product_guide_variants").upsert(uniqueVariants.slice(i,i+200).map(productGuideVariantPayload),{onConflict:"id"});
       if(result.error)throw result.error;
     }
     const payloads=productGuideRows.map(productGuideRowPayload);
+    saveStage="商品明細";
     for(let i=0;i<payloads.length;i+=200){
       const result=await supabaseClient.from("product_guide_template_rows").upsert(payloads.slice(i,i+200),{onConflict:"id"});
       if(result.error)throw result.error;
     }
-    const ids=payloads.map(item=>item.id);
-    const deleteResult=ids.length
-      ?await supabaseClient.from("product_guide_template_rows").delete().eq("template_id",currentProductGuideTemplate.id).not("id","in",`(${ids.join(",")})`)
-      :await supabaseClient.from("product_guide_template_rows").delete().eq("template_id",currentProductGuideTemplate.id);
-    if(deleteResult.error)throw deleteResult.error;
+    saveStage="古い商品明細の整理";
+    await deleteObsoleteProductGuideRows(payloads.map(item=>item.id));
     productGuideTemplateState(`${currentProductGuideTemplate.name} をクラウドへ保存しました。${productGuideRows.length}行。`);
   }catch(error){
     if(productGuideTemplateDbMissing(error)){
       productGuideTemplateState("端末内には保存済みです。クラウド保存には product-guide-template-migration.sql をSupabaseで実行してください。");
     }else{
-      alert(`クラウド保存に失敗しました。端末内には保存されています: ${error?.message||error}`);
+      alert(`クラウド保存に失敗しました。端末内には保存されています。\n処理: ${saveStage}\n${productGuideCloudErrorText(error)}`);
     }
   }finally{
     setAppBusy(false);
