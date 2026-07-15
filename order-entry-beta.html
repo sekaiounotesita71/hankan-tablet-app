@@ -119,7 +119,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-body">
       <div class="import-review-tools">
         <input class="import-review-search" id="import-review-search" type="search" placeholder="輸入社・得意先・商品コード・商品名で絞り込み" oninput="renderImportReview()">
-        <label class="import-review-check"><input type="checkbox" id="import-review-bulk" checked> 同じ得意先名をまとめて修正</label>
+        <label class="import-review-check"><input type="checkbox" id="import-review-bulk" checked> 同じ得意先コードをまとめて修正</label>
         <label class="import-review-check"><input type="checkbox" id="import-review-importer-bulk" checked> 同じ輸入社をまとめて修正</label>
         <span class="pill warn" id="import-review-count">0件</span>
         <button class="btn" type="button" onclick="addImportReviewRow()">明細追加</button>
@@ -1340,7 +1340,8 @@ function applyPendingImporter(value,sourceId=""){
   return false;
 }
 function applyPendingCustomer(value){
-  const hit=lookupCustomerByInput(value)||findMasterCustomer(value,value);
+  const importerHint={code:val("pending-importer-code"),name:val("pending-importer-name")};
+  const hit=lookupCustomerByInput(value,importerHint);
   if(!hit)return false;
   setPendingValue("pending-customer-code",hit.code||"");
   setPendingValue("pending-customer-name",hit.name||"");
@@ -4397,9 +4398,10 @@ function setHeaderCustomer(c,options={}){
     setHeaderImporter(resolved.importer);
   }
 }
-function resolveCustomerWithImporter(c){
+function resolveCustomerWithImporter(c,options={}){
   const source=c||{};
-  const master=findMasterCustomer(source.code,source.name);
+  const importerHint=options.importer||{code:source.importerCode||"",name:source.importerName||""};
+  const master=findMasterCustomer(source.code,source.name,importerHint);
   const customer={
     code:master?.code||source.code||"",
     name:master?.name||source.name||""
@@ -4478,9 +4480,8 @@ function refreshMasterCodeList(){
   const masters=getMasters()[masterType]||[];
   list.innerHTML=masters.map(item=>`<option value="${esc(item.code)}">${esc(item.name)}</option>`).join("");
 }
-function lookupCustomerByInput(value){
-  const s=String(value||"").toLowerCase();
-  return getMasters().customers.find(c=>String(c.code).toLowerCase()===s||String(c.name).toLowerCase()===s||((c.aliases||[]).some(a=>String(a).toLowerCase()===s)));
+function lookupCustomerByInput(value,importerInfo=importer()){
+  return findMasterCustomer(value,"",importerInfo)||findMasterCustomer("",value,importerInfo);
 }
 function customerSearchValues(c){
   return [c.code,c.name,c.importerCode,c.importerName,...(c.aliases||[])];
@@ -4968,9 +4969,17 @@ function renderSummary(){
     `<span class="pill warn">商品コード未入力 ${activeRows.filter(r=>!r.productCode).length}件</span>`
   ].join("");
 }
-function inferCustomer(text){
+function inferCustomer(text,importerInfo={}){
   const lower=text.toLowerCase();
-  return getMasters().customers.find(c=>[c.code,c.name,...(c.aliases||[])].some(w=>String(w||"").toLowerCase()&&lower.includes(String(w).toLowerCase())))||{};
+  const ranked=getMasters().customers.map((c,index)=>{
+    const lengths=[c.code,c.name,...(c.aliases||[])].map(w=>String(w||"").trim().toLowerCase()).filter(w=>w&&lower.includes(w)).map(w=>w.length);
+    return {c,index,length:lengths.length?Math.max(...lengths):0};
+  }).filter(row=>row.length>0).sort((a,b)=>b.length-a.length||a.index-b.index);
+  if(!ranked.length)return {};
+  const best=ranked.filter(row=>row.length===ranked[0].length).map(row=>row.c);
+  if(best.length===1)return best[0];
+  const scoped=best.filter(c=>customerMasterMatchesImporter(c,importerInfo));
+  return scoped.length===1?scoped[0]:{};
 }
 function inferImporter(text){
   const lower=text.toLowerCase();
@@ -4985,10 +4994,10 @@ function inferProduct(text){
     .filter(row=>row.score<99)
     .sort((a,b)=>a.score-b.score||b.length-a.length||String(a.p.name||"").localeCompare(String(b.p.name||""),"ja")||a.index-b.index)[0]?.p||{};
 }
-function findExactLineCustomer(text){
+function findExactLineCustomer(text,importerInfo={}){
   const q=normalizeMasterSearchText(text);
   if(!q)return null;
-  return getMasters().customers.find(c=>[c.code,c.name,...(c.aliases||[])].some(w=>normalizeMasterSearchText(w)===q))||null;
+  return findMasterCustomer(text,"",importerInfo)||findMasterCustomer("",text,importerInfo);
 }
 function findExactLineImporter(text){
   const q=normalizeMasterSearchText(text);
@@ -5185,10 +5194,10 @@ function handleProductLookupKey(e){
   e.stopPropagation();
   clickActiveOption("#product-lookup-results",".lookup-row");
 }
-function lineCustomerFromHeading(value){
+function lineCustomerFromHeading(value,currentImporter={}){
   const name=stripLineListMarker(value).replace(/[：:]$/,"").trim();
   if(!name)return {};
-  const master=findExactLineCustomer(name)||findMasterCustomer("",name);
+  const master=findExactLineCustomer(name,currentImporter)||findMasterCustomer("",name,currentImporter);
   return master?{code:master.code||"",name:master.name||name,importerCode:master.importerCode||"",importerName:master.importerName||""}:{code:"",name};
 }
 function lineImporterSnapshot(value){
@@ -5200,7 +5209,7 @@ function lineImporterSnapshot(value){
   };
 }
 function lineReviewItem(productText,parsed,currentCustomer,currentImporter,lineNo){
-  const resolvedCustomer=resolveCustomerWithImporter(currentCustomer||{});
+  const resolvedCustomer=resolveCustomerWithImporter(currentCustomer||{},{importer:currentImporter||{}});
   const learned=lookupLineDictionary(productText,resolvedCustomer.customer);
   const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
   const inferredProduct=inferProduct(productText);
@@ -5247,9 +5256,9 @@ function parseLineBulkItems(text){
     }
     const importerHit=findExactLineImporter(line);
     if(importerHit){currentImporter=lineImporterSnapshot(importerHit);productPrefix="";return}
-    const customerHit=findExactLineCustomer(line);
+    const customerHit=findExactLineCustomer(line,currentImporter);
     if(customerHit){
-      currentCustomer=lineCustomerFromHeading(line);
+      currentCustomer=lineCustomerFromHeading(line,currentImporter);
       if(!currentImporter.code&&currentCustomer.importerCode)currentImporter=lineImporterSnapshot({code:currentCustomer.importerCode,name:currentCustomer.importerName});
       productPrefix="";
       return;
@@ -5264,14 +5273,14 @@ function parseLineBulkItems(text){
         productPrefix="";
         return;
       }
-      currentCustomer=lineCustomerFromHeading(line);
+      currentCustomer=lineCustomerFromHeading(line,currentImporter);
       if(!currentImporter.code&&currentCustomer.importerCode)currentImporter=lineImporterSnapshot({code:currentCustomer.importerCode,name:currentCustomer.importerName});
       productPrefix="";
       return;
     }
     if(!currentCustomer.name){
       const fallback=customer();
-      currentCustomer=(fallback.code||fallback.name)?lineCustomerFromHeading(fallback.name||fallback.code):lineCustomerFromHeading(inferCustomer(text).name||"");
+      currentCustomer=(fallback.code||fallback.name)?lineCustomerFromHeading(fallback.code||fallback.name,currentImporter):lineCustomerFromHeading(inferCustomer(text,currentImporter).name||"",currentImporter);
     }
     const productText=productPrefix&&!directProduct.code?`${productPrefix} ${parsed.productText}`:parsed.productText;
     if(directProduct.code)productPrefix="";
@@ -5292,7 +5301,7 @@ function parseLineDraft(){
   const text=val("line-text").trim();
   if(!text){document.getElementById("line-preview").textContent="文面を貼り付けてください。";return}
   const inferredImporter=inferImporter(text);
-  const inferredCustomer=inferCustomer(text);
+  const inferredCustomer=inferCustomer(text,importer());
   if(inferredImporter.code||inferredImporter.name)setHeaderImporter(inferredImporter);
   if(inferredCustomer.code||inferredCustomer.name)setHeaderCustomer(inferredCustomer);
   const parts=text.replace(/[、，]/g,",").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
@@ -5305,7 +5314,7 @@ function parseLineDraft(){
       setHeaderImporter(importerHit);
       return;
     }
-    const customerHit=findExactLineCustomer(part);
+    const customerHit=findExactLineCustomer(part,importer());
     if(customerHit){
       setHeaderCustomer(customerHit);
       headerApplied=true;
@@ -5353,6 +5362,7 @@ async function confirmCustomerOrder(options={}){
   const im=importer();
   if(!im.code&&!im.name){alert("輸入社を入力してください。");return}
   if(!c.code&&!c.name){alert("得意先を入力してください。");return}
+  if(!c.code&&customerNameIsAmbiguous(c.name,im)){alert("同名の得意先が複数あります。得意先コードを選択してください。");return}
   if(!activeOrderRows().length){alert("商品明細がありません。");return}
   const learnedCount=learnLineDictionaryFromOrders(activeOrderRows(),c);
   const batch=currentBatch();
@@ -5866,14 +5876,59 @@ function masterItemFromCsvRow(row,headers,type){
 function orderCsvValue(row,headers,names){
   return rowValue(row,headers,names);
 }
-function findMasterCustomer(code,name){
-  const codeKey=String(code||"").trim().toLowerCase();
-  const nameKey=String(name||"").trim().toLowerCase();
-  return getMasters().customers.find(c=>
-    (codeKey&&String(c.code||"").trim().toLowerCase()===codeKey)||
-    (nameKey&&String(c.name||"").trim().toLowerCase()===nameKey)||
-    (nameKey&&(c.aliases||[]).some(a=>String(a||"").trim().toLowerCase()===nameKey))
-  )||null;
+function customerMasterKey(value){
+  return String(value||"").normalize("NFKC").trim().toLowerCase();
+}
+function customerMasterNameCandidates(name){
+  const nameKey=customerMasterKey(name);
+  if(!nameKey)return [];
+  return getMasters().customers.filter(c=>
+    customerMasterKey(c.name)===nameKey||
+    (c.aliases||[]).some(alias=>customerMasterKey(alias)===nameKey)
+  );
+}
+function customerImporterCodeKeys(value){
+  const exact=customerMasterKey(value).replace(/[\s_\-]+/g,"");
+  if(!exact)return [];
+  const keys=[exact];
+  const base=exact.match(/^(dim|fbi|bkk|jkt|kl|en)(?:veg|fz|stock|frozen)?/)?.[1]||"";
+  if(base&&!keys.includes(base))keys.push(base);
+  return keys;
+}
+function customerMasterMatchesImporter(customer,importerInfo){
+  const source=typeof importerInfo==="string"?{code:importerInfo}:importerInfo||{};
+  const codeKeys=customerImporterCodeKeys(source.code||source.importerCode);
+  const nameKey=customerMasterKey(source.name||source.importerName);
+  if(!codeKeys.length&&!nameKey)return true;
+  const customerCodeKeys=customerImporterCodeKeys(customer?.importerCode);
+  return (codeKeys.length&&codeKeys.some(key=>customerCodeKeys.includes(key)))||
+    (nameKey&&customerMasterKey(customer?.importerName)===nameKey);
+}
+function customerMasterImporterHint(importerInfo){
+  if(typeof importerInfo==="string")return customerMasterKey(importerInfo);
+  return customerMasterKey(importerInfo?.code||importerInfo?.importerCode||importerInfo?.name||importerInfo?.importerName);
+}
+function findMasterCustomer(code,name,importerInfo={}){
+  const codeKey=customerMasterKey(code);
+  if(codeKey){
+    const codeMatch=getMasters().customers.find(c=>customerMasterKey(c.code)===codeKey);
+    return codeMatch||null;
+  }
+  const candidates=customerMasterNameCandidates(name);
+  if(!candidates.length)return null;
+  const hasImporter=!!customerMasterImporterHint(importerInfo);
+  if(hasImporter){
+    const scoped=candidates.filter(c=>customerMasterMatchesImporter(c,importerInfo));
+    return scoped.length===1?scoped[0]:null;
+  }
+  return candidates.length===1?candidates[0]:null;
+}
+function customerNameIsAmbiguous(name,importerInfo={}){
+  const candidates=customerMasterNameCandidates(name);
+  if(candidates.length<=1)return false;
+  const hasImporter=!!customerMasterImporterHint(importerInfo);
+  if(!hasImporter)return true;
+  return candidates.filter(c=>customerMasterMatchesImporter(c,importerInfo)).length!==1;
 }
 function findMasterImporter(code,name,filename){
   const codeKey=String(code||"").trim().toLowerCase();
@@ -5896,9 +5951,9 @@ function findMasterProduct(code,name){
 function orderItemFromCsvRow(row,headers,filename){
   const customerCode=orderCsvValue(row,headers,["customer_code","customercode","得意先コード","顧客コード","エンドユーザーコード"]);
   const customerName=orderCsvValue(row,headers,["customer_name","customername","得意先名","顧客名","エンドユーザーの店名","エンドユーザー店名","店舗名","店名","納品先名","届け先名","buyer","shop"]);
-  const customerMaster=findMasterCustomer(customerCode,customerName);
   const importerCodeRaw=orderCsvValue(row,headers,["importer_code","importercode","importer_id","importerid","輸入社コード","輸入社ID","輸入先コード","輸入会社コード","c/s"]);
   const importerNameRaw=orderCsvValue(row,headers,["importer_name","importername","輸入社名","輸入先名","輸入会社名"]);
+  const customerMaster=findMasterCustomer(customerCode,customerName,{code:importerCodeRaw,name:importerNameRaw});
   const importerMaster=findMasterImporter(importerCodeRaw||customerMaster?.importerCode,importerNameRaw||customerMaster?.importerName,filename);
   const productCode=orderCsvValue(row,headers,["product_code","productcode","product_id","productid","code","商品コード","商品ID","品番"]);
   const productName=orderCsvValue(row,headers,["product_name","productname","商品名","品名","name of goods injapanese","name"]);
@@ -6032,7 +6087,7 @@ function parseOrderPdfTextToRecords(text,filename,fallbackImporter,pageNo){
   return records;
 }
 function orderItemFromPdfRecord(record,filename){
-  const customerMaster=findMasterCustomer("",record.customerName);
+  const customerMaster=findMasterCustomer("",record.customerName,{code:record.importerCode||""});
   const importerMaster=findMasterImporter(record.importerCode||customerMaster?.importerCode,"",filename);
   const productMaster=findMasterProduct(record.productCode,record.productName);
   const supplierCode=productMaster?.supplierCode||"";
@@ -6118,8 +6173,12 @@ function importReviewCodeMissing(value){
   const text=normalizeImportReviewCode(value);
   return !text||/[ぁ-んァ-ヶ一-龠〆々]/.test(text);
 }
+function importReviewCustomerAmbiguous(item){
+  if(String(item?.customer?.code||"").trim())return false;
+  return customerNameIsAmbiguous(item?.customer?.name,item?.importer||{});
+}
 function importReviewIsSuspicious(item){
-  return importReviewImporterMissing(item?.importer?.code||item?.importer?.name)||importReviewCustomerMissing(item?.customer?.name)||importReviewCodeMissing(item?.row?.productCode)||!String(item?.row?.productName||"").trim();
+  return importReviewImporterMissing(item?.importer?.code||item?.importer?.name)||importReviewCustomerMissing(item?.customer?.name)||importReviewCustomerAmbiguous(item)||importReviewCodeMissing(item?.row?.productCode)||!String(item?.row?.productName||"").trim();
 }
 function importReviewNeedsAttention(item){
   return !String(item?.row?.qty||"").trim()||!String(item?.row?.supplierCode||"").trim();
@@ -6147,7 +6206,7 @@ function normalizeImportReviewItem(item){
     customer:{...(item?.customer||{})},
     row:{...blankOrder(),...(item?.row||{})}
   };
-  const resolved=resolveCustomerWithImporter(next.customer);
+  const resolved=resolveCustomerWithImporter(next.customer,{importer:next.importer});
   next.customer={...next.customer,...resolved.customer};
   if(!next._importerManual&&(resolved.importer.code||resolved.importer.name)){
     next.importer={...next.importer,...resolved.importer};
@@ -6156,13 +6215,20 @@ function normalizeImportReviewItem(item){
   }
   return next;
 }
+function importReviewCustomerIdentity(item){
+  const code=customerMasterKey(item?.customer?.code);
+  if(code)return `CODE:${code}`;
+  const importerKey=customerMasterKey(item?.importer?.code||item?.importer?.name);
+  const name=customerMasterKey(item?.customer?.name);
+  return `NAME:${importerKey}|${name}`;
+}
 function showImportReview(items,sourceNames,sourceType){
   importReviewItems=items.map((item,index)=>({
     ...normalizeImportReviewItem(item),
     _reviewIndex:index,
     sourceFilename:item.sourceFilename||item.row?.sourceFilename||sourceNames.join(", ")
   }));
-  importReviewOriginalCustomers=importReviewItems.map(item=>String(item.customer?.name||"").trim());
+  importReviewOriginalCustomers=importReviewItems.map(importReviewCustomerIdentity);
   importReviewOriginalImporters=importReviewItems.map(item=>String(item.importer?.code||item.importer?.name||"").trim());
   importReviewSourceNames=sourceNames;
   importReviewSourceType=sourceType;
@@ -6288,7 +6354,7 @@ function addImportReviewRow(){
     sourceFilename:"手動追加"
   };
   importReviewItems.push(item);
-  importReviewOriginalCustomers.push(String(item.customer?.name||"").trim());
+  importReviewOriginalCustomers.push(importReviewCustomerIdentity(item));
   importReviewOriginalImporters.push(String(item.importer?.code||item.importer?.name||"").trim());
   renderImportReview();
 }
@@ -6346,7 +6412,7 @@ function syncImportReviewRowFields(index,el){
 function applyImportReviewCustomerMaster(item){
   if(!item)return;
   item.customer=item.customer||{};
-  const resolved=resolveCustomerWithImporter(item.customer);
+  const resolved=resolveCustomerWithImporter(item.customer,{importer:item.importer||{}});
   item.customer={...item.customer,...resolved.customer};
   if(resolved.importer.code||resolved.importer.name){
     item.importer={...item.importer,...resolved.importer};
