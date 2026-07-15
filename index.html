@@ -795,7 +795,10 @@ function resolveContractPrice(master,importerId){
   return "";
 }
 function resolveInitialUnitPrice(orderPrice,master,importerId){
-  return orderPrice||resolveContractPrice(master,importerId)||master?.unit_price||"";
+  const contractPrice=resolveContractPrice(master,importerId);
+  if(workPriceValuePresent(orderPrice))return orderPrice;
+  if(workPriceValuePresent(contractPrice))return contractPrice;
+  return workPriceValuePresent(master?.unit_price)?master.unit_price:"";
 }
 function resolveCsvKey(header,type){
   const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
@@ -4845,15 +4848,66 @@ function workPriceOriginAppendMemo(current,prices){
   return memo.includes(note)?memo:[memo,note].filter(Boolean).join(" / ");
 }
 function workPriceValuePresent(value){
-  return value!==null&&value!==undefined&&String(value).trim()!=="";
+  const text=String(value??"").replace(/,/g,"").trim();
+  if(!text)return false;
+  const number=Number(text);
+  return !Number.isFinite(number)||number!==0;
 }
-function workMasterPriceResolution(orderPrice,master,importer){
+function workPriceValuesEqual(left,right){
+  const leftText=String(left??"").replace(/,/g,"").trim();
+  const rightText=String(right??"").replace(/,/g,"").trim();
+  const leftNumber=Number(leftText),rightNumber=Number(rightText);
+  if(leftText&&rightText&&Number.isFinite(leftNumber)&&Number.isFinite(rightNumber))return leftNumber===rightNumber;
+  return leftText===rightText;
+}
+function workMasterPriceResolution(orderPrice,master,importer,options={}){
   const contractPrice=resolveContractPrice(master,importer);
-  if(workPriceValuePresent(orderPrice))return {value:orderPrice,source:"受注価格"};
+  const masterPrice=master?.unit_price;
+  if(options.preferOrderPrice&&workPriceValuePresent(orderPrice))return {value:orderPrice,source:"受注価格"};
+  const orderLooksLikeAutomaticMasterPrice=workPriceValuePresent(orderPrice)
+    &&workPriceValuePresent(contractPrice)
+    &&workPriceValuePresent(masterPrice)
+    &&workPriceValuesEqual(orderPrice,masterPrice);
+  if(workPriceValuePresent(orderPrice)&&!orderLooksLikeAutomaticMasterPrice)return {value:orderPrice,source:"受注価格"};
   if(workPriceValuePresent(contractPrice))return {value:contractPrice,source:"契約価格"};
-  if(workPriceValuePresent(master?.unit_price))return {value:master.unit_price,source:"商品マスタ"};
+  if(workPriceValuePresent(orderPrice))return {value:orderPrice,source:"受注価格"};
+  if(workPriceValuePresent(masterPrice))return {value:masterPrice,source:"商品マスタ"};
   return {value:"",source:""};
 }
+function applyMissingWorkMasterPrices(targetRows){
+  const repaired=[];
+  targetRows.forEach(row=>{
+    if(workPriceValuePresent(row.unit_price))return;
+    const master=masterMap[normalizeProductId(row.product_id)]||{};
+    const price=workMasterPriceResolution("",master,row.importer_id);
+    if(!workPriceValuePresent(price.value))return;
+    row.unit_price=price.value;
+    row._priceSource=price.source;
+    repaired.push(row);
+  });
+  return repaired;
+}
+async function persistRecoveredWorkPrices(repairedRows){
+  if(!repairedRows.length||!currentSessionId||currentSessionLocked||!supabaseClient||!currentUser)return;
+  const payloads=repairedRows.map(rowToOrderLinePayload);
+  for(let i=0;i<payloads.length;i+=200){
+    const {error}=await supabaseClient.from("order_lines").upsert(payloads.slice(i,i+200),{onConflict:"session_id,source_row_no"});
+    if(error){toast("価格補完の保存に失敗しました: "+error.message);return}
+  }
+  setSaveState("Supabase: 保存済み");
+}
+const __openSavedSessionPriceRecoveryBase=openSavedSession;
+openSavedSession=async function(sessionId){
+  await loadProductMasterFromSupabase();
+  await __openSavedSessionPriceRecoveryBase(sessionId);
+  if(currentSessionLocked)return;
+  const repaired=applyMissingWorkMasterPrices(rows);
+  if(!repaired.length)return;
+  syncOrderRowsFromRows();
+  if(currentPhase===1.5)buildP15();
+  await persistRecoveredWorkPrices(repaired);
+  toast(`未設定価格 ${repaired.length}件を商品マスタから補完しました`);
+};
 function applyWorkPriceOriginToRows(targetRows){
   if(!workPriceOriginEntries.length)return null;
   const summary={total:targetRows.length,matched:0,unmatched:0,ambiguous:0,origin:0,price:0,unit:0,twoPrices:0};
@@ -4894,7 +4948,7 @@ function orderEntryLineToWorkRow(batch,line,index){
   const importerName=batch.importer_name_snapshot||"";
   rememberImporterDisplayName(importer,importerName);
   const master=masterMap[normalizeProductId(line.product_code)]||{};
-  const price=workMasterPriceResolution(line.unit_price,master,importer);
+  const price=workMasterPriceResolution(line.unit_price,master,importer,{preferOrderPrice:batch.source_type==="csv"});
   return {
     _idx:index,
     _qty:"",
@@ -4948,7 +5002,7 @@ async function createWorkSessionFromConfirmedOrders(){
   setSaveState("受注確定データを読込中...");
   const {data:batches,error:batchError}=await supabaseClient
     .from("order_entry_batches")
-    .select("id,order_date,ship_date,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,note,created_at")
+    .select("id,order_date,ship_date,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,source_type,note,created_at")
     .eq("status","confirmed")
     .eq("order_date",date)
     .order("importer_code",{ascending:true})

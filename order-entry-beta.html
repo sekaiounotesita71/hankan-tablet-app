@@ -665,8 +665,34 @@ function upsertCustomMaster(type,item){
   return existedBefore?"updated":"added";
 }
 function dbNumber(value){
-  const n=Number(String(value??"").replace(/,/g,""));
+  const text=String(value??"").replace(/,/g,"").trim();
+  if(!text)return null;
+  const n=Number(text);
   return Number.isFinite(n)?n:null;
+}
+function importerPriceCodes(value){
+  const exact=normalizeImporterCode(value?.code||value);
+  const codes=[];
+  if(exact)codes.push(exact);
+  const base=exact.match(/^(DIM|FBI|BKK|JKT|KL|EN)(?:VEG|FZ|STOCK|FROZEN)?/)?.[1]||"";
+  if(base&&!codes.includes(base))codes.push(base);
+  return codes;
+}
+function usableMasterPrice(value){
+  const text=String(value??"").replace(/,/g,"").trim();
+  if(!text)return false;
+  const number=Number(text);
+  return !Number.isFinite(number)||number!==0;
+}
+function productPriceForImporter(product,importerValue){
+  if(!product)return "";
+  const prices=product.contractPrices||product.importer_prices||{};
+  for(const code of importerPriceCodes(importerValue)){
+    const value=prices[code]??prices[normalizeImporterCode(code)];
+    if(usableMasterPrice(value))return value;
+  }
+  const base=product.unitPrice??product.unit_price??"";
+  return usableMasterPrice(base)?base:"";
 }
 function dbText(value){
   const v=String(value??"").trim();
@@ -4588,7 +4614,8 @@ function applyProductByCode(i,code){
     productName:hit.name,
     englishName:hit.englishName||"",
     supplierCode,
-    supplierName:supplierNameFor(supplierCode,hit.supplierName)
+    supplierName:supplierNameFor(supplierCode,hit.supplierName),
+    unitPrice:productPriceForImporter(hit,importer())
   });
   return true;
 }
@@ -4600,7 +4627,8 @@ function applyProductToRow(i,product){
     productName:product.name||product.productName||"",
     englishName:product.englishName||"",
     supplierCode,
-    supplierName:supplierNameFor(supplierCode,product.supplierName||orders[i].supplierName)
+    supplierName:supplierNameFor(supplierCode,product.supplierName||orders[i].supplierName),
+    unitPrice:productPriceForImporter(product,importer())
   });
   confirmed=false;
   syncOrderRow(i);
@@ -4620,7 +4648,8 @@ function finishOrderProductName(i,value){
         productName:orders[i].productName||master.name||"",
         englishName:master.englishName||orders[i].englishName||"",
         supplierCode,
-        supplierName:supplierNameFor(supplierCode,master.supplierName||orders[i].supplierName||"")
+        supplierName:supplierNameFor(supplierCode,master.supplierName||orders[i].supplierName||""),
+        unitPrice:productPriceForImporter(master,importer())
       });
     }
   }
@@ -5232,7 +5261,7 @@ function lineReviewItem(productText,parsed,currentCustomer,currentImporter,lineN
       supplierCode,
       supplierName:supplierNameFor(supplierCode,product.supplierName||""),
       memo:parsed?.memo||"",
-      unitPrice:product.unitPrice||"",
+      unitPrice:productPriceForImporter(product,importer),
       sourceExpression:productText,
       lineExpression:productText
     },
@@ -5955,6 +5984,7 @@ function orderItemFromCsvRow(row,headers,filename){
   const importerNameRaw=orderCsvValue(row,headers,["importer_name","importername","輸入社名","輸入先名","輸入会社名"]);
   const customerMaster=findMasterCustomer(customerCode,customerName,{code:importerCodeRaw,name:importerNameRaw});
   const importerMaster=findMasterImporter(importerCodeRaw||customerMaster?.importerCode,importerNameRaw||customerMaster?.importerName,filename);
+  const resolvedImporter={code:importerCodeRaw||importerMaster?.code||customerMaster?.importerCode||"",name:importerNameRaw||importerMaster?.name||customerMaster?.importerName||""};
   const productCode=orderCsvValue(row,headers,["product_code","productcode","product_id","productid","code","商品コード","商品ID","品番"]);
   const productName=orderCsvValue(row,headers,["product_name","productname","商品名","品名","name of goods injapanese","name"]);
   const productMaster=findMasterProduct(productCode,productName);
@@ -5964,7 +5994,7 @@ function orderItemFromCsvRow(row,headers,filename){
   const qty=orderCsvValue(row,headers,["qty","qnty","quantity","数量","注文数量","受注数量","発注数量"]);
   const item={
     orderDate:orderCsvValue(row,headers,["date","order_date","orderdate","日付","受注日","注文日","配送希望日","納品希望日"])||val("order-date")||today(),
-    importer:{code:importerCodeRaw||importerMaster?.code||customerMaster?.importerCode||"",name:importerNameRaw||importerMaster?.name||customerMaster?.importerName||""},
+    importer:resolvedImporter,
     customer:{code:customerCode||customerMaster?.code||"",name:customerName||customerMaster?.name||""},
     row:{
       productCode:productCode||productMaster?.code||"",
@@ -5975,7 +6005,7 @@ function orderItemFromCsvRow(row,headers,filename){
       supplierCode:resolvedSupplierCode,
       supplierName:supplierNameFor(resolvedSupplierCode,supplierName||productMaster?.supplierName||""),
       memo:orderCsvValue(row,headers,["memo","note","備考","摘要"]),
-      unitPrice:orderCsvValue(row,headers,["unit_price","unitprice","単価","価格","売価","u/price by jpn yen"])||productMaster?.unitPrice||""
+      unitPrice:orderCsvValue(row,headers,["unit_price","unitprice","単価","価格","売価","u/price by jpn yen"])||productPriceForImporter(productMaster,resolvedImporter)
     }
   };
   if(!item.row.productCode&&!item.row.productName)return null;
@@ -6091,9 +6121,10 @@ function orderItemFromPdfRecord(record,filename){
   const importerMaster=findMasterImporter(record.importerCode||customerMaster?.importerCode,"",filename);
   const productMaster=findMasterProduct(record.productCode,record.productName);
   const supplierCode=productMaster?.supplierCode||"";
+  const resolvedImporter={code:record.importerCode||importerMaster?.code||customerMaster?.importerCode||"",name:importerMaster?.name||customerMaster?.importerName||record.importerCode||""};
   return {
     orderDate:record.orderDate||today(),
-    importer:{code:record.importerCode||importerMaster?.code||customerMaster?.importerCode||"",name:importerMaster?.name||customerMaster?.importerName||record.importerCode||""},
+    importer:resolvedImporter,
     customer:{code:customerMaster?.code||"",name:record.customerName||customerMaster?.name||""},
     row:{
       productCode:record.productCode||productMaster?.code||"",
@@ -6104,7 +6135,7 @@ function orderItemFromPdfRecord(record,filename){
       supplierCode,
       supplierName:supplierNameFor(supplierCode,productMaster?.supplierName||""),
       memo:record.memo||"",
-      unitPrice:record.unitPrice||productMaster?.unitPrice||""
+      unitPrice:record.unitPrice||productPriceForImporter(productMaster,resolvedImporter)
     }
   };
 }
@@ -6530,7 +6561,7 @@ function applyProductMasterToImportReviewItem(item,master){
   item.row.englishName=master.englishName||item.row.englishName||"";
   item.row.supplierCode=master.supplierCode||item.row.supplierCode||"";
   item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
-  item.row.unitPrice=item.row.unitPrice||master.unitPrice||"";
+  item.row.unitPrice=item.row.unitPrice||productPriceForImporter(master,item.importer);
 }
 function applyProductToImportReviewRow(index,product){
   const item=importReviewItems[index];
@@ -6542,7 +6573,7 @@ function applyProductToImportReviewRow(index,product){
   item.row.englishName=product.englishName||item.row.englishName||"";
   item.row.supplierCode=supplierCode;
   item.row.supplierName=supplierNameFor(supplierCode,product.supplierName||item.row.supplierName||"");
-  item.row.unitPrice=item.row.unitPrice||product.unitPrice||"";
+  item.row.unitPrice=item.row.unitPrice||productPriceForImporter(product,item.importer);
   const row=document.querySelector(`#import-review-body tr[data-review-index="${index}"]`);
   syncImportReviewRowFields(index,row||document.activeElement);
 }
@@ -6589,7 +6620,7 @@ function finishImportReviewProductName(index,value,el,options={}){
       item.row.englishName=master.englishName||item.row.englishName||"";
       item.row.supplierCode=master.supplierCode||item.row.supplierCode||"";
       item.row.supplierName=supplierNameFor(item.row.supplierCode,master.supplierName||item.row.supplierName||"");
-      item.row.unitPrice=item.row.unitPrice||master.unitPrice||"";
+      item.row.unitPrice=item.row.unitPrice||productPriceForImporter(master,item.importer);
     }
   }
   syncImportReviewRowFields(index,el);
