@@ -727,6 +727,14 @@ function normalizeProductId(value){
 function normalizeImporterCode(value){
   return String(value??"").normalize("NFKC").trim().replace(/[\s_\-　]+/g,"").toUpperCase();
 }
+function importerContractCodes(value){
+  const exact=normalizeImporterCode(value);
+  const codes=[];
+  if(exact)codes.push(exact);
+  const base=exact.match(/^(DIM|FBI|BKK|JKT|KL|EN)(?:VEG|FZ|STOCK|FROZEN)?/)?.[1]||"";
+  if(base&&!codes.includes(base))codes.push(base);
+  return codes;
+}
 function contractPriceHeaderCode(header){
   const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
   const compact=raw.normalize("NFKC").replace(/[\s_\-　]+/g,"");
@@ -750,10 +758,13 @@ function applyContractPricesFromCsv(rowObj,headers,cols,type){
   if(Object.keys(prices).length)rowObj.importer_prices=prices;
 }
 function resolveContractPrice(master,importerId){
-  const code=normalizeImporterCode(importerId);
-  if(!code||!master)return "";
+  if(!master)return "";
   const prices=master.importer_prices||master.contract_prices||{};
-  return prices[code]??prices[importerCode(code)]??"";
+  for(const code of importerContractCodes(importerId)){
+    const value=prices[code]??prices[normalizeImporterCode(importerCode(code))];
+    if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;
+  }
+  return "";
 }
 function resolveInitialUnitPrice(orderPrice,master,importerId){
   return orderPrice||resolveContractPrice(master,importerId)||master?.unit_price||"";
@@ -849,7 +860,7 @@ function mergeAndRender(){
     const customer=r.customer||findFirstValue(r,["エンドユーザーの店名","エンドユーザー店名","店舗名","店名","得意先名","顧客名","納品先名","届け先名"]);
     const importerId=r.importer_id||findFirstValue(r,["輸入社ID","輸入社コード","輸入者ID","輸入者コード","C/S"])||"JKT";
     const orderPrice=r.unit_price||findFirstValue(r,["売価","U/PRICE by JPN YEN"]);
-    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:r.product_name||findFirstValue(r,["商品名","品名","NAME OF GOODS INJAPANESE","NAME OF GOODS"])||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||findFirstValue(r,["NAME OF GOODS"])||"",sci_name:m.sci_name||"",origin:m.origin||r.origin||"",unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
+    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:r.product_name||findFirstValue(r,["商品名","品名","NAME OF GOODS INJAPANESE","NAME OF GOODS"])||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||findFirstValue(r,["NAME OF GOODS"])||"",sci_name:m.sci_name||"",origin:workOriginRomanize(r.origin||m.origin||""),unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
   });
   activeCountry=null;
   activeCustomer={};
@@ -1560,7 +1571,7 @@ function mergeAndRender(){
     const englishName=findFirstValue(r,["NAME OF GOODS"]);
     const orderOrigin=r.origin||findFirstValue(r,["産地","origin"]);
     const orderPrice=r.unit_price||findFirstValue(r,["売価","U/PRICE by JPN YEN"]);
-    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:orderOrigin||m.origin||"",unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
+    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:workOriginRomanize(orderOrigin||m.origin||""),unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
   });
   activeCountry=null;
   activeCustomer={};
@@ -1722,7 +1733,7 @@ async function addManualOrder(){
   const row={
     _idx:nextIdx,_qty:"",_net:"",_box:"",_memo:manualValue("manual-memo"),_unit:"Kg",_stockout:false,
     customer,product_id:productId,product_name:productName,unit:manualValue("manual-unit"),csv_qty:manualValue("manual-qty"),
-    en_name:master.en_name||"",sci_name:master.sci_name||"",origin:manualValue("manual-origin")||master.origin||"",unit_price:resolveInitialUnitPrice(manualPrice,master,importerId),importer_id:importerId,country:countryCode(importerId)
+    en_name:master.en_name||"",sci_name:master.sci_name||"",origin:workOriginRomanize(manualValue("manual-origin")||master.origin||""),unit_price:resolveInitialUnitPrice(manualPrice,master,importerId),importer_id:importerId,country:countryCode(importerId)
   };
   rows.push(row);
   orderRows.push({product_id:row.product_id,product_name:row.product_name,unit:row.unit,csv_qty:row.csv_qty,customer:row.customer,importer_id:row.importer_id,csv_memo:row._memo,origin:row.origin,unit_price:row.unit_price});
@@ -2305,19 +2316,30 @@ async function loadProductMasterFromSupabase(options={}){
       nextMap[key]={product_id:item.product_id||"",product_name:item.product_name||"",en_name:item.english_name||"",sci_name:item.scientific_name||"",origin:item.origin||"",unit_price:item.unit_price??""};
       if(item.updated_at&&item.updated_at>lastUpdated){lastUpdated=item.updated_at;sourceFilename=item.source_filename||sourceFilename}
     });
-    try{
-      const {data:contractRows,error:contractError}=await supabaseClient.from("product_price_contracts")
-        .select("product_id,importer_code,unit_price");
-      if(!contractError){
-        (contractRows||[]).forEach(item=>{
-          const key=normalizeProductId(item.product_id);
-          const importer=normalizeImporterCode(item.importer_code);
-          if(!key||!importer||!nextMap[key])return;
-          nextMap[key].importer_prices=nextMap[key].importer_prices||{};
-          nextMap[key].importer_prices[importer]=item.unit_price??"";
-        });
+    const contractRows=[];
+    let contractFrom=0;
+    while(true){
+      const {data,error}=await supabaseClient.from("product_price_contracts")
+        .select("product_id,importer_code,unit_price")
+        .order("product_id",{ascending:true})
+        .range(contractFrom,contractFrom+pageSize-1);
+      if(error){
+        const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"輸入社別契約価格を取得できません: "+error.message;
+        setMasterStatus("契約価格を取得できません",true);
+        if(force)toast(hint);
+        return false;
       }
-    }catch(e){}
+      contractRows.push(...(data||[]));
+      if((data||[]).length<pageSize)break;
+      contractFrom+=pageSize;
+    }
+    contractRows.forEach(item=>{
+      const key=normalizeProductId(item.product_id);
+      const importer=normalizeImporterCode(item.importer_code);
+      if(!key||!importer||!nextMap[key])return;
+      nextMap[key].importer_prices=nextMap[key].importer_prices||{};
+      nextMap[key].importer_prices[importer]=item.unit_price??"";
+    });
     masterMap=nextMap;
     productMasterLoadedUserId=currentUser.id;
     const dateText=lastUpdated?new Date(lastUpdated).toLocaleString("ja-JP"):"未更新";
@@ -4593,6 +4615,43 @@ resetLocalStateForSession=function(){
   setWorkStartPanelVisible(true);
   applyWorkAppLeanMode();
 };
+const WORK_ORIGIN_ROMAJI_PARTS={
+  "北海道":"HOKKAIDO","青森":"AOMORI","岩手":"IWATE","宮城":"MIYAGI","秋田":"AKITA","山形":"YAMAGATA","福島":"FUKUSHIMA",
+  "茨城":"IBARAKI","栃木":"TOCHIGI","群馬":"GUNMA","埼玉":"SAITAMA","千葉":"CHIBA","東京":"TOKYO","神奈川":"KANAGAWA",
+  "新潟":"NIIGATA","富山":"TOYAMA","石川":"ISHIKAWA","福井":"FUKUI","山梨":"YAMANASHI","長野":"NAGANO","岐阜":"GIFU",
+  "静岡":"SHIZUOKA","愛知":"AICHI","三重":"MIE","滋賀":"SHIGA","京都":"KYOTO","大阪":"OSAKA","兵庫":"HYOGO","奈良":"NARA",
+  "和歌山":"WAKAYAMA","鳥取":"TOTTORI","島根":"SHIMANE","岡山":"OKAYAMA","広島":"HIROSHIMA","山口":"YAMAGUCHI",
+  "徳島":"TOKUSHIMA","香川":"KAGAWA","愛媛":"EHIME","高知":"KOCHI","福岡":"FUKUOKA","佐賀":"SAGA","長崎":"NAGASAKI",
+  "熊本":"KUMAMOTO","大分":"OITA","宮崎":"MIYAZAKI","鹿児島":"KAGOSHIMA","沖縄":"OKINAWA",
+  "アメリカ":"USA","イタリア":"ITALY","カナダ":"CANADA","ニュージーランド":"NEW ZEALAND","ベルギー":"BELGIUM","ヨーロッパ":"EUROPE",
+  "ロシア":"RUSSIA","韓国":"KOREA","台湾":"TAIWAN","中国":"CHINA","国産":"JAPAN",
+  "今治":"IMABARI","八幡浜":"YAWATAHAMA","天草":"AMAKUSA","土佐清水":"TOSASHIMIZU","萩":"HAGI","琵琶湖":"LAKE BIWA",
+  "天竜":"TENRYU","三厩":"MIMMAYA","平戸":"HIRADO","鯖江":"SABAE","鯖江市":"SABAE","淡路":"AWAJI","淡路島":"AWAJI ISLAND",
+  "明石":"AKASHI","根室":"NEMURO","網走":"ABASHIRI","養殖":"FARMED","ほか":"OTHERS","他":"OTHERS"
+};
+const WORK_ORIGIN_ROMAJI_EXACT={
+  "ニュージー・他":"NEW ZEALAND / OTHERS","高津川":"TAKATSU RIVER","淡路島他":"AWAJI ISLAND / OTHERS",
+  "中国雲南省":"CHINA / YUNNAN","青森県白神山地":"AOMORI / SHIRAKAMI","奈良県十津川":"NARA / TOTSUKAWA",
+  "福井県鯖江":"FUKUI / SABAE","福井県鯖江市":"FUKUI / SABAE","兵庫県淡路島":"HYOGO / AWAJI ISLAND"
+};
+function workOriginRomanizePart(value){
+  const source=String(value||"").normalize("NFKC").trim();
+  if(!source)return "";
+  if(WORK_ORIGIN_ROMAJI_PARTS[source])return WORK_ORIGIN_ROMAJI_PARTS[source];
+  let text=source;
+  const qualifiers=[];
+  if(/(?:ほか|他)$/.test(text)){text=text.replace(/(?:ほか|他)$/,"");qualifiers.push("OTHERS")}
+  if(/養殖$/.test(text)){text=text.replace(/養殖$/,"");qualifiers.push("FARMED")}
+  text=text.replace(/(?:都|道|府|県)?産$/,"").replace(/(?:都|道|府|県)$/,"").trim();
+  const main=WORK_ORIGIN_ROMAJI_PARTS[text]||text;
+  return [main,...qualifiers].filter(Boolean).join(" / ");
+}
+function workOriginRomanize(value){
+  const source=String(value||"").normalize("NFKC").trim();
+  if(!source)return "";
+  if(WORK_ORIGIN_ROMAJI_EXACT[source])return WORK_ORIGIN_ROMAJI_EXACT[source];
+  return source.split(/[・、,，\/／]+/).map(workOriginRomanizePart).filter(Boolean).join(" / ");
+}
 let workPriceOriginEntries=[];
 let workPriceOriginFilename="";
 let workPriceOriginLoadError="";
@@ -4754,6 +4813,16 @@ function workPriceOriginAppendMemo(current,prices){
   const memo=String(current||"").trim();
   return memo.includes(note)?memo:[memo,note].filter(Boolean).join(" / ");
 }
+function workPriceValuePresent(value){
+  return value!==null&&value!==undefined&&String(value).trim()!=="";
+}
+function workMasterPriceResolution(orderPrice,master,importer){
+  const contractPrice=resolveContractPrice(master,importer);
+  if(workPriceValuePresent(orderPrice))return {value:orderPrice,source:"受注価格"};
+  if(workPriceValuePresent(contractPrice))return {value:contractPrice,source:"契約価格"};
+  if(workPriceValuePresent(master?.unit_price))return {value:master.unit_price,source:"商品マスタ"};
+  return {value:"",source:""};
+}
 function applyWorkPriceOriginToRows(targetRows){
   if(!workPriceOriginEntries.length)return null;
   const summary={total:targetRows.length,matched:0,unmatched:0,ambiguous:0,origin:0,price:0,unit:0,twoPrices:0};
@@ -4764,20 +4833,35 @@ function applyWorkPriceOriginToRows(targetRows){
     const entry=match.entry;
     const prices=workPriceOriginPrices(entry,row.importer_id);
     summary.matched++;
-    if(entry.origin){row.origin=entry.origin;summary.origin++}
-    if(prices.length){row.unit_price=prices[0];summary.price++}
+    if(entry.origin&&!row.origin){row.origin=workOriginRomanize(entry.origin);summary.origin++}
+    if(prices.length&&!workPriceValuePresent(row.unit_price)){row.unit_price=prices[0];row._priceSource="添付Excel";summary.price++}
     if(entry.unit){row._unit=entry.unit;summary.unit++}
     if(prices.length>1){row._memo=workPriceOriginAppendMemo(row._memo,prices);summary.twoPrices++}
     row._priceOriginSource=`${workPriceOriginFilename} / ${entry.sheetName}!${entry.sheetRow}`;
   });
   return summary;
 }
+function applyWorkMasterOriginFallbacks(targetRows){
+  targetRows.forEach(row=>{
+    if(!row.origin&&row._masterOrigin)row.origin=row._masterOrigin;
+  });
+}
+function workMasterPriceSummaryText(targetRows){
+  const counts={"受注価格":0,"契約価格":0,"商品マスタ":0,"添付Excel":0,"未設定":0};
+  targetRows.forEach(row=>{
+    const key=row._priceSource&&counts[row._priceSource]!==undefined?row._priceSource:"未設定";
+    counts[key]++;
+  });
+  return `価格内訳 受注 ${counts["受注価格"]}・契約 ${counts["契約価格"]}・商品マスタ ${counts["商品マスタ"]}・Excel ${counts["添付Excel"]}・未設定 ${counts["未設定"]}`;
+}
 function workPriceOriginSummaryText(summary){
   if(!summary)return "";
   return `価格表照合 ${summary.matched}/${summary.total}件（未一致 ${summary.unmatched}・候補複数 ${summary.ambiguous}）`;
 }
 function orderEntryLineToWorkRow(batch,line,index){
-  const importer=batch.importer_name_snapshot||batch.importer_code||"";
+  const importer=batch.importer_code||batch.importer_name_snapshot||"";
+  const master=masterMap[normalizeProductId(line.product_code)]||{};
+  const price=workMasterPriceResolution(line.unit_price,master,importer);
   return {
     _idx:index,
     _qty:"",
@@ -4794,14 +4878,20 @@ function orderEntryLineToWorkRow(batch,line,index){
     csv_qty:line.order_qty??"",
     en_name:line.english_name_snapshot||"",
     sci_name:"",
-    origin:"",
-    unit_price:line.unit_price??"",
+    origin:workOriginRomanize(line.origin||""),
+    unit_price:price.value,
+    _priceSource:price.source,
+    _masterOrigin:workOriginRomanize(master.origin||""),
     importer_id:importer,
     country:countryCode(importer)
   };
 }
 async function createWorkSessionFromConfirmedOrders(){
   if(!(await requireSupabaseLogin()))return;
+  if(!(await loadProductMasterFromSupabase({force:true}))){
+    alert("商品マスタを読み込めないため、価格を確定できません。通信状態と商品マスタを確認してから再実行してください。");
+    return;
+  }
   await workPriceOriginLoadPromise;
   if(workPriceOriginLoadError){
     alert(`価格・産地Excelを読み込めません。\n${workPriceOriginLoadError}`);
@@ -4851,6 +4941,8 @@ async function createWorkSessionFromConfirmedOrders(){
   });
   if(!nextRows.length){setSaveState("明細なし");toast(`${date} の受注明細がありません`);return}
   const priceOriginSummary=applyWorkPriceOriginToRows(nextRows);
+  applyWorkMasterOriginFallbacks(nextRows);
+  const masterPriceSummary=workMasterPriceSummaryText(nextRows);
   unsubscribeRealtime();
   resetLocalStateForSession();
   currentSessionId=null;
@@ -4873,12 +4965,12 @@ async function createWorkSessionFromConfirmedOrders(){
   document.getElementById("p2-empty").style.display="none";
   document.getElementById("cloud-save-bar").style.display="flex";
   const priceOriginText=workPriceOriginSummaryText(priceOriginSummary);
-  document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${batches.length}得意先 / ${rows.length}明細${priceOriginText?` / ${priceOriginText}`:""}`;
+  document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${batches.length}得意先 / ${rows.length}明細 / ${masterPriceSummary}${priceOriginText?` / ${priceOriginText}`:""}`;
   document.getElementById("export-btn").disabled=false;
   setWorkStartPanelVisible(false);
   updateCloudSaveButton();
-  setSaveState(`受注読込完了${priceOriginText?` / ${priceOriginText}`:""}: 作業名を確認して保存してください`);
-  toast(priceOriginText?`受注データを読み込みました。${priceOriginText}`:"受注データを読み込みました。作業名を確認して保存してください");
+  setSaveState(`受注読込完了 / ${masterPriceSummary}${priceOriginText?` / ${priceOriginText}`:""}: 作業名を確認して保存してください`);
+  toast(`受注データを読み込みました。${masterPriceSummary}${priceOriginText?` / ${priceOriginText}`:""}`);
   applyWorkAppLeanMode();
 }
 applyWorkAppLeanMode();
