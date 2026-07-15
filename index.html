@@ -349,6 +349,8 @@ let supabaseClient=null,currentUser=null;
 let currentSessionId=null,currentSessionName="";
 let realtimeChannels=[];
 let saveStateTimer=null;
+let importerDisplayNames={};
+let importerDisplayNamesUserId="";
 const ORDER_MAP={
   "商品ID":"product_id","商品名":"product_name","単位":"unit","数量":"csv_qty",
   "発注者ID":"orderer_id","エンドユーザーの店名":"customer","輸入社ID":"importer_id",
@@ -359,6 +361,32 @@ function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").
 function cid(s){return String(s??"").replace(/[^a-zA-Z0-9_-]/g,"_")}
 function countryCode(id){const m=String(id||"").match(/^(\d+)/);return m?m[1]:(String(id||"").split("-")[0]||"-")}
 function importerCode(id){return countryCode(id)}
+function workImporterKey(value){return String(importerCode(value)||value||"").normalize("NFKC").trim().toUpperCase()}
+function rememberImporterDisplayName(code,name){
+  const key=workImporterKey(code),label=String(name||"").trim();
+  if(key&&label)importerDisplayNames[key]=label;
+}
+function importerDisplayName(code){
+  const key=workImporterKey(code);
+  const row=rows.find(item=>workImporterKey(item.importer_id||item.country)===key&&String(item.importer_name||"").trim());
+  return String(row?.importer_name||importerDisplayNames[key]||code||"-").trim();
+}
+async function loadImporterDisplayNames(options={}){
+  const force=!!options.force;
+  if(!supabaseClient||!currentUser)return false;
+  if(!force&&importerDisplayNamesUserId===currentUser.id&&Object.keys(importerDisplayNames).length)return true;
+  const {data,error}=await supabaseClient
+    .from("importer_master")
+    .select("importer_code,importer_name")
+    .eq("is_active",true)
+    .order("importer_code",{ascending:true})
+    .limit(500);
+  if(error)return false;
+  importerDisplayNames={};
+  (data||[]).forEach(item=>rememberImporterDisplayName(item.importer_code,item.importer_name));
+  importerDisplayNamesUserId=currentUser.id;
+  return true;
+}
 function switchPhase(n){currentPhase=n;document.getElementById("view-p1").classList.toggle("active",n===1);document.getElementById("view-p2").classList.toggle("active",n===2);document.getElementById("btn-p1").classList.toggle("active",n===1);document.getElementById("btn-p2").classList.toggle("active",n===2);if(n===2)buildP2()}
 function setupDrop(zoneId,inputId,type){const zone=document.getElementById(zoneId),input=document.getElementById(inputId);zone.addEventListener("dragover",e=>{e.preventDefault();zone.classList.add("drag")});zone.addEventListener("dragleave",()=>zone.classList.remove("drag"));zone.addEventListener("drop",e=>{e.preventDefault();zone.classList.remove("drag");readCSV(e.dataTransfer.files[0],type)});input.addEventListener("change",e=>readCSV(e.target.files[0],type))}
 setupDrop("order-zone","order-file","order");setupDrop("master-zone","master-file","master");
@@ -529,7 +557,7 @@ function buildP2(){
     });
     Object.keys(boxMap[imp]).forEach(bn=>{if(!boxNos.includes(bn))delete boxMap[imp][bn]});
   });
-  document.getElementById("p2-importer-tabs").innerHTML=importers.map(imp=>`<button class="country-tab${imp===activeImporter?" active":""}" id="p2imp-${cid(imp)}" onclick="p2SwitchImporter('${esc(imp)}')"><span class="country-code">${esc(imp)}</span><span class="cbadge has-pending" id="p2imp-badge-${cid(imp)}">-</span></button>`).join("");
+  document.getElementById("p2-importer-tabs").innerHTML=importers.map(imp=>`<button class="country-tab${imp===activeImporter?" active":""}" id="p2imp-${cid(imp)}" onclick="p2SwitchImporter('${esc(imp)}')" title="${esc(imp)}"><span class="country-code">${esc(importerDisplayName(imp))}</span><span class="cbadge has-pending" id="p2imp-badge-${cid(imp)}">-</span></button>`).join("");
   document.getElementById("p2-importer-panels").innerHTML=importers.map(imp=>`<div class="country-panel${imp===activeImporter?" active":""}" id="p2panel-${cid(imp)}"><div id="p2content-${cid(imp)}"></div></div>`).join("");
   importers.forEach(imp=>renderP2Importer(imp));
 }
@@ -667,7 +695,7 @@ function buildP1Tabs(){
     const customers=getCustomersOf(c);
     if(!activeCustomer[c]||!customers.includes(activeCustomer[c]))activeCustomer[c]=customers[0];
   });
-  document.getElementById("p1-country-tabs").innerHTML=countries.map(c=>`<button class="country-tab${c===activeCountry?" active":""}" id="p1ctry-${cid(c)}" onclick="p1SwitchCountry('${esc(c)}')"><span class="country-code">${esc(c)}</span><span class="cbadge has-pending" id="p1ctry-badge-${cid(c)}">-</span></button>`).join("");
+  document.getElementById("p1-country-tabs").innerHTML=countries.map(c=>`<button class="country-tab${c===activeCountry?" active":""}" id="p1ctry-${cid(c)}" onclick="p1SwitchCountry('${esc(c)}')" title="${esc(c)}"><span class="country-code">${esc(importerDisplayName(c))}</span><span class="cbadge has-pending" id="p1ctry-badge-${cid(c)}">-</span></button>`).join("");
   document.getElementById("p1-country-panels").innerHTML=countries.map(c=>`<div class="country-panel${c===activeCountry?" active":""}" id="p1cpanel-${cid(c)}"><div class="customer-tabs" id="p1cust-tabs-${cid(c)}"></div><div id="p1cust-panels-${cid(c)}"></div></div>`).join("");
   countries.forEach(c=>buildP1CustomerTabs(c));
 }
@@ -877,13 +905,15 @@ function initSupabase(){
     return;
   }
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-  supabaseClient.auth.getSession().then(({data})=>{
+  supabaseClient.auth.getSession().then(async ({data})=>{
     currentUser=data.session?.user||null;
     updateSupabaseStatus();
+    if(currentUser)await loadImporterDisplayNames();
   });
-  supabaseClient.auth.onAuthStateChange((_event,session)=>{
+  supabaseClient.auth.onAuthStateChange(async (_event,session)=>{
     currentUser=session?.user||null;
     updateSupabaseStatus();
+    if(currentUser)await loadImporterDisplayNames();
   });
 }
 function updateSupabaseStatus(){
@@ -1071,6 +1101,7 @@ async function requireSupabaseLogin(){
   currentUser=data.session?.user||null;
   updateSupabaseStatus();
   if(!currentUser){toast("先にSupabaseへログインしてください");return false}
+  await loadImporterDisplayNames();
   return true;
 }
 async function saveCurrentSessionToSupabase(){
@@ -1686,7 +1717,7 @@ function openP1NP(i,startField){
   curRow=i;
   curF=startField||"qty";
   npVal=curF==="unit"?"":(rows[i]?.[P1_KEY[curF]]||"");
-  document.getElementById("np-meta").textContent=`輸入社 ${rows[i].country} / ${rows[i].customer}`;
+  document.getElementById("np-meta").textContent=`輸入社 ${importerDisplayName(rows[i].country)} / ${rows[i].customer}`;
   document.getElementById("np-product").textContent=rows[i].product_name;
   buildP1Tabs_np();
   document.getElementById("modal-bg").classList.add("open");
@@ -1808,7 +1839,7 @@ function buildP15(){
   document.getElementById("p15-importer-tabs").innerHTML=importers.map(imp=>{
     const impRows=rows.filter(r=>importerCode(r.importer_id)===imp);
     const done=impRows.filter(r=>r.origin&&r.unit_price!=="").length;
-    return `<button class="country-tab${imp===activeImporter?" active":""}" id="p15imp-${cid(imp)}" onclick="p15SwitchImporter('${esc(imp)}')"><span class="country-code">${esc(imp)}</span><span class="cbadge ${done===impRows.length?"all-done":done===0?"has-pending":"partial"}">${done}/${impRows.length}</span></button>`;
+    return `<button class="country-tab${imp===activeImporter?" active":""}" id="p15imp-${cid(imp)}" onclick="p15SwitchImporter('${esc(imp)}')" title="${esc(imp)}"><span class="country-code">${esc(importerDisplayName(imp))}</span><span class="cbadge ${done===impRows.length?"all-done":done===0?"has-pending":"partial"}">${done}/${impRows.length}</span></button>`;
   }).join("");
   document.getElementById("p15-importer-panels").innerHTML=importers.map(imp=>`<div class="country-panel${imp===activeImporter?" active":""}" id="p15panel-${cid(imp)}"><div id="p15content-${cid(imp)}"></div></div>`).join("");
   importers.forEach(renderP15Importer);
@@ -2142,7 +2173,7 @@ async function exportExcel(){
   ensureExportPreviewUI();
   document.getElementById("export-options").innerHTML=countries.map(c=>{
     const cRows=rows.filter(r=>r.country===c),done=cRows.filter(r=>r._stockout||(r._qty&&r._net&&r._box)).length,total=cRows.length,pct=total?Math.round(done/total*100):0;
-    return`<div class="export-option"><button type="button" class="export-option-left export-option-button" data-country="${esc(c)}" onclick="event.stopPropagation();renderExportPreview(this.dataset.country)" style="border:0;background:transparent;padding:0;flex:1"><span class="export-option-code">${esc(c)}</span><span class="export-option-meta">${total}件 / ${done}件完了</span><span class="cbadge ${pct===100?"all-done":pct===0?"has-pending":"partial"}">${pct}%</span></button><button type="button" class="sync-btn primary" data-country="${esc(c)}" onclick="event.stopPropagation();directExportCountry(this.dataset.country)">出力</button></div>`;
+    return`<div class="export-option"><button type="button" class="export-option-left export-option-button" data-country="${esc(c)}" onclick="event.stopPropagation();renderExportPreview(this.dataset.country)" style="border:0;background:transparent;padding:0;flex:1" title="${esc(c)}"><span class="export-option-code">${esc(importerDisplayName(c))}</span><span class="export-option-meta">${total}件 / ${done}件完了</span><span class="cbadge ${pct===100?"all-done":pct===0?"has-pending":"partial"}">${pct}%</span></button><button type="button" class="sync-btn primary" data-country="${esc(c)}" onclick="event.stopPropagation();directExportCountry(this.dataset.country)">出力</button></div>`;
   }).join("");
   renderExportPreview(null);
   document.getElementById("export-bg").classList.add("open");
@@ -2487,7 +2518,7 @@ openP2NP=function(imp,bn,startField){
   curP2Box=bn;
   curF=startField||"gross";
   npVal=boxMap[imp]?.[bn]?.[curF]||"";
-  document.getElementById("np-meta").textContent=`輸入社: ${imp}`;
+  document.getElementById("np-meta").textContent=`輸入社: ${importerDisplayName(imp)}`;
   document.getElementById("np-product").textContent=`箱番号 ${bn}`;
   buildP2Tabs_np();
   document.getElementById("modal-bg").classList.add("open");
@@ -4860,6 +4891,8 @@ function workPriceOriginSummaryText(summary){
 }
 function orderEntryLineToWorkRow(batch,line,index){
   const importer=batch.importer_code||batch.importer_name_snapshot||"";
+  const importerName=batch.importer_name_snapshot||"";
+  rememberImporterDisplayName(importer,importerName);
   const master=masterMap[normalizeProductId(line.product_code)]||{};
   const price=workMasterPriceResolution(line.unit_price,master,importer);
   return {
@@ -4883,6 +4916,7 @@ function orderEntryLineToWorkRow(batch,line,index){
     _priceSource:price.source,
     _masterOrigin:workOriginRomanize(master.origin||""),
     importer_id:importer,
+    importer_name:importerName,
     country:countryCode(importer)
   };
 }
@@ -4954,7 +4988,8 @@ async function createWorkSessionFromConfirmedOrders(){
   rows=nextRows;
   syncOrderRowsFromRows();
   const importers=[...new Set(rows.map(row=>importerCode(row.importer_id)).filter(Boolean))].sort();
-  currentSessionName=`${date} ${importers.length?importers.join("/"):"受注"} 作業`;
+  const importerNames=importers.map(importerDisplayName);
+  currentSessionName=`${date} ${importerNames.length?importerNames.join("/"):"受注"} 作業`;
   const nameInput=document.getElementById("session-name-input");
   if(nameInput)nameInput.value=currentSessionName;
   activeCountry=null;
