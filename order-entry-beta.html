@@ -3794,26 +3794,53 @@ function productGuideVisibleRows(){
 function productGuideSelectedRows(){
   return productGuideRows.filter(row=>row.selected!==false);
 }
+function productGuideNavigableInputs(){
+  return [...document.querySelectorAll('#product-guide-table input[data-guide-field]')]
+    .filter(input=>!input.disabled&&input.type!=="hidden"&&input.dataset.guideField!=="imageUrl");
+}
+function focusProductGuideInput(rowId,field){
+  const input=productGuideNavigableInputs().find(item=>item.dataset.guideRowId===rowId&&item.dataset.guideField===field);
+  if(!input)return false;
+  input.focus({preventScroll:true});
+  input.select?.();
+  input.scrollIntoView({block:"nearest",inline:"nearest"});
+  return true;
+}
+function handleProductGuideEnter(e){
+  if(e.key!=="Enter"||e.isComposing||e.keyCode===229||e.ctrlKey||e.altKey||e.metaKey)return;
+  const target=e.target;
+  if(!(target instanceof HTMLInputElement)||!target.matches('#product-guide-table input[data-guide-field]'))return;
+  const inputs=productGuideNavigableInputs();
+  const index=inputs.indexOf(target);
+  const next=inputs[index+(e.shiftKey?-1:1)];
+  if(index<0||!next)return;
+  const nextRowId=next.dataset.guideRowId||"";
+  const nextField=next.dataset.guideField||"";
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  target.blur();
+  setTimeout(()=>focusProductGuideInput(nextRowId,nextField),0);
+}
 function productGuideEditorRowHtml(row){
   const candidateClass=row.candidateStatus?`guide-candidate-${row.candidateStatus}`:"";
   const fileId=`product-guide-image-file-${row.index}`;
   return `<tr class="${candidateClass}" data-guide-row-id="${esc(row.rowId||"")}" data-guide-variant-id="${esc(row.variantId||"")}">
     <td class="guide-check"><input type="checkbox" ${row.selected!==false?"checked":""} onchange="updateProductGuideRow(${row.index},'selected',this.checked);renderProductGuide()"></td>
     <td class="guide-num">${esc(row.rank)}</td>
-    <td><input class="guide-category ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.category||"")}" oninput="updateProductGuideRow(${row.index},'category',this.value)" onchange="renderProductGuide()"></td>
-    <td><div class="guide-image-editor">${row.imageUrl?`<img class="guide-image-thumb" src="${esc(row.imageUrl)}" alt="">`:`<span class="guide-image-empty">未設定</span>`}<input class="guide-image" inputmode="url" value="${esc(row.imageUrl||"")}" oninput="updateProductGuideRow(${row.index},'imageUrl',this.value);updateProductGuideRow(${row.index},'imageStatus',this.value?'URL設定':'未設定')"><button class="small" type="button" onclick="fetchProductGuideRowImage(${row.index})">候補</button><button class="small" type="button" onclick="document.getElementById('${fileId}').click()">登録</button><input id="${fileId}" type="file" accept="image/*" style="display:none" onchange="uploadProductGuideImage(${row.index},this)"></div></td>
-    <td><input class="guide-code" value="${esc(row.productCode||"")}" autocomplete="off" oninput="updateProductGuideRow(${row.index},'productCode',this.value)" onchange="applyProductGuideProductMaster(${row.index},this.value)"></td>
-    <td><input class="guide-name ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.guideName)}" oninput="updateProductGuideRow(${row.index},'guideName',this.value)"></td>
+    <td><input class="guide-category ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="category" lang="ja-JP" inputmode="text" value="${esc(row.category||"")}" oninput="updateProductGuideRow(${row.index},'category',this.value)" onchange="renderProductGuide()"></td>
+    <td><div class="guide-image-editor">${row.imageUrl?`<img class="guide-image-thumb" src="${esc(row.imageUrl)}" alt="">`:`<span class="guide-image-empty">未設定</span>`}<input class="guide-image" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="imageUrl" inputmode="url" value="${esc(row.imageUrl||"")}" oninput="updateProductGuideRow(${row.index},'imageUrl',this.value);updateProductGuideRow(${row.index},'imageStatus',this.value?'URL設定':'未設定')"><button class="small" type="button" onclick="fetchProductGuideRowImage(${row.index})">候補</button><button class="small" type="button" onclick="document.getElementById('${fileId}').click()">登録</button><input id="${fileId}" type="file" accept="image/*" style="display:none" onchange="uploadProductGuideImage(${row.index},this)"></div></td>
+    <td><input class="guide-code" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="productCode" value="${esc(row.productCode||"")}" autocomplete="off" oninput="updateProductGuideRow(${row.index},'productCode',this.value)" onchange="applyProductGuideProductMaster(${row.index},this.value)"></td>
+    <td><input class="guide-name ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="guideName" lang="ja-JP" inputmode="text" value="${esc(row.guideName)}" oninput="updateProductGuideRow(${row.index},'guideName',this.value)"></td>
     <td>${esc(row.englishName)}</td>
-    <td><input class="ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.origin)}" oninput="updateProductGuideOrigin(${row.index},this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
-    <td><input class="guide-spec ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.spec||"")}" oninput="updateProductGuideRow(${row.index},'spec',this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
-    <td><div class="guide-price-range-editor"><input class="guide-num" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMinJpy||"")}" aria-label="価格候補下限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMinJpy',this.value)"><span>～</span><input class="guide-num" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMaxJpy||"")}" aria-label="価格候補上限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMaxJpy',this.value)"></div></td>
-    <td><input class="guide-num" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.pricingNetWeight||1)}" oninput="updateProductGuidePricingNet(${row.index},this.value)"></td>
+    <td><input class="ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="origin" lang="ja-JP" inputmode="text" value="${esc(row.origin)}" oninput="updateProductGuideOrigin(${row.index},this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
+    <td><input class="guide-spec ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="spec" lang="ja-JP" inputmode="text" value="${esc(row.spec||"")}" oninput="updateProductGuideRow(${row.index},'spec',this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
+    <td><div class="guide-price-range-editor"><input class="guide-num" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="basePriceMinJpy" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMinJpy||"")}" aria-label="価格候補下限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMinJpy',this.value)"><span>～</span><input class="guide-num" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="basePriceMaxJpy" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMaxJpy||"")}" aria-label="価格候補上限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMaxJpy',this.value)"></div></td>
+    <td><input class="guide-num" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="pricingNetWeight" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.pricingNetWeight||1)}" oninput="updateProductGuidePricingNet(${row.index},this.value)"></td>
     <td>${esc(row.importers)}</td>
     <td>${esc([row.supplierCode,row.supplierName].filter(Boolean).join(" "))}</td>
     <td><span class="guide-candidate-badge">${esc(row.priceSource||"未照合")}</span></td>
-    <td><input class="guide-price" data-guide-index="${row.index}" inputmode="text" value="${esc(row.guidePriceRange||"")}" oninput="updateProductGuideRow(${row.index},'guidePriceRange',this.value)"></td>
-    <td><input class="guide-memo ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.memo)}" oninput="updateProductGuideRow(${row.index},'memo',this.value)"></td>
+    <td><input class="guide-price" data-guide-index="${row.index}" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="guidePriceRange" inputmode="text" value="${esc(row.guidePriceRange||"")}" oninput="updateProductGuideRow(${row.index},'guidePriceRange',this.value)"></td>
+    <td><input class="guide-memo ime-ja" data-guide-row-id="${esc(row.rowId||"")}" data-guide-field="memo" lang="ja-JP" inputmode="text" value="${esc(row.memo)}" oninput="updateProductGuideRow(${row.index},'memo',this.value)"></td>
     <td><div class="guide-row-actions"><button class="small" type="button" onclick="duplicateProductGuideRow(${row.index})">行を複製</button><button class="small danger" type="button" onclick="removeProductGuideRow(${row.index})">案内から外す</button></div></td>
   </tr>`;
 }
@@ -6954,6 +6981,7 @@ document.addEventListener("keydown",e=>{
   e.stopImmediatePropagation();
 },true);
 document.addEventListener("keydown",handlePendingKey);
+document.addEventListener("keydown",handleProductGuideEnter);
 document.addEventListener("input",handlePendingInput);
 document.addEventListener("change",handlePendingInput);
 document.addEventListener("blur",handlePendingInput,true);
