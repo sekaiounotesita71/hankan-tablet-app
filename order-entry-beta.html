@@ -287,18 +287,19 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="product-guide-template-tools">
         <label>元にするテンプレート
           <select id="product-guide-template-select" onchange="previewProductGuideTemplateSelection()">
-            <option value="">新規（空のテンプレート）</option>
+            <option value="">商品マスタ全件から新規</option>
           </select>
         </label>
         <label>対象年<input id="product-guide-year" type="number" inputmode="numeric" min="2020" max="2100"></label>
         <label>シーズン<input id="product-guide-season" class="ime-ja" lang="ja-JP" inputmode="text" placeholder="例 夏"></label>
         <label>テンプレート名<input id="product-guide-template-name" class="ime-ja" lang="ja-JP" inputmode="text" placeholder="例 夏の商品案内"></label>
         <button class="btn" type="button" onclick="openProductGuideTemplate()">選択版を開く</button>
-        <button class="btn primary" type="button" onclick="createProductGuideFromTemplate()">商品案内を作成</button>
+        <button class="btn primary" type="button" onclick="createProductGuideFromAllProducts()">全商品から新規作成</button>
+        <button class="btn" type="button" onclick="createProductGuideFromTemplate()">選択版を複製</button>
         <button class="btn" type="button" onclick="saveProductGuideTemplate()">テンプレート保存</button>
         <button class="btn" type="button" onclick="fillProductGuideHistoryCandidates()">履歴候補を反映</button>
         <button class="btn" type="button" onclick="exportProductGuideDraftCsv()">下書きCSV</button>
-        <div class="product-guide-template-state" id="product-guide-template-state">前年版などを選ぶと、並び・重複行・画像を保ったまま新しい案内を作成できます。</div>
+        <div class="product-guide-template-state" id="product-guide-template-state">初回は商品マスタ全件から作成し、不要な商品を外します。次回からは春夏秋冬の保存版を複製できます。</div>
       </div>
       <div class="product-guide-tools">
         <label>タイトル<input id="product-guide-title" value="商品案内" autocomplete="off"></label>
@@ -308,9 +309,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>表示件数
           <select id="product-guide-limit">
             <option value="50">50</option>
-            <option value="100" selected>100</option>
+            <option value="100">100</option>
             <option value="200">200</option>
-            <option value="all">全件</option>
+            <option value="all" selected>全件</option>
           </select>
         </label>
         <label>表示順
@@ -320,12 +321,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             <option value="sales">売上順</option>
           </select>
         </label>
-        <button class="btn" type="button" onclick="buildProductGuide({forceReload:true})">実績から新規候補</button>
-        <button class="btn" type="button" onclick="addSeasonalProductGuideRows()">季節候補追加</button>
-        <button class="btn" type="button" onclick="autoShapeProductGuide()">自動整形</button>
-        <button class="btn" type="button" onclick="fetchMissingProductGuideImages()">画像候補取得</button>
-        <button class="btn" type="button" onclick="saveProductGuideRowsToMaster()">基本情報を商品マスタ保存</button>
         <button class="btn" type="button" onclick="addProductGuideManualRow()">明細追加</button>
+        <button class="btn" id="product-guide-undo-remove" type="button" onclick="undoLastProductGuideRemoval()" disabled>直前の除外を戻す</button>
         <button class="btn" type="button" onclick="document.getElementById('product-guide-import-file').click()">CSV取込</button>
         <button class="btn primary" type="button" onclick="exportProductGuideExcel()">Excel出力</button>
         <button class="btn primary" type="button" onclick="printProductGuide()">印刷/PDF</button>
@@ -348,8 +345,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" type="button" onclick="saveProductGuidePriceProfile()">価格設定保存</button>
         <div class="hint wide">JPY=商品代、FREIGHT=運賃、NET=商品ごとの計算重量、FX=1通貨あたりの円、MARGIN=輸入社利益倍率。通貨ごとに設定を保存します。</div>
       </div>
-      <div class="product-guide-print-note">テンプレートの各行を独立して保存します。同じ商品コードを複数行にしても統合されません。画像は商品コード・産地・規格の組合せで次回から再利用されます。</div>
-      <div class="hint" id="product-guide-state">「商品案内を作成」から開始してください。実績期間は価格・産地の候補だけに使用します。</div>
+      <div class="product-guide-print-note">不要な商品は「案内から外す」、産地・規格違いを増やす場合は「行を複製」を使います。商品マスタ自体は変更されません。</div>
+      <div class="hint" id="product-guide-state">初回は「全商品から新規作成」、次回からは保存した季節版を選んで「選択版を複製」します。</div>
       <div class="product-guide-summary" id="product-guide-summary"></div>
       <div class="product-guide-table-wrap" id="product-guide-table"><div class="sales-empty">商品案内候補はまだありません。</div></div>
     </div>
@@ -433,6 +430,7 @@ let productGuideRows=[];
 let productGuideTemplates=[];
 let productGuideVariants=[];
 let currentProductGuideTemplate=null;
+let lastRemovedProductGuideRow=null;
 let historicalSalesImportRows=[];
 let draftRows=[];
 let importDraftGroups=[];
@@ -2829,7 +2827,7 @@ function productGuideBlankRow(seed={}){
     guidePriceRange:seed.guidePriceRange||seed.priceRange||seed.price_range||productGuidePriceRangeText(allPrices,pricingNetWeight),
     lastSold:"",
     memo:seed.memo||seed.note||"",
-    sourcePeriod:"手入力",
+    sourcePeriod:seed.sourcePeriod||seed.source_period||"手入力",
     basePriceMinJpy:productGuideNumber(seed.basePriceMinJpy||seed.base_price_jpy_min)||priceValuesJpy[0]||"",
     basePriceMaxJpy:productGuideNumber(seed.basePriceMaxJpy||seed.base_price_jpy_max)||priceValuesJpy[priceValuesJpy.length-1]||priceValuesJpy[0]||"",
     priceSource:seed.priceSource||seed.price_source||"",
@@ -2902,7 +2900,7 @@ function renderProductGuideTemplateSelect(preferredId=""){
   if(!select)return;
   const current=preferredId||select.value||currentProductGuideTemplate?.id||"";
   const rows=[...productGuideTemplates].sort((a,b)=>Number(b.guideYear||0)-Number(a.guideYear||0)||String(a.name||"").localeCompare(String(b.name||""),"ja"));
-  select.innerHTML=`<option value="">新規（空のテンプレート）</option>${rows.map(item=>`<option value="${esc(item.id)}">${esc([item.guideYear,item.season,item.name].filter(Boolean).join(" / "))}</option>`).join("")}`;
+  select.innerHTML=`<option value="">商品マスタ全件から新規</option>${rows.map(item=>`<option value="${esc(item.id)}">${esc([item.guideYear,item.season,item.name].filter(Boolean).join(" / "))}</option>`).join("")}`;
   if(current&&rows.some(item=>item.id===current))select.value=current;
 }
 async function loadProductGuideTemplates(){
@@ -2947,7 +2945,7 @@ function previewProductGuideTemplateSelection(){
   const id=val("product-guide-template-select");
   const item=productGuideTemplates.find(template=>template.id===id);
   if(!item){
-    productGuideTemplateState("空のテンプレートから作成します。商品はCSV取込または明細追加で登録できます。");
+    productGuideTemplateState("商品マスタの有効商品を全件表示します。不要な商品を外し、必要な商品は行を複製してください。");
     return;
   }
   productGuideTemplateState(`${[item.guideYear,item.season,item.name].filter(Boolean).join(" / ")} を元に、新しい年の案内を作成できます。既存版を編集する場合は「選択版を開く」を押してください。`);
@@ -2974,8 +2972,10 @@ async function openProductGuideTemplate(){
   try{
     const rows=await productGuideFetchTemplateRows(id);
     currentProductGuideTemplate={...item};
-    productGuideRows=rows.map((row,index)=>productGuideEnsureRowIdentity({...row,templateId:id},index));
+    productGuideRows=rows.map((row,index)=>productGuideEnsureRowIdentity({...row,templateId:id,autoCandidateOrigin:false},index));
     productGuideReindexRows();
+    lastRemovedProductGuideRow=null;
+    updateProductGuideUndoButton();
     document.getElementById("product-guide-year").value=item.guideYear||new Date().getFullYear();
     document.getElementById("product-guide-season").value=item.season||"";
     document.getElementById("product-guide-template-name").value=item.name||"";
@@ -2991,32 +2991,100 @@ async function openProductGuideTemplate(){
     setAppBusy(false);
   }
 }
+async function createProductGuideFromAllProducts(){
+  if(productGuideRows.length&&!confirm("現在画面の内容から新しい商品案内へ切り替えますか？未保存の変更がある場合は先にテンプレート保存してください。"))return;
+  const products=uniqueMasterItems(getMasters().products||[]).filter(item=>String(item.code||"").trim());
+  if(!products.length){
+    alert("商品マスタが空です。Supabaseへログインして商品マスタを読み込んでから、もう一度実行してください。");
+    return;
+  }
+  const year=Number(val("product-guide-year"))||new Date().getFullYear();
+  const season=val("product-guide-season").trim();
+  const name=val("product-guide-template-name").trim()||[year,season,"商品案内"].filter(Boolean).join(" ");
+  setAppBusy(true,"商品マスタ全件から商品案内を作成しています...");
+  try{
+    const id=productGuideGuid();
+    currentProductGuideTemplate={
+      id,name,guideYear:year,season,title:val("product-guide-title")||"商品案内",importerCode:normalizeImporterCode(val("product-guide-importer")),
+      currency:productGuideCurrency(),status:"draft",sourceTemplateId:"",updatedAt:new Date().toISOString()
+    };
+    productGuideRows=products.map(master=>{
+      const row=productGuideBlankRow({
+        productCode:master.code,
+        productName:master.name,
+        guideName:master.name,
+        englishName:master.englishName,
+        category:master.guideCategory,
+        origin:master.origin,
+        spec:master.guideSpec,
+        imageUrl:master.imageUrl,
+        imageSourceUrl:master.imageSourceUrl,
+        imageCredit:master.imageCredit,
+        imageLicense:master.imageLicense,
+        supplierCode:master.supplierCode,
+        supplierName:master.supplierName,
+        unit:master.unit,
+        priceJpy:master.unitPrice,
+        sourcePeriod:"商品マスタ"
+      });
+      row.autoCandidateOrigin=true;
+      row.manualPriceLocked=false;
+      row.priceSource="";
+      row.candidateStatus="";
+      applyProductGuideVariantImage(row);
+      return row;
+    }).sort((a,b)=>productGuideCategoryRank(a.category)-productGuideCategoryRank(b.category)
+      ||String(a.category||"").localeCompare(String(b.category||""),"ja")
+      ||String(a.productCode||"").localeCompare(String(b.productCode||""),"ja",{numeric:true,sensitivity:"base"}));
+    productGuideReindexRows();
+    productGuideRows.forEach(row=>{row.templateId=id});
+    productGuideTemplates=[currentProductGuideTemplate,...productGuideTemplates.filter(item=>item.id!==id)];
+    lastRemovedProductGuideRow=null;
+    updateProductGuideUndoButton();
+    saveProductGuideLocalState();
+    renderProductGuideTemplateSelect(id);
+    const limit=document.getElementById("product-guide-limit");
+    if(limit)limit.value="all";
+    renderProductGuide();
+    productGuideTemplateState(`${products.length}件の商品マスタから ${year}年 ${season||"商品案内"}を作成しました。不要な商品を外し、産地・規格違いは行を複製してください。`);
+  }catch(error){
+    alert(`商品マスタ全件から作成できませんでした: ${error?.message||error}`);
+  }finally{
+    setAppBusy(false);
+  }
+}
 async function createProductGuideFromTemplate(){
   if(productGuideRows.length&&!confirm("現在画面の内容から新しい商品案内へ切り替えますか？未保存の変更がある場合は先にテンプレート保存してください。"))return;
   const sourceId=val("product-guide-template-select");
   const source=productGuideTemplates.find(item=>item.id===sourceId)||null;
+  if(!source){
+    alert("複製する季節テンプレートを選択してください。初回は「全商品から新規作成」を使用します。");
+    return;
+  }
   const year=Number(val("product-guide-year"))||new Date().getFullYear();
   const season=val("product-guide-season").trim();
   const name=val("product-guide-template-name").trim()||[year,season,"商品案内"].filter(Boolean).join(" ");
   setAppBusy(true,"商品案内を作成しています...");
   try{
-    const sourceRows=source?await productGuideFetchTemplateRows(source.id):[];
+    const sourceRows=await productGuideFetchTemplateRows(source.id);
+    if(!sourceRows.length)throw new Error("選択したテンプレートに商品明細がありません。");
     const id=productGuideGuid();
     currentProductGuideTemplate={
       id,name,guideYear:year,season,title:val("product-guide-title")||"商品案内",importerCode:normalizeImporterCode(val("product-guide-importer")),
       currency:productGuideCurrency(),status:"draft",sourceTemplateId:source?.id||"",updatedAt:new Date().toISOString()
     };
-    const seeds=sourceRows.length?sourceRows:[productGuideBlankRow()];
-    productGuideRows=seeds.map((row,index)=>productGuideEnsureRowIdentity({
+    productGuideRows=sourceRows.map((row,index)=>productGuideEnsureRowIdentity({
       ...row,rowId:productGuideGuid(),templateId:id,index,rank:index+1,displayOrder:index+1,
-      sourcePeriod:source?`${source.guideYear||""} ${source.season||""}から複製`.trim():"新規テンプレート",
-      candidateStatus:"",priceSource:row.priceSource||"",manualPriceLocked:false
+      sourcePeriod:`${source.guideYear||""} ${source.season||""}から複製`.trim(),
+      candidateStatus:"",priceSource:"",manualPriceLocked:false,autoCandidateOrigin:true
     },index));
     productGuideTemplates=[currentProductGuideTemplate,...productGuideTemplates.filter(item=>item.id!==id)];
     saveProductGuideLocalState();
     renderProductGuideTemplateSelect(id);
+    lastRemovedProductGuideRow=null;
+    updateProductGuideUndoButton();
     renderProductGuide();
-    productGuideTemplateState(`${source?source.name+"から":"空の状態から"} ${year}年 ${season||"商品案内"}を作成しました。商品コードの重複行もそのまま保持します。`);
+    productGuideTemplateState(`${source.name}から ${year}年 ${season||"商品案内"}を複製しました。並び、重複行、画像を保ったまま価格・産地候補を更新できます。`);
   }catch(error){
     alert(`商品案内を作成できませんでした: ${error?.message||error}`);
   }finally{
@@ -3135,7 +3203,7 @@ function productGuideVariantPayload(variant){
 }
 async function saveProductGuideTemplate(){
   if(!currentProductGuideTemplate){
-    alert("先に「商品案内を作成」を押してください。");
+    alert("先に「全商品から新規作成」または「選択版を複製」を押してください。");
     return;
   }
   productGuideReindexRows();
@@ -3218,7 +3286,8 @@ async function fillProductGuideHistoryCandidates(){
         if(code)return masterCodeKey(item.product_id)===code;
         return name&&productGuideNormalize(item.product_name)===name;
       });
-      const requestedOrigin=productGuideVariantPart(row.origin);
+      const autoOrigin=Boolean(row.autoCandidateOrigin)||!row.origin;
+      const requestedOrigin=autoOrigin?"":productGuideVariantPart(row.origin);
       const originMatches=requestedOrigin?matches.filter(item=>productGuideVariantPart(item.origin)===requestedOrigin):[];
       const requestedSpec=productGuideVariantPart(row.spec);
       const specMatches=requestedSpec?(originMatches.length?originMatches:matches).filter(item=>productGuideVariantPart(item.spec||item.size)===requestedSpec):[];
@@ -3226,7 +3295,7 @@ async function fillProductGuideHistoryCandidates(){
       const requestedUnit=productGuideVariantPart(row.unit);
       const unitMatches=requestedUnit?selected.filter(item=>productGuideVariantPart(item.input_unit)===requestedUnit):[];
       if(unitMatches.length)selected=unitMatches;
-      if(!row.origin&&matches.length){
+      if(autoOrigin&&matches.length){
         const originCounts=new Map();
         matches.forEach(item=>{if(item.origin)originCounts.set(item.origin,(originCounts.get(item.origin)||0)+1)});
         row.origin=productGuideMostCommon(originCounts)||row.origin||"";
@@ -3329,14 +3398,55 @@ function refreshProductGuideVariant(index){
   if(applyProductGuideVariantImage(row))productGuideTemplateState(`${row.guideName||row.productCode} は登録済み画像を再利用しました。`);
   renderProductGuide();
 }
-function removeProductGuideRow(index){
+function updateProductGuideOrigin(index,value){
   const row=productGuideRows[index];
   if(!row)return;
-  if(!confirm(`${row.guideName||row.productCode||"この行"}を現在の商品案内から外しますか？商品マスタや過去テンプレートは削除されません。`))return;
-  productGuideRows.splice(index,1);
+  row.origin=value;
+  row.autoCandidateOrigin=false;
+}
+function duplicateProductGuideRow(index){
+  const source=productGuideRows[index];
+  if(!source)return;
+  const copy=productGuideEnsureRowIdentity({
+    ...source,
+    rowId:productGuideGuid(),
+    index:index+1,
+    rank:index+2,
+    displayOrder:index+2,
+    sourcePeriod:"行を複製",
+    memo:source.memo||""
+  },index+1);
+  productGuideRows.splice(index+1,0,copy);
   productGuideReindexRows();
   saveProductGuideLocalState();
   renderProductGuide();
+  productGuideTemplateState(`${source.guideName||source.productCode||"商品"}を複製しました。産地・規格・画像・価格を必要に応じて変更してください。`);
+}
+function updateProductGuideUndoButton(){
+  const button=document.getElementById("product-guide-undo-remove");
+  if(button)button.disabled=!lastRemovedProductGuideRow;
+}
+function removeProductGuideRow(index){
+  const row=productGuideRows[index];
+  if(!row)return;
+  lastRemovedProductGuideRow={row:{...row},index};
+  productGuideRows.splice(index,1);
+  productGuideReindexRows();
+  saveProductGuideLocalState();
+  updateProductGuideUndoButton();
+  renderProductGuide();
+  productGuideTemplateState(`${row.guideName||row.productCode||"商品"}をこの商品案内から外しました。商品マスタは変更していません。`);
+}
+function undoLastProductGuideRemoval(){
+  if(!lastRemovedProductGuideRow)return;
+  const {row,index}=lastRemovedProductGuideRow;
+  productGuideRows.splice(Math.min(index,productGuideRows.length),0,productGuideEnsureRowIdentity(row,index));
+  productGuideReindexRows();
+  lastRemovedProductGuideRow=null;
+  saveProductGuideLocalState();
+  updateProductGuideUndoButton();
+  renderProductGuide();
+  productGuideTemplateState(`${row.guideName||row.productCode||"商品"}を商品案内へ戻しました。`);
 }
 function addProductGuideManualRow(){
   productGuideRows.push(productGuideBlankRow());
@@ -3695,7 +3805,7 @@ function productGuideEditorRowHtml(row){
     <td><input class="guide-code" value="${esc(row.productCode||"")}" autocomplete="off" oninput="updateProductGuideRow(${row.index},'productCode',this.value)" onchange="applyProductGuideProductMaster(${row.index},this.value)"></td>
     <td><input class="guide-name ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.guideName)}" oninput="updateProductGuideRow(${row.index},'guideName',this.value)"></td>
     <td>${esc(row.englishName)}</td>
-    <td><input class="ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.origin)}" oninput="updateProductGuideRow(${row.index},'origin',this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
+    <td><input class="ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.origin)}" oninput="updateProductGuideOrigin(${row.index},this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
     <td><input class="guide-spec ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.spec||"")}" oninput="updateProductGuideRow(${row.index},'spec',this.value)" onchange="refreshProductGuideVariant(${row.index})"></td>
     <td><div class="guide-price-range-editor"><input class="guide-num" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMinJpy||"")}" aria-label="価格候補下限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMinJpy',this.value)"><span>～</span><input class="guide-num" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.basePriceMaxJpy||"")}" aria-label="価格候補上限" oninput="updateProductGuideBasePriceRange(${row.index},'basePriceMaxJpy',this.value)"></div></td>
     <td><input class="guide-num" type="number" inputmode="decimal" min="0.01" step="0.01" value="${esc(row.pricingNetWeight||1)}" oninput="updateProductGuidePricingNet(${row.index},this.value)"></td>
@@ -3704,7 +3814,7 @@ function productGuideEditorRowHtml(row){
     <td><span class="guide-candidate-badge">${esc(row.priceSource||"未照合")}</span></td>
     <td><input class="guide-price" data-guide-index="${row.index}" inputmode="text" value="${esc(row.guidePriceRange||"")}" oninput="updateProductGuideRow(${row.index},'guidePriceRange',this.value)"></td>
     <td><input class="guide-memo ime-ja" lang="ja-JP" inputmode="text" value="${esc(row.memo)}" oninput="updateProductGuideRow(${row.index},'memo',this.value)"></td>
-    <td><div class="guide-row-actions"><button class="small danger" type="button" onclick="removeProductGuideRow(${row.index})">削除</button></div></td>
+    <td><div class="guide-row-actions"><button class="small" type="button" onclick="duplicateProductGuideRow(${row.index})">行を複製</button><button class="small danger" type="button" onclick="removeProductGuideRow(${row.index})">案内から外す</button></div></td>
   </tr>`;
 }
 function productGuideEditorBodyHtml(rows){
