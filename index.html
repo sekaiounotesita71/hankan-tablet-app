@@ -4853,24 +4853,11 @@ function workPriceValuePresent(value){
   const number=Number(text);
   return !Number.isFinite(number)||number!==0;
 }
-function workPriceValuesEqual(left,right){
-  const leftText=String(left??"").replace(/,/g,"").trim();
-  const rightText=String(right??"").replace(/,/g,"").trim();
-  const leftNumber=Number(leftText),rightNumber=Number(rightText);
-  if(leftText&&rightText&&Number.isFinite(leftNumber)&&Number.isFinite(rightNumber))return leftNumber===rightNumber;
-  return leftText===rightText;
-}
-function workMasterPriceResolution(orderPrice,master,importer,options={}){
+function workMasterPriceResolution(orderPrice,master,importer){
   const contractPrice=resolveContractPrice(master,importer);
   const masterPrice=master?.unit_price;
-  if(options.preferOrderPrice&&workPriceValuePresent(orderPrice))return {value:orderPrice,source:"受注価格"};
-  const orderLooksLikeAutomaticMasterPrice=workPriceValuePresent(orderPrice)
-    &&workPriceValuePresent(contractPrice)
-    &&workPriceValuePresent(masterPrice)
-    &&workPriceValuesEqual(orderPrice,masterPrice);
-  if(workPriceValuePresent(orderPrice)&&!orderLooksLikeAutomaticMasterPrice)return {value:orderPrice,source:"受注価格"};
-  if(workPriceValuePresent(contractPrice))return {value:contractPrice,source:"契約価格"};
   if(workPriceValuePresent(orderPrice))return {value:orderPrice,source:"受注価格"};
+  if(workPriceValuePresent(contractPrice))return {value:contractPrice,source:"契約価格"};
   if(workPriceValuePresent(masterPrice))return {value:masterPrice,source:"商品マスタ"};
   return {value:"",source:""};
 }
@@ -4948,7 +4935,7 @@ function orderEntryLineToWorkRow(batch,line,index){
   const importerName=batch.importer_name_snapshot||"";
   rememberImporterDisplayName(importer,importerName);
   const master=masterMap[normalizeProductId(line.product_code)]||{};
-  const price=workMasterPriceResolution(line.unit_price,master,importer,{preferOrderPrice:batch.source_type==="csv"});
+  const price=workMasterPriceResolution(line.unit_price,master,importer);
   return {
     _idx:index,
     _qty:"",
@@ -5067,4 +5054,5 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 </script>
 </body>
 </html>
+
 
