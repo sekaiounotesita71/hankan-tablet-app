@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./i18n.js"></script>
 <style>
 :root{
   --bg:#f6f4ef;--surface:#fff;--surface-2:#fbfaf7;--border:#ded9cf;--border-strong:#bfb7aa;
@@ -30,10 +31,12 @@ header{
   background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
 }
 .header-title{font-size:18px;font-weight:700;white-space:nowrap}
+.header-title-wrap{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .app-nav{display:flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:10px;background:var(--bg);padding:4px}
 .app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:900;white-space:nowrap}
 .app-nav-link.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .header-right{display:flex;align-items:center;gap:10px;min-width:0}
+.language-switch{height:42px;min-width:54px;padding:0 10px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-size:13px;font-weight:900;cursor:pointer;white-space:nowrap}
 .phase-switcher{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px;gap:3px}
 .phase-btn{
   min-height:42px;padding:0 16px;border:0;border-radius:8px;background:transparent;color:var(--muted);
@@ -182,7 +185,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 </head>
 <body>
 <header>
-  <div class="header-title">オーダー管理</div>
+  <div class="header-title-wrap"><div class="header-title">オーダー管理</div><button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button></div>
   <div class="header-right">
     <nav class="app-nav" aria-label="アプリ切替">
       <a class="app-nav-link active" href="./index.html">作業アプリ</a>
