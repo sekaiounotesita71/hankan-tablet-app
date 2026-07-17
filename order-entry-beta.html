@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./i18n.js"></script>
 <title>受注登録</title>
 <style>
 :root{
@@ -22,6 +23,7 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--muted);text-decoration:none;font-size:12px;font-weight:900;white-space:nowrap;cursor:pointer}
 .app-nav-link.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
+.language-switch{height:40px;min-width:58px;border:1px solid var(--line2);border-radius:8px;background:#fff;color:var(--text);font-weight:900;cursor:pointer}
 main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:1fr;gap:12px}.workspace-panel{display:none!important}.workspace-panel.active{display:block!important}.workspace-panel.layout.active{display:grid!important}.workspace-action-hidden{display:none!important}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
 .auth-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}.auth-bar input{width:220px;min-height:36px}.auth-bar .btn{height:36px}.auth-bar .pill{min-height:28px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
@@ -50,6 +52,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 <header>
   <div class="title-wrap">
     <div><div class="title">受注登録</div></div>
+    <button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button>
     <nav class="app-nav" aria-label="アプリ切替">
       <a class="app-nav-link" href="./index.html">作業アプリ</a>
       <button class="app-nav-link" type="button" data-workspace-tab="sales" onclick="switchWorkspaceTab('sales')">売上参照</button>
