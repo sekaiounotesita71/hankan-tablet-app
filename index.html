@@ -149,6 +149,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .unit-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.unit-preset{min-height:48px;border:1px solid var(--border);border-radius:9px;background:var(--bg);font-weight:800;cursor:pointer}.unit-preset.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .manual-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.manual-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;color:var(--muted)}.manual-form input{min-height:44px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px;background:#fff;color:var(--text);font-weight:700}.manual-form .wide{grid-column:1/-1}.manual-actions{display:flex;gap:10px;margin-top:14px}.manual-actions button{flex:1}.btn-reset{min-height:38px;padding:0 11px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;border:1px solid #efd58a;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
 .export-panel{max-width:460px;max-height:calc(100dvh - 24px);border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px;flex:0 0 auto}.export-options{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:8px;margin-bottom:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;flex:0 0 auto;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
+.pending-invoice-panel{width:min(780px,calc(100vw - 24px));max-height:calc(100dvh - 24px);border-radius:12px;background:#fff;box-shadow:0 12px 34px rgba(0,0,0,.22);display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;overflow:hidden}.pending-invoice-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--border)}.pending-invoice-title{font-size:18px;font-weight:900}.pending-invoice-sub{margin-top:4px;color:var(--muted);font-size:13px;font-weight:800;line-height:1.5}.pending-invoice-summary{padding:10px 16px;background:#fff8e8;border-bottom:1px solid #efd58a;color:#795300;font-size:13px;font-weight:900}.pending-invoice-tools{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border)}.pending-invoice-count{margin-left:auto;color:var(--muted);font-size:13px;font-weight:900}.pending-invoice-list{min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:10px 16px;background:#f8fafc}.pending-invoice-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 12px;margin-bottom:8px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer}.pending-invoice-item.hold{background:#fffaf0;border-color:#efd58a}.pending-invoice-item.future{border-style:dashed}.pending-invoice-check{width:21px;height:21px;margin:2px 0 0;accent-color:var(--accent)}.pending-invoice-main{min-width:0}.pending-invoice-name{font-weight:900;line-height:1.4}.pending-invoice-meta{margin-top:4px;color:var(--muted);font-size:12px;font-weight:800;line-height:1.45}.pending-invoice-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.pending-invoice-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:11px;font-weight:900}.pending-invoice-badge.hold{background:#fff0c7;color:#795300}.pending-invoice-badge.future{background:#eef1f4;color:#526071}.pending-invoice-amount{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px;font-weight:900;white-space:nowrap}.pending-invoice-amount.negative{color:var(--danger)}.pending-invoice-actions{display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:#fff}.pending-invoice-actions button{min-height:48px}.pending-invoice-actions .btn-primary{flex:1}.pending-invoice-empty{padding:24px;text-align:center;color:var(--muted);font-weight:800}
 .session-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 2px;padding:6px 2px 0;font-size:13px;font-weight:900;color:var(--muted)}.session-section-count{font-size:12px;color:var(--muted);font-weight:800}.session-finalized{background:#f8fafc;border-color:#d7dde7}.session-finalized .export-option-code{color:#526071}.session-finalized .export-option-meta{color:#7b8794}.session-empty{min-height:46px;border:1px dashed var(--border);background:var(--bg);cursor:default}.session-locked-badge{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:12px;font-weight:900;white-space:nowrap}
 .sales-ref-panel{width:min(1180px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.sales-ref-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff}.sales-ref-title{font-weight:900}.sales-ref-body{display:grid;grid-template-columns:310px 1fr;min-height:0;overflow:hidden}.sales-ref-list{border-right:1px solid var(--border);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#f8fafc;padding:10px}.sales-ref-session{width:100%;border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer}.sales-ref-session.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,122,82,.12)}.sales-ref-session-name{display:block;font-weight:900;color:var(--text);margin-bottom:4px}.sales-ref-session-meta{display:block;font-size:12px;color:var(--muted);font-weight:800}.sales-ref-main{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto 1fr;background:#fff;overflow:hidden}.sales-ref-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}.sales-ref-search{height:42px;min-width:180px;flex:1;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-weight:700}.sales-ref-filter{height:42px;min-width:130px;border:1px solid var(--border-strong);border-radius:9px;padding:0 10px;background:#fff;font-weight:800}.sales-ref-filter.date{min-width:145px}.sales-ref-summary{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:800}.sales-ref-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;min-height:0;max-height:100%}.sales-ref-table{width:100%;min-width:1200px;border-collapse:separate;border-spacing:0}.sales-ref-table th,.sales-ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}.sales-ref-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.sales-ref-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:30px;color:var(--muted);font-weight:800;text-align:center}
 .sales-ref-analysis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#fbfcfd}.sales-ref-card{border:1px solid var(--border);border-radius:9px;background:#fff;min-width:0;overflow:hidden}.sales-ref-card-head{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:900;color:var(--muted);display:flex;justify-content:space-between;gap:8px}.sales-ref-card-body{max-height:132px;overflow:auto;-webkit-overflow-scrolling:touch}.sales-ref-rank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-ref-rank:last-child{border-bottom:0}.sales-ref-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--text)}.sales-ref-rank-value{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}.sales-ref-total-card{background:#eef7f1;border-color:#cfe7d9}.sales-ref-total-card .sales-ref-rank-name,.sales-ref-total-card .sales-ref-rank-value{color:#167a52}
@@ -159,6 +160,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .confirm-box{max-width:360px;border-radius:18px;padding:24px;text-align:center;margin:0 14px 18px}.confirm-title{font-size:18px;font-weight:900;margin-bottom:8px}.confirm-sub{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}.confirm-product{font-weight:800;background:var(--bg);border-radius:9px;padding:10px;margin-bottom:16px}.confirm-btns{display:flex;gap:10px}.confirm-btns button{flex:1;height:50px;border:0;border-radius:10px;font-weight:900}.confirm-cancel{background:var(--bg);color:var(--text)}.confirm-ok{background:var(--danger);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:200;transform:translateX(-50%) translateY(80px);transition:.25s;background:var(--accent);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
 @media (min-width:700px){.modal-bg,.export-bg,.confirm-bg{align-items:center}.np-panel{max-width:520px;border-radius:20px;padding-bottom:22px}.export-panel{border-radius:20px}.confirm-box{margin:0}.np-grid{gap:10px}.np-key{height:70px}}
+@media (max-width:699px){.pending-invoice-panel{width:100%;height:min(92dvh,760px);max-height:92dvh;border-radius:16px 16px 0 0}.pending-invoice-item{grid-template-columns:26px minmax(0,1fr)}.pending-invoice-amount{grid-column:2}.pending-invoice-tools{flex-wrap:wrap}.pending-invoice-count{width:100%;margin-left:0}}
 @media (max-width:820px){
   header{align-items:stretch;flex-direction:column}.header-title{font-size:17px}.app-nav{width:100%;justify-content:stretch}.app-nav-link{flex:1}.header-right{width:100%;justify-content:space-between}.phase-switcher{flex:1}.phase-btn{flex:1;padding:0 8px}.btn{padding:0 12px}
   main{padding-top:14px}.import-grid{grid-template-columns:1fr}.tabs-wrap{border-radius:0;margin-left:-14px;margin-right:-14px;border-left:0;border-right:0}
@@ -338,6 +340,15 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   </div>
 </div>
 <div class="export-bg" id="export-bg" onclick="closeExportPicker()"><div class="export-panel" onclick="event.stopPropagation()"><div class="export-head"><div class="export-head-title">Excel出力する輸入社を選択</div><button class="export-close" onclick="closeExportPicker()">×</button></div><div class="export-label">輸入社コード</div><div class="export-options" id="export-options"></div><button class="export-all" onclick="doExport(null)">全てまとめて出力</button></div></div>
+<div class="export-bg" id="pending-invoice-bg" onclick="cancelPendingInvoiceSelection()">
+  <div class="pending-invoice-panel" onclick="event.stopPropagation()">
+    <div class="pending-invoice-head"><div><div class="pending-invoice-title">未反映伝票を確認</div><div class="pending-invoice-sub" id="pending-invoice-sub"></div></div><button class="export-close" type="button" onclick="cancelPendingInvoiceSelection()">×</button></div>
+    <div class="pending-invoice-summary" id="pending-invoice-summary"></div>
+    <div class="pending-invoice-tools"><button class="btn" type="button" onclick="setAllPendingInvoiceChecks(true)">すべて選択</button><button class="btn" type="button" onclick="setAllPendingInvoiceChecks(false)">選択解除</button><span class="pending-invoice-count" id="pending-invoice-count"></span></div>
+    <div class="pending-invoice-list" id="pending-invoice-list"></div>
+    <div class="pending-invoice-actions"><button class="btn" type="button" onclick="cancelPendingInvoiceSelection()">出力を中止</button><button class="btn btn-primary" id="pending-invoice-confirm" type="button" onclick="confirmPendingInvoiceSelection()">確認してExcel出力</button></div>
+  </div>
+</div>
 <div class="confirm-bg" id="confirm-bg"><div class="confirm-box"><div class="confirm-title">欠品にしますか？</div><div class="confirm-sub">入力済みの数量、NET、箱番号はクリアされます。</div><div class="confirm-product" id="confirm-product-name"></div><div class="confirm-btns"><button class="confirm-cancel" onclick="cancelStockout()">キャンセル</button><button class="confirm-ok" onclick="executeStockout()">欠品にする</button></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
@@ -454,6 +465,149 @@ function ensureExportPreviewUI(){
   preview.id="export-preview";
   preview.innerHTML=`<div class="export-preview-head"><div class="export-preview-title">出力内容プレビュー</div><button class="btn" style="min-height:38px;padding:0 12px;font-size:13px" onclick="renderExportPreview(null)">全体を確認</button></div><div class="export-preview-body" id="export-preview-body"></div>`;
   panel.appendChild(preview);
+}
+const PENDING_INVOICE_TYPE_LABELS={advance_order:"先行受注",credit_note:"赤伝",correction:"訂正",extra_charge:"追加請求",discount:"値引き",shipping_adjustment:"送料調整"};
+let pendingInvoiceSelectionState=null;
+function pendingInvoiceNumber(value){
+  const text=String(value??"").replace(/,/g,"").trim();
+  if(!text)return null;
+  const n=Number(text);
+  return Number.isFinite(n)?n:null;
+}
+function pendingInvoiceTargetDate(){
+  const candidates=[latestOrderFilename,currentSessionName,workSessionDateFilterValue()];
+  for(const value of candidates){
+    const match=String(value||"").match(/((?:19|20)\d{2})[-\/.]?(\d{2})[-\/.]?(\d{2})/);
+    if(match)return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+  return localDateValue();
+}
+function pendingInvoiceTargetImporters(country){
+  const values=country?[country]:rows.map(row=>importerCode(row.importer_id));
+  return [...new Set(values.map(normalizeImporterCode).filter(Boolean))];
+}
+function pendingInvoiceDbErrorMessage(error){
+  const message=String(error?.message||error||"");
+  if(error?.code==="42P01"||/relation .*pending_entries.* does not exist/i.test(message))return "未処理伝票用SQLが未実行です。pending-entries-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(message))return "未処理伝票DBの反映待ちです。少し待って再読込してください。";
+  return message||"未処理伝票を確認できませんでした。";
+}
+async function loadPendingInvoiceCandidates(country){
+  const targetImporters=pendingInvoiceTargetImporters(country);
+  if(!targetImporters.length)return [];
+  const pageSize=500,records=[];
+  for(let from=0;;from+=pageSize){
+    const {data,error}=await supabaseClient
+      .from("pending_entries")
+      .select("*")
+      .in("status",["pending","hold"])
+      .order("entry_date",{ascending:true})
+      .order("created_at",{ascending:true})
+      .range(from,from+pageSize-1);
+    if(error)throw error;
+    records.push(...(data||[]));
+    if((data||[]).length<pageSize)break;
+  }
+  return records.filter(entry=>targetImporters.includes(normalizeImporterCode(entry.importer_code)));
+}
+function pendingInvoiceDefaultChecked(entry,targetDate){
+  return entry.status==="pending"&&(!entry.planned_date||entry.planned_date<=targetDate);
+}
+function pendingInvoiceAmount(entry){
+  const amount=pendingInvoiceNumber(entry.amount);
+  if(amount!==null){
+    if((entry.entry_type==="credit_note"||entry.entry_type==="discount")&&amount>0)return -amount;
+    return amount;
+  }
+  const qty=pendingInvoiceNumber(entry.qty),price=pendingInvoiceNumber(entry.unit_price);
+  const calculated=qty!==null&&price!==null?qty*price:0;
+  return (entry.entry_type==="credit_note"||entry.entry_type==="discount")&&calculated>0?-calculated:calculated;
+}
+function formatPendingInvoiceAmount(value){
+  return Number(value||0).toLocaleString("ja-JP",{maximumFractionDigits:2});
+}
+function updatePendingInvoiceSelectionCount(){
+  const checks=[...document.querySelectorAll('#pending-invoice-list input[type="checkbox"]')];
+  const count=checks.filter(check=>check.checked).length;
+  const countEl=document.getElementById("pending-invoice-count");
+  const button=document.getElementById("pending-invoice-confirm");
+  if(countEl)countEl.textContent=`${count}件をInvoiceへ反映`;
+  if(button)button.textContent=count?`${count}件を反映してExcel出力`:"選択せずExcel出力";
+}
+function setAllPendingInvoiceChecks(checked){
+  document.querySelectorAll('#pending-invoice-list input[type="checkbox"]').forEach(input=>{input.checked=checked});
+  updatePendingInvoiceSelectionCount();
+}
+function showPendingInvoiceSelection(entries,country,targetDate){
+  return new Promise(resolve=>{
+    if(pendingInvoiceSelectionState?.resolve)pendingInvoiceSelectionState.resolve(null);
+    pendingInvoiceSelectionState={entries,resolve,targetDate};
+    const importerLabels=pendingInvoiceTargetImporters(country).map(code=>importerDisplayName(code));
+    document.getElementById("pending-invoice-sub").textContent=`対象: ${importerLabels.join(" / ")||"全輸入社"} / 作業日 ${targetDate}`;
+    document.getElementById("pending-invoice-summary").textContent=`未反映・保留の伝票が ${entries.length}件あります。チェックした伝票だけを今回のInvoiceへ追加します。`;
+    document.getElementById("pending-invoice-list").innerHTML=entries.map((entry,index)=>{
+      const typeLabel=PENDING_INVOICE_TYPE_LABELS[entry.entry_type]||entry.entry_type||"未処理伝票";
+      const amount=pendingInvoiceAmount(entry),isFuture=!!entry.planned_date&&entry.planned_date>targetDate,isHold=entry.status==="hold";
+      const checked=pendingInvoiceDefaultChecked(entry,targetDate)?" checked":"";
+      const description=entry.description||entry.product_name_snapshot||"内容未入力";
+      const customer=entry.customer_name_snapshot||entry.customer_code||"得意先未設定";
+      const dates=[`登録 ${entry.entry_date||"-"}`,entry.planned_date?`予定 ${entry.planned_date}`:""].filter(Boolean).join(" / ");
+      const badges=[`<span class="pending-invoice-badge">${esc(typeLabel)}</span>`,isHold?'<span class="pending-invoice-badge hold">保留</span>':"",isFuture?'<span class="pending-invoice-badge future">予定日前</span>':""].join("");
+      return `<label class="pending-invoice-item${isHold?" hold":""}${isFuture?" future":""}"><input class="pending-invoice-check" type="checkbox" data-pending-index="${index}" onchange="updatePendingInvoiceSelectionCount()"${checked}><span class="pending-invoice-main"><span class="pending-invoice-name">${esc(customer)} / ${esc(description)}</span><span class="pending-invoice-meta">${esc(entry.importer_code||"")} / ${esc(dates)}${entry.reason?` / ${esc(entry.reason)}`:""}</span><span class="pending-invoice-badges">${badges}</span></span><span class="pending-invoice-amount${amount<0?" negative":""}">${amount<0?"-":""}${esc(formatPendingInvoiceAmount(Math.abs(amount)))}</span></label>`;
+    }).join("")||'<div class="pending-invoice-empty">対象伝票はありません。</div>';
+    updatePendingInvoiceSelectionCount();
+    document.getElementById("pending-invoice-bg").classList.add("open");
+  });
+}
+function closePendingInvoiceSelection(result){
+  const state=pendingInvoiceSelectionState;
+  pendingInvoiceSelectionState=null;
+  document.getElementById("pending-invoice-bg")?.classList.remove("open");
+  if(state?.resolve)state.resolve(result);
+}
+function cancelPendingInvoiceSelection(){closePendingInvoiceSelection(null)}
+function confirmPendingInvoiceSelection(){
+  if(!pendingInvoiceSelectionState)return;
+  const selected=[...document.querySelectorAll('#pending-invoice-list input[type="checkbox"]:checked')]
+    .map(input=>pendingInvoiceSelectionState.entries[Number(input.dataset.pendingIndex)])
+    .filter(Boolean);
+  closePendingInvoiceSelection(selected);
+}
+function pendingInvoiceExportRow(entry){
+  const typeLabel=PENDING_INVOICE_TYPE_LABELS[entry.entry_type]||entry.entry_type||"調整";
+  const amount=pendingInvoiceAmount(entry),qty=pendingInvoiceNumber(entry.qty);
+  const unitPrice=pendingInvoiceNumber(entry.unit_price);
+  const exportQty=qty===null?1:qty;
+  const exportPrice=unitPrice===null?(exportQty?amount/exportQty:amount):unitPrice;
+  const description=entry.description||entry.product_name_snapshot||typeLabel;
+  const memo=[entry.reason,entry.memo,entry.entry_date?`登録日 ${entry.entry_date}`:""].filter(Boolean).join(" / ");
+  return{"商品コード":entry.product_code||"ADJUSTMENT","エンドユーザー店名":entry.customer_name_snapshot||entry.customer_code||"","ケース番号":"","温度帯":"","商品名":`【${typeLabel}】${description}`,"英名・学術名":"","packing":"","産地":"","No of BOX":"","現場入力数量":exportQty,"現場入力単位":entry.unit||(qty===null?"式":""),"NET重量":"","グロス重量":"","単価":exportPrice,"金額":amount,"メモ":memo,"欠品":""};
+}
+function pendingInvoiceReference(country,targetDate){
+  const code=country?normalizeImporterCode(country):"ALL";
+  return `INV-${targetDate.replace(/-/g,"")}-${code}-${Date.now()}`;
+}
+async function claimPendingInvoiceEntries(entries,invoiceNo){
+  const ids=entries.map(entry=>entry.id).filter(Boolean);
+  if(!ids.length)return [];
+  const now=new Date().toISOString();
+  const {data,error}=await supabaseClient
+    .from("pending_entries")
+    .update({status:"applied",applied_invoice_no:invoiceNo,applied_at:now,applied_by:currentUser.id})
+    .in("id",ids)
+    .in("status",["pending","hold"])
+    .select("id");
+  if(error)throw error;
+  const claimedIds=new Set((data||[]).map(row=>String(row.id)));
+  return entries.filter(entry=>claimedIds.has(String(entry.id)));
+}
+async function rollbackPendingInvoiceEntries(entries,invoiceNo){
+  for(const status of ["pending","hold"]){
+    const ids=entries.filter(entry=>entry.status===status).map(entry=>entry.id).filter(Boolean);
+    if(!ids.length)continue;
+    const {error}=await supabaseClient.from("pending_entries").update({status,applied_invoice_no:null,applied_at:null,applied_by:null}).in("id",ids).eq("applied_invoice_no",invoiceNo);
+    if(error)throw error;
+  }
 }
 function buildExportPayload(country){
   const targetRows=country?rows.filter(r=>r.country===country):rows;
@@ -2076,7 +2230,7 @@ function stopDeleteKey(){
 function ndel(){
   deleteOneDigit();
 }
-function buildExportPayload(country){
+function buildExportPayload(country,pendingEntries=[]){
   const targetRows=country?rows.filter(r=>r.country===country):rows;
   const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
   const headers=["商品コード","エンドユーザー店名","ケース番号","温度帯","商品名","英名・学術名","packing","産地","No of BOX","現場入力数量","現場入力単位","NET重量","グロス重量","単価","金額","メモ","欠品"];
@@ -2097,6 +2251,7 @@ function buildExportPayload(country){
     const enSci=[r.en_name,r.sci_name].filter(Boolean).join(" / ");
     return{"商品コード":r.product_id,"エンドユーザー店名":r.customer,"ケース番号":r._stockout?"":boxNo,"温度帯":"","商品名":r.product_name,"英名・学術名":enSci,"packing":"","産地":r.origin||"","No of BOX":"","現場入力数量":qty,"現場入力単位":r._stockout?"":r._unit,"NET重量":r._stockout||r._net===""?"":Number(r._net),"グロス重量":r._stockout?"":(gross===""?"":Number(gross)),"単価":price,"金額":amount,"メモ":r._memo,"欠品":r._stockout?"欠品":""};
   });
+  p1data.push(...pendingEntries.map(pendingInvoiceExportRow));
   const targetImporters=[...new Set(targetRows.map(r=>importerCode(r.importer_id)))].sort();
   const p2Sheets=targetImporters.map(imp=>{
     const bm=boxMap[imp]||{};
@@ -2109,7 +2264,7 @@ function buildExportPayload(country){
     return{name:`箱一覧_${imp}`.slice(0,31),data};
   }).filter(s=>s.data.length);
   const boxNumberList=p2Sheets.flatMap(sheet=>sheet.data.map(r=>({"箱番号":r["箱番号"],"グロス重量":r["グロス重量(kg)"],"ドライアイス":r["ドライアイス重量(kg)"],"箱サイズ":r["箱サイズ"]})));
-  return{headers,p1data,p2Sheets,boxNumberList,filename:country?`invoice_${country}_${d}.xlsx`:`invoice_all_${d}.xlsx`};
+  return{headers,p1data,p2Sheets,boxNumberList,sourceRowCount:targetRows.length,filename:country?`invoice_${country}_${d}.xlsx`:`invoice_all_${d}.xlsx`};
 }
 async function exportExcel(){
   if(currentSessionId&&supabaseClient){
@@ -2134,27 +2289,63 @@ async function exportExcel(){
   renderExportPreview(null);
   document.getElementById("export-bg").classList.add("open");
 }
-function doExport(country){
+async function doExport(country){
   closeExportPicker();
   if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}
-  const payload=buildExportPayload(country),wb=XLSX.utils.book_new();
-  const ws1=XLSX.utils.json_to_sheet(payload.p1data,{header:payload.headers});
-  forceTextColumn(ws1,2,payload.p1data.length);
-  payload.p1data.forEach((row,i)=>{const v=row["金額"];ws1[`O${i+2}`]={f:`J${i+2}*N${i+2}`,v:v===""?undefined:v,t:v===""?"z":"n"}});
-  ws1["!cols"]=[{wch:12},{wch:22},{wch:12},{wch:8},{wch:20},{wch:30},{wch:10},{wch:12},{wch:10},{wch:13},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:24},{wch:8}];
-  XLSX.utils.book_append_sheet(wb,ws1,"Invoice Data");
-  payload.p2Sheets.forEach(sheet=>{
-    const ws2=XLSX.utils.json_to_sheet(sheet.data,{header:["箱番号","NET重量合計(kg)","グロス重量(kg)","ドライアイス重量(kg)","箱サイズ"]});
-    forceTextColumn(ws2,0,sheet.data.length);
-    ws2["!cols"]=[{wch:12},{wch:18},{wch:16},{wch:20},{wch:10}];
-    XLSX.utils.book_append_sheet(wb,ws2,sheet.name);
-  });
-  const ws3=XLSX.utils.json_to_sheet(payload.boxNumberList,{header:["箱番号","グロス重量","ドライアイス","箱サイズ"]});
-  forceTextColumn(ws3,0,payload.boxNumberList.length);
-  ws3["!cols"]=[{wch:12},{wch:14},{wch:14},{wch:10}];
-  XLSX.utils.book_append_sheet(wb,ws3,"箱番号一覧");
-  XLSX.writeFile(wb,payload.filename);
-  toast("Excelを出力しました");
+  if(!(await requireSupabaseLogin()))return;
+  let candidates=[];
+  try{
+    setSaveState("Supabase: 赤伝・未処理伝票を確認中...");
+    candidates=await loadPendingInvoiceCandidates(country);
+  }catch(error){
+    setSaveState("Supabase: 未処理伝票確認失敗",true);
+    alert(pendingInvoiceDbErrorMessage(error));
+    return;
+  }
+  const targetDate=pendingInvoiceTargetDate();
+  const selected=candidates.length?await showPendingInvoiceSelection(candidates,country,targetDate):[];
+  if(selected===null){setSaveState("Excel出力を中止しました");return}
+  const invoiceNo=pendingInvoiceReference(country,targetDate);
+  let claimed=[];
+  try{
+    if(selected.length){
+      setSaveState("Supabase: 反映対象を確保中...");
+      claimed=await claimPendingInvoiceEntries(selected,invoiceNo);
+      if(!claimed.length){alert("選択した未処理伝票は、別の端末ですでに反映されました。最新状態を確認してから再度出力してください。");setSaveState("未処理伝票は他端末で反映済み",true);return}
+      if(claimed.length!==selected.length)alert(`${selected.length-claimed.length}件は別の端末で先に反映されたため、今回のExcelから除外しました。`);
+    }
+    const payload=buildExportPayload(country,claimed),wb=XLSX.utils.book_new();
+    const ws1=XLSX.utils.json_to_sheet(payload.p1data,{header:payload.headers});
+    forceTextColumn(ws1,2,payload.p1data.length);
+    payload.p1data.forEach((row,i)=>{
+      const v=row["金額"],address=`O${i+2}`;
+      if(i<payload.sourceRowCount)ws1[address]={f:`J${i+2}*N${i+2}`,v:v===""?undefined:v,t:v===""?"z":"n"};
+      else ws1[address]={v:Number(v)||0,t:"n"};
+    });
+    ws1["!cols"]=[{wch:12},{wch:22},{wch:12},{wch:8},{wch:20},{wch:30},{wch:10},{wch:12},{wch:10},{wch:13},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:24},{wch:8}];
+    XLSX.utils.book_append_sheet(wb,ws1,"Invoice Data");
+    payload.p2Sheets.forEach(sheet=>{
+      const ws2=XLSX.utils.json_to_sheet(sheet.data,{header:["箱番号","NET重量合計(kg)","グロス重量(kg)","ドライアイス重量(kg)","箱サイズ"]});
+      forceTextColumn(ws2,0,sheet.data.length);
+      ws2["!cols"]=[{wch:12},{wch:18},{wch:16},{wch:20},{wch:10}];
+      XLSX.utils.book_append_sheet(wb,ws2,sheet.name);
+    });
+    const ws3=XLSX.utils.json_to_sheet(payload.boxNumberList,{header:["箱番号","グロス重量","ドライアイス","箱サイズ"]});
+    forceTextColumn(ws3,0,payload.boxNumberList.length);
+    ws3["!cols"]=[{wch:12},{wch:14},{wch:14},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws3,"箱番号一覧");
+    XLSX.writeFile(wb,payload.filename);
+    setSaveState(`Supabase: Excel出力済み${claimed.length?` / 未処理伝票 ${claimed.length}件反映`:""}`);
+    toast(claimed.length?`Excelを出力し、未処理伝票 ${claimed.length}件を反映済みにしました`:"Excelを出力しました");
+  }catch(error){
+    let rollbackError=null;
+    if(claimed.length){
+      try{await rollbackPendingInvoiceEntries(claimed,invoiceNo)}catch(restoreError){rollbackError=restoreError}
+    }
+    const rollbackText=claimed.length?(rollbackError?"未処理伝票の状態復元にも失敗しました。管理画面で反映状態を確認してください。":"選択した未処理伝票は未反映へ戻しました。"):"";
+    setSaveState(rollbackError?"Excel出力失敗 / 未処理伝票の状態確認が必要":"Excel出力失敗 / 未処理伝票は未反映",true);
+    alert(`Excel出力に失敗しました。${rollbackText}\n${String(error?.message||error)}${rollbackError?`\n復元エラー: ${String(rollbackError?.message||rollbackError)}`:""}`);
+  }
 }
 async function directExportCountry(country){
   if(currentSessionId&&supabaseClient){
@@ -2163,7 +2354,7 @@ async function directExportCountry(country){
     if(!ok){setSaveState("Supabase: 最新取得失敗",true);return}
     setSaveState("Supabase: 最新データで出力");
   }
-  doExport(country);
+  await doExport(country);
 }
 async function exportExcel(){
   if(currentSessionId&&supabaseClient){
@@ -2187,7 +2378,7 @@ function applyUnitDefault(){
   });
 }
 function clearBlockingOverlays(){
-  ["session-bg","export-bg","manual-order-bg","modal-bg","confirm-bg"].forEach(id=>{
+  ["session-bg","export-bg","pending-invoice-bg","manual-order-bg","modal-bg","confirm-bg"].forEach(id=>{
     document.getElementById(id)?.classList.remove("open");
   });
 }
