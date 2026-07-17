@@ -1499,6 +1499,8 @@ async function savePendingEntry(){
     const qty=numberOrBlank(entry.qty),price=numberOrBlank(entry.unitPrice);
     if(qty!==null&&price!==null)entry.amount=qty*price;
   }
+  const signedAmount=numberOrBlank(entry.amount);
+  if((entry.entryType==="credit_note"||entry.entryType==="discount")&&signedAmount!==null&&signedAmount>0)entry.amount=-signedAmount;
   try{
     if(dbReady&&supabaseClient){
       const payload=pendingEntryToDb(entry);
