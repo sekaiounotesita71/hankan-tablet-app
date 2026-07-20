@@ -8,6 +8,13 @@ create table if not exists public.user_roles (
   updated_at timestamptz not null default now()
 );
 
+alter table public.user_roles enable row level security;
+
+drop policy if exists "authenticated can read user roles" on public.user_roles;
+create policy "authenticated can read user roles"
+on public.user_roles for select to authenticated
+using (true);
+
 create or replace function public.is_master_admin()
 returns boolean
 language sql
