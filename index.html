@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1568,10 +1568,9 @@ async function readCSVFiles(fileList,type){
     masterMap={};
     latestMasterFilename=files.map(f=>f.name).join(", ");
     for(const file of files)await readCSVFile(file,type,true);
-    productMasterPendingUpload=Object.keys(masterMap).length>0;
-    productMasterPendingFilename=latestMasterFilename;
-    if(currentUser&&supabaseClient)await saveProductMasterToSupabase(latestMasterFilename);
-    else setMasterStatus(`端末に読込済 ${Object.keys(masterMap).length}件 / ログイン後に自動保存`);
+    productMasterPendingUpload=false;
+    productMasterPendingFilename="";
+    setMasterStatus(`端末に一時読込 ${Object.keys(masterMap).length}件 / DBは更新しません`);
     checkMergeReady();
   }
 }
@@ -2580,88 +2579,22 @@ async function loadProductMasterFromSupabase(options={}){
   try{return await productMasterLoadPromise}finally{productMasterLoadPromise=null}
 }
 async function saveProductMasterToSupabase(filename){
-  if(!supabaseClient||!currentUser){
-    setMasterStatus(`端末に読込済 ${Object.keys(masterMap).length}件 / 未ログイン`);
-    return false;
-  }
-  const entries=Object.entries(masterMap);
-  if(!entries.length){setMasterStatus("CSVに商品マスタがありません",true);return false}
-  setMasterStatus(`クラウドへ保存中 0/${entries.length}`);
-  const payloads=entries.map(([key,item])=>({
-    product_id:key,
-    product_name:item.product_name||item["商品名"]||null,
-    english_name:item.en_name||null,
-    scientific_name:item.sci_name||null,
-    origin:item.origin||null,
-    unit_price:numberOrNull(item.unit_price),
-    source_filename:filename||null,
-    updated_by:currentUser.id
-  }));
-  const chunkSize=200;
-  for(let i=0;i<payloads.length;i+=chunkSize){
-    const {error}=await supabaseClient.from("product_master").upsert(payloads.slice(i,i+chunkSize),{onConflict:"product_id"});
-    if(error){
-      const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"商品マスタ保存エラー: "+error.message;
-      setMasterStatus(`保存失敗: ${hint}`,true);
-      toast(hint);
-      return false;
-    }
-    setMasterStatus(`クラウドへ保存中 ${Math.min(i+chunkSize,payloads.length)}/${payloads.length}`);
-  }
-  const contractPayloads=[];
-  entries.forEach(([key,item])=>{
-    Object.entries(item.importer_prices||item.contract_prices||{}).forEach(([importer,price])=>{
-      const importerCode=normalizeImporterCode(importer);
-      const unitPrice=numberOrNull(price);
-      if(importerCode&&unitPrice!==null)contractPayloads.push({
-        product_id:key,
-        importer_code:importerCode,
-        unit_price:unitPrice,
-        source_filename:filename||null,
-        updated_by:currentUser.id
-      });
-    });
-  });
-  if(contractPayloads.length){
-    for(let i=0;i<contractPayloads.length;i+=chunkSize){
-      const {error}=await supabaseClient.from("product_price_contracts").upsert(contractPayloads.slice(i,i+chunkSize),{onConflict:"product_id,importer_code"});
-      if(error){
-        const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を再実行してください":"輸入社別価格保存エラー: "+error.message;
-        setMasterStatus(`契約価格保存失敗: ${hint}`,true);
-        toast(hint);
-        return false;
-      }
-    }
-  }
-  productMasterLoadedUserId=currentUser.id;
   productMasterPendingUpload=false;
   productMasterPendingFilename="";
-  setMasterStatus(`クラウド保存済み ${payloads.length}件 / ${new Date().toLocaleString("ja-JP")}`);
-  toast(`商品マスタ ${payloads.length}件を更新しました`);
-  return true;
+  setMasterStatus("作業アプリはマスタ読込専用です",true);
+  toast("マスタ更新は「発注入力 > マスタ」から行ってください");
+  return false;
 }
 async function saveCurrentProductMaster(){
-  const count=Object.keys(masterMap).length;
-  if(!count){toast("先に商品マスタCSVを選択してください");return}
-  if(!currentUser||!supabaseClient){
-    productMasterPendingUpload=true;
-    productMasterPendingFilename=latestMasterFilename;
-    setMasterStatus(`端末に読込済 ${count}件 / 先にログインしてください`);
-    toast("先にSupabaseへログインしてください");
-    return;
-  }
-  productMasterPendingUpload=true;
-  await saveProductMasterToSupabase(latestMasterFilename||productMasterPendingFilename);
+  return saveProductMasterToSupabase(latestMasterFilename);
 }
 const __updateSupabaseStatusProductMasterBase=updateSupabaseStatus;
 updateSupabaseStatus=function(){
   __updateSupabaseStatusProductMasterBase();
   if(currentUser){
-    if(productMasterPendingUpload&&Object.keys(masterMap).length){
-      saveProductMasterToSupabase(productMasterPendingFilename||latestMasterFilename);
-    }else{
-      loadProductMasterFromSupabase();
-    }
+    productMasterPendingUpload=false;
+    productMasterPendingFilename="";
+    loadProductMasterFromSupabase();
   }
   else productMasterLoadedUserId="";
 };
@@ -4429,6 +4362,9 @@ function parseCustomerMasterCsv(text){
 }
 async function uploadCustomerMasterCsvFile(file){
   if(!file)return;
+  toast("得意先マスタの更新は「発注入力 > マスタ」から行ってください");
+  return false;
+  /* Legacy work-app writer intentionally disabled.
   if(!(await requireSupabaseLogin()))return;
   const reader=new FileReader();
   reader.onload=async e=>{
@@ -4449,12 +4385,22 @@ async function uploadCustomerMasterCsvFile(file){
     toast("Customer CSV uploaded.");
   };
   reader.readAsArrayBuffer(file);
+  */
 }
 function onCustomerMasterCsvChange(input){
   const file=input.files?.[0];
   input.value="";
   uploadCustomerMasterCsvFile(file);
 }
+const WORK_APP_MASTER_WRITE_BLOCK_MESSAGE="マスタ更新は「発注入力 > マスタ」から行ってください";
+addCustomerMaster=async function(){
+  toast(WORK_APP_MASTER_WRITE_BLOCK_MESSAGE);
+  return false;
+};
+uploadCustomerMasterCsvFile=async function(){
+  toast(WORK_APP_MASTER_WRITE_BLOCK_MESSAGE);
+  return false;
+};
 function normalizeCustomerMatchText(value){
   return String(value||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"").replace(/[()（）.,，．・]/g,"");
 }
@@ -5248,4 +5194,5 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 </script>
 </body>
 </html>
+
 
