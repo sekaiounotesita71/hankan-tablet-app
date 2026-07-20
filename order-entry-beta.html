@@ -386,9 +386,11 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn primary" onclick="addMasterItem()">マスタ追加/更新</button>
         <button class="btn" onclick="document.getElementById('master-import-file').click()">マスタCSV取込</button>
         <button class="btn" onclick="exportMasters()">マスタCSV出力</button>
+        <button class="btn" onclick="loadMasterChangeHistory()">更新履歴</button>
         <input id="master-import-file" type="file" accept=".csv,text/csv" style="display:none" onchange="importMastersCsv(this)">
       </div>
       <div class="master-list" id="master-list" style="margin-top:10px"></div>
+      <div class="master-list" id="master-change-history" style="display:none;margin-top:10px"></div>
     </div>
   </section>
 </main>
@@ -845,10 +847,25 @@ async function saveProductsToDb(items){
   }
   return {guideFieldsSaved:!usedLegacyPayload};
 }
+async function ensureLinkedMasterExists(type,item){
+  if(!dbReady||!supabaseClient)return false;
+  const config={
+    suppliers:{table:"supplier_master",codeColumn:"supplier_code"},
+    importers:{table:"importer_master",codeColumn:"importer_code"}
+  }[type];
+  const code=String(item?.code||"").trim();
+  if(!config||!code)return false;
+  const {data,error}=await supabaseClient.from(config.table).select(config.codeColumn).eq(config.codeColumn,code).limit(1).maybeSingle();
+  if(error)throw error;
+  if(data)return false;
+  const result=await supabaseClient.from(config.table).insert(masterItemToDb(type,item));
+  if(result.error)throw result.error;
+  return true;
+}
 async function saveMasterItemToDb(type,item){
   if(!dbReady||!supabaseClient)return false;
   if(type==="products"&&item.supplierCode){
-    await saveMasterItemToDb("suppliers",{code:item.supplierCode,name:item.supplierName||item.supplierCode,aliases:[]});
+    await ensureLinkedMasterExists("suppliers",{code:item.supplierCode,name:item.supplierName||item.supplierCode,aliases:[]});
   }
   if(type==="products"){
     await saveProductsToDb([item]);
@@ -856,7 +873,7 @@ async function saveMasterItemToDb(type,item){
     return true;
   }
   if(type==="customers"&&item.importerCode){
-    await saveMasterItemToDb("importers",{code:item.importerCode,name:item.importerName||item.importerCode,aliases:[item.importerCode,item.importerName].filter(Boolean)});
+    await ensureLinkedMasterExists("importers",{code:item.importerCode,name:item.importerName||item.importerCode,aliases:[item.importerCode,item.importerName].filter(Boolean)});
   }
   if(type==="customers"){
     const payload=masterItemToDb(type,item);
@@ -915,7 +932,7 @@ async function saveMastersToDb(type,items){
       const code=String(item.supplierCode||"").trim();
       if(code&&!suppliers.has(code))suppliers.set(code,{code,name:String(item.supplierName||code).trim()||code,aliases:[]});
     });
-    for(const item of suppliers.values())await saveMasterItemToDb("suppliers",item);
+    for(const item of suppliers.values())await ensureLinkedMasterExists("suppliers",item);
     await saveProductsToDb(items);
     await saveProductContractsToDb(items);
     return;
@@ -926,7 +943,7 @@ async function saveMastersToDb(type,items){
       const code=String(item.importerCode||"").trim();
       if(code&&!importers.has(code))importers.set(code,{code,name:String(item.importerName||code).trim()||code,aliases:[code,String(item.importerName||"").trim()].filter(Boolean)});
     });
-    for(const item of importers.values())await saveMasterItemToDb("importers",item);
+    for(const item of importers.values())await ensureLinkedMasterExists("importers",item);
     for(const item of items)await saveMasterItemToDb("customers",item);
     return;
   }
@@ -3640,6 +3657,7 @@ async function fetchMissingProductGuideImages(){
   if(state)state.textContent=`公開画像から ${found}件の候補を取得しました。内容を確認してから「案内情報をマスタ保存」を押してください。${targets.length===30?" 残りがあれば再度実行できます。":""}`;
 }
 async function saveProductGuideRowsToMaster(){
+  if(!currentUserIsAdmin()){alert("商品マスタの更新は管理者のみ可能です。");return}
   const rows=productGuideSelectedRows().filter(row=>String(row.productCode||"").trim());
   if(!rows.length){alert("商品コードのある出力対象がありません。");return}
   const mappedItems=rows.map(row=>{
@@ -5611,6 +5629,7 @@ function fillMasterFormByCode(code){
   if(index>=0)editMasterItem(index);
 }
 async function addMasterItem(){
+  if(!currentUserIsAdmin()){alert("マスタの更新は管理者のみ可能です。");return}
   const code=val("master-code").trim();
   const name=val("master-name").trim();
   if(!code||!name){alert("コードと名称を入力してください。");return}
@@ -5774,6 +5793,36 @@ function renderMasters(){
       :"";
     return `<div class="master-item" style="grid-template-columns:90px minmax(0,1fr) auto;cursor:pointer" onclick="editMasterItem(${index})" title="クリックして編集"><b>${esc(m.code)}</b><div>${esc(m.name)}<br><span class="sub">${esc(extra)}</span></div>${deleteBtn}</div>`;
   }).join(""):`${title}マスタがありません`;
+}
+function masterChangeSummary(row){
+  if(row.operation!=="UPDATE")return row.operation==="INSERT"?"新規登録":"無効化・削除";
+  const before=row.old_data||{};
+  const after=row.new_data||{};
+  const changed=[...new Set([...Object.keys(before),...Object.keys(after)])]
+    .filter(key=>!['updated_at'].includes(key)&&JSON.stringify(before[key])!==JSON.stringify(after[key]));
+  return changed.length?`変更: ${changed.join(", ")}`:"更新（値の差分なし）";
+}
+async function loadMasterChangeHistory(){
+  const panel=document.getElementById("master-change-history");
+  if(!panel)return;
+  panel.style.display="block";
+  panel.innerHTML='<div class="hint">更新履歴を読み込み中...</div>';
+  if(!dbReady||!supabaseClient){panel.innerHTML='<div class="hint">先にDBへログインしてください。</div>';return}
+  const {data,error}=await supabaseClient
+    .from("master_change_log")
+    .select("table_name,record_key,operation,old_data,new_data,changed_by,changed_at")
+    .order("changed_at",{ascending:false})
+    .limit(200);
+  if(error){
+    panel.innerHTML=`<div class="hint">更新履歴を取得できません。master-protection-migration.sql を実行してください。<br>${esc(error.message||"")}</div>`;
+    return;
+  }
+  const labels={product_master:"商品",product_price_contracts:"契約価格",customer_master:"得意先",supplier_master:"仕入先",importer_master:"輸入社"};
+  panel.innerHTML=(data||[]).length?(data||[]).map(row=>{
+    const when=row.changed_at?new Date(row.changed_at).toLocaleString("ja-JP"):"";
+    const actor=row.changed_by?String(row.changed_by).slice(0,8):"不明";
+    return `<div class="master-item" style="grid-template-columns:150px 110px minmax(0,1fr)"><b>${esc(when)}</b><div>${esc(labels[row.table_name]||row.table_name)}<br><span class="sub">${esc(row.operation)}</span></div><div>${esc(row.record_key)}<br><span class="sub">${esc(masterChangeSummary(row))} / 操作者 ${esc(actor)}</span></div></div>`;
+  }).join(""):'<div class="hint">更新履歴はまだありません。</div>';
 }
 function exportMasters(){
   const masters=getMasters()[masterType]||[];
@@ -7020,6 +7069,7 @@ function importMastersCsv(input){
   const file=input.files?.[0];
   input.value="";
   if(!file)return;
+  if(!currentUserIsAdmin()){alert("マスタCSVの取り込みは管理者のみ可能です。");return}
   const importType=masterType;
   const reader=new FileReader();
   reader.onload=async ()=>{
@@ -7356,3 +7406,4 @@ init();
 </script>
 </body>
 </html>
+
