@@ -1398,8 +1398,28 @@ async function openSavedSession(sessionId){
   subscribeCurrentSession();
   toast("保存済み作業を開きました");
 }
+function sessionRowsUiSignature(){
+  return JSON.stringify(rows.map(r=>[
+    r._idx,r._qty,r._unit,r._net,r._box,r._memo,!!r._stockout,
+    r.customer,r.product_id,r.product_name,r.unit,r.csv_qty,r.en_name,r.sci_name,
+    r.origin,r.unit_price,r.importer_id,r.country
+  ]));
+}
+function sessionBoxesUiSignature(){
+  const values=[];
+  Object.keys(boxMap||{}).sort().forEach(imp=>{
+    Object.keys(boxMap[imp]||{}).sort().forEach(bn=>{
+      const b=boxMap[imp][bn]||{};
+      values.push([imp,bn,b.gross,b.dry_ice,!!b.dry_ice_enabled,b.box_size]);
+    });
+  });
+  return JSON.stringify(values);
+}
+var lastSessionRefreshHadUiChanges=true;
 async function refreshCurrentSessionFromSupabase(){
   if(!currentSessionId||!supabaseClient)return true;
+  const rowsBefore=sessionRowsUiSignature();
+  const boxesBefore=sessionBoxesUiSignature();
   const {data:lineData,error:lineError}=await supabaseClient.from("order_lines").select("*").eq("session_id",currentSessionId).order("source_row_no",{ascending:true});
   if(lineError){toast("最新明細の取得エラー: "+lineError.message);return false}
   const {data:boxData,error:boxError}=await supabaseClient.from("boxes").select("*").eq("session_id",currentSessionId);
@@ -1410,6 +1430,8 @@ async function refreshCurrentSessionFromSupabase(){
     if(!boxMap[b.importer_code])boxMap[b.importer_code]={};
     boxMap[b.importer_code][b.box_no]={gross:b.gross_weight??"",dry_ice:b.dry_ice_weight??"",dry_ice_enabled:!!b.dry_ice_enabled,box_size:b.box_size||""};
   });
+  lastSessionRefreshHadUiChanges=rowsBefore!==sessionRowsUiSignature()||boxesBefore!==sessionBoxesUiSignature();
+  if(!lastSessionRefreshHadUiChanges)return true;
   buildP1Tabs();
   if(currentPhase===2)buildP2();
   return true;
@@ -2097,9 +2119,9 @@ function switchPhase(n){
 }
 function captureTabScrollPositions(){
   const positions={windowX:window.scrollX||0,windowY:window.scrollY||0,elements:{}};
-  document.querySelectorAll(".country-tabs,.customer-tabs,.table-scroll,.sales-ref-table-wrap,.import-review-table-wrap").forEach((el,index)=>{
+  document.querySelectorAll(".country-tabs,.customer-tabs,.table-scroll,.sales-ref-table-wrap,.import-review-table-wrap").forEach(el=>{
     const parent=el.closest(".country-panel,.customer-panel,.sales-ref-main,.import-review-panel");
-    const key=el.id||`${parent?.id||"scroll"}:${el.className}:${index}`;
+    const key=el.id||`${parent?.id||"scroll"}:${el.className}`;
     positions.elements[key]={left:el.scrollLeft||0,top:el.scrollTop||0};
   });
   return positions;
@@ -2107,9 +2129,9 @@ function captureTabScrollPositions(){
 function restoreTabScrollPositions(positions){
   if(!positions)return;
   const restore=()=>{
-    document.querySelectorAll(".country-tabs,.customer-tabs,.table-scroll,.sales-ref-table-wrap,.import-review-table-wrap").forEach((el,index)=>{
+    document.querySelectorAll(".country-tabs,.customer-tabs,.table-scroll,.sales-ref-table-wrap,.import-review-table-wrap").forEach(el=>{
       const parent=el.closest(".country-panel,.customer-panel,.sales-ref-main,.import-review-panel");
-      const key=el.id||`${parent?.id||"scroll"}:${el.className}:${index}`;
+      const key=el.id||`${parent?.id||"scroll"}:${el.className}`;
       const saved=positions.elements?.[key];
       if(saved){
         el.scrollLeft=saved.left||0;
@@ -2128,8 +2150,10 @@ const __refreshCurrentSessionFromSupabaseBase=refreshCurrentSessionFromSupabase;
 refreshCurrentSessionFromSupabase=async function(){
   const tabScrollPositions=captureTabScrollPositions();
   const ok=await __refreshCurrentSessionFromSupabaseBase();
-  if(ok&&currentPhase===1.5)buildP15();
-  restoreTabScrollPositions(tabScrollPositions);
+  if(ok&&lastSessionRefreshHadUiChanges){
+    if(currentPhase===1.5)buildP15();
+    restoreTabScrollPositions(tabScrollPositions);
+  }
   return ok;
 };
 const __applyRemoteOrderLineBase=applyRemoteOrderLine;
