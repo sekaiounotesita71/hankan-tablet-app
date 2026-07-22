@@ -2064,10 +2064,13 @@ function handleP15Key(event,rowIdx,field){
   }
 }
 let p15RefreshTimer=null;
+function p15EntryActive(){
+  return currentPhase===1.5&&document.activeElement?.classList.contains("p15-input");
+}
 function scheduleP15Refresh(){
   clearTimeout(p15RefreshTimer);
   const refresh=()=>{
-    if(document.activeElement?.classList.contains("p15-input")){
+    if(p15EntryActive()){
       p15RefreshTimer=setTimeout(refresh,250);
       return;
     }
@@ -2151,8 +2154,12 @@ refreshCurrentSessionFromSupabase=async function(){
   const tabScrollPositions=captureTabScrollPositions();
   const ok=await __refreshCurrentSessionFromSupabaseBase();
   if(ok&&lastSessionRefreshHadUiChanges){
-    if(currentPhase===1.5)buildP15();
-    restoreTabScrollPositions(tabScrollPositions);
+    const keepP15Editor=p15EntryActive();
+    if(currentPhase===1.5){
+      if(keepP15Editor)scheduleP15Refresh();
+      else buildP15();
+    }
+    if(!keepP15Editor)restoreTabScrollPositions(tabScrollPositions);
   }
   return ok;
 };
@@ -2166,7 +2173,10 @@ applyRemoteOrderLine=function(dbRow){
     }
   }
   __applyRemoteOrderLineBase(dbRow);
-  if(currentPhase===1.5)buildP15();
+  if(currentPhase===1.5){
+    if(p15EntryActive())scheduleP15Refresh();
+    else buildP15();
+  }
 };
 var autoRefreshTimer=null;
 var autoRefreshInFlight=false;
@@ -2841,7 +2851,8 @@ let deferredRemoteOrderLines=new Map();
 let deferredRemoteBoxes=new Map();
 let deferredRemoteRenderTimer=null;
 function inlineEntryActive(){
-  return document.activeElement?.classList.contains("inline-work-input");
+  const active=document.activeElement;
+  return active?.classList.contains("inline-work-input")||active?.classList.contains("p15-input");
 }
 function scheduleDeferredRemoteRender(){
   clearTimeout(deferredRemoteRenderTimer);
