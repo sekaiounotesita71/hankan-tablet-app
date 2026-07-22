@@ -2266,8 +2266,28 @@ function stopDeleteKey(){
 function ndel(){
   deleteOneDigit();
 }
+function orderExportRowsByCustomerAndBox(targetRows){
+  const customerOrder=new Map();
+  targetRows.forEach(r=>{
+    const customer=String(r.customer||"");
+    if(!customerOrder.has(customer))customerOrder.set(customer,customerOrder.size);
+  });
+  return targetRows.map((row,index)=>({row,index})).sort((a,b)=>{
+    const customerDiff=customerOrder.get(String(a.row.customer||""))-customerOrder.get(String(b.row.customer||""));
+    if(customerDiff)return customerDiff;
+    const boxA=a.row._stockout?"":exportBoxNo(a.row._box);
+    const boxB=b.row._stockout?"":exportBoxNo(b.row._box);
+    if(boxA&&boxB){
+      const boxDiff=boxA.localeCompare(boxB,"ja",{numeric:true,sensitivity:"base"});
+      if(boxDiff)return boxDiff;
+    }else if(boxA)return -1;
+    else if(boxB)return 1;
+    return a.index-b.index;
+  }).map(item=>item.row);
+}
 function buildExportPayload(country,pendingEntries=[]){
   const targetRows=country?rows.filter(r=>r.country===country):rows;
+  const orderedTargetRows=orderExportRowsByCustomerAndBox(targetRows);
   const d=new Date().toISOString().slice(0,10).replace(/-/g,"");
   const headers=["商品コード","エンドユーザー店名","ケース番号","温度帯","商品名","英名・学術名","packing","産地","No of BOX","現場入力数量","現場入力単位","NET重量","グロス重量","単価","金額","メモ","欠品"];
   const seenBoxes={},netTotals={};
@@ -2277,7 +2297,7 @@ function buildExportPayload(country,pendingEntries=[]){
     const key=`${importerCode(r.importer_id)}__${boxNo}`;
     netTotals[key]=(netTotals[key]||0)+(parseFloat(r._net)||0);
   });
-  const p1data=targetRows.map(r=>{
+  const baseP1data=orderedTargetRows.map(r=>{
     const imp=importerCode(r.importer_id),boxNo=exportBoxNo(r._box),boxKey=`${imp}_${boxNo}`,isFirst=boxNo&&!seenBoxes[boxKey];
     if(boxNo)seenBoxes[boxKey]=true;
     const gross=isFirst?(boxMap[imp]?.[boxNo]?.gross||""):"";
@@ -2287,7 +2307,16 @@ function buildExportPayload(country,pendingEntries=[]){
     const enSci=[r.en_name,r.sci_name].filter(Boolean).join(" / ");
     return{"商品コード":r.product_id,"エンドユーザー店名":r.customer,"ケース番号":r._stockout?"":boxNo,"温度帯":"","商品名":r.product_name,"英名・学術名":enSci,"packing":"","産地":r.origin||"","No of BOX":"","現場入力数量":qty,"現場入力単位":r._stockout?"":r._unit,"NET重量":r._stockout||r._net===""?"":Number(r._net),"グロス重量":r._stockout?"":(gross===""?"":Number(gross)),"単価":price,"金額":amount,"メモ":r._memo,"欠品":r._stockout?"欠品":""};
   });
-  p1data.push(...pendingEntries.map(pendingInvoiceExportRow));
+  const combinedP1data=[...baseP1data,...pendingEntries.map(pendingInvoiceExportRow)];
+  const exportCustomerOrder=new Map();
+  combinedP1data.forEach(row=>{
+    const customer=String(row["エンドユーザー店名"]||"");
+    if(!exportCustomerOrder.has(customer))exportCustomerOrder.set(customer,exportCustomerOrder.size);
+  });
+  const p1data=combinedP1data.map((row,index)=>({row,index})).sort((a,b)=>{
+    const customerDiff=exportCustomerOrder.get(String(a.row["エンドユーザー店名"]||""))-exportCustomerOrder.get(String(b.row["エンドユーザー店名"]||""));
+    return customerDiff||a.index-b.index;
+  }).map(item=>item.row);
   const targetImporters=[...new Set(targetRows.map(r=>importerCode(r.importer_id)))].sort();
   const p2Sheets=targetImporters.map(imp=>{
     const bm=boxMap[imp]||{};
