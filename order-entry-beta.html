@@ -5021,7 +5021,8 @@ function arStatementDocumentHtml(snapshot,issue){
   const profile=snapshot.profile;
   const address=String(profile.address_text||"").split(/\r?\n/).map(line=>esc(line)).join("<br>");
   const compact=snapshot.charges.length+snapshot.payments.length>10?" compact":"";
-  const logoUrl=window.YUMIRUME_SOA_LOGO||"";
+  const logoScript=document.querySelector("script[data-soa-logo]")?.textContent||"";
+  const logoUrl=window.YUMIRUME_SOA_LOGO||logoScript.match(/"(data:image\/jpeg;base64,[^"]+)"/)?.[1]||"";
   return `<!doctype html><html><head><meta charset="utf-8"><title>SOA ${esc(snapshot.importerCode)} ${esc(snapshot.range.from)}-${esc(snapshot.range.to)}</title>
   <style>
   @page{size:A4 portrait;margin:9mm}
