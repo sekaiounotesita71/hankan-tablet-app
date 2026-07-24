@@ -6,7 +6,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./i18n.js?v=20260724-ar"></script>
+<script src="./i18n.js?v=20260724-soa"></script>
+<script src="./soa-logo.js?v=20260724"></script>
 <title>受注登録</title>
 <style>
 :root{
@@ -45,7 +46,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
-.ar-tools{display:grid;grid-template-columns:230px 160px 150px minmax(220px,1fr) auto auto;gap:8px;align-items:end}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}
+.ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
 @media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}}
 </style>
 </head>
@@ -308,6 +309,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
         <button class="btn" type="button" onclick="loadReceivables()">売掛読込</button>
         <button class="btn primary" type="button" onclick="syncSalesToReceivables()">売上確定を反映</button>
+        <button class="btn blue" type="button" onclick="printStatementOfAccount()">SOA出力</button>
       </div>
       <div class="hint" id="ar-state">売上確定データから輸入社別の売掛を作成できます。</div>
       <div class="ar-summary" id="ar-summary"></div>
@@ -362,6 +364,23 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           </div>
         </details>
       </div>
+      <details class="ar-entry ar-statement-profile">
+        <summary>SOA請求先情報</summary>
+        <div class="ar-entry-body">
+          <div class="ar-form">
+            <label>輸入社コード<input id="ar-statement-importer-code" list="importer-code-list" class="ime-en" autocomplete="off"></label>
+            <label class="wide">請求先名<input id="ar-statement-customer-name" class="ime-en" autocomplete="off"></label>
+            <label class="full">住所<textarea id="ar-statement-address" class="ime-en" autocomplete="off" placeholder="改行して複数行入力できます"></textarea></label>
+            <label>電話番号<input id="ar-statement-phone" class="ime-en" autocomplete="off"></label>
+            <label>通貨<input id="ar-statement-currency" class="ime-en" value="JPY" autocomplete="off"></label>
+          </div>
+          <div class="actions" style="margin-top:8px">
+            <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter()">選択輸入社を読込</button>
+            <button class="btn primary" type="button" onclick="saveStatementProfile()">請求先情報を保存</button>
+          </div>
+          <div class="hint" id="ar-statement-profile-state">SOAへ表示する輸入社別の請求先名・住所・電話番号を保存します。</div>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -515,6 +534,7 @@ let salesReferenceSessions=[];
 let receivableRows=[];
 let receivablePayments=[];
 let receivablesLoaded=false;
+let receivableStatementProfile=null;
 let productGuideRows=[];
 let productGuideTemplates=[];
 let productGuideVariants=[];
@@ -4738,6 +4758,371 @@ async function deleteReceivable(id){
   if(error){alert(arDbErrorMessage(error));return}
   if(val("ar-payment-receivable-id")===id)clearReceivablePaymentForm();
   await loadReceivables();
+}
+function arStatementProfileElements(){
+  return {
+    importerCode:document.getElementById("ar-statement-importer-code"),
+    customerName:document.getElementById("ar-statement-customer-name"),
+    address:document.getElementById("ar-statement-address"),
+    phone:document.getElementById("ar-statement-phone"),
+    currency:document.getElementById("ar-statement-currency"),
+    state:document.getElementById("ar-statement-profile-state")
+  };
+}
+function clearStatementProfileForm(importerCode=""){
+  const elements=arStatementProfileElements();
+  const importer=getMasters().importers.find(item=>normalizeImporterCode(item.code)===normalizeImporterCode(importerCode));
+  if(elements.importerCode)elements.importerCode.value=normalizeImporterCode(importerCode);
+  if(elements.customerName)elements.customerName.value=importer?.name||"";
+  if(elements.address)elements.address.value="";
+  if(elements.phone)elements.phone.value="";
+  if(elements.currency)elements.currency.value="JPY";
+  receivableStatementProfile=null;
+}
+async function loadStatementProfile(importerCode,options={}){
+  const code=normalizeImporterCode(importerCode);
+  const elements=arStatementProfileElements();
+  if(!code){
+    if(!options.silent)alert("輸入社コードを選択してください。");
+    return null;
+  }
+  const user=await ensureCurrentUser();
+  if(!user){
+    if(!options.silent)alert("ログインしてください。");
+    return null;
+  }
+  if(elements.state)elements.state.textContent="請求先情報を読込中...";
+  const {data,error}=await initSupabase()
+    .from("accounts_receivable_statement_profiles")
+    .select("*")
+    .eq("importer_code",code)
+    .maybeSingle();
+  if(error){
+    if(elements.state)elements.state.textContent=arDbErrorMessage(error);
+    if(!options.silent)alert(arDbErrorMessage(error));
+    return null;
+  }
+  if(!data){
+    clearStatementProfileForm(code);
+    if(elements.state)elements.state.textContent="未登録です。請求先名・住所・電話番号を入力して保存してください。";
+    return null;
+  }
+  receivableStatementProfile=data;
+  if(elements.importerCode)elements.importerCode.value=data.importer_code||code;
+  if(elements.customerName)elements.customerName.value=data.customer_name||"";
+  if(elements.address)elements.address.value=data.address_text||"";
+  if(elements.phone)elements.phone.value=data.phone||"";
+  if(elements.currency)elements.currency.value=data.currency||"JPY";
+  if(elements.state)elements.state.textContent=`${data.importer_code} の請求先情報を読み込みました。`;
+  return data;
+}
+async function loadStatementProfileFromSelectedImporter(silent=false){
+  const code=normalizeImporterCode(val("ar-importer")||val("ar-statement-importer-code"));
+  return loadStatementProfile(code,{silent});
+}
+async function saveStatementProfile(){
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  const importerCode=normalizeImporterCode(val("ar-statement-importer-code")||val("ar-importer"));
+  const customerName=val("ar-statement-customer-name").trim();
+  const address=val("ar-statement-address").trim();
+  const phone=val("ar-statement-phone").trim();
+  if(!importerCode||!customerName||!address){
+    alert("輸入社コード・請求先名・住所を入力してください。");
+    return;
+  }
+  const payload={
+    importer_code:importerCode,
+    customer_name:customerName,
+    address_text:address,
+    phone,
+    currency:val("ar-statement-currency").trim().toUpperCase()||"JPY",
+    updated_by:user.id
+  };
+  if(!receivableStatementProfile)payload.created_by=user.id;
+  const {data,error}=await initSupabase()
+    .from("accounts_receivable_statement_profiles")
+    .upsert(payload,{onConflict:"importer_code"})
+    .select("*")
+    .single();
+  if(error){alert(arDbErrorMessage(error));return}
+  receivableStatementProfile=data;
+  const state=arStatementProfileElements().state;
+  if(state)state.textContent=`${importerCode} の請求先情報を保存しました。`;
+}
+function arStatementDate(value){
+  const date=String(value||"").slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return date;
+  return `${date.slice(2,4)}.${date.slice(5,7)}.${date.slice(8,10)}`;
+}
+function arStatementMoney(value){
+  return arNumber(value).toLocaleString("en-US",{maximumFractionDigits:2});
+}
+function arStatementRecords(importerCode){
+  const code=normalizeImporterCode(importerCode);
+  return receivableRows.filter(row=>normalizeImporterCode(row.importer_code)===code);
+}
+async function arAssignInvoiceNumbers(rows){
+  const salesRows=rows.filter(row=>row.source_type==="sales");
+  const byDate=new Map();
+  salesRows.forEach(row=>{
+    const date=String(row.invoice_date||"").slice(0,10);
+    const list=byDate.get(date)||[];
+    list.push(row);
+    byDate.set(date,list);
+  });
+  const client=initSupabase();
+  for(const [date,list] of byDate){
+    const prefix=date.replace(/-/g,"");
+    const used=new Set();
+    list.forEach(row=>{
+      const match=String(row.invoice_no||"").match(new RegExp(`^${prefix}(\\d{3})$`));
+      if(match)used.add(Number(match[1]));
+    });
+    const missing=list.filter(row=>!row.invoice_no).sort((a,b)=>String(a.source_key||a.id).localeCompare(String(b.source_key||b.id)));
+    for(const row of missing){
+      let suffix=1;
+      while(used.has(suffix))suffix++;
+      const invoiceNo=`${prefix}${String(suffix).padStart(3,"0")}`;
+      const {error}=await client.from("accounts_receivable").update({invoice_no:invoiceNo,updated_by:currentUser?.id||null}).eq("id",row.id);
+      if(error)throw error;
+      row.invoice_no=invoiceNo;
+      used.add(suffix);
+    }
+  }
+}
+function arStatementSnapshot(importerCode,range,profile){
+  const records=arStatementRecords(importerCode);
+  const recordMap=new Map(records.map(row=>[row.id,row]));
+  const beforeRecords=records.filter(row=>String(row.invoice_date||"")<range.from);
+  const beforeIds=new Set(beforeRecords.map(row=>row.id));
+  const beforeCharges=beforeRecords.reduce((sum,row)=>sum+arNumber(row.amount_jpy),0);
+  const beforeSettled=receivablePayments
+    .filter(payment=>beforeIds.has(payment.receivable_id)&&String(payment.payment_date||"")<range.from)
+    .reduce((sum,payment)=>sum+arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy),0);
+  const carryover=arRound(beforeCharges-beforeSettled);
+  const charges=records
+    .filter(row=>String(row.invoice_date||"")>=range.from&&String(row.invoice_date||"")<=range.to)
+    .sort((a,b)=>String(a.invoice_date).localeCompare(String(b.invoice_date))||String(a.invoice_no||a.id).localeCompare(String(b.invoice_no||b.id)));
+  const payments=receivablePayments
+    .filter(payment=>{
+      const date=String(payment.payment_date||"");
+      return recordMap.has(payment.receivable_id)&&date>=range.from&&date<=range.to;
+    })
+    .sort((a,b)=>String(a.payment_date).localeCompare(String(b.payment_date))||String(a.id).localeCompare(String(b.id)));
+  const chargeAmount=charges.reduce((sum,row)=>sum+arNumber(row.amount_jpy),0);
+  const paymentAmount=payments.reduce((sum,payment)=>sum+arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy),0);
+  return {
+    importerCode:normalizeImporterCode(importerCode),
+    range,
+    profile,
+    charges,
+    payments,
+    carryover:arRound(carryover),
+    chargeAmount:arRound(chargeAmount),
+    paymentAmount:arRound(paymentAmount),
+    totalAmount:arRound(carryover+chargeAmount-paymentAmount)
+  };
+}
+async function arSaveStatementIssue(snapshot,user){
+  const client=initSupabase();
+  const baseQuery=()=>client.from("accounts_receivable_statements")
+    .select("*")
+    .eq("importer_code",snapshot.importerCode)
+    .eq("period_from",snapshot.range.from)
+    .eq("period_to",snapshot.range.to);
+  const existingResult=await baseQuery().maybeSingle();
+  if(existingResult.error)throw existingResult.error;
+  const payload={
+    importer_code:snapshot.importerCode,
+    period_from:snapshot.range.from,
+    period_to:snapshot.range.to,
+    carryover_amount_jpy:snapshot.carryover,
+    charge_amount_jpy:snapshot.chargeAmount,
+    payment_amount_jpy:snapshot.paymentAmount,
+    total_amount_jpy:snapshot.totalAmount,
+    snapshot:{
+      customer:snapshot.profile,
+      charges:snapshot.charges.map(row=>({
+        id:row.id,
+        invoice_date:row.invoice_date,
+        invoice_no:row.invoice_no,
+        net_sales_jpy:row.net_sales_jpy,
+        shipping_amount_jpy:row.shipping_amount_jpy,
+        adjustment_amount_jpy:row.adjustment_amount_jpy,
+        amount_jpy:row.amount_jpy
+      })),
+      payments:snapshot.payments.map(payment=>({
+        id:payment.id,
+        payment_date:payment.payment_date,
+        amount_jpy:payment.amount_jpy,
+        bank_fee_jpy:payment.bank_fee_jpy,
+        reference_no:payment.reference_no
+      }))
+    },
+    issued_by:user.id,
+    issued_at:new Date().toISOString()
+  };
+  if(existingResult.data){
+    const {data,error}=await client.from("accounts_receivable_statements")
+      .update(payload)
+      .eq("id",existingResult.data.id)
+      .select("*")
+      .single();
+    if(error)throw error;
+    return data;
+  }
+  const {data,error}=await client.from("accounts_receivable_statements")
+    .insert(payload)
+    .select("*")
+    .single();
+  if(error){
+    if(error.code==="23505"){
+      const retry=await baseQuery().single();
+      if(retry.error)throw retry.error;
+      return retry.data;
+    }
+    throw error;
+  }
+  return data;
+}
+function arStatementRowsHtml(snapshot){
+  const events=[];
+  snapshot.charges.forEach(row=>events.push({date:row.invoice_date,type:"charge",row}));
+  snapshot.payments.forEach(payment=>events.push({date:payment.payment_date,type:"payment",payment}));
+  events.sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.type==="charge"?-1:1));
+  const rows=[];
+  events.forEach(event=>{
+    if(event.type==="payment"){
+      const payment=event.payment;
+      const reference=payment.reference_no?` - ${payment.reference_no}`:"";
+      const settled=arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy);
+      rows.push(`<tr><td>${esc(arStatementDate(payment.payment_date))}</td><td>Payment${esc(reference)}</td><td class="amount">-${esc(arStatementMoney(settled))}</td></tr>`);
+      return;
+    }
+    const row=event.row;
+    const isOpening=row.source_type==="opening";
+    if(isOpening){
+      rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Opening Balance${row.invoice_no?` No.${esc(row.invoice_no)}`:""}</td><td class="amount">${esc(arStatementMoney(row.amount_jpy))}</td></tr>`);
+      return;
+    }
+    const net=arNumber(row.net_sales_jpy);
+    const shipping=arNumber(row.shipping_amount_jpy);
+    const adjustment=arNumber(row.adjustment_amount_jpy);
+    rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Export Invoice No.${esc(row.invoice_no||"")}</td><td class="amount">${esc(arStatementMoney(net))}</td></tr>`);
+    if(Math.abs(shipping)>.005)rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Shipping Fee</td><td class="amount">${esc(arStatementMoney(shipping))}</td></tr>`);
+    if(Math.abs(adjustment)>.005)rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Adjustment</td><td class="amount">${esc(arStatementMoney(adjustment))}</td></tr>`);
+    rows.push(`<tr class="subtotal"><td></td><td>【TOTAL】</td><td class="amount">＜ ${esc(arStatementMoney(row.amount_jpy))} ＞</td></tr>`);
+  });
+  rows.push(`<tr class="grand-total"><td></td><td>【TOTAL AMOUNT】</td><td class="amount">${esc(arStatementMoney(snapshot.totalAmount))}</td></tr>`);
+  return rows.join("");
+}
+function arStatementDocumentHtml(snapshot,issue){
+  const profile=snapshot.profile;
+  const address=String(profile.address_text||"").split(/\r?\n/).map(line=>esc(line)).join("<br>");
+  const compact=snapshot.charges.length+snapshot.payments.length>10?" compact":"";
+  const logoUrl=window.YUMIRUME_SOA_LOGO||"";
+  return `<!doctype html><html><head><meta charset="utf-8"><title>SOA ${esc(snapshot.importerCode)} ${esc(snapshot.range.from)}-${esc(snapshot.range.to)}</title>
+  <style>
+  @page{size:A4 portrait;margin:9mm}
+  *{box-sizing:border-box}
+  body{margin:0;color:#111;background:#fff;font-family:"Courier New","Yu Gothic",monospace;font-size:9.5pt;line-height:1.17}
+  .print-action{margin:0 0 5mm;padding:8px 14px;font-weight:700}
+  .sheet{position:relative;min-height:277mm;padding:3mm 5mm 0}
+  .title{text-align:center;font-family:"Times New Roman",serif;font-size:18pt;letter-spacing:7px;margin:0 0 5mm}
+  .serial{position:absolute;right:5mm;top:0;font-family:"Times New Roman",serif;font-size:11pt}
+  .header{display:grid;grid-template-columns:58% 42%;gap:4mm;min-height:55mm}
+  .customer{display:grid;grid-template-columns:25mm 1fr;gap:2mm}.customer-label{padding-top:1px}.customer-name{font-size:11pt;margin-bottom:2mm}.customer-address{min-height:16mm;line-height:1.24}.customer-phone{margin-top:2mm}
+  .logo{text-align:right;height:25mm}.logo img{width:33mm;height:auto}.bank{margin-top:0;font-size:8.3pt;line-height:1.15}
+  .company{margin:1mm 0 2mm 15mm;font-size:8.5pt;line-height:1.2}.company-name{font-family:"Times New Roman",serif;font-size:12pt;letter-spacing:4px;margin-bottom:1mm}
+  .balance-head{display:grid;grid-template-columns:1fr auto;gap:8mm;align-items:end;margin:0 0 3mm}.carry{display:flex;justify-content:space-between;max-width:108mm}.total-label{font-size:11pt}.total-value{font-size:11pt;white-space:nowrap}
+  table{width:100%;border-collapse:separate;border-spacing:0;border:1.4px solid #111;border-radius:3px;overflow:hidden}
+  th,td{padding:.8mm 2.5mm;vertical-align:top}th{font-family:"Times New Roman",serif;font-weight:400;text-align:center;border-bottom:1px solid #111}
+  th+th,td+td{border-left:1px solid #111}th:nth-child(1){width:24mm}th:nth-child(3){width:39mm}
+  td.amount{text-align:right;white-space:nowrap}.subtotal td{padding-top:.2mm;padding-bottom:1.25mm}.subtotal td:nth-child(2){text-align:center;font-weight:700}.grand-total td{padding-top:1.4mm;font-weight:700}.grand-total td:nth-child(2){text-align:center}
+  .compact{font-size:8.8pt}.compact .header{min-height:52mm}.compact th,.compact td{padding-top:.6mm;padding-bottom:.6mm}.compact .subtotal td{padding-top:.15mm;padding-bottom:.9mm}
+  @media print{.print-action{display:none}.sheet{min-height:0}}
+  </style></head><body class="${compact.trim()}">
+  <button class="print-action" onclick="window.print()">Print / Save PDF</button>
+  <main class="sheet">
+    <div class="serial">No. ${esc(issue.statement_no)} &nbsp;&nbsp;&nbsp;&nbsp; Page. 1</div>
+    <h1 class="title">STATEMENT OF ACCOUNT</h1>
+    <section class="header">
+      <div>
+        <div class="customer">
+          <div class="customer-label">Customer</div>
+          <div>
+            <div class="customer-name">${esc(profile.customer_name)}</div>
+            <div class="customer-address">${address}</div>
+            ${profile.phone?`<div class="customer-phone">Tel:${esc(profile.phone)}</div>`:""}
+          </div>
+        </div>
+        <div class="company">
+          <div class="company-name">YUMIRUME INC.</div>
+          <div>2-2-11, Nihonbashinishi, Naniwa-ku, Osaka-City, JAPAN 556-0004</div>
+          <div>TEL+81-6-6537-9994&nbsp;&nbsp;FAX+81-6-6536-8496</div>
+          <div>Email:info@yumirume.co.jp</div>
+          <div>Website:https://www.yumirume.co.jp</div>
+        </div>
+      </div>
+      <div>
+        <div class="logo"><img src="${esc(logoUrl)}" alt="YUMIRUME INC."></div>
+        <div class="bank">Our desired bank account given below:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Bank Name:Resona Bank,Ltd<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;SWIFT CODE:DIWAJPJT<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Branch CODE:113<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Branch NAME:Ueroku Branch<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Branch Address:〒543-0001 6-5-13,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Uehonmachi,Tennoji-Ku,Osaka-City<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Account NAME:YUMIRUME INC.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Branch PHONE:+84-6-6772-1151<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Account No:0412610</div>
+      </div>
+    </section>
+    <div class="balance-head">
+      <div>
+        <div class="carry"><span>【Carryover amount】</span><span>${esc(arStatementMoney(snapshot.carryover))} ${esc(profile.currency||"JPY")}</span></div>
+        <div class="total-label">TOTAL AMOUNT</div>
+      </div>
+      <div class="total-value">${esc(arStatementMoney(snapshot.totalAmount))} ${esc(profile.currency||"JPY")}</div>
+    </div>
+    <table>
+      <thead><tr><th>Date</th><th>Invoice No.</th><th>Amount</th></tr></thead>
+      <tbody>${arStatementRowsHtml(snapshot)}</tbody>
+    </table>
+  </main></body></html>`;
+}
+async function printStatementOfAccount(){
+  const printWindow=window.open("","_blank");
+  if(!printWindow){alert("印刷画面を開けません。ポップアップを許可してください。");return}
+  printWindow.document.write('<!doctype html><html><body style="font-family:sans-serif;padding:24px">SOAを作成しています...</body></html>');
+  printWindow.document.close();
+  try{
+    const user=await ensureCurrentUser();
+    if(!user)throw new Error("ログインしてください。");
+    const range=salesRefDateRangeFromText(val("ar-date-range"));
+    const importerCode=normalizeImporterCode(val("ar-importer"));
+    if(!range.from||!range.to)throw new Error("請求期間を 20260701-20260731 の形式で入力してください。");
+    if(!importerCode)throw new Error("SOAを出力する輸入社コードを選択してください。");
+    if(!receivablesLoaded)await loadReceivables();
+    if(!receivablesLoaded)throw new Error("売掛データを読み込めません。");
+    const records=arStatementRecords(importerCode);
+    await arAssignInvoiceNumbers(records.filter(row=>String(row.invoice_date||"")<=range.to));
+    const profile=await loadStatementProfile(importerCode,{silent:true});
+    if(!profile)throw new Error(`${importerCode} のSOA請求先情報を先に登録してください。`);
+    const snapshot=arStatementSnapshot(importerCode,range,profile);
+    if(!snapshot.charges.length&&!snapshot.payments.length&&Math.abs(snapshot.carryover)<.005){
+      throw new Error("指定期間にSOAへ出力する売掛・入金がありません。");
+    }
+    const issue=await arSaveStatementIssue(snapshot,user);
+    printWindow.document.open();
+    printWindow.document.write(arStatementDocumentHtml(snapshot,issue));
+    printWindow.document.close();
+    printWindow.focus();
+  }catch(error){
+    printWindow.close();
+    alert(arDbErrorMessage(error));
+  }
 }
 function initialWorkspaceTab(){
   const hash=String(location.hash||"").replace(/^#/,"");
