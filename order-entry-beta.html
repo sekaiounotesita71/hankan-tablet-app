@@ -562,6 +562,7 @@ let confirmedBatches=[];
 let pendingEntries=[];
 let salesReferenceRows=[];
 let salesReferenceSessions=[];
+let salesReferenceImporterIndex=null;
 let receivableRows=[];
 let receivablePayments=[];
 let receivableClosings=[];
@@ -1795,9 +1796,13 @@ function salesRefSessionShippingFee(sessionId,importerCodes){
   if(!session)return 0;
   const fees=salesRefShippingFeesObject(session.shipping_fees);
   if(fees){
-    const codes=importerCodes&&importerCodes.size?importerCodes:new Set(Object.keys(fees));
+    const codes=importerCodes&&importerCodes.size?new Set([...importerCodes].map(value=>
+      /^(?:master|raw):/.test(value)?value:salesRefImporterIdentity(value).key
+    )):null;
     let total=0;
-    codes.forEach(code=>{total+=salesRefNum(fees[code])});
+    Object.entries(fees).forEach(([code,amount])=>{
+      if(!codes||codes.has(salesRefImporterIdentity(code).key))total+=salesRefNum(amount);
+    });
     return total;
   }
   return salesRefNum(session.shipping_fee);
@@ -1807,7 +1812,8 @@ function salesRefShippingFeeForRows(rows){
   rows.forEach(row=>{
     if(!row.session_id)return;
     const set=importersBySession.get(row.session_id)||new Set();
-    if(row.importer_code)set.add(row.importer_code);
+    const importerKey=salesRefRowImporter(row).key;
+    if(importerKey&&importerKey!=="未設定")set.add(importerKey);
     importersBySession.set(row.session_id,set);
   });
   let total=0;
@@ -1818,6 +1824,89 @@ function salesRefShippingFeeForRows(rows){
 }
 function salesRefText(value){
   return value===null||value===undefined?"":String(value);
+}
+function salesRefImporterNameKey(value){
+  return salesRefText(value)
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/株式会社|有限会社|合同会社|（株）|\(株\)/g,"")
+    .replace(/[\s_\-‐‑‒–—―・･.,，．、。()（）[\]【】「」『』]+/g,"");
+}
+function salesRefBuildImporterIndex(){
+  const byCode=new Map();
+  const byName=new Map();
+  getMasters().importers.forEach(item=>{
+    const codeKey=normalizeImporterCode(item.code);
+    if(codeKey&&!byCode.has(codeKey))byCode.set(codeKey,item);
+    [item.name,...(item.aliases||[])].forEach(value=>{
+      const nameKey=salesRefImporterNameKey(value);
+      if(nameKey&&!byName.has(nameKey))byName.set(nameKey,item);
+      const aliasCodeKey=normalizeImporterCode(value);
+      if(aliasCodeKey&&/^[A-Z0-9]+$/.test(aliasCodeKey)&&!byCode.has(aliasCodeKey))byCode.set(aliasCodeKey,item);
+    });
+  });
+  return {byCode,byName};
+}
+function salesRefImporterIdentity(source,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  const isObject=source&&typeof source==="object";
+  const rawCode=salesRefText(isObject?(source.importer_code||source.importerCode||""):source).trim();
+  const rawName=salesRefText(isObject?(source.importer_name||source.importer_name_snapshot||source.importerName||""):"").trim();
+  const candidates=[rawCode,rawName].filter(Boolean);
+  let master=null;
+  for(const value of candidates){
+    const codeKey=normalizeImporterCode(value);
+    if(codeKey&&index.byCode.has(codeKey)){
+      master=index.byCode.get(codeKey);
+      break;
+    }
+  }
+  if(!master){
+    for(const value of candidates){
+      const nameKey=salesRefImporterNameKey(value);
+      if(nameKey&&index.byName.has(nameKey)){
+        master=index.byName.get(nameKey);
+        break;
+      }
+    }
+  }
+  const code=salesRefText(master?.code||rawCode).trim();
+  const name=salesRefText(master?.name||rawName).trim();
+  const masterKey=normalizeImporterCode(master?.code);
+  const fallbackKey=salesRefImporterNameKey(code||name);
+  const key=masterKey?`master:${masterKey}`:(fallbackKey?`raw:${fallbackKey}`:"");
+  const label=[code,name].filter((value,indexValue,list)=>
+    value&&(indexValue===0||salesRefImporterNameKey(value)!==salesRefImporterNameKey(list[0]))
+  ).join(" / ");
+  return {
+    key:key||"未設定",
+    code,
+    name,
+    label:label||code||name||"未設定",
+    search:[code,name,rawCode,rawName].filter(Boolean).join(" ").toLowerCase()
+  };
+}
+function salesRefNormalizeRowImporter(row,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  const identity=salesRefImporterIdentity(row,index);
+  return {
+    ...row,
+    _sales_importer_key:identity.key,
+    _sales_importer_code:identity.code,
+    _sales_importer_name:identity.name,
+    _sales_importer_label:identity.label,
+    _sales_importer_search:identity.search
+  };
+}
+function salesRefRowImporter(row){
+  if(row?._sales_importer_key){
+    return {
+      key:row._sales_importer_key,
+      code:row._sales_importer_code||"",
+      name:row._sales_importer_name||"",
+      label:row._sales_importer_label||row._sales_importer_code||row.importer_code||"未設定",
+      search:row._sales_importer_search||""
+    };
+  }
+  return salesRefImporterIdentity(row);
 }
 function salesRefDbErrorMessage(error){
   const msg=String(error?.message||error||"");
@@ -2146,12 +2235,13 @@ function salesRefFilteredRows(options={}){
   const to=options.ignoreDate?"":(options.to??inputRange.to);
   return salesReferenceRows.filter(row=>{
     const d=salesRefDateOnly(row.finalized_at);
+    const importerIdentity=salesRefRowImporter(row);
     if(from&&d<from)return false;
     if(to&&d>to)return false;
-    if(importer&&!salesRefText(row.importer_code).toLowerCase().includes(importer))return false;
+    if(importer&&!importerIdentity.search.includes(importer))return false;
     if(!q)return true;
     return [
-      row.store_name,row.product_id,row.product_name,row.importer_code,row.origin,row.box_no,row.memo
+      row.store_name,row.product_id,row.product_name,importerIdentity.label,row.origin,row.box_no,row.memo
     ].some(v=>salesRefText(v).toLowerCase().includes(q));
   });
 }
@@ -2485,12 +2575,13 @@ async function loadSalesReferenceBoard(){
         throw historyError;
       }
     }
+    salesReferenceImporterIndex=salesRefBuildImporterIndex();
     const sessionMap=new Map(salesReferenceSessions.map(session=>[session.id,session]));
     const currentRows=allRows.map(row=>{
       const session=sessionMap.get(row.session_id);
-      return {...row,source_type:"現場確定",finalized_at:row.finalized_at||session?.finalized_at||session?.updated_at||session?.created_at||""};
+      return salesRefNormalizeRowImporter({...row,source_type:"現場確定",finalized_at:row.finalized_at||session?.finalized_at||session?.updated_at||session?.created_at||""},salesReferenceImporterIndex);
     });
-    const pastRows=historicalRows.map(row=>({...row,source_type:"過去データ",session_id:row.session_id||""}));
+    const pastRows=historicalRows.map(row=>salesRefNormalizeRowImporter({...row,source_type:"過去データ",session_id:row.session_id||""},salesReferenceImporterIndex));
     salesReferenceRows=[...currentRows,...pastRows].sort((a,b)=>String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
     if(state)state.textContent=`売上データ ${salesReferenceRows.length}件を読み込みました。${shippingWarning?` 送料情報: ${shippingWarning}`:""}`;
     renderSalesReferenceBoard();
@@ -2516,7 +2607,7 @@ function renderSalesReferenceBoard(){
   const shippingSales=salesRefShippingFeeForRows(rows);
   const totalSales=netSales+shippingSales;
   const totalNet=rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0);
-  const importers=new Set(rows.map(row=>row.importer_code).filter(Boolean));
+  const importers=new Set(rows.map(row=>salesRefRowImporter(row).key).filter(key=>key&&key!=="未設定"));
   const customers=new Set(rows.map(row=>row.store_name).filter(Boolean));
   summary.innerHTML=[
     ["総売上",salesRefMoney(totalSales)],
@@ -2530,7 +2621,7 @@ function renderSalesReferenceBoard(){
   ranks.innerHTML=[
     salesRefRankHtml("日別売上",salesRefDailySalesRows(rows),"総売上"),
     salesRefRankHtml("月別売上",salesRefGroupTotalSales(rows,row=>salesRefMonth(row.finalized_at)),"総売上"),
-    salesRefRankHtml("輸入社別",salesRefGroupTotalSales(rows,row=>row.importer_code),"総売上"),
+    salesRefRankHtml("輸入社別",salesRefGroupTotalSales(rows,row=>salesRefRowImporter(row).label),"総売上"),
     salesRefRankHtml("商品別上位",salesRefGroup(rows,row=>`${row.product_id||""} ${row.product_name||""}`.trim()),"純売上")
   ].join("");
   if(!rows.length){
@@ -2540,7 +2631,7 @@ function renderSalesReferenceBoard(){
   table.innerHTML=`<table class="sales-table"><thead><tr>
     <th>区分</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th>
   </tr></thead><tbody>${rows.map(row=>`<tr>
-    <td>${esc(row.source_type||"現場確定")}</td><td>${esc(salesRefDateOnly(row.finalized_at))}</td><td>${esc(row.importer_code)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
+    <td>${esc(row.source_type||"現場確定")}</td><td>${esc(salesRefDateOnly(row.finalized_at))}</td><td>${esc(salesRefRowImporter(row).label)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
     <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(row.amount))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
   </tr>`).join("")}</tbody></table>`;
 }
@@ -2553,7 +2644,7 @@ function exportSalesReferenceBoardExcel(){
   const data=rows.map(row=>({
     "区分":row.source_type||"現場確定",
     "日付":salesRefDateOnly(row.finalized_at),
-    "輸入社":row.importer_code||"",
+    "輸入社":salesRefRowImporter(row).label,
     "得意先":row.store_name||"",
     "商品コード":row.product_id||"",
     "商品名":row.product_name||"",
