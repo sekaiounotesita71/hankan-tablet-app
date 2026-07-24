@@ -47,7 +47,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
+.ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 120px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}
 @media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}}
+@media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
 </style>
 </head>
 <body>
@@ -293,10 +295,10 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-head"><span>売掛管理</span></div>
     <div class="panel-body">
       <div class="ar-tools">
-        <label>請求日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731"></label>
-        <label>輸入社<input id="ar-importer" list="importer-code-list" placeholder="空欄=ALL"></label>
+        <label>請求日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderReceivables()"></label>
+        <label>輸入社<input id="ar-importer" list="importer-code-list" placeholder="空欄=ALL" oninput="renderReceivables();scheduleClosingPreview()"></label>
         <label>状態
-          <select id="ar-status">
+          <select id="ar-status" onchange="renderReceivables()">
             <option value="open" selected>未回収すべて</option>
             <option value="">全件</option>
             <option value="unpaid">未入金</option>
@@ -365,7 +367,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         </details>
       </div>
       <details class="ar-entry ar-statement-profile">
-        <summary>SOA請求先情報</summary>
+        <summary>請求先・締め条件マスタ</summary>
         <div class="ar-entry-body">
           <div class="ar-form">
             <label>輸入社コード<input id="ar-statement-importer-code" list="importer-code-list" class="ime-en" autocomplete="off"></label>
@@ -373,12 +375,41 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             <label class="full">住所<textarea id="ar-statement-address" class="ime-en" autocomplete="off" placeholder="改行して複数行入力できます"></textarea></label>
             <label>電話番号<input id="ar-statement-phone" class="ime-en" autocomplete="off"></label>
             <label>通貨<input id="ar-statement-currency" class="ime-en" value="JPY" autocomplete="off"></label>
+            <label>締め日<input id="ar-statement-closing-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
+            <label>支払月
+              <select id="ar-statement-payment-month-offset">
+                <option value="0">当月</option>
+                <option value="1" selected>翌月</option>
+                <option value="2">翌々月</option>
+                <option value="3">3か月後</option>
+              </select>
+            </label>
+            <label>支払日<input id="ar-statement-payment-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
           </div>
           <div class="actions" style="margin-top:8px">
             <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter()">選択輸入社を読込</button>
-            <button class="btn primary" type="button" onclick="saveStatementProfile()">請求先情報を保存</button>
+            <button class="btn primary" type="button" onclick="saveStatementProfile()">請求条件を保存</button>
           </div>
-          <div class="hint" id="ar-statement-profile-state">SOAへ表示する輸入社別の請求先名・住所・電話番号を保存します。</div>
+          <div class="hint" id="ar-statement-profile-state">締め日・支払日は1～31で登録します。31は月末として扱います。</div>
+        </div>
+      </details>
+      <details class="ar-entry ar-statement-profile" open>
+        <summary>請求締め</summary>
+        <div class="ar-entry-body">
+          <div class="ar-closing-grid">
+            <label>対象月<input id="ar-closing-month" type="month" onchange="renderClosingPreview()"></label>
+            <div class="hint">上部の輸入社を選択すると、マスタの締め条件から期間と支払期限を自動計算します。</div>
+            <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter().then(()=>renderClosingPreview())">条件を再読込</button>
+            <button class="btn primary" type="button" onclick="closeAccountsReceivablePeriod()">請求締めを実行</button>
+            <div class="ar-closing-preview">
+              <div class="ar-summary-card"><div class="ar-summary-label">締め期間</div><div class="ar-summary-value" id="ar-closing-period" style="font-size:15px">-</div></div>
+              <div class="ar-summary-card"><div class="ar-summary-label">支払期限</div><div class="ar-summary-value" id="ar-closing-due-date" style="font-size:15px">-</div></div>
+              <div class="ar-summary-card"><div class="ar-summary-label">今回請求</div><div class="ar-summary-value" id="ar-closing-charge">¥0</div></div>
+              <div class="ar-summary-card"><div class="ar-summary-label">締め後残高</div><div class="ar-summary-value" id="ar-closing-balance">¥0</div></div>
+            </div>
+          </div>
+          <div class="hint" id="ar-closing-state">対象月と輸入社を選択してください。</div>
+          <div class="ar-closing-history" id="ar-closing-history"><div class="sales-empty">請求締め履歴は売掛読込後に表示されます。</div></div>
         </div>
       </details>
     </div>
@@ -533,6 +564,7 @@ let salesReferenceRows=[];
 let salesReferenceSessions=[];
 let receivableRows=[];
 let receivablePayments=[];
+let receivableClosings=[];
 let receivablesLoaded=false;
 let receivableStatementProfile=null;
 let productGuideRows=[];
@@ -659,6 +691,7 @@ async function loadCurrentUserRole(){
     }
   }catch(e){}
   renderMasters();
+  renderClosingHistory();
 }
 function dbErrorMessage(error){
   const msg=String(error?.message||error||"");
@@ -4273,6 +4306,9 @@ function arDbErrorMessage(error){
   if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(message)){
     return "売掛管理用SQLの反映待ちです。SQLを再実行するか、少し待って再読込してください。";
   }
+  if(/請求締め済み|締め済み|締め解除/i.test(message)){
+    return message;
+  }
   return message||"売掛データの処理でエラーが発生しました。";
 }
 function arCustomerNames(row){
@@ -4355,12 +4391,13 @@ function renderReceivables(){
   }
   const selectedId=val("ar-payment-receivable-id");
   table.innerHTML=`<table class="ar-table">
-    <thead><tr><th>請求日</th><th>Invoice</th><th>輸入社</th><th>得意先</th><th>請求額</th><th>消込額</th><th>売掛残</th><th>支払期限</th><th>状態</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
+    <thead><tr><th>請求日</th><th>Invoice</th><th>輸入社</th><th>得意先</th><th>請求額</th><th>消込額</th><th>売掛残</th><th>支払期限</th><th>状態</th><th>締め</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
     <tbody>${enriched.slice(0,2000).map(row=>{
       const customers=arCustomerNames(row).join(" / ")||row.customer_name||"";
       const freee=row.freee_excluded?"計上済":(row.freee_exported_at?"出力済":"未出力");
-      const canDelete=currentUserIsAdmin()&&["opening","manual","adjustment"].includes(row.source_type);
-      return `<tr class="${selectedId===row.id?"selected":""}">
+      const canDelete=currentUserIsAdmin()&&!row.closing_id&&["opening","manual","adjustment"].includes(row.source_type);
+      const rowClass=[selectedId===row.id?"selected":"",row.closing_id?"locked":""].filter(Boolean).join(" ");
+      return `<tr class="${rowClass}">
         <td>${esc(row.invoice_date||"")}</td>
         <td>${esc(row.invoice_no||"-")}</td>
         <td><b>${esc(row.importer_code||"")}</b>${row.importer_name?` ${esc(row.importer_name)}`:""}</td>
@@ -4370,6 +4407,7 @@ function renderReceivables(){
         <td class="ar-money">${esc(salesRefMoney(row._state.balance)||"0")}</td>
         <td>${esc(row.due_date||"-")}</td>
         <td><span class="ar-status ${esc(row._state.key)}">${esc(row._state.label)}</span></td>
+        <td>${row.closing_id?'<span class="ar-lock">締め済</span>':"-"}</td>
         <td>${esc(arSourceLabel(row.source_type))}</td>
         <td>${esc(freee)}</td>
         <td><button class="small primary" type="button" onclick="selectReceivableForPayment('${esc(row.id)}')">入金</button>${canDelete?` <button class="small danger" type="button" onclick="deleteReceivable('${esc(row.id)}')">削除</button>`:""}</td>
@@ -4398,6 +4436,7 @@ async function loadReceivables(){
   if(!user){
     receivableRows=[];
     receivablePayments=[];
+    receivableClosings=[];
     receivablesLoaded=false;
     if(state)state.textContent="ログインしてください。";
     renderReceivables();
@@ -4405,18 +4444,23 @@ async function loadReceivables(){
   }
   if(state)state.textContent="売掛データを読込中...";
   try{
-    const [rows,payments]=await Promise.all([
+    const [rows,payments,closings]=await Promise.all([
       arReadAll("accounts_receivable","invoice_date"),
-      arReadAll("accounts_receivable_payments","payment_date")
+      arReadAll("accounts_receivable_payments","payment_date"),
+      arReadAll("accounts_receivable_closings","period_to")
     ]);
     receivableRows=rows;
     receivablePayments=payments;
+    receivableClosings=closings;
     receivablesLoaded=true;
     renderReceivables();
     renderReceivablePaymentHistory();
+    renderClosingHistory();
+    renderClosingPreview();
   }catch(error){
     receivableRows=[];
     receivablePayments=[];
+    receivableClosings=[];
     receivablesLoaded=false;
     if(state)state.textContent=arDbErrorMessage(error);
     renderReceivables();
@@ -4766,6 +4810,9 @@ function arStatementProfileElements(){
     address:document.getElementById("ar-statement-address"),
     phone:document.getElementById("ar-statement-phone"),
     currency:document.getElementById("ar-statement-currency"),
+    closingDay:document.getElementById("ar-statement-closing-day"),
+    paymentMonthOffset:document.getElementById("ar-statement-payment-month-offset"),
+    paymentDay:document.getElementById("ar-statement-payment-day"),
     state:document.getElementById("ar-statement-profile-state")
   };
 }
@@ -4777,6 +4824,9 @@ function clearStatementProfileForm(importerCode=""){
   if(elements.address)elements.address.value="";
   if(elements.phone)elements.phone.value="";
   if(elements.currency)elements.currency.value="JPY";
+  if(elements.closingDay)elements.closingDay.value="31";
+  if(elements.paymentMonthOffset)elements.paymentMonthOffset.value="1";
+  if(elements.paymentDay)elements.paymentDay.value="31";
   receivableStatementProfile=null;
 }
 async function loadStatementProfile(importerCode,options={}){
@@ -4813,7 +4863,11 @@ async function loadStatementProfile(importerCode,options={}){
   if(elements.address)elements.address.value=data.address_text||"";
   if(elements.phone)elements.phone.value=data.phone||"";
   if(elements.currency)elements.currency.value=data.currency||"JPY";
+  if(elements.closingDay)elements.closingDay.value=String(data.closing_day||31);
+  if(elements.paymentMonthOffset)elements.paymentMonthOffset.value=String(data.payment_month_offset??1);
+  if(elements.paymentDay)elements.paymentDay.value=String(data.payment_day||31);
   if(elements.state)elements.state.textContent=`${data.importer_code} の請求先情報を読み込みました。`;
+  renderClosingPreview();
   return data;
 }
 async function loadStatementProfileFromSelectedImporter(silent=false){
@@ -4823,12 +4877,21 @@ async function loadStatementProfileFromSelectedImporter(silent=false){
 async function saveStatementProfile(){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
+  await loadCurrentUserRole();
+  if(!currentUserIsAdmin()){alert("請求条件マスタを更新できるのは管理者のみです。");return}
   const importerCode=normalizeImporterCode(val("ar-statement-importer-code")||val("ar-importer"));
   const customerName=val("ar-statement-customer-name").trim();
   const address=val("ar-statement-address").trim();
   const phone=val("ar-statement-phone").trim();
+  const closingDay=Math.trunc(arNumber(val("ar-statement-closing-day")));
+  const paymentMonthOffset=Math.trunc(arNumber(val("ar-statement-payment-month-offset")));
+  const paymentDay=Math.trunc(arNumber(val("ar-statement-payment-day")));
   if(!importerCode||!customerName||!address){
     alert("輸入社コード・請求先名・住所を入力してください。");
+    return;
+  }
+  if(closingDay<1||closingDay>31||paymentDay<1||paymentDay>31||paymentMonthOffset<0||paymentMonthOffset>12){
+    alert("締め日・支払日は1～31、支払月は当月以降で設定してください。");
     return;
   }
   const payload={
@@ -4837,6 +4900,9 @@ async function saveStatementProfile(){
     address_text:address,
     phone,
     currency:val("ar-statement-currency").trim().toUpperCase()||"JPY",
+    closing_day:closingDay,
+    payment_month_offset:paymentMonthOffset,
+    payment_day:paymentDay,
     updated_by:user.id
   };
   if(!receivableStatementProfile)payload.created_by=user.id;
@@ -4848,7 +4914,238 @@ async function saveStatementProfile(){
   if(error){alert(arDbErrorMessage(error));return}
   receivableStatementProfile=data;
   const state=arStatementProfileElements().state;
-  if(state)state.textContent=`${importerCode} の請求先情報を保存しました。`;
+  if(state)state.textContent=`${importerCode} の請求先・締め条件を保存しました。`;
+  const importerFilter=document.getElementById("ar-importer");
+  if(importerFilter&&!importerFilter.value)importerFilter.value=importerCode;
+  renderClosingPreview();
+}
+function arMonthDay(month,day,monthOffset=0){
+  const match=String(month||"").match(/^(\d{4})-(\d{2})$/);
+  if(!match)return "";
+  const baseYear=Number(match[1]);
+  const baseMonth=Number(match[2])-1+monthOffset;
+  const first=new Date(Date.UTC(baseYear,baseMonth,1));
+  const year=first.getUTCFullYear();
+  const monthIndex=first.getUTCMonth();
+  const lastDay=new Date(Date.UTC(year,monthIndex+1,0)).getUTCDate();
+  const targetDay=Math.min(Math.max(1,Math.trunc(arNumber(day))||31),lastDay);
+  return `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(targetDay).padStart(2,"0")}`;
+}
+function arClosingCalculation(){
+  const importerCode=normalizeImporterCode(val("ar-importer"));
+  const month=val("ar-closing-month");
+  const profile=receivableStatementProfile;
+  if(!importerCode||!month)return {error:"対象月と輸入社を選択してください。"};
+  if(!profile||normalizeImporterCode(profile.importer_code)!==importerCode){
+    return {error:`${importerCode} の請求条件を読み込んでください。`};
+  }
+  const closingDay=Math.min(31,Math.max(1,Math.trunc(arNumber(profile.closing_day))||31));
+  const paymentDay=Math.min(31,Math.max(1,Math.trunc(arNumber(profile.payment_day))||31));
+  const paymentMonthOffset=Math.max(0,Math.trunc(arNumber(profile.payment_month_offset)));
+  const periodTo=arMonthDay(month,closingDay);
+  const priorClosings=receivableClosings
+    .filter(row=>normalizeImporterCode(row.importer_code)===importerCode&&row.status==="closed"&&String(row.period_to)<periodTo)
+    .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to)));
+  const previousPeriodTo=priorClosings[0]?.period_to||arMonthDay(month,closingDay,-1);
+  const periodFrom=arShiftDate(previousPeriodTo,1);
+  const dueDate=arMonthDay(month,paymentDay,paymentMonthOffset);
+  if(periodFrom>periodTo)return {error:"前回締め日が対象月より後です。対象月を確認してください。"};
+  const existing=receivableClosings.find(row=>
+    normalizeImporterCode(row.importer_code)===importerCode&&
+    row.status==="closed"&&
+    !(String(row.period_to)<periodFrom||String(row.period_from)>periodTo)
+  );
+  const range={from:periodFrom,to:periodTo,raw:`${periodFrom}-${periodTo}`};
+  const snapshot=receivablesLoaded?arStatementSnapshot(importerCode,range,profile):null;
+  return {importerCode,month,profile,range,dueDate,snapshot,existing};
+}
+function renderClosingPreview(){
+  const period=document.getElementById("ar-closing-period");
+  const dueDate=document.getElementById("ar-closing-due-date");
+  const charge=document.getElementById("ar-closing-charge");
+  const balance=document.getElementById("ar-closing-balance");
+  const state=document.getElementById("ar-closing-state");
+  if(!period||!dueDate||!charge||!balance||!state)return;
+  const calculation=arClosingCalculation();
+  if(calculation.error){
+    period.textContent="-";
+    dueDate.textContent="-";
+    charge.textContent="¥0";
+    balance.textContent="¥0";
+    state.textContent=calculation.error;
+    renderClosingHistory();
+    return;
+  }
+  period.textContent=`${calculation.range.from} ～ ${calculation.range.to}`;
+  dueDate.textContent=calculation.dueDate;
+  charge.textContent=`¥${salesRefMoney(calculation.snapshot?.chargeAmount||0)||"0"}`;
+  balance.textContent=`¥${salesRefMoney(calculation.snapshot?.totalAmount||0)||"0"}`;
+  if(calculation.existing){
+    state.textContent=`この期間は締め済みです。SOA No.${calculation.existing.snapshot?.statement_no||"-"}`;
+  }else if(!receivablesLoaded){
+    state.textContent="「売掛読込」を押すと締め金額を確認できます。";
+  }else{
+    state.textContent=`繰越 ¥${salesRefMoney(calculation.snapshot.carryover)||"0"} / 入金等 ¥${salesRefMoney(calculation.snapshot.paymentAmount)||"0"}`;
+  }
+  renderClosingHistory();
+}
+function scheduleClosingPreview(){
+  clearTimeout(window.__arClosingPreviewTimer);
+  window.__arClosingPreviewTimer=setTimeout(async()=>{
+    const code=normalizeImporterCode(val("ar-importer"));
+    if(!code){
+      clearStatementProfileForm("");
+      renderClosingPreview();
+      return;
+    }
+    const exactImporter=getMasters().importers.some(item=>normalizeImporterCode(item.code)===code)
+      ||receivableRows.some(row=>normalizeImporterCode(row.importer_code)===code);
+    if(!exactImporter){
+      renderClosingPreview();
+      return;
+    }
+    if(normalizeImporterCode(receivableStatementProfile?.importer_code)!==code){
+      await loadStatementProfile(code,{silent:true});
+    }
+    renderClosingPreview();
+  },350);
+}
+function renderClosingHistory(){
+  const container=document.getElementById("ar-closing-history");
+  if(!container)return;
+  const importerCode=normalizeImporterCode(val("ar-importer"));
+  const rows=receivableClosings
+    .filter(row=>!importerCode||normalizeImporterCode(row.importer_code)===importerCode)
+    .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to))||String(b.closed_at).localeCompare(String(a.closed_at)))
+    .slice(0,100);
+  if(!rows.length){
+    container.innerHTML='<div class="sales-empty">請求締め履歴はありません。</div>';
+    return;
+  }
+  container.innerHTML=rows.map(row=>{
+    const statementNo=row.snapshot?.statement_no||"-";
+    const status=row.status==="closed"?"締め済":"解除済";
+    const note=row.status==="reopened"
+      ?`解除理由: ${row.reopen_reason||"-"}`
+      :`締め日時: ${String(row.closed_at||"").replace("T"," ").slice(0,16)}`;
+    const reopenButton=currentUserIsAdmin()&&row.status==="closed"
+      ?`<button class="small danger" type="button" onclick="reopenAccountsReceivablePeriod('${esc(row.id)}')">締め解除</button>`
+      :"";
+    return `<div class="ar-closing-row ${row.status==="reopened"?"reopened":""}">
+      <b>${esc(row.importer_code)}</b>
+      <span>${esc(row.period_from)} ～ ${esc(row.period_to)}</span>
+      <span>期限 ${esc(row.due_date)}</span>
+      <span class="ar-closing-amount">¥${esc(salesRefMoney(row.closing_balance_jpy)||"0")}</span>
+      <span class="ar-status ${row.status==="closed"?"paid":""}">${esc(status)}</span>
+      <span title="${esc(note)}">SOA No.${esc(statementNo)} / ${esc(note)}</span>
+      ${reopenButton}
+    </div>`;
+  }).join("");
+}
+function arClosingSnapshotPayload(snapshot,issue,dueDate){
+  return {
+    statement_no:issue.statement_no,
+    statement_id:issue.id,
+    due_date:dueDate,
+    profile:snapshot.profile,
+    range:snapshot.range,
+    carryover:snapshot.carryover,
+    charge_amount:snapshot.chargeAmount,
+    payment_amount:snapshot.paymentAmount,
+    total_amount:snapshot.totalAmount,
+    charges:snapshot.charges.map(row=>({
+      id:row.id,
+      invoice_date:row.invoice_date,
+      invoice_no:row.invoice_no,
+      amount_jpy:row.amount_jpy
+    })),
+    payments:snapshot.payments.map(payment=>({
+      id:payment.id,
+      payment_date:payment.payment_date,
+      amount_jpy:payment.amount_jpy,
+      bank_fee_jpy:payment.bank_fee_jpy
+    }))
+  };
+}
+async function closeAccountsReceivablePeriod(){
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  if(!receivablesLoaded)await loadReceivables();
+  if(!receivablesLoaded)return;
+  const calculation=arClosingCalculation();
+  if(calculation.error){alert(calculation.error);return}
+  if(calculation.existing){alert("この期間はすでに請求締め済みです。");return}
+  const records=arStatementRecords(calculation.importerCode);
+  try{
+    setAppBusy(true,"請求締めを実行しています。");
+    await arAssignInvoiceNumbers(records.filter(row=>String(row.invoice_date||"")<=calculation.range.to));
+    const snapshot=arStatementSnapshot(calculation.importerCode,calculation.range,calculation.profile);
+    if(!snapshot.charges.length&&!snapshot.payments.length&&Math.abs(snapshot.carryover)<.005){
+      throw new Error("締め対象の売掛・入金・繰越残高がありません。");
+    }
+    const message=[
+      `${calculation.importerCode} を請求締めします。`,
+      `期間: ${calculation.range.from} ～ ${calculation.range.to}`,
+      `今回請求: ¥${salesRefMoney(snapshot.chargeAmount)||"0"}`,
+      `入金等: ¥${salesRefMoney(snapshot.paymentAmount)||"0"}`,
+      `締め後残高: ¥${salesRefMoney(snapshot.totalAmount)||"0"}`,
+      `支払期限: ${calculation.dueDate}`,
+      "",
+      "締め後は明細がロックされます。実行しますか？"
+    ].join("\n");
+    setAppBusy(false);
+    if(!confirm(message))return;
+    setAppBusy(true,"SOAを保存して明細をロックしています。");
+    const issue=await arSaveStatementIssue(snapshot,user);
+    const {data,error}=await initSupabase().rpc("close_accounts_receivable_period",{
+      p_importer_code:calculation.importerCode,
+      p_period_from:calculation.range.from,
+      p_period_to:calculation.range.to,
+      p_due_date:calculation.dueDate,
+      p_statement_id:issue.id,
+      p_carryover_amount_jpy:snapshot.carryover,
+      p_charge_amount_jpy:snapshot.chargeAmount,
+      p_payment_amount_jpy:snapshot.paymentAmount,
+      p_closing_balance_jpy:snapshot.totalAmount,
+      p_snapshot:arClosingSnapshotPayload(snapshot,issue,calculation.dueDate)
+    });
+    if(error)throw error;
+    const dateRange=document.getElementById("ar-date-range");
+    if(dateRange)dateRange.value=`${calculation.range.from.replace(/-/g,"")}-${calculation.range.to.replace(/-/g,"")}`;
+    await loadReceivables();
+    alert(`請求締めが完了しました。\nSOA No.${issue.statement_no}\n上部の「SOA出力」からPDFを確認できます。`);
+    return data;
+  }catch(error){
+    alert(arDbErrorMessage(error));
+  }finally{
+    setAppBusy(false);
+  }
+}
+async function reopenAccountsReceivablePeriod(closingId){
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  await loadCurrentUserRole();
+  if(!currentUserIsAdmin()){alert("請求締めを解除できるのは管理者のみです。");return}
+  const closing=receivableClosings.find(row=>row.id===closingId);
+  if(!closing||closing.status!=="closed")return;
+  const reason=prompt(`${closing.importer_code} ${closing.period_from}～${closing.period_to}\n締め解除の理由を入力してください。`,"");
+  if(reason===null)return;
+  if(!reason.trim()){alert("締め解除の理由は必須です。");return}
+  if(!confirm("締めを解除すると対象明細を修正できる状態に戻します。続けますか？"))return;
+  setAppBusy(true,"請求締めを解除しています。");
+  try{
+    const {error}=await initSupabase().rpc("reopen_accounts_receivable_period",{
+      p_closing_id:closingId,
+      p_reason:reason.trim()
+    });
+    if(error)throw error;
+    await loadReceivables();
+    alert("請求締めを解除しました。解除理由と履歴はDBに保存されています。");
+  }catch(error){
+    alert(arDbErrorMessage(error));
+  }finally{
+    setAppBusy(false);
+  }
 }
 function arStatementDate(value){
   const date=String(value||"").slice(0,10);
@@ -4926,6 +5223,20 @@ function arStatementSnapshot(importerCode,range,profile){
 }
 async function arSaveStatementIssue(snapshot,user){
   const client=initSupabase();
+  const activeClosing=receivableClosings.find(row=>
+    normalizeImporterCode(row.importer_code)===snapshot.importerCode&&
+    row.period_from===snapshot.range.from&&
+    row.period_to===snapshot.range.to&&
+    row.status==="closed"
+  );
+  if(activeClosing?.statement_id){
+    const {data,error}=await client.from("accounts_receivable_statements")
+      .select("*")
+      .eq("id",activeClosing.statement_id)
+      .single();
+    if(error)throw error;
+    return data;
+  }
   const baseQuery=()=>client.from("accounts_receivable_statements")
     .select("*")
     .eq("importer_code",snapshot.importerCode)
@@ -5168,6 +5479,7 @@ function init(){
   document.getElementById("report-filter-date").value=today();
   document.getElementById("ar-opening-invoice-date").value=today();
   document.getElementById("ar-payment-date").value=today();
+  document.getElementById("ar-closing-month").value=today().slice(0,7);
   const guideYear=document.getElementById("product-guide-year");
   if(guideYear&&!guideYear.value)guideYear.value=new Date().getFullYear();
   const guideRange=document.getElementById("product-guide-range");
