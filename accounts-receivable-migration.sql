@@ -389,13 +389,14 @@ drop policy if exists "authenticated can insert statement profiles"
   on public.accounts_receivable_statement_profiles;
 create policy "authenticated can insert statement profiles"
 on public.accounts_receivable_statement_profiles for insert to authenticated
-with check (true);
+with check (public.is_master_admin());
 
 drop policy if exists "authenticated can update statement profiles"
   on public.accounts_receivable_statement_profiles;
 create policy "authenticated can update statement profiles"
 on public.accounts_receivable_statement_profiles for update to authenticated
-using (true) with check (true);
+using (public.is_master_admin())
+with check (public.is_master_admin());
 
 drop policy if exists "admins can delete statement profiles"
   on public.accounts_receivable_statement_profiles;
