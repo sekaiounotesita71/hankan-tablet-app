@@ -45,7 +45,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
-@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%}.app-nav-link{flex:1}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary{grid-template-columns:1fr}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap{max-height:420px}}
+.ar-tools{display:grid;grid-template-columns:230px 160px 150px minmax(220px,1fr) auto auto;gap:8px;align-items:end}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}
+@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -56,6 +57,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <nav class="app-nav" aria-label="アプリ切替">
       <a class="app-nav-link" href="./index.html">作業アプリ</a>
       <button class="app-nav-link" type="button" data-workspace-tab="sales" onclick="switchWorkspaceTab('sales')">売上参照</button>
+      <button class="app-nav-link" type="button" data-workspace-tab="receivables" onclick="switchWorkspaceTab('receivables')">売掛管理</button>
       <button class="app-nav-link" type="button" data-workspace-tab="guide" onclick="switchWorkspaceTab('guide')">商品案内</button>
       <button class="app-nav-link active" type="button" data-workspace-tab="orders" onclick="switchWorkspaceTab('orders')">発注入力</button>
       <button class="app-nav-link" type="button" data-workspace-tab="masters" onclick="switchWorkspaceTab('masters')">マスタ</button>
@@ -286,6 +288,83 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
+  <section class="panel workspace-panel" data-workspace-panel="receivables" id="accounts-receivable-panel" style="margin-top:12px">
+    <div class="panel-head"><span>売掛管理</span></div>
+    <div class="panel-body">
+      <div class="ar-tools">
+        <label>請求日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731"></label>
+        <label>輸入社<input id="ar-importer" list="importer-code-list" placeholder="空欄=ALL"></label>
+        <label>状態
+          <select id="ar-status">
+            <option value="open" selected>未回収すべて</option>
+            <option value="">全件</option>
+            <option value="unpaid">未入金</option>
+            <option value="partial">一部入金</option>
+            <option value="overdue">期限超過</option>
+            <option value="paid">入金済</option>
+            <option value="overpaid">過入金</option>
+          </select>
+        </label>
+        <label>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
+        <button class="btn" type="button" onclick="loadReceivables()">売掛読込</button>
+        <button class="btn primary" type="button" onclick="syncSalesToReceivables()">売上確定を反映</button>
+      </div>
+      <div class="hint" id="ar-state">売上確定データから輸入社別の売掛を作成できます。</div>
+      <div class="ar-summary" id="ar-summary"></div>
+      <div class="ar-table-wrap" id="ar-table"><div class="sales-empty">「売掛読込」を押してください。</div></div>
+
+      <div class="ar-entry-grid">
+        <details class="ar-entry">
+          <summary>初期残高を登録</summary>
+          <div class="ar-entry-body">
+            <div class="ar-form">
+              <label>輸入社コード<input id="ar-opening-importer-code" list="importer-code-list" class="ime-en" autocomplete="off" oninput="fillReceivableImporterName()"></label>
+              <label class="wide">輸入社名<input id="ar-opening-importer-name" class="ime-ja" autocomplete="off"></label>
+              <label>得意先コード<input id="ar-opening-customer-code" class="ime-en" autocomplete="off"></label>
+              <label class="wide">得意先名<input id="ar-opening-customer-name" class="ime-ja" autocomplete="off"></label>
+              <label>Invoice番号<input id="ar-opening-invoice-no" class="ime-en" autocomplete="off"></label>
+              <label>請求日<input id="ar-opening-invoice-date" type="date"></label>
+              <label>支払期限<input id="ar-opening-due-date" type="date"></label>
+              <label>通貨<input id="ar-opening-currency" class="ime-en" value="JPY" autocomplete="off"></label>
+              <label>外貨金額<input id="ar-opening-foreign-amount" inputmode="decimal"></label>
+              <label>為替<input id="ar-opening-exchange-rate" inputmode="decimal"></label>
+              <label>円換算残高<input id="ar-opening-amount" inputmode="decimal"></label>
+              <label class="wide">メモ<input id="ar-opening-memo" class="ime-ja" autocomplete="off"></label>
+              <label class="ar-check"><input id="ar-opening-freee-excluded" type="checkbox" checked>freee計上済み</label>
+            </div>
+            <div class="actions" style="margin-top:8px">
+              <button class="btn primary" type="button" onclick="saveOpeningReceivable()">初期残高を登録</button>
+              <button class="btn" type="button" onclick="document.getElementById('ar-opening-file').click()">初期残高CSV</button>
+              <button class="btn" type="button" onclick="downloadOpeningReceivableSample()">CSV見本</button>
+              <input id="ar-opening-file" type="file" accept=".csv,text/csv" style="display:none" onchange="importOpeningReceivablesCsv(this)">
+            </div>
+            <div class="hint">初期残高は管理者のみ登録できます。freeeに既に計上済みの残高は、会計CSVの対象外として保存します。</div>
+          </div>
+        </details>
+
+        <details class="ar-entry" open>
+          <summary>入金を登録</summary>
+          <div class="ar-entry-body">
+            <input id="ar-payment-receivable-id" type="hidden">
+            <div class="hint" id="ar-payment-target">一覧から対象の「入金」を押してください。</div>
+            <div class="ar-form">
+              <label>入金日<input id="ar-payment-date" type="date"></label>
+              <label>入金額<input id="ar-payment-amount" inputmode="decimal"></label>
+              <label>振込手数料<input id="ar-payment-fee" inputmode="decimal" value="0"></label>
+              <label>振込番号・摘要<input id="ar-payment-reference" class="ime-en" autocomplete="off"></label>
+              <label class="wide">メモ<input id="ar-payment-memo" class="ime-ja" autocomplete="off"></label>
+            </div>
+            <div class="actions" style="margin-top:8px">
+              <button class="btn primary" type="button" onclick="saveReceivablePayment()">入金を登録</button>
+              <button class="btn" type="button" onclick="clearReceivablePaymentForm()">選択解除</button>
+            </div>
+            <div class="ar-payment-history" id="ar-payment-history"><div class="sales-empty">売掛を選択すると入金履歴を表示します。</div></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <section class="panel workspace-panel" data-workspace-panel="guide" id="product-guide-panel" style="margin-top:12px">
     <div class="panel-head"><span>商品案内</span></div>
     <div class="panel-body">
@@ -433,6 +512,9 @@ let confirmedBatches=[];
 let pendingEntries=[];
 let salesReferenceRows=[];
 let salesReferenceSessions=[];
+let receivableRows=[];
+let receivablePayments=[];
+let receivablesLoaded=false;
 let productGuideRows=[];
 let productGuideTemplates=[];
 let productGuideVariants=[];
@@ -4142,9 +4224,525 @@ function printProductGuide(){
   doc.document.close();
   doc.focus();
 }
+function arNumber(value){
+  if(typeof value==="number")return Number.isFinite(value)?value:0;
+  const normalized=String(value??"").normalize("NFKC").replace(/[,\s￥¥]/g,"");
+  const number=Number(normalized);
+  return Number.isFinite(number)?number:0;
+}
+function arRound(value){
+  return Math.round((arNumber(value)+Number.EPSILON)*100)/100;
+}
+function arShiftDate(value,days){
+  const date=new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate()+days);
+  return date.toISOString().slice(0,10);
+}
+function arNewSourceKey(prefix){
+  const id=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}:${id}`;
+}
+function arDbErrorMessage(error){
+  const message=String(error?.message||error||"");
+  if(error?.code==="42P01"||/accounts_receivable|relation .* does not exist/i.test(message)){
+    return "売掛管理用SQLが未実行です。accounts-receivable-migration.sql をSupabase SQL Editorで実行してください。";
+  }
+  if(error?.code==="42501"||/row-level security|permission denied/i.test(message)){
+    return "売掛管理の権限がありません。ログイン状態と管理者設定を確認してください。";
+  }
+  if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(message)){
+    return "売掛管理用SQLの反映待ちです。SQLを再実行するか、少し待って再読込してください。";
+  }
+  return message||"売掛データの処理でエラーが発生しました。";
+}
+function arCustomerNames(row){
+  let names=row?.customer_names;
+  if(typeof names==="string"){
+    try{names=JSON.parse(names)}catch(e){names=[]}
+  }
+  const list=Array.isArray(names)?names.map(name=>String(name||"").trim()).filter(Boolean):[];
+  if(!list.length&&row?.customer_name)list.push(String(row.customer_name));
+  return [...new Set(list)];
+}
+function arSettlementFor(receivableId){
+  return receivablePayments
+    .filter(payment=>payment.receivable_id===receivableId)
+    .reduce((sum,payment)=>sum+arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy),0);
+}
+function arRecordState(row){
+  const amount=arNumber(row.amount_jpy);
+  const settled=arSettlementFor(row.id);
+  const balance=arRound(amount-settled);
+  if(balance<-.005)return {key:"overpaid",label:"過入金",amount,settled,balance};
+  if(Math.abs(balance)<=.005)return {key:"paid",label:"入金済",amount,settled,balance:0};
+  if(row.due_date&&String(row.due_date)<today())return {key:"overdue",label:"期限超過",amount,settled,balance};
+  if(settled>.005)return {key:"partial",label:"一部入金",amount,settled,balance};
+  return {key:"unpaid",label:"未入金",amount,settled,balance};
+}
+function arFilteredRows(){
+  const range=salesRefDateRangeFromText(val("ar-date-range"));
+  const importer=normalizeImporterCode(val("ar-importer"));
+  const status=val("ar-status");
+  const search=val("ar-search").trim().toLowerCase();
+  if(range.raw&&(!range.from||!range.to))return {rows:[],range,error:"日付は 20250701-20250731 の形式で入力してください。"};
+  const rows=receivableRows.filter(row=>{
+    const invoiceDate=String(row.invoice_date||"").slice(0,10);
+    if(range.from&&invoiceDate<range.from)return false;
+    if(range.to&&invoiceDate>range.to)return false;
+    if(importer&&!normalizeImporterCode(row.importer_code).includes(importer))return false;
+    const state=arRecordState(row);
+    if(status==="open"&&state.balance<=.005)return false;
+    if(status&&status!=="open"&&state.key!==status)return false;
+    if(!search)return true;
+    const haystack=[
+      row.invoice_no,row.importer_code,row.importer_name,row.customer_code,row.customer_name,
+      ...arCustomerNames(row),row.memo
+    ].join(" ").toLowerCase();
+    return haystack.includes(search);
+  });
+  return {rows,range,error:""};
+}
+function arSourceLabel(sourceType){
+  return {sales:"売上確定",opening:"初期残高",manual:"手入力",adjustment:"調整"}[sourceType]||sourceType||"";
+}
+function renderReceivables(){
+  const table=document.getElementById("ar-table");
+  const summary=document.getElementById("ar-summary");
+  const state=document.getElementById("ar-state");
+  if(!table||!summary)return;
+  const result=arFilteredRows();
+  if(result.error){
+    if(state)state.textContent=result.error;
+    summary.innerHTML="";
+    table.innerHTML=`<div class="sales-empty">${esc(result.error)}</div>`;
+    return;
+  }
+  const enriched=result.rows.map(row=>({...row,_state:arRecordState(row)}));
+  const total=enriched.reduce((sum,row)=>sum+row._state.amount,0);
+  const settled=enriched.reduce((sum,row)=>sum+row._state.settled,0);
+  const balance=enriched.reduce((sum,row)=>sum+row._state.balance,0);
+  const overdue=enriched.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0);
+  summary.innerHTML=[
+    ["請求総額",total],
+    ["消込額",settled],
+    ["売掛残",balance],
+    ["期限超過",overdue]
+  ].map(([label,value])=>`<div class="ar-summary-card"><div class="ar-summary-label">${esc(label)}</div><div class="ar-summary-value">¥${esc(salesRefMoney(value)||"0")}</div></div>`).join("");
+  if(state&&receivablesLoaded)state.textContent=`売掛 ${receivableRows.length}件中 ${enriched.length}件を表示しています。`;
+  if(!enriched.length){
+    table.innerHTML=`<div class="sales-empty">${receivablesLoaded?"条件に合う売掛はありません。":"「売掛読込」を押してください。"}</div>`;
+    return;
+  }
+  const selectedId=val("ar-payment-receivable-id");
+  table.innerHTML=`<table class="ar-table">
+    <thead><tr><th>請求日</th><th>Invoice</th><th>輸入社</th><th>得意先</th><th>請求額</th><th>消込額</th><th>売掛残</th><th>支払期限</th><th>状態</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
+    <tbody>${enriched.slice(0,2000).map(row=>{
+      const customers=arCustomerNames(row).join(" / ")||row.customer_name||"";
+      const freee=row.freee_excluded?"計上済":(row.freee_exported_at?"出力済":"未出力");
+      const canDelete=currentUserIsAdmin()&&["opening","manual","adjustment"].includes(row.source_type);
+      return `<tr class="${selectedId===row.id?"selected":""}">
+        <td>${esc(row.invoice_date||"")}</td>
+        <td>${esc(row.invoice_no||"-")}</td>
+        <td><b>${esc(row.importer_code||"")}</b>${row.importer_name?` ${esc(row.importer_name)}`:""}</td>
+        <td title="${esc(customers)}">${esc(customers||"-")}</td>
+        <td class="ar-money">${esc(salesRefMoney(row._state.amount)||"0")}</td>
+        <td class="ar-money">${esc(salesRefMoney(row._state.settled)||"0")}</td>
+        <td class="ar-money">${esc(salesRefMoney(row._state.balance)||"0")}</td>
+        <td>${esc(row.due_date||"-")}</td>
+        <td><span class="ar-status ${esc(row._state.key)}">${esc(row._state.label)}</span></td>
+        <td>${esc(arSourceLabel(row.source_type))}</td>
+        <td>${esc(freee)}</td>
+        <td><button class="small primary" type="button" onclick="selectReceivableForPayment('${esc(row.id)}')">入金</button>${canDelete?` <button class="small danger" type="button" onclick="deleteReceivable('${esc(row.id)}')">削除</button>`:""}</td>
+      </tr>`;
+    }).join("")}</tbody>
+  </table>`;
+}
+async function arReadAll(table,orderColumn){
+  const client=initSupabase();
+  const rows=[];
+  const pageSize=1000;
+  for(let offset=0;offset<100000;offset+=pageSize){
+    const {data,error}=await client.from(table).select("*").order(orderColumn,{ascending:false}).range(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    rows.push(...page);
+    if(page.length<pageSize)break;
+  }
+  return rows;
+}
+async function loadReceivables(){
+  const client=initSupabase();
+  const state=document.getElementById("ar-state");
+  if(!client){alert("Supabaseを読み込めません。");return}
+  const user=await ensureCurrentUser();
+  if(!user){
+    receivableRows=[];
+    receivablePayments=[];
+    receivablesLoaded=false;
+    if(state)state.textContent="ログインしてください。";
+    renderReceivables();
+    return;
+  }
+  if(state)state.textContent="売掛データを読込中...";
+  try{
+    const [rows,payments]=await Promise.all([
+      arReadAll("accounts_receivable","invoice_date"),
+      arReadAll("accounts_receivable_payments","payment_date")
+    ]);
+    receivableRows=rows;
+    receivablePayments=payments;
+    receivablesLoaded=true;
+    renderReceivables();
+    renderReceivablePaymentHistory();
+  }catch(error){
+    receivableRows=[];
+    receivablePayments=[];
+    receivablesLoaded=false;
+    if(state)state.textContent=arDbErrorMessage(error);
+    renderReceivables();
+  }
+}
+function fillReceivableImporterName(){
+  const code=normalizeImporterCode(val("ar-opening-importer-code"));
+  const importer=getMasters().importers.find(item=>normalizeImporterCode(item.code)===code);
+  if(importer){
+    const input=document.getElementById("ar-opening-importer-name");
+    if(input)input.value=importer.name||"";
+  }
+}
+function arSessionShippingFee(session,importerCode,importerCount){
+  if(!session)return 0;
+  const fees=salesRefShippingFeesObject(session.shipping_fees);
+  if(fees){
+    const wanted=normalizeImporterCode(importerCode);
+    const key=Object.keys(fees).find(item=>normalizeImporterCode(item)===wanted);
+    if(key!==undefined)return arNumber(fees[key]);
+  }
+  return importerCount===1?arNumber(session.shipping_fee):0;
+}
+async function arReadSalesRows(){
+  const client=initSupabase();
+  const rows=[];
+  const pageSize=1000;
+  const range=salesRefDateRangeFromText(val("ar-date-range"));
+  if(range.raw&&(!range.from||!range.to))throw new Error("日付は 20250701-20250731 の形式で入力してください。");
+  for(let offset=0;offset<100000;offset+=pageSize){
+    let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false});
+    if(range.from)query=query.gte("finalized_at",`${range.from}T00:00:00`);
+    if(range.to)query=query.lt("finalized_at",`${arShiftDate(range.to,1)}T00:00:00`);
+    const {data,error}=await query.range(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    rows.push(...page);
+    if(page.length<pageSize)break;
+  }
+  return rows;
+}
+async function syncSalesToReceivables(){
+  const client=initSupabase();
+  const state=document.getElementById("ar-state");
+  if(!client){alert("Supabaseを読み込めません。");return}
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  setAppBusy(true,"売上確定データを売掛へ反映しています。");
+  if(state)state.textContent="売上確定データを確認中...";
+  try{
+    const [salesRows,sessionResult]=await Promise.all([
+      arReadSalesRows(),
+      client.from("work_sessions").select("id,name,status,locked,created_at,updated_at,finalized_at,shipping_fee,shipping_fees").limit(10000)
+    ]);
+    if(sessionResult.error)throw sessionResult.error;
+    const sessions=sessionResult.data||[];
+    const sessionMap=new Map(sessions.map(session=>[session.id,session]));
+    const eligible=salesRows.filter(row=>!row.is_stockout&&isUuid(row.session_id));
+    const importerSets=new Map();
+    eligible.forEach(row=>{
+      const code=normalizeImporterCode(row.importer_code||row.importer_id);
+      if(!code)return;
+      const set=importerSets.get(row.session_id)||new Set();
+      set.add(code);
+      importerSets.set(row.session_id,set);
+    });
+    const groups=new Map();
+    eligible.forEach(row=>{
+      const importerCode=normalizeImporterCode(row.importer_code||row.importer_id);
+      if(!importerCode)return;
+      const key=`${row.session_id}|${importerCode}`;
+      const session=sessionMap.get(row.session_id);
+      const group=groups.get(key)||{
+        sessionId:row.session_id,
+        importerCode,
+        invoiceDate:salesRefDateOnly(row.finalized_at||session?.finalized_at||session?.updated_at||session?.created_at),
+        netSales:0,
+        customers:new Set()
+      };
+      const directAmount=row.amount!==null&&row.amount!==undefined&&row.amount!=="";
+      group.netSales+=directAmount?arNumber(row.amount):arNumber(row.input_qty)*arNumber(row.unit_price);
+      if(row.store_name)group.customers.add(String(row.store_name).trim());
+      groups.set(key,group);
+    });
+    const importerMasters=getMasters().importers;
+    const payloads=[...groups.values()].map(group=>{
+      const session=sessionMap.get(group.sessionId);
+      const shipping=arSessionShippingFee(session,group.importerCode,importerSets.get(group.sessionId)?.size||0);
+      const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
+      const importer=importerMasters.find(item=>normalizeImporterCode(item.code)===group.importerCode);
+      const netSales=arRound(group.netSales);
+      return {
+        source_key:`sales:${group.sessionId}:${group.importerCode}`,
+        source_type:"sales",
+        source_session_id:group.sessionId,
+        importer_code:group.importerCode,
+        importer_name:importer?.name||"",
+        customer_name:customers.length===1?customers[0]:(customers.length?`${customers[0]} 他${customers.length-1}件`:""),
+        customer_names:customers,
+        invoice_date:group.invoiceDate||today(),
+        currency:"JPY",
+        net_sales_jpy:netSales,
+        shipping_amount_jpy:arRound(shipping),
+        amount_jpy:arRound(netSales+shipping),
+        updated_by:user.id
+      };
+    }).filter(row=>Math.abs(row.amount_jpy)>.005);
+    for(let index=0;index<payloads.length;index+=100){
+      const {error}=await client.from("accounts_receivable").upsert(payloads.slice(index,index+100),{onConflict:"source_key"});
+      if(error)throw error;
+      if(state)state.textContent=`売掛へ反映中... ${Math.min(index+100,payloads.length)} / ${payloads.length}件`;
+    }
+    await loadReceivables();
+    if(state)state.textContent=`売上確定から ${payloads.length}件の売掛を反映しました。同じ作業は重複登録されません。`;
+  }catch(error){
+    if(state)state.textContent=arDbErrorMessage(error);
+    alert(arDbErrorMessage(error));
+  }finally{
+    setAppBusy(false);
+  }
+}
+async function saveOpeningReceivable(){
+  const client=initSupabase();
+  if(!client){alert("Supabaseを読み込めません。");return}
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  await loadCurrentUserRole();
+  if(!currentUserIsAdmin()){alert("初期残高を登録できるのは管理者のみです。");return}
+  const importerCode=normalizeImporterCode(val("ar-opening-importer-code"));
+  const invoiceDate=val("ar-opening-invoice-date");
+  const amount=arNumber(val("ar-opening-amount"));
+  if(!importerCode||!invoiceDate||amount<=0){
+    alert("輸入社コード・請求日・円換算残高を入力してください。");
+    return;
+  }
+  const customerName=val("ar-opening-customer-name").trim();
+  const payload={
+    source_key:arNewSourceKey("opening"),
+    source_type:"opening",
+    importer_code:importerCode,
+    importer_name:val("ar-opening-importer-name").trim(),
+    customer_code:val("ar-opening-customer-code").trim(),
+    customer_name:customerName,
+    customer_names:customerName?[customerName]:[],
+    invoice_no:val("ar-opening-invoice-no").trim(),
+    invoice_date:invoiceDate,
+    due_date:val("ar-opening-due-date")||null,
+    currency:val("ar-opening-currency").trim().toUpperCase()||"JPY",
+    foreign_amount:val("ar-opening-foreign-amount")?arNumber(val("ar-opening-foreign-amount")):null,
+    exchange_rate:val("ar-opening-exchange-rate")?arNumber(val("ar-opening-exchange-rate")):null,
+    amount_jpy:arRound(amount),
+    net_sales_jpy:arRound(amount),
+    freee_excluded:document.getElementById("ar-opening-freee-excluded")?.checked!==false,
+    memo:val("ar-opening-memo").trim(),
+    created_by:user.id,
+    updated_by:user.id
+  };
+  const {error}=await client.from("accounts_receivable").insert(payload);
+  if(error){alert(arDbErrorMessage(error));return}
+  ["ar-opening-importer-code","ar-opening-importer-name","ar-opening-customer-code","ar-opening-customer-name","ar-opening-invoice-no","ar-opening-due-date","ar-opening-foreign-amount","ar-opening-exchange-rate","ar-opening-amount","ar-opening-memo"].forEach(id=>{
+    const input=document.getElementById(id);if(input)input.value="";
+  });
+  await loadReceivables();
+}
+function arCsvBoolean(value,defaultValue=true){
+  const text=String(value??"").normalize("NFKC").trim().toLowerCase();
+  if(!text)return defaultValue;
+  if(["0","false","no","n","いいえ","未","未計上"].includes(text))return false;
+  return true;
+}
+function arCsvDate(value){
+  const text=String(value??"").trim();
+  if(!text)return "";
+  return salesRefNormalizeDateToken(text,false);
+}
+async function importOpeningReceivablesCsv(input){
+  const file=input?.files?.[0];
+  if(!file)return;
+  try{
+    const user=await ensureCurrentUser();
+    if(!user){alert("ログインしてください。");return}
+    await loadCurrentUserRole();
+    if(!currentUserIsAdmin()){alert("初期残高CSVを登録できるのは管理者のみです。");return}
+    const rows=parseCsv(await readCsvFileText(file));
+    if(rows.length<2)throw new Error("CSVに明細がありません。");
+    const headers=rows[0].map(normalizedHeader);
+    const payloads=[];
+    const issues=[];
+    rows.slice(1).forEach((row,index)=>{
+      const importerCode=normalizeImporterCode(rowValue(row,headers,["輸入社コード","importer_code","importercode"]));
+      const invoiceDate=arCsvDate(rowValue(row,headers,["請求日","日付","invoice_date","invoicedate"]));
+      const amount=arNumber(rowValue(row,headers,["円換算残高","残高","円換算額","金額","amount_jpy","amount"]));
+      if(!importerCode||!invoiceDate||amount<=0){
+        issues.push(`${index+2}行目`);
+        return;
+      }
+      const customerName=rowValue(row,headers,["得意先名","顧客名","customer_name","customername"]);
+      payloads.push({
+        source_key:arNewSourceKey("opening"),
+        source_type:"opening",
+        importer_code:importerCode,
+        importer_name:rowValue(row,headers,["輸入社名","importer_name","importername"]),
+        customer_code:rowValue(row,headers,["得意先コード","顧客コード","customer_code","customercode"]),
+        customer_name:customerName,
+        customer_names:customerName?[customerName]:[],
+        invoice_no:rowValue(row,headers,["Invoice番号","インボイス番号","請求書番号","invoice_no","invoiceno"]),
+        invoice_date:invoiceDate,
+        due_date:arCsvDate(rowValue(row,headers,["支払期限","入金期限","due_date","duedate"]))||null,
+        currency:(rowValue(row,headers,["通貨","currency"])||"JPY").toUpperCase(),
+        foreign_amount:arNumber(rowValue(row,headers,["外貨金額","foreign_amount","foreignamount"]))||null,
+        exchange_rate:arNumber(rowValue(row,headers,["為替","為替レート","exchange_rate","exchangerate"]))||null,
+        net_sales_jpy:arRound(amount),
+        amount_jpy:arRound(amount),
+        freee_excluded:arCsvBoolean(rowValue(row,headers,["freee計上済","会計計上済","freee_excluded"]),true),
+        memo:rowValue(row,headers,["メモ","備考","memo"]),
+        created_by:user.id,
+        updated_by:user.id
+      });
+    });
+    if(!payloads.length)throw new Error(`登録できる行がありません。${issues.slice(0,10).join("、")}`);
+    const warning=issues.length?`\n不足項目のある ${issues.length}行は除外します。`:"";
+    if(!confirm(`初期残高 ${payloads.length}件を登録します。${warning}`))return;
+    const client=initSupabase();
+    for(let index=0;index<payloads.length;index+=100){
+      const {error}=await client.from("accounts_receivable").insert(payloads.slice(index,index+100));
+      if(error)throw error;
+    }
+    await loadReceivables();
+    alert(`初期残高 ${payloads.length}件を登録しました。${issues.length?` 除外 ${issues.length}件。`:""}`);
+  }catch(error){
+    alert(arDbErrorMessage(error));
+  }finally{
+    if(input)input.value="";
+  }
+}
+function downloadOpeningReceivableSample(){
+  const rows=[
+    ["輸入社コード","輸入社名","得意先コード","得意先名","Invoice番号","請求日","支払期限","通貨","外貨金額","為替","円換算残高","freee計上済","メモ"],
+    ["FBI","FBI","C001","得意先名","INV-2025-001","2025-07-01","2025-07-31","JPY","","","120000","はい","導入時残高"]
+  ];
+  const csv=rows.map(row=>row.map(value=>`"${String(value).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="accounts-receivable-opening-sample.csv";
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+function selectReceivableForPayment(id){
+  const row=receivableRows.find(item=>item.id===id);
+  if(!row)return;
+  const state=arRecordState(row);
+  document.getElementById("ar-payment-receivable-id").value=id;
+  document.getElementById("ar-payment-date").value=today();
+  document.getElementById("ar-payment-amount").value=state.balance>0?arRound(state.balance):"";
+  document.getElementById("ar-payment-fee").value="0";
+  document.getElementById("ar-payment-reference").value="";
+  document.getElementById("ar-payment-memo").value="";
+  const target=document.getElementById("ar-payment-target");
+  if(target)target.textContent=`${row.invoice_no||"Invoice未設定"} / ${row.importer_code} ${row.importer_name||""} / 売掛残 ¥${salesRefMoney(state.balance)||"0"}`;
+  renderReceivables();
+  renderReceivablePaymentHistory();
+  document.getElementById("ar-payment-amount")?.focus();
+}
+function clearReceivablePaymentForm(){
+  const id=document.getElementById("ar-payment-receivable-id");
+  if(id)id.value="";
+  ["ar-payment-amount","ar-payment-reference","ar-payment-memo"].forEach(key=>{const input=document.getElementById(key);if(input)input.value=""});
+  const fee=document.getElementById("ar-payment-fee");if(fee)fee.value="0";
+  const target=document.getElementById("ar-payment-target");if(target)target.textContent="一覧から対象の「入金」を押してください。";
+  renderReceivables();
+  renderReceivablePaymentHistory();
+}
+function renderReceivablePaymentHistory(){
+  const container=document.getElementById("ar-payment-history");
+  if(!container)return;
+  const receivableId=val("ar-payment-receivable-id");
+  if(!receivableId){
+    container.innerHTML='<div class="sales-empty">売掛を選択すると入金履歴を表示します。</div>';
+    return;
+  }
+  const payments=receivablePayments.filter(item=>item.receivable_id===receivableId).sort((a,b)=>String(b.payment_date).localeCompare(String(a.payment_date)));
+  if(!payments.length){
+    container.innerHTML='<div class="sales-empty">入金履歴はありません。</div>';
+    return;
+  }
+  container.innerHTML=payments.map(payment=>`<div class="ar-payment-row">
+    <span>${esc(payment.payment_date||"")}</span>
+    <span>入金 ¥${esc(salesRefMoney(payment.amount_jpy)||"0")}</span>
+    <span>手数料 ¥${esc(salesRefMoney(payment.bank_fee_jpy)||"0")}</span>
+    <span>${esc(payment.reference_no||payment.memo||"-")}</span>
+    ${currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deleteReceivablePayment('${esc(payment.id)}')">削除</button>`:"<span></span>"}
+  </div>`).join("");
+}
+async function saveReceivablePayment(){
+  const receivableId=val("ar-payment-receivable-id");
+  const paymentDate=val("ar-payment-date");
+  const amount=arNumber(val("ar-payment-amount"));
+  const fee=arNumber(val("ar-payment-fee"));
+  if(!receivableId||!paymentDate||amount<=0||fee<0){
+    alert("対象売掛・入金日・入金額を確認してください。");
+    return;
+  }
+  const row=receivableRows.find(item=>item.id===receivableId);
+  if(!row){alert("対象の売掛を再読込してください。");return}
+  const state=arRecordState(row);
+  if(amount+fee>state.balance+.005&&!confirm("売掛残より消込額が大きくなります。過入金として登録しますか？"))return;
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  const payload={
+    receivable_id:receivableId,
+    payment_date:paymentDate,
+    amount_jpy:arRound(amount),
+    bank_fee_jpy:arRound(fee),
+    currency:"JPY",
+    reference_no:val("ar-payment-reference").trim(),
+    memo:val("ar-payment-memo").trim(),
+    created_by:user.id,
+    updated_by:user.id
+  };
+  const {error}=await initSupabase().from("accounts_receivable_payments").insert(payload);
+  if(error){alert(arDbErrorMessage(error));return}
+  await loadReceivables();
+  selectReceivableForPayment(receivableId);
+}
+async function deleteReceivablePayment(id){
+  if(!currentUserIsAdmin()){alert("入金履歴を削除できるのは管理者のみです。");return}
+  if(!confirm("この入金履歴を削除しますか？"))return;
+  const {error}=await initSupabase().from("accounts_receivable_payments").delete().eq("id",id);
+  if(error){alert(arDbErrorMessage(error));return}
+  await loadReceivables();
+}
+async function deleteReceivable(id){
+  if(!currentUserIsAdmin()){alert("売掛を削除できるのは管理者のみです。");return}
+  const row=receivableRows.find(item=>item.id===id);
+  if(!row||!["opening","manual","adjustment"].includes(row.source_type))return;
+  if(!confirm("この売掛を削除しますか？入金履歴も削除されます。"))return;
+  const {error}=await initSupabase().from("accounts_receivable").delete().eq("id",id);
+  if(error){alert(arDbErrorMessage(error));return}
+  if(val("ar-payment-receivable-id")===id)clearReceivablePaymentForm();
+  await loadReceivables();
+}
 function initialWorkspaceTab(){
   const hash=String(location.hash||"").replace(/^#/,"");
   if(hash==="sales-reference-panel"||hash==="sales")return "sales";
+  if(hash==="accounts-receivable-panel"||hash==="receivables"||hash==="ar")return "receivables";
   if(hash==="product-guide-panel"||hash==="guide"||hash==="product-guide")return "guide";
   if(hash==="master-admin-panel"||hash==="master-list"||hash==="masters")return "masters";
   return "orders";
@@ -4157,7 +4755,7 @@ function confirmLeaveImportReview(){
   return confirm("取込内容の確認作業が未完了です。\nこのまま移動すると、確認中の内容が見えなくなります。\n移動しますか？");
 }
 function switchWorkspaceTab(tab,options={}){
-  const target=["orders","sales","guide","masters"].includes(tab)?tab:"orders";
+  const target=["orders","sales","receivables","guide","masters"].includes(tab)?tab:"orders";
   const current=document.querySelector("[data-workspace-panel].active")?.dataset.workspacePanel||"orders";
   if(target!==current&&!options.skipConfirm&&!confirmLeaveImportReview())return false;
   document.querySelectorAll("[data-workspace-panel]").forEach(panel=>{
@@ -4170,6 +4768,10 @@ function switchWorkspaceTab(tab,options={}){
     button.classList.toggle("workspace-action-hidden",target!=="orders");
   });
   if(target==="sales")renderSalesReferenceBoard();
+  if(target==="receivables"){
+    renderReceivables();
+    if(!receivablesLoaded)loadReceivables();
+  }
   if(target==="guide")renderProductGuide();
   if(target==="masters")renderMasters();
   window.scrollTo({top:0,behavior:"auto"});
@@ -4178,6 +4780,8 @@ function switchWorkspaceTab(tab,options={}){
 function init(){
   document.getElementById("order-date").value=today();
   document.getElementById("report-filter-date").value=today();
+  document.getElementById("ar-opening-invoice-date").value=today();
+  document.getElementById("ar-payment-date").value=today();
   const guideYear=document.getElementById("product-guide-year");
   if(guideYear&&!guideYear.value)guideYear.value=new Date().getFullYear();
   const guideRange=document.getElementById("product-guide-range");
@@ -7406,4 +8010,3 @@ init();
 </script>
 </body>
 </html>
-
