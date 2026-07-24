@@ -53,6 +53,39 @@ create table if not exists public.accounts_receivable_payments (
   updated_at timestamptz not null default now()
 );
 
+create sequence if not exists public.accounts_receivable_statement_no_seq
+  start with 179;
+
+create table if not exists public.accounts_receivable_statement_profiles (
+  importer_code text primary key,
+  customer_name text not null default '',
+  address_text text not null default '',
+  phone text not null default '',
+  currency text not null default 'JPY',
+  created_by uuid references auth.users(id) on delete set null,
+  updated_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.accounts_receivable_statements (
+  id uuid primary key default gen_random_uuid(),
+  statement_no bigint not null unique
+    default nextval('public.accounts_receivable_statement_no_seq'),
+  importer_code text not null,
+  period_from date not null,
+  period_to date not null,
+  carryover_amount_jpy numeric(18, 2) not null default 0,
+  charge_amount_jpy numeric(18, 2) not null default 0,
+  payment_amount_jpy numeric(18, 2) not null default 0,
+  total_amount_jpy numeric(18, 2) not null default 0,
+  snapshot jsonb not null default '{}'::jsonb,
+  issued_by uuid references auth.users(id) on delete set null,
+  issued_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(importer_code, period_from, period_to)
+);
+
 create index if not exists idx_accounts_receivable_invoice_date
   on public.accounts_receivable(invoice_date desc);
 create index if not exists idx_accounts_receivable_importer
@@ -63,6 +96,8 @@ create index if not exists idx_accounts_receivable_source_session
   on public.accounts_receivable(source_session_id);
 create index if not exists idx_accounts_receivable_payments_receivable
   on public.accounts_receivable_payments(receivable_id, payment_date);
+create index if not exists idx_accounts_receivable_statements_period
+  on public.accounts_receivable_statements(period_from, period_to, importer_code);
 
 create or replace function public.set_accounts_receivable_updated_at()
 returns trigger
@@ -86,8 +121,22 @@ create trigger trg_accounts_receivable_payments_updated_at
 before update on public.accounts_receivable_payments
 for each row execute function public.set_accounts_receivable_updated_at();
 
+drop trigger if exists trg_accounts_receivable_statement_profiles_updated_at
+  on public.accounts_receivable_statement_profiles;
+create trigger trg_accounts_receivable_statement_profiles_updated_at
+before update on public.accounts_receivable_statement_profiles
+for each row execute function public.set_accounts_receivable_updated_at();
+
+drop trigger if exists trg_accounts_receivable_statements_updated_at
+  on public.accounts_receivable_statements;
+create trigger trg_accounts_receivable_statements_updated_at
+before update on public.accounts_receivable_statements
+for each row execute function public.set_accounts_receivable_updated_at();
+
 alter table public.accounts_receivable enable row level security;
 alter table public.accounts_receivable_payments enable row level security;
+alter table public.accounts_receivable_statement_profiles enable row level security;
+alter table public.accounts_receivable_statements enable row level security;
 
 drop policy if exists "authenticated can read accounts receivable"
   on public.accounts_receivable;
@@ -144,10 +193,64 @@ create policy "admins can delete receivable payments"
 on public.accounts_receivable_payments for delete to authenticated
 using (public.is_master_admin());
 
+drop policy if exists "authenticated can read statement profiles"
+  on public.accounts_receivable_statement_profiles;
+create policy "authenticated can read statement profiles"
+on public.accounts_receivable_statement_profiles for select to authenticated
+using (true);
+
+drop policy if exists "authenticated can insert statement profiles"
+  on public.accounts_receivable_statement_profiles;
+create policy "authenticated can insert statement profiles"
+on public.accounts_receivable_statement_profiles for insert to authenticated
+with check (true);
+
+drop policy if exists "authenticated can update statement profiles"
+  on public.accounts_receivable_statement_profiles;
+create policy "authenticated can update statement profiles"
+on public.accounts_receivable_statement_profiles for update to authenticated
+using (true) with check (true);
+
+drop policy if exists "admins can delete statement profiles"
+  on public.accounts_receivable_statement_profiles;
+create policy "admins can delete statement profiles"
+on public.accounts_receivable_statement_profiles for delete to authenticated
+using (public.is_master_admin());
+
+drop policy if exists "authenticated can read statements"
+  on public.accounts_receivable_statements;
+create policy "authenticated can read statements"
+on public.accounts_receivable_statements for select to authenticated
+using (true);
+
+drop policy if exists "authenticated can insert statements"
+  on public.accounts_receivable_statements;
+create policy "authenticated can insert statements"
+on public.accounts_receivable_statements for insert to authenticated
+with check (true);
+
+drop policy if exists "authenticated can update statements"
+  on public.accounts_receivable_statements;
+create policy "authenticated can update statements"
+on public.accounts_receivable_statements for update to authenticated
+using (true) with check (true);
+
+drop policy if exists "admins can delete statements"
+  on public.accounts_receivable_statements;
+create policy "admins can delete statements"
+on public.accounts_receivable_statements for delete to authenticated
+using (public.is_master_admin());
+
 grant select, insert, update, delete
   on public.accounts_receivable to authenticated;
 grant select, insert, update, delete
   on public.accounts_receivable_payments to authenticated;
+grant select, insert, update, delete
+  on public.accounts_receivable_statement_profiles to authenticated;
+grant select, insert, update, delete
+  on public.accounts_receivable_statements to authenticated;
+grant usage, select
+  on sequence public.accounts_receivable_statement_no_seq to authenticated;
 
 notify pgrst, 'reload schema';
 
