@@ -6872,12 +6872,18 @@ function groupedBySupplier(rows){
   });
   return map;
 }
-function compareReportProductCode(a,b){
-  const codeA=String(a?.productCode||"").normalize("NFKC").trim();
-  const codeB=String(b?.productCode||"").normalize("NFKC").trim();
+function normalizedReportCode(value){
+  return String(value||"").normalize("NFKC").trim().replace(/\s+/g,"").toUpperCase();
+}
+function compareReportCodeValues(a,b){
+  const codeA=normalizedReportCode(a);
+  const codeB=normalizedReportCode(b);
   if(codeA&&!codeB)return -1;
   if(!codeA&&codeB)return 1;
-  const codeCompare=codeA.localeCompare(codeB,"ja",{numeric:true,sensitivity:"base"});
+  return codeA.localeCompare(codeB,"ja",{numeric:true,sensitivity:"base"});
+}
+function compareReportProductCode(a,b){
+  const codeCompare=compareReportCodeValues(a?.productCode,b?.productCode);
   if(codeCompare)return codeCompare;
   const nameCompare=String(a?.productName||"").localeCompare(String(b?.productName||""),"ja",{numeric:true,sensitivity:"base"});
   if(nameCompare)return nameCompare;
@@ -6886,11 +6892,20 @@ function compareReportProductCode(a,b){
 function sortRowsByProductCode(rows){
   return [...(rows||[])].sort(compareReportProductCode);
 }
+function sortSupplierGroupsByCode(groups){
+  return [...groups.entries()].sort(([,rowsA],[,rowsB])=>{
+    const firstA=rowsA[0]||{};
+    const firstB=rowsB[0]||{};
+    const codeCompare=compareReportCodeValues(firstA.supplierCode,firstB.supplierCode);
+    if(codeCompare)return codeCompare;
+    return String(firstA.supplierName||"").localeCompare(String(firstB.supplierName||""),"ja",{numeric:true,sensitivity:"base"});
+  });
+}
 function printPurchaseOrders(){
   const rows=sortRowsByProductCode(reportRows(true));
   if(!rows.length)return;
   const groups=groupedBySupplier(rows);
-  const pages=[...groups.entries()].map(([supplier,rows],idx)=>purchaseOrderPage(supplier,rows,idx+1)).join("");
+  const pages=sortSupplierGroupsByCode(groups).map(([supplier,rows],idx)=>purchaseOrderPage(supplier,rows,idx+1)).join("");
   openPrintDoc("発注書",purchaseOrderCss()+pages);
 }
 function purchaseOrderPage(supplier,rows,no){
