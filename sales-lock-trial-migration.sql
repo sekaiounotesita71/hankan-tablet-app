@@ -13,6 +13,7 @@ $$;
 
 alter table public.work_sessions
   add column if not exists locked boolean not null default false,
+  add column if not exists work_date date,
   add column if not exists finalized_at timestamptz,
   add column if not exists finalized_by uuid references auth.users(id),
   add column if not exists shipping_fee numeric not null default 0,
@@ -32,6 +33,7 @@ create table if not exists public.sales_records (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references public.work_sessions(id) on delete cascade,
   source_row_no integer not null,
+  work_date date,
   finalized_at timestamptz not null default now(),
   finalized_by uuid references auth.users(id),
   country_code text,
@@ -64,6 +66,7 @@ create table if not exists public.sales_records (
 
 create index if not exists idx_sales_records_session on public.sales_records(session_id);
 create index if not exists idx_sales_records_lookup on public.sales_records(finalized_at desc, importer_code, store_name, product_id);
+create index if not exists idx_sales_records_work_date on public.sales_records(work_date desc, importer_code, store_name, product_id);
 
 drop trigger if exists trg_user_roles_updated_at on public.user_roles;
 create trigger trg_user_roles_updated_at
