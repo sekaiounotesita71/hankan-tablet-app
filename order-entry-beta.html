@@ -47,7 +47,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
-.ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 120px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}
+.ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}
 @media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}}
 @media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
 </style>
@@ -404,8 +404,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             <div class="ar-closing-preview">
               <div class="ar-summary-card"><div class="ar-summary-label">締め期間</div><div class="ar-summary-value" id="ar-closing-period" style="font-size:15px">-</div></div>
               <div class="ar-summary-card"><div class="ar-summary-label">支払期限</div><div class="ar-summary-value" id="ar-closing-due-date" style="font-size:15px">-</div></div>
-              <div class="ar-summary-card"><div class="ar-summary-label">今回請求</div><div class="ar-summary-value" id="ar-closing-charge">¥0</div></div>
-              <div class="ar-summary-card"><div class="ar-summary-label">締め後残高</div><div class="ar-summary-value" id="ar-closing-balance">¥0</div></div>
+              <div class="ar-summary-card"><div class="ar-summary-label">今回売上</div><div class="ar-summary-value" id="ar-closing-charge">¥0</div></div>
+              <div class="ar-summary-card"><div class="ar-summary-label">入金等</div><div class="ar-summary-value" id="ar-closing-payment">¥0</div></div>
+              <div class="ar-summary-card"><div class="ar-summary-label">今回請求</div><div class="ar-summary-value" id="ar-closing-balance">¥0</div></div>
             </div>
           </div>
           <div class="hint" id="ar-closing-state">対象月と輸入社を選択してください。</div>
@@ -5084,14 +5085,16 @@ function renderClosingPreview(){
   const period=document.getElementById("ar-closing-period");
   const dueDate=document.getElementById("ar-closing-due-date");
   const charge=document.getElementById("ar-closing-charge");
+  const payment=document.getElementById("ar-closing-payment");
   const balance=document.getElementById("ar-closing-balance");
   const state=document.getElementById("ar-closing-state");
-  if(!period||!dueDate||!charge||!balance||!state)return;
+  if(!period||!dueDate||!charge||!payment||!balance||!state)return;
   const calculation=arClosingCalculation();
   if(calculation.error){
     period.textContent="-";
     dueDate.textContent="-";
     charge.textContent="¥0";
+    payment.textContent="¥0";
     balance.textContent="¥0";
     state.textContent=calculation.error;
     renderClosingHistory();
@@ -5100,13 +5103,14 @@ function renderClosingPreview(){
   period.textContent=`${calculation.range.from} ～ ${calculation.range.to}`;
   dueDate.textContent=calculation.dueDate;
   charge.textContent=`¥${salesRefMoney(calculation.snapshot?.chargeAmount||0)||"0"}`;
+  payment.textContent=`¥${salesRefMoney(-(calculation.snapshot?.paymentAmount||0))||"0"}`;
   balance.textContent=`¥${salesRefMoney(calculation.snapshot?.totalAmount||0)||"0"}`;
   if(calculation.existing){
     state.textContent=`この期間は締め済みです。SOA No.${calculation.existing.snapshot?.statement_no||"-"}`;
   }else if(!receivablesLoaded){
     state.textContent="「売掛読込」を押すと締め金額を確認できます。";
   }else{
-    state.textContent=`繰越 ¥${salesRefMoney(calculation.snapshot.carryover)||"0"} / 入金等 ¥${salesRefMoney(calculation.snapshot.paymentAmount)||"0"}`;
+    state.textContent=`繰越 ¥${salesRefMoney(calculation.snapshot.carryover)||"0"} + 今回売上 ¥${salesRefMoney(calculation.snapshot.chargeAmount)||"0"} - 入金等 ¥${salesRefMoney(calculation.snapshot.paymentAmount)||"0"} = 今回請求 ¥${salesRefMoney(calculation.snapshot.totalAmount)||"0"}`;
   }
   renderClosingHistory();
 }
@@ -5156,7 +5160,7 @@ function renderClosingHistory(){
       <b>${esc(row.importer_code)}</b>
       <span>${esc(row.period_from)} ～ ${esc(row.period_to)}</span>
       <span>期限 ${esc(row.due_date)}</span>
-      <span class="ar-closing-amount">¥${esc(salesRefMoney(row.closing_balance_jpy)||"0")}</span>
+      <span class="ar-closing-amount">今回請求 ¥${esc(salesRefMoney(row.closing_balance_jpy)||"0")}</span>
       <span class="ar-status ${row.status==="closed"?"paid":""}">${esc(status)}</span>
       <span title="${esc(note)}">SOA No.${esc(statementNo)} / ${esc(note)}</span>
       ${reopenButton}
@@ -5207,9 +5211,10 @@ async function closeAccountsReceivablePeriod(){
     const message=[
       `${calculation.importerCode} を請求締めします。`,
       `期間: ${calculation.range.from} ～ ${calculation.range.to}`,
-      `今回請求: ¥${salesRefMoney(snapshot.chargeAmount)||"0"}`,
+      `繰越: ¥${salesRefMoney(snapshot.carryover)||"0"}`,
+      `今回売上: ¥${salesRefMoney(snapshot.chargeAmount)||"0"}`,
       `入金等: ¥${salesRefMoney(snapshot.paymentAmount)||"0"}`,
-      `締め後残高: ¥${salesRefMoney(snapshot.totalAmount)||"0"}`,
+      `今回請求: ¥${salesRefMoney(snapshot.totalAmount)||"0"}`,
       `支払期限: ${calculation.dueDate}`,
       "",
       "締め後は明細がロックされます。実行しますか？"
