@@ -492,6 +492,7 @@ function pendingInvoiceTargetImporters(country){
 function pendingInvoiceDbErrorMessage(error){
   const message=String(error?.message||error||"");
   if(error?.code==="42P01"||/relation .*pending_entries.* does not exist/i.test(message))return "未処理伝票用SQLが未実行です。pending-entries-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"&&/applied_work_date/i.test(message))return "赤伝の売上・売掛連動SQLが未実行です。pending-sales-integration-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(message))return "未処理伝票DBの反映待ちです。少し待って再読込してください。";
   return message||"未処理伝票を確認できませんでした。";
 }
@@ -590,13 +591,13 @@ function pendingInvoiceReference(country,targetDate){
   const code=country?normalizeImporterCode(country):"ALL";
   return `INV-${targetDate.replace(/-/g,"")}-${code}-${Date.now()}`;
 }
-async function claimPendingInvoiceEntries(entries,invoiceNo){
+async function claimPendingInvoiceEntries(entries,invoiceNo,targetDate){
   const ids=entries.map(entry=>entry.id).filter(Boolean);
   if(!ids.length)return [];
   const now=new Date().toISOString();
   const {data,error}=await supabaseClient
     .from("pending_entries")
-    .update({status:"applied",applied_invoice_no:invoiceNo,applied_at:now,applied_by:currentUser.id})
+    .update({status:"applied",applied_invoice_no:invoiceNo,applied_work_date:targetDate,applied_at:now,applied_by:currentUser.id})
     .in("id",ids)
     .in("status",["pending","hold"])
     .select("id");
@@ -608,7 +609,7 @@ async function rollbackPendingInvoiceEntries(entries,invoiceNo){
   for(const status of ["pending","hold"]){
     const ids=entries.filter(entry=>entry.status===status).map(entry=>entry.id).filter(Boolean);
     if(!ids.length)continue;
-    const {error}=await supabaseClient.from("pending_entries").update({status,applied_invoice_no:null,applied_at:null,applied_by:null}).in("id",ids).eq("applied_invoice_no",invoiceNo);
+    const {error}=await supabaseClient.from("pending_entries").update({status,applied_invoice_no:null,applied_work_date:null,applied_at:null,applied_by:null}).in("id",ids).eq("applied_invoice_no",invoiceNo);
     if(error)throw error;
   }
 }
@@ -2398,7 +2399,7 @@ async function doExport(country){
   try{
     if(selected.length){
       setSaveState("Supabase: 反映対象を確保中...");
-      claimed=await claimPendingInvoiceEntries(selected,invoiceNo);
+      claimed=await claimPendingInvoiceEntries(selected,invoiceNo,targetDate);
       if(!claimed.length){alert("選択した未処理伝票は、別の端末ですでに反映されました。最新状態を確認してから再度出力してください。");setSaveState("未処理伝票は他端末で反映済み",true);return}
       if(claimed.length!==selected.length)alert(`${selected.length-claimed.length}件は別の端末で先に反映されたため、今回のExcelから除外しました。`);
     }
