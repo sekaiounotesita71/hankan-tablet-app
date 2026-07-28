@@ -264,7 +264,18 @@ begin
     updated_by
   )
   select
-    'sales:' || p_session_id::text || ':' || c.importer_code,
+    coalesce(
+      (
+        select r.source_key
+        from public.accounts_receivable r
+        where r.source_session_id = p_session_id
+          and r.source_type = 'sales'
+          and public.canonical_importer_code(r.importer_code) = c.importer_code
+        order by r.created_at, r.id
+        limit 1
+      ),
+      'sales:' || p_session_id::text || ':' || c.importer_code
+    ),
     'sales',
     p_session_id,
     c.importer_code,
