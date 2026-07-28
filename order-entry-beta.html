@@ -4761,6 +4761,12 @@ function arNumber(value){
 function arRound(value){
   return Math.round((arNumber(value)+Number.EPSILON)*100)/100;
 }
+function arInvoiceNumber(invoiceDate,importerSource,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  const datePart=String(invoiceDate||"").normalize("NFKC").replace(/\D/g,"").slice(0,8);
+  const importerCode=normalizeImporterCode(arImporterIdentity(importerSource,index).code);
+  if(!/^\d{8}$/.test(datePart)||!/^\d{1,3}$/.test(importerCode))return "";
+  return `${datePart}${importerCode.padStart(3,"0")}`;
+}
 function arShiftDate(value,days){
   const date=new Date(`${value}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate()+days);
@@ -5081,6 +5087,7 @@ async function syncSalesToReceivables(options={}){
     const payloads=groups.map(group=>{
       const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
       const existing=existingByGroup.get(`${group.sessionId}|${group.importerKey}`);
+      const invoiceDate=group.invoiceDate||today();
       return {
         source_key:existing?.source_key||`sales:${group.sessionId}:${group.importerCode}`,
         source_type:"sales",
@@ -5089,7 +5096,8 @@ async function syncSalesToReceivables(options={}){
         importer_name:group.importerName||"",
         customer_name:customers.length===1?customers[0]:(customers.length?`${customers[0]} 他${customers.length-1}件`:""),
         customer_names:customers,
-        invoice_date:group.invoiceDate||today(),
+        invoice_no:arInvoiceNumber(invoiceDate,{importer_code:group.importerCode,importer_name:group.importerName}),
+        invoice_date:invoiceDate,
         currency:"JPY",
         net_sales_jpy:group.netSales,
         shipping_amount_jpy:group.shipping,
@@ -5803,31 +5811,14 @@ function arStatementRecords(importerCode){
 }
 async function arAssignInvoiceNumbers(rows){
   const salesRows=rows.filter(row=>row.source_type==="sales");
-  const byDate=new Map();
-  salesRows.forEach(row=>{
-    const date=String(row.invoice_date||"").slice(0,10);
-    const list=byDate.get(date)||[];
-    list.push(row);
-    byDate.set(date,list);
-  });
   const client=initSupabase();
-  for(const [date,list] of byDate){
-    const prefix=date.replace(/-/g,"");
-    const used=new Set();
-    list.forEach(row=>{
-      const match=String(row.invoice_no||"").match(new RegExp(`^${prefix}(\\d{3})$`));
-      if(match)used.add(Number(match[1]));
-    });
-    const missing=list.filter(row=>!row.invoice_no).sort((a,b)=>String(a.source_key||a.id).localeCompare(String(b.source_key||b.id)));
-    for(const row of missing){
-      let suffix=1;
-      while(used.has(suffix))suffix++;
-      const invoiceNo=`${prefix}${String(suffix).padStart(3,"0")}`;
-      const {error}=await client.from("accounts_receivable").update({invoice_no:invoiceNo,updated_by:currentUser?.id||null}).eq("id",row.id);
-      if(error)throw error;
-      row.invoice_no=invoiceNo;
-      used.add(suffix);
-    }
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  for(const row of salesRows){
+    const invoiceNo=arInvoiceNumber(row.invoice_date,row,index);
+    if(!invoiceNo||row.invoice_no===invoiceNo)continue;
+    const {error}=await client.from("accounts_receivable").update({invoice_no:invoiceNo,updated_by:currentUser?.id||null}).eq("id",row.id);
+    if(error)throw error;
+    row.invoice_no=invoiceNo;
   }
 }
 function arStatementSnapshot(importerCode,range,profile){

@@ -587,27 +587,55 @@ function pendingInvoiceExportRow(entry){
   const memo=[entry.reason,entry.memo,entry.entry_date?`登録日 ${entry.entry_date}`:""].filter(Boolean).join(" / ");
   return{"商品コード":entry.product_code||"ADJUSTMENT","エンドユーザー店名":entry.customer_name_snapshot||entry.customer_code||"","ケース番号":"","温度帯":"","商品名":`【${typeLabel}】${description}`,"英名・学術名":"","packing":"","産地":"","No of BOX":"","現場入力数量":exportQty,"現場入力単位":entry.unit||(qty===null?"式":""),"NET重量":"","グロス重量":"","単価":exportPrice,"金額":amount,"メモ":memo,"欠品":""};
 }
+function invoiceImporterCode(value){
+  const raw=normalizeImporterCode(importerCode(value)||value);
+  if(/^\d{1,3}$/.test(raw))return raw;
+  const match=Object.entries(importerDisplayNames).find(([,name])=>normalizeImporterCode(name)===raw);
+  return match?.[0]||"";
+}
 function pendingInvoiceReference(country,targetDate){
-  const code=country?normalizeImporterCode(country):"ALL";
-  return `INV-${targetDate.replace(/-/g,"")}-${code}-${Date.now()}`;
+  const datePart=String(targetDate||"").normalize("NFKC").replace(/\D/g,"").slice(0,8);
+  const code=invoiceImporterCode(country);
+  if(!/^\d{8}$/.test(datePart)||!/^\d{1,3}$/.test(code))return "";
+  return `${datePart}${code.padStart(3,"0")}`;
 }
-async function claimPendingInvoiceEntries(entries,invoiceNo,targetDate){
-  const ids=entries.map(entry=>entry.id).filter(Boolean);
-  if(!ids.length)return [];
+async function claimPendingInvoiceEntries(entries,targetDate){
+  const groups=new Map();
+  entries.forEach(entry=>{
+    const invoiceNo=pendingInvoiceReference(entry.importer_code,targetDate);
+    if(!invoiceNo)throw new Error(`${entry.importer_code||"未設定"} の輸入社コードからInvoice No.を作成できません。輸入社マスタを確認してください。`);
+    const list=groups.get(invoiceNo)||[];
+    list.push(entry);
+    groups.set(invoiceNo,list);
+  });
   const now=new Date().toISOString();
-  const {data,error}=await supabaseClient
-    .from("pending_entries")
-    .update({status:"applied",applied_invoice_no:invoiceNo,applied_work_date:targetDate,applied_at:now,applied_by:currentUser.id})
-    .in("id",ids)
-    .in("status",["pending","hold"])
-    .select("id");
-  if(error)throw error;
-  const claimedIds=new Set((data||[]).map(row=>String(row.id)));
-  return entries.filter(entry=>claimedIds.has(String(entry.id)));
+  const claimed=[];
+  for(const [invoiceNo,group] of groups){
+    const ids=group.map(entry=>entry.id).filter(Boolean);
+    if(!ids.length)continue;
+    const {data,error}=await supabaseClient
+      .from("pending_entries")
+      .update({status:"applied",applied_invoice_no:invoiceNo,applied_work_date:targetDate,applied_at:now,applied_by:currentUser.id})
+      .in("id",ids)
+      .in("status",["pending","hold"])
+      .select("id");
+    if(error)throw error;
+    const claimedIds=new Set((data||[]).map(row=>String(row.id)));
+    group.filter(entry=>claimedIds.has(String(entry.id))).forEach(entry=>claimed.push({...entry,_appliedInvoiceNo:invoiceNo}));
+  }
+  return claimed;
 }
-async function rollbackPendingInvoiceEntries(entries,invoiceNo){
-  for(const status of ["pending","hold"]){
-    const ids=entries.filter(entry=>entry.status===status).map(entry=>entry.id).filter(Boolean);
+async function rollbackPendingInvoiceEntries(entries){
+  const groups=new Map();
+  entries.forEach(entry=>{
+    const key=`${entry.status}|${entry._appliedInvoiceNo||""}`;
+    const list=groups.get(key)||[];
+    list.push(entry);
+    groups.set(key,list);
+  });
+  for(const [key,group] of groups){
+    const [status,invoiceNo]=key.split("|");
+    const ids=group.map(entry=>entry.id).filter(Boolean);
     if(!ids.length)continue;
     const {error}=await supabaseClient.from("pending_entries").update({status,applied_invoice_no:null,applied_work_date:null,applied_at:null,applied_by:null}).in("id",ids).eq("applied_invoice_no",invoiceNo);
     if(error)throw error;
@@ -2394,12 +2422,11 @@ async function doExport(country){
   const targetDate=pendingInvoiceTargetDate();
   const selected=candidates.length?await showPendingInvoiceSelection(candidates,country,targetDate):[];
   if(selected===null){setSaveState("Excel出力を中止しました");return}
-  const invoiceNo=pendingInvoiceReference(country,targetDate);
   let claimed=[];
   try{
     if(selected.length){
       setSaveState("Supabase: 反映対象を確保中...");
-      claimed=await claimPendingInvoiceEntries(selected,invoiceNo,targetDate);
+      claimed=await claimPendingInvoiceEntries(selected,targetDate);
       if(!claimed.length){alert("選択した未処理伝票は、別の端末ですでに反映されました。最新状態を確認してから再度出力してください。");setSaveState("未処理伝票は他端末で反映済み",true);return}
       if(claimed.length!==selected.length)alert(`${selected.length-claimed.length}件は別の端末で先に反映されたため、今回のExcelから除外しました。`);
     }
@@ -2429,7 +2456,7 @@ async function doExport(country){
   }catch(error){
     let rollbackError=null;
     if(claimed.length){
-      try{await rollbackPendingInvoiceEntries(claimed,invoiceNo)}catch(restoreError){rollbackError=restoreError}
+      try{await rollbackPendingInvoiceEntries(claimed)}catch(restoreError){rollbackError=restoreError}
     }
     const rollbackText=claimed.length?(rollbackError?"未処理伝票の状態復元にも失敗しました。管理画面で反映状態を確認してください。":"選択した未処理伝票は未反映へ戻しました。"):"";
     setSaveState(rollbackError?"Excel出力失敗 / 未処理伝票の状態確認が必要":"Excel出力失敗 / 未処理伝票は未反映",true);
@@ -3187,6 +3214,49 @@ async function upsertSalesRecordsTrial(payloads){
     setSaveState(`Supabase: 売上確定中 ${Math.min(i+200,payloads.length)}/${payloads.length}`);
   }
 }
+function finalizedReceivablePayloads(workDate,shippingFees){
+  const groups=new Map();
+  rows.filter(row=>!row._stockout).forEach(row=>{
+    const rawImporter=importerCode(row.importer_id||row.country);
+    const code=invoiceImporterCode(rawImporter);
+    if(!code)throw new Error(`${rawImporter||"未設定"} の輸入社コードからInvoice No.を作成できません。`);
+    const group=groups.get(code)||{code,name:importerDisplayName(code),netSales:0,customers:new Set()};
+    const qty=numberOrNull(row._qty);
+    const price=numberOrNull(row.unit_price);
+    if(qty!==null&&price!==null)group.netSales+=qty*price;
+    if(row.customer)group.customers.add(String(row.customer).trim());
+    groups.set(code,group);
+  });
+  return [...groups.values()].map(group=>{
+    const feeKey=Object.keys(shippingFees||{}).find(key=>invoiceImporterCode(key)===group.code);
+    const shipping=Number(shippingFees?.[feeKey]||0);
+    const netSales=Math.round((group.netSales+Number.EPSILON)*100)/100;
+    const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
+    return {
+      source_key:`sales:${currentSessionId}:${group.code}`,
+      source_type:"sales",
+      source_session_id:currentSessionId,
+      importer_code:group.code,
+      importer_name:group.name||"",
+      customer_name:customers.length===1?customers[0]:(customers.length?`${customers[0]} 他${customers.length-1}件`:""),
+      customer_names:customers,
+      invoice_no:pendingInvoiceReference(group.code,workDate),
+      invoice_date:workDate,
+      currency:"JPY",
+      net_sales_jpy:netSales,
+      shipping_amount_jpy:shipping,
+      amount_jpy:Math.round((netSales+shipping+Number.EPSILON)*100)/100,
+      updated_by:currentUser.id
+    };
+  }).filter(row=>Math.abs(row.amount_jpy)>.005);
+}
+async function syncFinalizedSessionToReceivables(workDate,shippingFees){
+  const payloads=finalizedReceivablePayloads(workDate,shippingFees);
+  if(!payloads.length)return 0;
+  const {error}=await supabaseClient.from("accounts_receivable").upsert(payloads,{onConflict:"source_key"});
+  if(error)throw error;
+  return payloads.length;
+}
 finalizeSalesTrial=async function(){
   if(!currentSessionId){
     await saveCurrentSessionToSupabase();
@@ -3216,8 +3286,14 @@ finalizeSalesTrial=async function(){
       .single();
     if(error)throw error;
     setSessionLockStateTrial(data);
-    setSaveState("Supabase: 売上確定済み");
-    toast("売上確定しました");
+    try{
+      await syncFinalizedSessionToReceivables(workDate,shippingFees);
+      setSaveState("Supabase: 売上確定・売掛反映済み");
+      toast("売上確定し、売掛へ反映しました");
+    }catch(receivableError){
+      setSaveState("Supabase: 売上確定済み / 売掛反映待ち",true);
+      alert(`売上確定は完了しましたが、売掛への自動反映に失敗しました。\n売掛管理の「売上確定を反映」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
+    }
   }catch(error){
     const message=salesLockSetupErrorMessage(error);
     setSaveState("Supabase: 売上確定失敗",true);
