@@ -4874,7 +4874,7 @@ function arBuildSalesGroups(salesRows,sessions){
   const sessionMap=new Map((sessions||[]).map(session=>[session.id,session]));
   const eligible=(salesRows||[]).filter(row=>!row.is_stockout&&isUuid(row.session_id));
   const importerSets=new Map();
-  eligible.forEach(row=>{
+  (salesRows||[]).filter(row=>isUuid(row.session_id)).forEach(row=>{
     const identity=arImporterIdentity({...row,importer_code:row.importer_code||row.importer_id||""},index);
     if(!identity.code)return;
     const set=importerSets.get(row.session_id)||new Set();
