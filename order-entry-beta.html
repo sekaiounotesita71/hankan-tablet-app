@@ -4871,7 +4871,9 @@ function arSessionShippingFee(session,importerCode,importerCount){
 function arBuildSalesGroups(salesRows,sessions){
   const index=salesRefBuildImporterIndex();
   salesReferenceImporterIndex=index;
-  const sessionMap=new Map((sessions||[]).map(session=>[session.id,session]));
+  const sessionMap=new Map((sessions||[])
+    .filter(session=>session.locked||session.status==="closed")
+    .map(session=>[session.id,session]));
   const eligible=(salesRows||[]).filter(row=>!row.is_stockout&&isUuid(row.session_id));
   const importerSets=new Map();
   (salesRows||[]).filter(row=>isUuid(row.session_id)).forEach(row=>{
