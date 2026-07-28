@@ -1816,12 +1816,20 @@ async function saveCurrentSessionToSupabase(){
   currentSessionWorkDate=currentWorkDateValue();
   const sessionPayload={name:currentSessionName,status:"active",work_date:currentSessionWorkDate,source_order_filename:latestOrderFilename||null,source_master_filename:latestMasterFilename||null};
   if(!currentSessionId){
-    const {data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...sessionPayload,created_by:currentUser.id}).select("id,name").single();
+    let {data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...sessionPayload,created_by:currentUser.id}).select("id,name").single();
+    if(sessionError?.code==="42703"&&/work_date/i.test(String(sessionError.message||""))){
+      const {work_date,...legacyPayload}=sessionPayload;
+      ({data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...legacyPayload,created_by:currentUser.id}).select("id,name").single());
+    }
     if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業作成エラー: "+sessionError.message);return}
     currentSessionId=session.id;
     updateCloudSaveButton();
   }else{
-    const {error:sessionError}=await supabaseClient.from("work_sessions").update(sessionPayload).eq("id",currentSessionId);
+    let {error:sessionError}=await supabaseClient.from("work_sessions").update(sessionPayload).eq("id",currentSessionId);
+    if(sessionError?.code==="42703"&&/work_date/i.test(String(sessionError.message||""))){
+      const {work_date,...legacyPayload}=sessionPayload;
+      ({error:sessionError}=await supabaseClient.from("work_sessions").update(legacyPayload).eq("id",currentSessionId));
+    }
     if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業更新エラー: "+sessionError.message);return}
   }
   const payloads=rows.map(rowToOrderLinePayload);
@@ -3238,7 +3246,7 @@ loadSessionList=async function(){
   if(!(await requireSupabaseLogin()))return;
   const {data,error}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,work_date,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .select("*")
     .order("updated_at",{ascending:false})
     .limit(200);
   if(error){toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));return}
@@ -3286,7 +3294,7 @@ async function openSalesReference(){
   currentSalesReferenceRows=[];
   const {data,error}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,work_date,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .select("*")
     .order("finalized_at",{ascending:false,nullsFirst:false})
     .limit(120);
   if(error){list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;summary.textContent="読込失敗";return}
@@ -3462,7 +3470,7 @@ async function openSalesReference(){
   currentSalesReferenceRows=[];
   const {data,error}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,work_date,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .select("*")
     .order("finalized_at",{ascending:false,nullsFirst:false})
     .limit(120);
   if(error){
@@ -3695,7 +3703,7 @@ openSalesReference=async function(){
   currentSalesReferenceMode="all";
   const {data:sessions,error:sessionError}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,work_date,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+    .select("*")
     .order("finalized_at",{ascending:false,nullsFirst:false})
     .limit(120);
   if(sessionError){
@@ -5231,7 +5239,7 @@ async function createWorkSessionFromConfirmedOrders(){
   }
   const {data:existing,error:existingError}=await supabaseClient
     .from("work_sessions")
-    .select("id,name,status,locked,work_date,created_at,updated_at,finalized_at")
+    .select("*")
     .order("updated_at",{ascending:false})
     .limit(200);
   if(existingError){toast("作業一覧確認エラー: "+existingError.message);return}
