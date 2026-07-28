@@ -2560,7 +2560,7 @@ async function loadSalesReferenceBoard(){
     let shippingWarning="";
     const sessionResult=await client
       .from("work_sessions")
-      .select("id,name,status,locked,work_date,created_at,updated_at,finalized_at,shipping_fee,shipping_fees")
+      .select("*")
       .order("finalized_at",{ascending:false,nullsFirst:false})
       .limit(5000);
     if(sessionResult.error){
@@ -4634,7 +4634,7 @@ async function syncSalesToReceivables(){
   try{
     const [salesRows,sessionResult]=await Promise.all([
       arReadSalesRows(),
-      client.from("work_sessions").select("id,name,status,locked,work_date,created_at,updated_at,finalized_at,shipping_fee,shipping_fees").limit(10000)
+      client.from("work_sessions").select("*").limit(10000)
     ]);
     if(sessionResult.error)throw sessionResult.error;
     const sessions=sessionResult.data||[];
