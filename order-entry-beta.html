@@ -211,7 +211,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <select id="pending-status" data-pending-input data-pending-field="status">
             <option value="pending">未反映</option>
             <option value="hold">保留</option>
-            <option value="applied">反映済み</option>
+            <option value="applied" disabled>反映済み（Invoice出力時のみ）</option>
             <option value="cancelled">取消</option>
           </select>
         </label>
@@ -619,7 +619,7 @@ let receivablePayments=[];
 let receivableClosings=[];
 let receivablesLoaded=false;
 let receivableStatementProfile=null;
-let receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,error:""};
+let receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,adjustmentCount:0,error:""};
 let productGuideRows=[];
 let productGuideTemplates=[];
 let productGuideVariants=[];
@@ -1439,6 +1439,7 @@ function savePendingLocal(){
 function pendingDbErrorMessage(error){
   const msg=String(error?.message||error||"");
   if(error?.code==="42P01"||/relation .* does not exist/i.test(msg))return "未処理伝票SQLが未実行です。pending-entries-migration.sql をSupabase SQL Editorで実行してください。";
+  if(error?.code==="42703"&&/applied_work_date/i.test(msg))return "赤伝の売上・売掛連動SQLが未実行です。pending-sales-integration-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg))return "未処理伝票SQLの反映待ちです。pending-entries-migration.sql を再実行、または少し待って再読込してください。";
   return msg||"未処理伝票のDB処理でエラーが発生しました。";
 }
@@ -1465,6 +1466,7 @@ function dbPendingToEntry(row){
     sourceType:row.source_type||"manual",
     sourceRef:row.source_ref||"",
     appliedInvoiceNo:row.applied_invoice_no||"",
+    appliedWorkDate:row.applied_work_date||"",
     appliedAt:row.applied_at||"",
     createdAt:row.created_at||""
   };
@@ -1701,6 +1703,11 @@ function fillPendingFromHeader(){
 }
 async function savePendingEntry(){
   const entry=pendingFormEntry();
+  const existing=pendingEntries.find(item=>String(item.id)===String(entry.id));
+  if(entry.status==="applied"&&!existing?.appliedInvoiceNo){
+    alert("反映済みへの変更はInvoice Excel出力時に自動で行われます。");
+    return;
+  }
   if(!entry.importerCode){alert("輸入社コードを入力してください。");return}
   if(!entry.customerName&&!entry.customerCode){alert("得意先を入力してください。");return}
   if(!entry.description){alert("商品名・内容を入力してください。");return}
@@ -1750,15 +1757,30 @@ function editPendingEntry(id){
 async function setPendingStatus(id,status){
   const entry=pendingEntries.find(x=>String(x.id)===String(id));
   if(!entry)return;
+  if(status==="applied"&&!entry.appliedInvoiceNo){
+    alert("反映済みへの変更はInvoice Excel出力時に自動で行われます。");
+    return;
+  }
   const previous=entry.status;
   entry.status=status;
   try{
     if(dbReady&&supabaseClient&&!String(id).startsWith("local-")){
       const patch={status};
       if(status==="applied")patch.applied_at=new Date().toISOString();
+      else{
+        patch.applied_invoice_no=null;
+        patch.applied_work_date=null;
+        patch.applied_at=null;
+        patch.applied_by=null;
+      }
       if(status==="cancelled")patch.cancelled_at=new Date().toISOString();
       const {error}=await supabaseClient.from("pending_entries").update(patch).eq("id",id);
       if(error)throw error;
+    }
+    if(status!=="applied"){
+      entry.appliedInvoiceNo="";
+      entry.appliedWorkDate="";
+      entry.appliedAt="";
     }
     savePendingLocal();
     renderPendingEntries();
@@ -1815,7 +1837,6 @@ function renderPendingEntries(){
         <button class="small" onclick="editPendingEntry('${esc(entry.id)}')">編集</button>
         <button class="small" onclick="setPendingStatus('${esc(entry.id)}','pending')">未反映</button>
         <button class="small" onclick="setPendingStatus('${esc(entry.id)}','hold')">保留</button>
-        <button class="small" onclick="setPendingStatus('${esc(entry.id)}','applied')">反映済</button>
         <button class="small danger" onclick="setPendingStatus('${esc(entry.id)}','cancelled')">取消</button>
       </div>
     </div>`;
@@ -1899,7 +1920,7 @@ function salesRefShippingFeeForRows(rows){
     if(importerKey&&importerKey!=="未設定")set.add(importerKey);
     importersBySession.set(row.session_id,set);
   });
-  let total=0;
+  let total=salesRefShippingAdjustmentForRows(rows);
   importersBySession.forEach((codes,sessionId)=>{
     total+=salesRefSessionShippingFee(sessionId,codes);
   });
@@ -1929,6 +1950,19 @@ function salesRefShippingBreakdownData(rows){
   result.forEach(item=>{
     item.amount=salesRefSessionShippingFee(item.sessionId,new Set([item.importerKey]));
   });
+  rows.filter(row=>Math.abs(salesRefNum(row._shipping_adjustment_amount))>.005).forEach(row=>{
+    const importer=salesRefRowImporter(row);
+    result.push({
+      sessionId:`pending:${row.pending_entry_id||row.id}`,
+      sessionName:row.product_name||"送料調整",
+      workDate:salesRefRowDate(row),
+      importerCode:importer.code,
+      importerLabel:importer.label,
+      importerKey:importer.key,
+      amount:salesRefNum(row._shipping_adjustment_amount),
+      adjustment:true
+    });
+  });
   return result.sort((a,b)=>String(b.workDate).localeCompare(String(a.workDate),"ja")||String(a.importerCode).localeCompare(String(b.importerCode),"ja"));
 }
 function renderSalesRefShippingBreakdown(rows){
@@ -1947,7 +1981,7 @@ function renderSalesRefShippingBreakdown(rows){
       <strong>${esc(row.importerLabel)}</strong>
       <span class="sales-shipping-session">${esc(row.sessionName)}</span>
       <span class="sales-shipping-amount">${esc(salesRefMoney(row.amount))}</span>
-      ${currentUserIsAdmin()?`<button class="small" type="button" onclick="openShippingCorrection(${index})">修正</button>`:"<span></span>"}
+      ${currentUserIsAdmin()&&!row.adjustment?`<button class="small" type="button" onclick="openShippingCorrection(${index})">修正</button>`:"<span></span>"}
     </div>`).join("")}</div>
   </div>`;
 }
@@ -2036,6 +2070,77 @@ function salesRefRowImporter(row){
     };
   }
   return salesRefImporterIdentity(row);
+}
+function salesRefAppliedPendingDate(row={}){
+  const explicit=salesRefDateOnly(row.applied_work_date);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(explicit))return explicit;
+  const invoiceMatch=String(row.applied_invoice_no||"").match(/^INV-(\d{4})(\d{2})(\d{2})-/);
+  if(invoiceMatch)return `${invoiceMatch[1]}-${invoiceMatch[2]}-${invoiceMatch[3]}`;
+  return salesRefDateOnly(row.planned_date||row.entry_date)||salesRefTokyoDateOnly(row.applied_at);
+}
+function salesRefPendingSignedAmount(row={}){
+  const amount=salesRefNum(row.amount);
+  return (row.entry_type==="credit_note"||row.entry_type==="discount")&&amount>0?-amount:amount;
+}
+async function salesRefReadAppliedPendingRows(client=initSupabase(),options={}){
+  const records=[];
+  const pageSize=500;
+  for(let offset=0;offset<100000;offset+=pageSize){
+    const {data,error}=await client
+      .from("pending_entries")
+      .select("*")
+      .eq("status","applied")
+      .not("applied_invoice_no","is",null)
+      .order("applied_at",{ascending:false,nullsFirst:false})
+      .range(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    records.push(...page);
+    if(page.length<pageSize)break;
+  }
+  return records.filter(row=>{
+    const date=salesRefAppliedPendingDate(row);
+    if(options.from&&date<options.from)return false;
+    if(options.to&&date>options.to)return false;
+    return true;
+  });
+}
+function salesRefPendingToRow(row,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  const amount=salesRefPendingSignedAmount(row);
+  const isShipping=row.entry_type==="shipping_adjustment";
+  const qty=row.qty===null||row.qty===undefined||row.qty===""?1:salesRefNum(row.qty);
+  const unitPrice=qty?amount/qty:amount;
+  const label=pendingEntryTypeLabel(row.entry_type)||"調整";
+  return salesRefNormalizeRowImporter({
+    id:`pending:${row.id}`,
+    pending_entry_id:row.id,
+    source_type:label,
+    work_date:salesRefAppliedPendingDate(row),
+    finalized_at:row.applied_at||row.updated_at||row.created_at||"",
+    importer_code:row.importer_code||"",
+    importer_name:row.importer_name_snapshot||"",
+    store_name:row.customer_name_snapshot||row.customer_code||"",
+    customer_code:row.customer_code||"",
+    product_id:row.product_code||"ADJUSTMENT",
+    product_name:`【${label}】${row.description||row.product_name_snapshot||"調整"}`,
+    origin:"",
+    input_qty:qty,
+    input_unit:row.unit||(row.qty===null||row.qty===undefined||row.qty===""?"式":""),
+    net_weight:null,
+    box_no:"",
+    unit_price:isShipping?null:unitPrice,
+    amount:isShipping?0:amount,
+    memo:[row.reason,row.memo,row.applied_invoice_no?`Invoice ${row.applied_invoice_no}`:""].filter(Boolean).join(" / "),
+    is_stockout:false,
+    _pending_adjustment:true,
+    _shipping_adjustment_amount:isShipping?amount:0
+  },index);
+}
+function salesRefShippingAdjustmentForRows(rows){
+  return rows.reduce((sum,row)=>sum+salesRefNum(row._shipping_adjustment_amount),0);
+}
+function salesRefDisplayAmount(row){
+  return row?._shipping_adjustment_amount?row._shipping_adjustment_amount:row?.amount;
 }
 function salesRefDbErrorMessage(error){
   const msg=String(error?.message||error||"");
@@ -2705,6 +2810,18 @@ async function loadSalesReferenceBoard(){
         throw historyError;
       }
     }
+    let appliedPendingRows=[];
+    try{
+      appliedPendingRows=await salesRefReadAppliedPendingRows(client);
+      if(state)state.textContent=`売上データを読込中... 現場 ${allRows.length}件 / 過去 ${historicalRows.length}件 / 赤伝等 ${appliedPendingRows.length}件`;
+    }catch(pendingError){
+      const msg=String(pendingError?.message||pendingError||"");
+      if(/pending_entries|relation .* does not exist/i.test(msg)){
+        shippingWarning=[shippingWarning,"未処理伝票SQL未実行"].filter(Boolean).join(" / ");
+      }else{
+        throw pendingError;
+      }
+    }
     salesReferenceImporterIndex=salesRefBuildImporterIndex();
     const sessionMap=new Map(salesReferenceSessions.map(session=>[session.id,session]));
     const currentRows=allRows.map(row=>{
@@ -2714,7 +2831,8 @@ async function loadSalesReferenceBoard(){
       return salesRefNormalizeRowImporter({...row,source_type:"現場確定",work_date:workDate,finalized_at:finalizedAt},salesReferenceImporterIndex);
     });
     const pastRows=historicalRows.map(row=>salesRefNormalizeRowImporter({...row,source_type:"過去データ",work_date:row.work_date||salesRefDateOnly(row.finalized_at),session_id:row.session_id||""},salesReferenceImporterIndex));
-    salesReferenceRows=[...currentRows,...pastRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
+    const adjustmentRows=appliedPendingRows.map(row=>salesRefPendingToRow(row,salesReferenceImporterIndex));
+    salesReferenceRows=[...currentRows,...pastRows,...adjustmentRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
     if(state)state.textContent=`売上データ ${salesReferenceRows.length}件を読み込みました。${shippingWarning?` 送料情報: ${shippingWarning}`:""}`;
     renderSalesReferenceBoard();
   }catch(error){
@@ -2765,8 +2883,8 @@ function renderSalesReferenceBoard(){
     <th>区分</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th><th>操作</th>
   </tr></thead><tbody>${rows.map(row=>`<tr>
     <td>${esc(row.source_type||"現場確定")}</td><td>${esc(salesRefRowDate(row))}</td><td>${esc(salesRefRowImporter(row).label)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
-    <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(row.amount))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
-    <td>${currentUserIsAdmin()&&row.source_type!=="過去データ"&&row.id?`<button class="small" type="button" onclick="openSalesRecordCorrection('${esc(row.id)}')">修正</button>`:""}</td>
+    <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(salesRefDisplayAmount(row)))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
+    <td>${currentUserIsAdmin()&&row.source_type==="現場確定"&&row.id?`<button class="small" type="button" onclick="openSalesRecordCorrection('${esc(row.id)}')">修正</button>`:""}</td>
   </tr>`).join("")}</tbody></table>`;
 }
 function salesCorrectionSetValue(id,value){
@@ -2920,6 +3038,7 @@ function exportSalesReferenceBoardExcel(){
     "箱番号":row.box_no||"",
     "単価":row.unit_price??"",
     "金額":row.amount??"",
+    "送料調整":row._shipping_adjustment_amount??"",
     "メモ":row.memo||"",
     "欠品":row.is_stockout?"欠品":""
   }));
@@ -3010,6 +3129,7 @@ function productGuideProductKey(row){
 function productGuideSourceRows(range){
   const importer=val("product-guide-importer").trim().toLowerCase();
   return salesReferenceRows.filter(row=>{
+    if(row._pending_adjustment)return false;
     const d=salesRefRowDate(row);
     if(range?.from&&d<range.from)return false;
     if(range?.to&&d>range.to)return false;
@@ -5378,7 +5498,7 @@ function arClosingPreviewKey(calculation){
 async function refreshClosingSalesPreview(options={}){
   const calculation=arClosingCalculation();
   if(calculation.error||calculation.existing){
-    receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,error:""};
+    receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,adjustmentCount:0,error:""};
     renderClosingPreview();
     return;
   }
@@ -5387,19 +5507,29 @@ async function refreshClosingSalesPreview(options={}){
     renderClosingPreview();
     return;
   }
-  receivableClosingSalesPreview={key,status:"loading",amount:0,netSales:0,shippingSales:0,groupCount:0,error:""};
+  receivableClosingSalesPreview={key,status:"loading",amount:0,netSales:0,shippingSales:0,groupCount:0,adjustmentCount:0,error:""};
   renderClosingPreview();
   try{
     const client=initSupabase();
-    const [salesRows,sessionResult]=await Promise.all([
+    const [salesRows,sessionResult,pendingRows]=await Promise.all([
       arReadSalesRows({from:calculation.range.from,to:calculation.range.to}),
-      client.from("work_sessions").select("*").limit(10000)
+      client.from("work_sessions").select("*").limit(10000),
+      salesRefReadAppliedPendingRows(client,{from:calculation.range.from,to:calculation.range.to})
     ]);
     if(sessionResult.error)throw sessionResult.error;
     const groups=arBuildSalesGroups(salesRows,sessionResult.data||[])
       .filter(group=>arSameImporter(group.importerCode,calculation.importerCode));
-    const netSales=arRound(groups.reduce((sum,group)=>sum+group.rawNetSales,0));
-    const shippingSales=arRound(groups.reduce((sum,group)=>sum+group.shipping,0));
+    const adjustmentRows=pendingRows
+      .map(row=>salesRefPendingToRow(row))
+      .filter(row=>arSameImporter(row,calculation.importerCode));
+    const netSales=arRound(
+      groups.reduce((sum,group)=>sum+group.rawNetSales,0)
+      +adjustmentRows.reduce((sum,row)=>sum+salesRefNum(row.amount),0)
+    );
+    const shippingSales=arRound(
+      groups.reduce((sum,group)=>sum+group.shipping,0)
+      +salesRefShippingAdjustmentForRows(adjustmentRows)
+    );
     if(arClosingPreviewKey(arClosingCalculation())!==key)return;
     receivableClosingSalesPreview={
       key,
@@ -5408,11 +5538,12 @@ async function refreshClosingSalesPreview(options={}){
       netSales,
       shippingSales,
       groupCount:groups.length,
+      adjustmentCount:adjustmentRows.length,
       error:""
     };
   }catch(error){
     if(arClosingPreviewKey(arClosingCalculation())!==key)return;
-    receivableClosingSalesPreview={key,status:"error",amount:0,netSales:0,shippingSales:0,groupCount:0,error:arDbErrorMessage(error)};
+    receivableClosingSalesPreview={key,status:"error",amount:0,netSales:0,shippingSales:0,groupCount:0,adjustmentCount:0,error:arDbErrorMessage(error)};
   }
   renderClosingPreview();
 }
@@ -5460,7 +5591,7 @@ function renderClosingPreview(){
     state.textContent=`今回売上の照合に失敗しました: ${sourcePreview.error}`;
   }else{
     const sourceNote=sourcePreview?.status==="loaded"
-      ?`（純売上 ¥${salesRefMoney(sourcePreview.netSales)||"0"} + 送料 ¥${salesRefMoney(sourcePreview.shippingSales)||"0"} / ${sourcePreview.groupCount}作業）`
+      ?`（純売上 ¥${salesRefMoney(sourcePreview.netSales)||"0"} + 送料 ¥${salesRefMoney(sourcePreview.shippingSales)||"0"} / ${sourcePreview.groupCount}作業${sourcePreview.adjustmentCount?` + ${sourcePreview.adjustmentCount}調整`:""}）`
       :"";
     state.textContent=`繰越 ¥${salesRefMoney(carryover)||"0"} + 今回売上 ¥${salesRefMoney(chargeAmount)||"0"} ${sourceNote} - 入金等 ¥${salesRefMoney(paymentAmount)||"0"} = 今回請求 ¥${salesRefMoney(totalAmount)||"0"}`;
   }
@@ -5573,6 +5704,18 @@ async function closeAccountsReceivablePeriod(){
   calculation=arClosingCalculation();
   if(calculation.error){alert(calculation.error);return}
   if(calculation.existing){alert("この期間はすでに請求締め済みです。");return}
+  await refreshClosingSalesPreview({force:true});
+  const sourcePreview=receivableClosingSalesPreview.key===arClosingPreviewKey(calculation)
+    ?receivableClosingSalesPreview
+    :null;
+  if(sourcePreview?.status==="error"){
+    alert(`今回売上を照合できませんでした。\n${sourcePreview.error}`);
+    return;
+  }
+  if(sourcePreview?.status==="loaded"&&Math.abs(arNumber(calculation.snapshot?.chargeAmount)-sourcePreview.amount)>.005){
+    alert("売上参照と売掛の金額が一致しないため、請求締めを中止しました。赤伝がある場合は pending-sales-integration-migration.sql をSupabase SQL Editorで実行し、「売掛読込」を押してください。");
+    return;
+  }
   const records=arStatementRecords(calculation.importerCode);
   try{
     setAppBusy(true,"請求締めを実行しています。");
@@ -5814,6 +5957,11 @@ function arStatementRowsHtml(snapshot){
     const isOpening=row.source_type==="opening";
     if(isOpening){
       rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Opening Balance${row.invoice_no?` No.${esc(row.invoice_no)}`:""}</td><td class="amount">${esc(arStatementMoney(row.amount_jpy))}</td></tr>`);
+      return;
+    }
+    if(row.source_type==="adjustment"){
+      const label=row.memo||`Adjustment${row.invoice_no?` No.${row.invoice_no}`:""}`;
+      rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>${esc(label)}</td><td class="amount">${esc(arStatementMoney(row.amount_jpy))}</td></tr>`);
       return;
     }
     const net=arNumber(row.net_sales_jpy);
