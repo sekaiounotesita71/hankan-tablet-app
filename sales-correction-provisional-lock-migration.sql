@@ -37,6 +37,51 @@ using (public.is_master_admin());
 revoke insert, update, delete on public.sales_correction_log from authenticated;
 grant select on public.sales_correction_log to authenticated;
 
+-- 新旧データで混在する輸入社名（BKK等）と輸入社コード（02等）を統一します。
+-- 同名の旧コードが残っている場合は、数字の現行コードを優先します。
+create or replace function public.canonical_importer_code(
+  p_value text
+)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with input_value as (
+    select upper(regexp_replace(coalesce(p_value, ''), '[[:space:]_-]+', '', 'g')) as value
+  ),
+  candidates as (
+    select
+      upper(regexp_replace(m.importer_code, '[[:space:]_-]+', '', 'g')) as importer_code,
+      case when trim(m.importer_code) ~ '^[0-9]+$' then 0 else 1 end as legacy_rank,
+      case
+        when upper(regexp_replace(m.importer_code, '[[:space:]_-]+', '', 'g')) = i.value then 0
+        else 1
+      end as match_rank
+    from public.importer_master m
+    cross join input_value i
+    where
+      upper(regexp_replace(m.importer_code, '[[:space:]_-]+', '', 'g')) = i.value
+      or upper(regexp_replace(m.importer_name, '[[:space:]_-]+', '', 'g')) = i.value
+      or exists (
+        select 1
+        from unnest(coalesce(m.aliases, '{}'::text[])) as alias_item(alias_name)
+        where upper(regexp_replace(alias_name, '[[:space:]_-]+', '', 'g')) = i.value
+      )
+  )
+  select coalesce(
+    (
+      select c.importer_code
+      from candidates c
+      order by c.legacy_rank, c.match_rank, c.importer_code
+      limit 1
+    ),
+    i.value
+  )
+  from input_value i;
+$$;
+
 -- 売上確定前は現場担当者が更新でき、売上確定後は管理者だけが更新できます。
 drop policy if exists "authenticated can update sales records"
   on public.sales_records;
@@ -158,7 +203,7 @@ begin
     raise exception '入金登録済みの売掛があります。先に入金履歴を確認してください。';
   end if;
 
-  select count(distinct upper(regexp_replace(coalesce(importer_code, importer_id, ''), '[[:space:]_-]+', '', 'g')))
+  select count(distinct public.canonical_importer_code(coalesce(importer_code, importer_id, '')))
   into importer_count
   from public.sales_records
   where session_id = p_session_id
@@ -167,7 +212,7 @@ begin
 
   with grouped as (
     select
-      upper(regexp_replace(coalesce(importer_code, importer_id, ''), '[[:space:]_-]+', '', 'g')) as importer_code,
+      public.canonical_importer_code(coalesce(importer_code, importer_id, '')) as importer_code,
       min(work_date) as invoice_date,
       sum(coalesce(amount, input_qty * unit_price, 0)) as net_sales,
       array_remove(array_agg(distinct nullif(trim(store_name), '') order by nullif(trim(store_name), '')), null) as customers
@@ -175,15 +220,24 @@ begin
     where session_id = p_session_id
       and coalesce(is_stockout, false) = false
       and coalesce(importer_code, importer_id, '') <> ''
-    group by upper(regexp_replace(coalesce(importer_code, importer_id, ''), '[[:space:]_-]+', '', 'g'))
+    group by public.canonical_importer_code(coalesce(importer_code, importer_id, ''))
   ),
   calculated as (
     select
       g.*,
       coalesce(
+        (
+          select (fee_item.value #>> '{}')::numeric
+          from jsonb_each(coalesce(session_row.shipping_fees, '{}'::jsonb)) fee_item
+          where public.canonical_importer_code(fee_item.key) = g.importer_code
+          order by
+            case
+              when upper(regexp_replace(fee_item.key, '[[:space:]_-]+', '', 'g')) = g.importer_code then 0
+              else 1
+            end
+          limit 1
+        ),
         case
-          when coalesce(session_row.shipping_fees, '{}'::jsonb) ? g.importer_code
-            then (session_row.shipping_fees ->> g.importer_code)::numeric
           when importer_count = 1
             then session_row.shipping_fee
           else 0
@@ -217,7 +271,8 @@ begin
     coalesce((
       select m.importer_name
       from public.importer_master m
-      where upper(regexp_replace(m.importer_code, '[[:space:]_-]+', '', 'g')) = c.importer_code
+      where public.canonical_importer_code(m.importer_code) = c.importer_code
+      order by case when trim(m.importer_code) ~ '^[0-9]+$' then 0 else 1 end
       limit 1
     ), ''),
     case
@@ -268,8 +323,8 @@ begin
       from public.sales_records s
       where s.session_id = p_session_id
         and coalesce(s.is_stockout, false) = false
-        and upper(regexp_replace(coalesce(s.importer_code, s.importer_id, ''), '[[:space:]_-]+', '', 'g'))
-          = upper(regexp_replace(r.importer_code, '[[:space:]_-]+', '', 'g'))
+        and public.canonical_importer_code(coalesce(s.importer_code, s.importer_id, ''))
+          = public.canonical_importer_code(r.importer_code)
     );
 end;
 $$;
@@ -297,7 +352,7 @@ as $$
 declare
   old_row public.sales_records;
   new_row public.sales_records;
-  normalized_importer text := upper(regexp_replace(coalesce(p_importer_code, ''), '[[:space:]_-]+', '', 'g'));
+  normalized_importer text := public.canonical_importer_code(p_importer_code);
 begin
   if not public.is_master_admin() then
     raise exception '売上を修正できるのは管理者のみです。';
@@ -409,10 +464,11 @@ as $$
 declare
   session_row public.work_sessions;
   updated_row public.work_sessions;
-  normalized_importer text := upper(regexp_replace(coalesce(p_importer_code, ''), '[[:space:]_-]+', '', 'g'));
+  normalized_importer text := public.canonical_importer_code(p_importer_code);
   old_fees jsonb;
   normalized_fees jsonb := '{}'::jsonb;
   fee_item record;
+  canonical_fee_key text;
   total_fee numeric := 0;
 begin
   if not public.is_master_admin() then
@@ -438,7 +494,7 @@ begin
     select 1
     from public.sales_records s
     where s.session_id = p_session_id
-      and upper(regexp_replace(coalesce(s.importer_code, s.importer_id, ''), '[[:space:]_-]+', '', 'g'))
+      and public.canonical_importer_code(coalesce(s.importer_code, s.importer_id, ''))
         = normalized_importer
   ) then
     raise exception '対象作業に指定輸入社の売上がありません。';
@@ -449,10 +505,13 @@ begin
   old_fees := coalesce(session_row.shipping_fees, '{}'::jsonb);
   for fee_item in select key, value from jsonb_each(old_fees)
   loop
-    normalized_fees := normalized_fees || jsonb_build_object(
-      upper(regexp_replace(fee_item.key, '[[:space:]_-]+', '', 'g')),
-      fee_item.value
-    );
+    canonical_fee_key := public.canonical_importer_code(fee_item.key);
+    if canonical_fee_key <> '' then
+      normalized_fees := normalized_fees || jsonb_build_object(
+        canonical_fee_key,
+        fee_item.value
+      );
+    end if;
   end loop;
   normalized_fees := normalized_fees || jsonb_build_object(normalized_importer, round(p_amount, 2));
 
@@ -561,6 +620,7 @@ end;
 $$;
 
 revoke all on function public.rebuild_session_accounts_receivable(uuid) from public;
+revoke all on function public.canonical_importer_code(text) from public;
 revoke all on function public.admin_correct_sales_record(
   uuid, date, text, text, text, text, text, numeric, text, numeric, numeric, text, text
 ) from public;
