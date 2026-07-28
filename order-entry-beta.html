@@ -398,9 +398,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <summary>請求締め</summary>
         <div class="ar-entry-body">
           <div class="ar-closing-grid">
-            <label>対象月<input id="ar-closing-month" type="month" onchange="renderClosingPreview()"></label>
+            <label>対象月<input id="ar-closing-month" type="month" onchange="refreshClosingSalesPreview({force:true})"></label>
             <div class="hint">上部の輸入社を選択すると、マスタの締め条件から期間と支払期限を自動計算します。</div>
-            <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter().then(()=>renderClosingPreview())">条件を再読込</button>
+            <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter().then(()=>refreshClosingSalesPreview({force:true}))">条件を再読込</button>
             <button class="btn primary" type="button" onclick="closeAccountsReceivablePeriod()">請求締めを実行</button>
             <div class="ar-closing-preview">
               <div class="ar-summary-card"><div class="ar-summary-label">締め期間</div><div class="ar-summary-value" id="ar-closing-period" style="font-size:15px">-</div></div>
@@ -619,6 +619,7 @@ let receivablePayments=[];
 let receivableClosings=[];
 let receivablesLoaded=false;
 let receivableStatementProfile=null;
+let receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,error:""};
 let productGuideRows=[];
 let productGuideTemplates=[];
 let productGuideVariants=[];
@@ -4680,6 +4681,25 @@ function arCustomerNames(row){
   if(!list.length&&row?.customer_name)list.push(String(row.customer_name));
   return [...new Set(list)];
 }
+function arImporterIdentity(source,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  if(source&&typeof source==="object"&&source.key&&source.code!==undefined){
+    return {...source,code:normalizeImporterCode(source.code)};
+  }
+  const identity=salesRefImporterIdentity(source,index);
+  return {
+    ...identity,
+    code:normalizeImporterCode(identity.code),
+    key:identity.key||`raw:${salesRefImporterNameKey(identity.code||identity.name)}`
+  };
+}
+function arCanonicalImporterCode(source,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  return arImporterIdentity(source,index).code;
+}
+function arSameImporter(left,right,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  const leftIdentity=arImporterIdentity(left,index);
+  const rightIdentity=arImporterIdentity(right,index);
+  return !!leftIdentity.key&&leftIdentity.key===rightIdentity.key;
+}
 function arSettlementFor(receivableId){
   return receivablePayments
     .filter(payment=>payment.receivable_id===receivableId)
@@ -4697,7 +4717,8 @@ function arRecordState(row){
 }
 function arFilteredRows(){
   const range=salesRefDateRangeFromText(val("ar-date-range"));
-  const importer=normalizeImporterCode(val("ar-importer"));
+  const importerText=val("ar-importer").trim();
+  const importer=importerText?arImporterIdentity(importerText):null;
   const status=val("ar-status");
   const search=val("ar-search").trim().toLowerCase();
   if(range.raw&&(!range.from||!range.to))return {rows:[],range,error:"日付は 20250701-20250731 の形式で入力してください。"};
@@ -4705,13 +4726,13 @@ function arFilteredRows(){
     const invoiceDate=String(row.invoice_date||"").slice(0,10);
     if(range.from&&invoiceDate<range.from)return false;
     if(range.to&&invoiceDate>range.to)return false;
-    if(importer&&!normalizeImporterCode(row.importer_code).includes(importer))return false;
+    if(importer&&!arSameImporter(row,importer))return false;
     const state=arRecordState(row);
     if(status==="open"&&state.balance<=.005)return false;
     if(status&&status!=="open"&&state.key!==status)return false;
     if(!search)return true;
     const haystack=[
-      row.invoice_no,row.importer_code,row.importer_name,row.customer_code,row.customer_name,
+      row.invoice_no,arImporterIdentity(row).label,row.importer_code,row.importer_name,row.customer_code,row.customer_name,
       ...arCustomerNames(row),row.memo
     ].join(" ").toLowerCase();
     return haystack.includes(search);
@@ -4757,10 +4778,11 @@ function renderReceivables(){
       const freee=row.freee_excluded?"計上済":(row.freee_exported_at?"出力済":"未出力");
       const canDelete=currentUserIsAdmin()&&!row.closing_id&&["opening","manual","adjustment"].includes(row.source_type);
       const rowClass=[selectedId===row.id?"selected":"",row.closing_id?"locked":""].filter(Boolean).join(" ");
+      const importer=arImporterIdentity(row);
       return `<tr class="${rowClass}">
         <td>${esc(row.invoice_date||"")}</td>
         <td>${esc(row.invoice_no||"-")}</td>
-        <td><b>${esc(row.importer_code||"")}</b>${row.importer_name?` ${esc(row.importer_name)}`:""}</td>
+        <td><b>${esc(importer.code||row.importer_code||"")}</b>${importer.name?` ${esc(importer.name)}`:""}</td>
         <td title="${esc(customers)}">${esc(customers||"-")}</td>
         <td class="ar-money">${esc(salesRefMoney(row._state.amount)||"0")}</td>
         <td class="ar-money">${esc(salesRefMoney(row._state.settled)||"0")}</td>
@@ -4817,6 +4839,7 @@ async function loadReceivables(){
     renderReceivablePaymentHistory();
     renderClosingHistory();
     renderClosingPreview();
+    if(val("ar-importer").trim()&&val("ar-closing-month"))refreshClosingSalesPreview({force:true});
   }catch(error){
     receivableRows=[];
     receivablePayments=[];
@@ -4827,7 +4850,7 @@ async function loadReceivables(){
   }
 }
 function fillReceivableImporterName(){
-  const code=normalizeImporterCode(val("ar-opening-importer-code"));
+  const code=arCanonicalImporterCode(val("ar-opening-importer-code"));
   const importer=getMasters().importers.find(item=>normalizeImporterCode(item.code)===code);
   if(importer){
     const input=document.getElementById("ar-opening-importer-name");
@@ -4838,11 +4861,57 @@ function arSessionShippingFee(session,importerCode,importerCount){
   if(!session)return 0;
   const fees=salesRefShippingFeesObject(session.shipping_fees);
   if(fees){
-    const wanted=normalizeImporterCode(importerCode);
-    const key=Object.keys(fees).find(item=>normalizeImporterCode(item)===wanted);
+    const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+    const wanted=arImporterIdentity(importerCode,index);
+    const key=Object.keys(fees).find(item=>arSameImporter(item,wanted,index));
     if(key!==undefined)return arNumber(fees[key]);
   }
   return importerCount===1?arNumber(session.shipping_fee):0;
+}
+function arBuildSalesGroups(salesRows,sessions){
+  const index=salesRefBuildImporterIndex();
+  salesReferenceImporterIndex=index;
+  const sessionMap=new Map((sessions||[]).map(session=>[session.id,session]));
+  const eligible=(salesRows||[]).filter(row=>!row.is_stockout&&isUuid(row.session_id));
+  const importerSets=new Map();
+  eligible.forEach(row=>{
+    const identity=arImporterIdentity({...row,importer_code:row.importer_code||row.importer_id||""},index);
+    if(!identity.code)return;
+    const set=importerSets.get(row.session_id)||new Set();
+    set.add(identity.key);
+    importerSets.set(row.session_id,set);
+  });
+  const groups=new Map();
+  eligible.forEach(row=>{
+    const identity=arImporterIdentity({...row,importer_code:row.importer_code||row.importer_id||""},index);
+    if(!identity.code)return;
+    const key=`${row.session_id}|${identity.key}`;
+    const session=sessionMap.get(row.session_id);
+    const group=groups.get(key)||{
+      sessionId:row.session_id,
+      importerKey:identity.key,
+      importerCode:identity.code,
+      importerName:identity.name,
+      invoiceDate:salesRefDateOnly(row.work_date)||salesRefSessionWorkDate(session)||salesRefTokyoDateOnly(row.finalized_at),
+      netSales:0,
+      customers:new Set()
+    };
+    const directAmount=row.amount!==null&&row.amount!==undefined&&row.amount!=="";
+    group.netSales+=directAmount?arNumber(row.amount):arNumber(row.input_qty)*arNumber(row.unit_price);
+    if(row.store_name)group.customers.add(String(row.store_name).trim());
+    groups.set(key,group);
+  });
+  return [...groups.values()].map(group=>{
+    const session=sessionMap.get(group.sessionId);
+    const shipping=arSessionShippingFee(session,group.importerCode,importerSets.get(group.sessionId)?.size||0);
+    return {
+      ...group,
+      rawNetSales:group.netSales,
+      netSales:arRound(group.netSales),
+      shipping:arRound(shipping),
+      amount:arRound(group.netSales+shipping)
+    };
+  });
 }
 async function arReadSalesRows(options={}){
   const client=initSupabase();
@@ -4879,55 +4948,30 @@ async function syncSalesToReceivables(options={}){
       client.from("work_sessions").select("*").limit(10000)
     ]);
     if(sessionResult.error)throw sessionResult.error;
-    const sessions=sessionResult.data||[];
-    const sessionMap=new Map(sessions.map(session=>[session.id,session]));
-    const eligible=salesRows.filter(row=>!row.is_stockout&&isUuid(row.session_id));
-    const importerSets=new Map();
-    eligible.forEach(row=>{
-      const code=normalizeImporterCode(row.importer_code||row.importer_id);
-      if(!code)return;
-      const set=importerSets.get(row.session_id)||new Set();
-      set.add(code);
-      importerSets.set(row.session_id,set);
+    const groups=arBuildSalesGroups(salesRows,sessionResult.data||[]);
+    const existingRows=receivablesLoaded?receivableRows:await arReadAll("accounts_receivable","invoice_date");
+    const existingByGroup=new Map();
+    existingRows.filter(row=>row.source_type==="sales"&&row.source_session_id).forEach(row=>{
+      const identity=arImporterIdentity(row);
+      const key=`${row.source_session_id}|${identity.key}`;
+      if(!existingByGroup.has(key))existingByGroup.set(key,row);
     });
-    const groups=new Map();
-    eligible.forEach(row=>{
-      const importerCode=normalizeImporterCode(row.importer_code||row.importer_id);
-      if(!importerCode)return;
-      const key=`${row.session_id}|${importerCode}`;
-      const session=sessionMap.get(row.session_id);
-      const group=groups.get(key)||{
-        sessionId:row.session_id,
-        importerCode,
-        invoiceDate:salesRefDateOnly(row.work_date)||salesRefSessionWorkDate(session)||salesRefTokyoDateOnly(row.finalized_at),
-        netSales:0,
-        customers:new Set()
-      };
-      const directAmount=row.amount!==null&&row.amount!==undefined&&row.amount!=="";
-      group.netSales+=directAmount?arNumber(row.amount):arNumber(row.input_qty)*arNumber(row.unit_price);
-      if(row.store_name)group.customers.add(String(row.store_name).trim());
-      groups.set(key,group);
-    });
-    const importerMasters=getMasters().importers;
-    const payloads=[...groups.values()].map(group=>{
-      const session=sessionMap.get(group.sessionId);
-      const shipping=arSessionShippingFee(session,group.importerCode,importerSets.get(group.sessionId)?.size||0);
+    const payloads=groups.map(group=>{
       const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
-      const importer=importerMasters.find(item=>normalizeImporterCode(item.code)===group.importerCode);
-      const netSales=arRound(group.netSales);
+      const existing=existingByGroup.get(`${group.sessionId}|${group.importerKey}`);
       return {
-        source_key:`sales:${group.sessionId}:${group.importerCode}`,
+        source_key:existing?.source_key||`sales:${group.sessionId}:${group.importerCode}`,
         source_type:"sales",
         source_session_id:group.sessionId,
         importer_code:group.importerCode,
-        importer_name:importer?.name||"",
+        importer_name:group.importerName||"",
         customer_name:customers.length===1?customers[0]:(customers.length?`${customers[0]} 他${customers.length-1}件`:""),
         customer_names:customers,
         invoice_date:group.invoiceDate||today(),
         currency:"JPY",
-        net_sales_jpy:netSales,
-        shipping_amount_jpy:arRound(shipping),
-        amount_jpy:arRound(netSales+shipping),
+        net_sales_jpy:group.netSales,
+        shipping_amount_jpy:group.shipping,
+        amount_jpy:group.amount,
         updated_by:user.id
       };
     }).filter(row=>Math.abs(row.amount_jpy)>.005);
@@ -4954,7 +4998,7 @@ async function saveOpeningReceivable(){
   if(!user){alert("ログインしてください。");return}
   await loadCurrentUserRole();
   if(!currentUserIsAdmin()){alert("初期残高を登録できるのは管理者のみです。");return}
-  const importerCode=normalizeImporterCode(val("ar-opening-importer-code"));
+  const importerCode=arCanonicalImporterCode(val("ar-opening-importer-code"));
   const invoiceDate=val("ar-opening-invoice-date");
   const amount=arNumber(val("ar-opening-amount"));
   if(!importerCode||!invoiceDate||amount<=0){
@@ -5015,7 +5059,7 @@ async function importOpeningReceivablesCsv(input){
     const payloads=[];
     const issues=[];
     rows.slice(1).forEach((row,index)=>{
-      const importerCode=normalizeImporterCode(rowValue(row,headers,["輸入社コード","importer_code","importercode"]));
+      const importerCode=arCanonicalImporterCode(rowValue(row,headers,["輸入社コード","importer_code","importercode"]));
       const invoiceDate=arCsvDate(rowValue(row,headers,["請求日","日付","invoice_date","invoicedate"]));
       const amount=arNumber(rowValue(row,headers,["円換算残高","残高","円換算額","金額","amount_jpy","amount"]));
       if(!importerCode||!invoiceDate||amount<=0){
@@ -5183,8 +5227,9 @@ function arStatementProfileElements(){
 }
 function clearStatementProfileForm(importerCode=""){
   const elements=arStatementProfileElements();
-  const importer=getMasters().importers.find(item=>normalizeImporterCode(item.code)===normalizeImporterCode(importerCode));
-  if(elements.importerCode)elements.importerCode.value=normalizeImporterCode(importerCode);
+  const code=arCanonicalImporterCode(importerCode);
+  const importer=getMasters().importers.find(item=>normalizeImporterCode(item.code)===code);
+  if(elements.importerCode)elements.importerCode.value=code;
   if(elements.customerName)elements.customerName.value=importer?.name||"";
   if(elements.address)elements.address.value="";
   if(elements.phone)elements.phone.value="";
@@ -5195,7 +5240,7 @@ function clearStatementProfileForm(importerCode=""){
   receivableStatementProfile=null;
 }
 async function loadStatementProfile(importerCode,options={}){
-  const code=normalizeImporterCode(importerCode);
+  const code=arCanonicalImporterCode(importerCode);
   const elements=arStatementProfileElements();
   if(!code){
     if(!options.silent)alert("輸入社コードを選択してください。");
@@ -5236,7 +5281,7 @@ async function loadStatementProfile(importerCode,options={}){
   return data;
 }
 async function loadStatementProfileFromSelectedImporter(silent=false){
-  const code=normalizeImporterCode(val("ar-importer")||val("ar-statement-importer-code"));
+  const code=arCanonicalImporterCode(val("ar-importer")||val("ar-statement-importer-code"));
   return loadStatementProfile(code,{silent});
 }
 async function saveStatementProfile(){
@@ -5244,7 +5289,7 @@ async function saveStatementProfile(){
   if(!user){alert("ログインしてください。");return}
   await loadCurrentUserRole();
   if(!currentUserIsAdmin()){alert("請求条件マスタを更新できるのは管理者のみです。");return}
-  const importerCode=normalizeImporterCode(val("ar-statement-importer-code")||val("ar-importer"));
+  const importerCode=arCanonicalImporterCode(val("ar-statement-importer-code")||val("ar-importer"));
   const customerName=val("ar-statement-customer-name").trim();
   const address=val("ar-statement-address").trim();
   const phone=val("ar-statement-phone").trim();
@@ -5297,11 +5342,11 @@ function arMonthDay(month,day,monthOffset=0){
   return `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(targetDay).padStart(2,"0")}`;
 }
 function arClosingCalculation(){
-  const importerCode=normalizeImporterCode(val("ar-importer"));
+  const importerCode=arCanonicalImporterCode(val("ar-importer"));
   const month=val("ar-closing-month");
   const profile=receivableStatementProfile;
   if(!importerCode||!month)return {error:"対象月と輸入社を選択してください。"};
-  if(!profile||normalizeImporterCode(profile.importer_code)!==importerCode){
+  if(!profile||!arSameImporter(profile.importer_code,importerCode)){
     return {error:`${importerCode} の請求条件を読み込んでください。`};
   }
   const closingDay=Math.min(31,Math.max(1,Math.trunc(arNumber(profile.closing_day))||31));
@@ -5309,20 +5354,65 @@ function arClosingCalculation(){
   const paymentMonthOffset=Math.max(0,Math.trunc(arNumber(profile.payment_month_offset)));
   const periodTo=arMonthDay(month,closingDay);
   const priorClosings=receivableClosings
-    .filter(row=>normalizeImporterCode(row.importer_code)===importerCode&&row.status==="closed"&&String(row.period_to)<periodTo)
+    .filter(row=>arSameImporter(row.importer_code,importerCode)&&row.status==="closed"&&String(row.period_to)<periodTo)
     .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to)));
   const previousPeriodTo=priorClosings[0]?.period_to||arMonthDay(month,closingDay,-1);
   const periodFrom=arShiftDate(previousPeriodTo,1);
   const dueDate=arMonthDay(month,paymentDay,paymentMonthOffset);
   if(periodFrom>periodTo)return {error:"前回締め日が対象月より後です。対象月を確認してください。"};
   const existing=receivableClosings.find(row=>
-    normalizeImporterCode(row.importer_code)===importerCode&&
+    arSameImporter(row.importer_code,importerCode)&&
     row.status==="closed"&&
     !(String(row.period_to)<periodFrom||String(row.period_from)>periodTo)
   );
   const range={from:periodFrom,to:periodTo,raw:`${periodFrom}-${periodTo}`};
   const snapshot=receivablesLoaded?arStatementSnapshot(importerCode,range,profile):null;
   return {importerCode,month,profile,range,dueDate,snapshot,existing};
+}
+function arClosingPreviewKey(calculation){
+  if(!calculation||calculation.error)return "";
+  return `${calculation.importerCode}|${calculation.range.from}|${calculation.range.to}`;
+}
+async function refreshClosingSalesPreview(options={}){
+  const calculation=arClosingCalculation();
+  if(calculation.error||calculation.existing){
+    receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,error:""};
+    renderClosingPreview();
+    return;
+  }
+  const key=arClosingPreviewKey(calculation);
+  if(!options.force&&receivableClosingSalesPreview.key===key&&receivableClosingSalesPreview.status==="loaded"){
+    renderClosingPreview();
+    return;
+  }
+  receivableClosingSalesPreview={key,status:"loading",amount:0,netSales:0,shippingSales:0,groupCount:0,error:""};
+  renderClosingPreview();
+  try{
+    const client=initSupabase();
+    const [salesRows,sessionResult]=await Promise.all([
+      arReadSalesRows({from:calculation.range.from,to:calculation.range.to}),
+      client.from("work_sessions").select("*").limit(10000)
+    ]);
+    if(sessionResult.error)throw sessionResult.error;
+    const groups=arBuildSalesGroups(salesRows,sessionResult.data||[])
+      .filter(group=>arSameImporter(group.importerCode,calculation.importerCode));
+    const netSales=arRound(groups.reduce((sum,group)=>sum+group.rawNetSales,0));
+    const shippingSales=arRound(groups.reduce((sum,group)=>sum+group.shipping,0));
+    if(arClosingPreviewKey(arClosingCalculation())!==key)return;
+    receivableClosingSalesPreview={
+      key,
+      status:"loaded",
+      amount:arRound(netSales+shippingSales),
+      netSales,
+      shippingSales,
+      groupCount:groups.length,
+      error:""
+    };
+  }catch(error){
+    if(arClosingPreviewKey(arClosingCalculation())!==key)return;
+    receivableClosingSalesPreview={key,status:"error",amount:0,netSales:0,shippingSales:0,groupCount:0,error:arDbErrorMessage(error)};
+  }
+  renderClosingPreview();
 }
 function renderClosingPreview(){
   const period=document.getElementById("ar-closing-period");
@@ -5345,45 +5435,62 @@ function renderClosingPreview(){
   }
   period.textContent=`${calculation.range.from} ～ ${calculation.range.to}`;
   dueDate.textContent=calculation.dueDate;
-  charge.textContent=`¥${salesRefMoney(calculation.snapshot?.chargeAmount||0)||"0"}`;
-  payment.textContent=`¥${salesRefMoney(-(calculation.snapshot?.paymentAmount||0))||"0"}`;
-  balance.textContent=`¥${salesRefMoney(calculation.snapshot?.totalAmount||0)||"0"}`;
+  const previewKey=arClosingPreviewKey(calculation);
+  const sourcePreview=!calculation.existing&&receivableClosingSalesPreview.key===previewKey
+    ?receivableClosingSalesPreview
+    :null;
+  const chargeAmount=sourcePreview?.status==="loaded"
+    ?sourcePreview.amount
+    :(calculation.snapshot?.chargeAmount||0);
+  const paymentAmount=calculation.snapshot?.paymentAmount||0;
+  const carryover=calculation.snapshot?.carryover||0;
+  const totalAmount=arRound(carryover+chargeAmount-paymentAmount);
+  charge.textContent=`¥${salesRefMoney(chargeAmount)||"0"}`;
+  payment.textContent=`¥${salesRefMoney(-paymentAmount)||"0"}`;
+  balance.textContent=`¥${salesRefMoney(totalAmount)||"0"}`;
   if(calculation.existing){
     state.textContent=`この期間は締め済みです。SOA No.${calculation.existing.snapshot?.statement_no||"-"}`;
   }else if(!receivablesLoaded){
     state.textContent="「売掛読込」を押すと締め金額を確認できます。";
+  }else if(sourcePreview?.status==="loading"){
+    state.textContent="確定売上DBから今回売上を照合中...";
+  }else if(sourcePreview?.status==="error"){
+    state.textContent=`今回売上の照合に失敗しました: ${sourcePreview.error}`;
   }else{
-    state.textContent=`繰越 ¥${salesRefMoney(calculation.snapshot.carryover)||"0"} + 今回売上 ¥${salesRefMoney(calculation.snapshot.chargeAmount)||"0"} - 入金等 ¥${salesRefMoney(calculation.snapshot.paymentAmount)||"0"} = 今回請求 ¥${salesRefMoney(calculation.snapshot.totalAmount)||"0"}`;
+    const sourceNote=sourcePreview?.status==="loaded"
+      ?`（純売上 ¥${salesRefMoney(sourcePreview.netSales)||"0"} + 送料 ¥${salesRefMoney(sourcePreview.shippingSales)||"0"} / ${sourcePreview.groupCount}作業）`
+      :"";
+    state.textContent=`繰越 ¥${salesRefMoney(carryover)||"0"} + 今回売上 ¥${salesRefMoney(chargeAmount)||"0"} ${sourceNote} - 入金等 ¥${salesRefMoney(paymentAmount)||"0"} = 今回請求 ¥${salesRefMoney(totalAmount)||"0"}`;
   }
   renderClosingHistory();
 }
 function scheduleClosingPreview(){
   clearTimeout(window.__arClosingPreviewTimer);
   window.__arClosingPreviewTimer=setTimeout(async()=>{
-    const code=normalizeImporterCode(val("ar-importer"));
+    const code=arCanonicalImporterCode(val("ar-importer"));
     if(!code){
       clearStatementProfileForm("");
       renderClosingPreview();
       return;
     }
-    const exactImporter=getMasters().importers.some(item=>normalizeImporterCode(item.code)===code)
-      ||receivableRows.some(row=>normalizeImporterCode(row.importer_code)===code);
+    const exactImporter=getMasters().importers.some(item=>arSameImporter(item.code,code))
+      ||receivableRows.some(row=>arSameImporter(row,code));
     if(!exactImporter){
       renderClosingPreview();
       return;
     }
-    if(normalizeImporterCode(receivableStatementProfile?.importer_code)!==code){
+    if(!arSameImporter(receivableStatementProfile?.importer_code||"",code)){
       await loadStatementProfile(code,{silent:true});
     }
-    renderClosingPreview();
+    await refreshClosingSalesPreview({force:true});
   },350);
 }
 function renderClosingHistory(){
   const container=document.getElementById("ar-closing-history");
   if(!container)return;
-  const importerCode=normalizeImporterCode(val("ar-importer"));
+  const importerCode=arCanonicalImporterCode(val("ar-importer"));
   const rows=receivableClosings
-    .filter(row=>!importerCode||normalizeImporterCode(row.importer_code)===importerCode)
+    .filter(row=>!importerCode||arSameImporter(row.importer_code,importerCode))
     .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to))||String(b.closed_at).localeCompare(String(a.closed_at)))
     .slice(0,100);
   if(!rows.length){
@@ -5438,7 +5545,7 @@ function arClosingSnapshotPayload(snapshot,issue,dueDate){
 async function closeAccountsReceivablePeriod(){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
-  const importerCode=normalizeImporterCode(val("ar-importer"));
+  const importerCode=arCanonicalImporterCode(val("ar-importer"));
   const closingMonth=val("ar-closing-month");
   if(!importerCode||!closingMonth){
     alert("対象月と輸入社を選択してください。");
@@ -5446,7 +5553,7 @@ async function closeAccountsReceivablePeriod(){
   }
   if(!receivablesLoaded)await loadReceivables();
   if(!receivablesLoaded)return;
-  if(normalizeImporterCode(receivableStatementProfile?.importer_code)!==importerCode){
+  if(!arSameImporter(receivableStatementProfile?.importer_code||"",importerCode)){
     const profile=await loadStatementProfile(importerCode,{silent:true});
     if(!profile){
       alert(`${importerCode} の請求先・締め条件を先に登録してください。`);
@@ -5546,8 +5653,8 @@ function arStatementMoney(value){
   return arNumber(value).toLocaleString("en-US",{maximumFractionDigits:2});
 }
 function arStatementRecords(importerCode){
-  const code=normalizeImporterCode(importerCode);
-  return receivableRows.filter(row=>normalizeImporterCode(row.importer_code)===code);
+  const code=arCanonicalImporterCode(importerCode);
+  return receivableRows.filter(row=>arSameImporter(row,code));
 }
 async function arAssignInvoiceNumbers(rows){
   const salesRows=rows.filter(row=>row.source_type==="sales");
@@ -5600,7 +5707,7 @@ function arStatementSnapshot(importerCode,range,profile){
   const chargeAmount=charges.reduce((sum,row)=>sum+arNumber(row.amount_jpy),0);
   const paymentAmount=payments.reduce((sum,payment)=>sum+arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy),0);
   return {
-    importerCode:normalizeImporterCode(importerCode),
+    importerCode:arCanonicalImporterCode(importerCode),
     range,
     profile,
     charges,
@@ -5614,7 +5721,7 @@ function arStatementSnapshot(importerCode,range,profile){
 async function arSaveStatementIssue(snapshot,user){
   const client=initSupabase();
   const activeClosing=receivableClosings.find(row=>
-    normalizeImporterCode(row.importer_code)===snapshot.importerCode&&
+    arSameImporter(row.importer_code,snapshot.importerCode)&&
     row.period_from===snapshot.range.from&&
     row.period_to===snapshot.range.to&&
     row.status==="closed"
@@ -5803,7 +5910,7 @@ async function printStatementOfAccount(){
     const user=await ensureCurrentUser();
     if(!user)throw new Error("ログインしてください。");
     const range=salesRefDateRangeFromText(val("ar-date-range"));
-    const importerCode=normalizeImporterCode(val("ar-importer"));
+    const importerCode=arCanonicalImporterCode(val("ar-importer"));
     if(!range.from||!range.to)throw new Error("請求期間を 20260701-20260731 の形式で入力してください。");
     if(!importerCode)throw new Error("SOAを出力する輸入社コードを選択してください。");
     if(!receivablesLoaded)await loadReceivables();
