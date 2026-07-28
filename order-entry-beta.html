@@ -4651,6 +4651,9 @@ function arNewSourceKey(prefix){
 }
 function arDbErrorMessage(error){
   const message=String(error?.message||error||"");
+  if(error?.code==="PGRST202"||/close_accounts_receivable_period|reopen_accounts_receivable_period/i.test(message)){
+    return "請求締め用SQLが未反映です。accounts-receivable-migration.sql をSupabase SQL Editorで再実行してください。";
+  }
   if(error?.code==="42703"&&/work_date/i.test(message)){
     return "作業日対応SQLが未実行です。work-date-migration.sql をSupabase SQL Editorで実行してください。";
   }
@@ -4841,11 +4844,14 @@ function arSessionShippingFee(session,importerCode,importerCount){
   }
   return importerCount===1?arNumber(session.shipping_fee):0;
 }
-async function arReadSalesRows(){
+async function arReadSalesRows(options={}){
   const client=initSupabase();
   const rows=[];
   const pageSize=1000;
-  const range=salesRefDateRangeFromText(val("ar-date-range"));
+  const hasExplicitRange=!!(options.from||options.to);
+  const range=hasExplicitRange
+    ?{from:options.from||"",to:options.to||"",raw:`${options.from||""}-${options.to||""}`}
+    :salesRefDateRangeFromText(val("ar-date-range"));
   if(range.raw&&(!range.from||!range.to))throw new Error("日付は 20250701-20250731 の形式で入力してください。");
   for(let offset=0;offset<100000;offset+=pageSize){
     let query=client.from("sales_records").select("*").order("work_date",{ascending:false,nullsFirst:false}).order("finalized_at",{ascending:false});
@@ -4859,7 +4865,7 @@ async function arReadSalesRows(){
   }
   return rows;
 }
-async function syncSalesToReceivables(){
+async function syncSalesToReceivables(options={}){
   const client=initSupabase();
   const state=document.getElementById("ar-state");
   if(!client){alert("Supabaseを読み込めません。");return}
@@ -4869,7 +4875,7 @@ async function syncSalesToReceivables(){
   if(state)state.textContent="売上確定データを確認中...";
   try{
     const [salesRows,sessionResult]=await Promise.all([
-      arReadSalesRows(),
+      arReadSalesRows(options),
       client.from("work_sessions").select("*").limit(10000)
     ]);
     if(sessionResult.error)throw sessionResult.error;
@@ -4932,9 +4938,11 @@ async function syncSalesToReceivables(){
     }
     await loadReceivables();
     if(state)state.textContent=`売上確定から ${payloads.length}件の売掛を反映しました。同じ作業は重複登録されません。`;
+    return true;
   }catch(error){
     if(state)state.textContent=arDbErrorMessage(error);
     alert(arDbErrorMessage(error));
+    return false;
   }finally{
     setAppBusy(false);
   }
@@ -5430,9 +5438,30 @@ function arClosingSnapshotPayload(snapshot,issue,dueDate){
 async function closeAccountsReceivablePeriod(){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
+  const importerCode=normalizeImporterCode(val("ar-importer"));
+  const closingMonth=val("ar-closing-month");
+  if(!importerCode||!closingMonth){
+    alert("対象月と輸入社を選択してください。");
+    return;
+  }
   if(!receivablesLoaded)await loadReceivables();
   if(!receivablesLoaded)return;
-  const calculation=arClosingCalculation();
+  if(normalizeImporterCode(receivableStatementProfile?.importer_code)!==importerCode){
+    const profile=await loadStatementProfile(importerCode,{silent:true});
+    if(!profile){
+      alert(`${importerCode} の請求先・締め条件を先に登録してください。`);
+      return;
+    }
+  }
+  let calculation=arClosingCalculation();
+  if(calculation.error){alert(calculation.error);return}
+  if(calculation.existing){alert("この期間はすでに請求締め済みです。");return}
+  const synced=await syncSalesToReceivables({
+    from:calculation.range.from,
+    to:calculation.range.to
+  });
+  if(!synced)return;
+  calculation=arClosingCalculation();
   if(calculation.error){alert(calculation.error);return}
   if(calculation.existing){alert("この期間はすでに請求締め済みです。");return}
   const records=arStatementRecords(calculation.importerCode);
