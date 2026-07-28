@@ -53,7 +53,7 @@ header{
 .btn:active,.np-key:active,.unit-preset:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn-primary:disabled{opacity:.42;cursor:not-allowed}
-.btn-danger{background:var(--danger);color:#fff}.lock-badge{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--danger-bg);color:var(--danger);font-size:12px;font-weight:900}.lock-badge.open{background:var(--success-bg);color:var(--success)}
+.btn-danger{background:var(--danger);color:#fff}.lock-badge{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--danger-bg);color:var(--danger);font-size:12px;font-weight:900}.lock-badge.open{background:var(--success-bg);color:var(--success)}.lock-badge.provisional{background:#fff4d6;color:#7a4d00}
 .sync-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left));background:#eef7f1;border-bottom:1px solid #cfe7d9;color:#24513d}
 .sync-status{font-size:13px;font-weight:800;margin-right:auto}
 .sync-input{height:38px;min-width:180px;border:1px solid #bad9c8;border-radius:8px;background:#fff;padding:0 10px;color:var(--text)}
@@ -275,7 +275,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       </div>
     </div>
     <div class="merge-bar ops-entry-only" id="merge-bar" style="display:none"><div class="merge-info" id="merge-info"></div><button class="btn btn-primary" onclick="openImportReview()">顧客名・商品コードを確認</button></div>
-    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button><button class="btn btn-primary" id="finalize-btn" onclick="finalizeSalesTrial()">売上確定</button><button class="btn" id="unlock-btn" onclick="unlockSessionTrial()" style="display:none">ロック解除</button></div>
+    <div class="merge-bar" id="cloud-save-bar" style="display:none"><div class="merge-info" id="cloud-save-info">Supabaseに保存すると、他の端末と共有する準備ができます。</div><input class="sync-input" id="session-name-input" placeholder="作業名 例: 2026-05-21 JKT/DIM/FBI"><button class="btn" onclick="openManualOrderModal()">追加オーダー</button><button class="btn btn-primary" id="cloud-save-btn" onclick="saveCurrentSessionToSupabase()">名前を付けて保存</button><button class="btn" id="provisional-lock-btn" onclick="setProvisionalLockTrial(true)" style="display:none">仮締め</button><button class="btn" id="provisional-unlock-btn" onclick="setProvisionalLockTrial(false)" style="display:none">仮締め解除</button><button class="btn btn-primary" id="finalize-btn" onclick="finalizeSalesTrial()">売上確定</button><button class="btn" id="unlock-btn" onclick="unlockSessionTrial()" style="display:none">ロック解除</button></div>
     <div class="tabs-wrap" id="p1-tabs-wrap" style="display:none"><div class="country-tabs" id="p1-country-tabs"></div><div id="p1-country-panels"></div></div>
   </div>
   <div class="view" id="view-p15">
@@ -1543,7 +1543,15 @@ function subscribeCurrentSession(){
     applyRemoteBox(payload.new);
     markRemoteUpdate("箱");
   }).subscribe();
-  realtimeChannels=[lineChannel,boxChannel];
+  const sessionChannel=supabaseClient.channel(`work-session-${currentSessionId}`).on("postgres_changes",{event:"UPDATE",schema:"public",table:"work_sessions",filter:`id=eq.${currentSessionId}`},payload=>{
+    const wasLocked=currentSessionLocked;
+    const wasProvisional=currentSessionProvisionalLocked;
+    setSessionLockStateTrial(payload.new);
+    if(wasLocked!==currentSessionLocked||wasProvisional!==currentSessionProvisionalLocked){
+      markRemoteUpdate(currentSessionLocked?"売上確定":(currentSessionProvisionalLocked?"仮締め":"ロック解除"));
+    }
+  }).subscribe();
+  realtimeChannels=[lineChannel,boxChannel,sessionChannel];
 }
 function applyRemoteOrderLine(dbRow){
   const result=upsertRemoteOrderLine(dbRow);
@@ -2933,6 +2941,7 @@ applyRemoteBox=function(dbRow){
 };
 let currentUserRole="user";
 let currentSessionLocked=false;
+let currentSessionProvisionalLocked=false;
 let currentSessionFinalizedAt="";
 function currentUserIsAdmin(){return currentUserRole==="admin"}
 async function loadCurrentUserRoleTrial(){
@@ -2944,17 +2953,21 @@ async function loadCurrentUserRoleTrial(){
 }
 function setSessionLockStateTrial(session){
   currentSessionLocked=!!session?.locked;
+  currentSessionProvisionalLocked=!!session?.provisional_locked;
   currentSessionFinalizedAt=session?.finalized_at||"";
   updateLockUITrial();
 }
 function lockBadgeHtml(){
   if(!currentSessionId)return "";
   if(currentSessionLocked)return ` <span class="lock-badge">確定ロック中</span>`;
+  if(currentSessionProvisionalLocked)return ` <span class="lock-badge provisional">仮締め中</span>`;
   return ` <span class="lock-badge open">編集中</span>`;
 }
 function updateLockUITrial(){
   const finalizeBtn=document.getElementById("finalize-btn");
   const unlockBtn=document.getElementById("unlock-btn");
+  const provisionalLockBtn=document.getElementById("provisional-lock-btn");
+  const provisionalUnlockBtn=document.getElementById("provisional-unlock-btn");
   if(finalizeBtn){
     finalizeBtn.style.display=currentSessionId?"":"none";
     finalizeBtn.disabled=!!currentSessionLocked;
@@ -2962,6 +2975,12 @@ function updateLockUITrial(){
   }
   if(unlockBtn){
     unlockBtn.style.display=currentSessionLocked&&currentUserIsAdmin()?"":"none";
+  }
+  if(provisionalLockBtn){
+    provisionalLockBtn.style.display=currentSessionId&&!currentSessionLocked&&!currentSessionProvisionalLocked?"":"none";
+  }
+  if(provisionalUnlockBtn){
+    provisionalUnlockBtn.style.display=currentSessionId&&!currentSessionLocked&&currentSessionProvisionalLocked&&currentUserIsAdmin()?"":"none";
   }
   const info=document.getElementById("cloud-save-info");
   if(info&&currentSessionId&&!info.dataset.lockDecorated){
@@ -2977,19 +2996,48 @@ function updateLockUITrial(){
   applyLockToInputsTrial();
 }
 function applyLockToInputsTrial(){
-  const locked=!!currentSessionLocked;
+  const locked=!!(currentSessionLocked||currentSessionProvisionalLocked);
   document.querySelectorAll(".inline-work-input,.inline-box-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.box-size-select,.di-toggle input").forEach(el=>{
     el.disabled=locked;
-    if(locked)el.title="売上確定済みのため編集できません";
+    if(locked)el.title=currentSessionLocked?"売上確定済みのため編集できません":"仮締め中のため編集できません";
     else el.removeAttribute("title");
   });
   const addBtn=[...document.querySelectorAll("#cloud-save-bar .btn")].find(btn=>btn.textContent==="追加オーダー");
   if(addBtn)addBtn.disabled=locked;
 }
 function requireEditableTrial(){
-  if(!currentSessionLocked)return true;
-  toast("売上確定済みです。管理者がロック解除すると編集できます");
+  if(!currentSessionLocked&&!currentSessionProvisionalLocked)return true;
+  toast(currentSessionLocked?"売上確定済みです。売上参照の管理者修正を使用してください":"仮締め中です。管理者が仮締め解除すると編集できます");
   return false;
+}
+async function setProvisionalLockTrial(locked){
+  if(!currentSessionId){toast("先に作業データを保存してください");return}
+  if(currentSessionLocked){toast("売上確定済みです");return}
+  if(!(await requireSupabaseLogin()))return;
+  let reason="入力完了";
+  if(locked){
+    if(!confirm("入力を仮締めします。売上確定までは管理者だけが解除できます。よろしいですか？"))return;
+  }else{
+    if(!currentUserIsAdmin()){toast("仮締め解除は管理者のみ可能です");return}
+    reason=prompt("仮締め解除理由を入力してください")||"";
+    if(!reason.trim())return;
+  }
+  const {data,error}=await supabaseClient.rpc("set_work_session_provisional_lock",{
+    p_session_id:currentSessionId,
+    p_locked:!!locked,
+    p_reason:reason
+  });
+  if(error){
+    const msg=String(error.message||error);
+    if(error.code==="PGRST202"||/set_work_session_provisional_lock|schema cache/i.test(msg)){
+      alert("仮締め用SQLが未実行です。sales-correction-provisional-lock-migration.sql をSupabase SQL Editorで実行してください。");
+    }else{
+      alert(`仮締め更新エラー: ${msg}`);
+    }
+    return;
+  }
+  setSessionLockStateTrial(data);
+  toast(locked?"仮締めしました":"仮締めを解除しました");
 }
 function salesRecordPayloadTrial(row,finalizedAt=""){
   const imp=importerCode(row.importer_id);
@@ -3055,7 +3103,7 @@ async function unlockSessionTrial(){
   if(!currentUserIsAdmin()){toast("ロック解除は管理者のみ可能です");return}
   const reason=prompt("ロック解除理由を入力してください");
   if(!reason)return;
-  const {data,error}=await supabaseClient.from("work_sessions").update({locked:false,unlocked_at:new Date().toISOString(),unlocked_by:currentUser.id,unlock_reason:reason,status:"active"}).eq("id",currentSessionId).select("locked,finalized_at").single();
+  const {data,error}=await supabaseClient.from("work_sessions").update({locked:false,unlocked_at:new Date().toISOString(),unlocked_by:currentUser.id,unlock_reason:reason,status:"active"}).eq("id",currentSessionId).select("*").single();
   if(error){toast("ロック解除エラー: "+error.message);return}
   setSessionLockStateTrial(data);
   toast("ロック解除しました");
@@ -3069,7 +3117,7 @@ const __openSavedSessionLockBase=openSavedSession;
 openSavedSession=async function(sessionId){
   await __openSavedSessionLockBase(sessionId);
   if(currentSessionId&&supabaseClient){
-    const {data}=await supabaseClient.from("work_sessions").select("locked,finalized_at").eq("id",currentSessionId).maybeSingle();
+    const {data}=await supabaseClient.from("work_sessions").select("*").eq("id",currentSessionId).maybeSingle();
     setSessionLockStateTrial(data);
   }
 };
@@ -3077,7 +3125,7 @@ const __refreshCurrentSessionLockBase=refreshCurrentSessionFromSupabase;
 refreshCurrentSessionFromSupabase=async function(){
   const ok=await __refreshCurrentSessionLockBase();
   if(ok&&currentSessionId&&supabaseClient){
-    const {data}=await supabaseClient.from("work_sessions").select("locked,finalized_at").eq("id",currentSessionId).maybeSingle();
+    const {data}=await supabaseClient.from("work_sessions").select("*").eq("id",currentSessionId).maybeSingle();
     setSessionLockStateTrial(data);
   }
   return ok;
@@ -3102,12 +3150,14 @@ const __resetLocalStateLockBase=resetLocalStateForSession;
 resetLocalStateForSession=function(){
   __resetLocalStateLockBase();
   currentSessionLocked=false;
+  currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
   updateLockUITrial();
 };
 const __mergeAndRenderLockBase=mergeAndRender;
 mergeAndRender=function(){
   currentSessionLocked=false;
+  currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
   const result=__mergeAndRenderLockBase();
   updateLockUITrial();
@@ -3161,7 +3211,7 @@ finalizeSalesTrial=async function(){
     const {data,error}=await supabaseClient.from("work_sessions")
       .update({locked:true,work_date:workDate,finalized_at:finalizedAt,finalized_by:currentUser.id,status:"closed",shipping_fee:shippingFee,shipping_fees:shippingFees})
       .eq("id",currentSessionId)
-      .select("locked,finalized_at,shipping_fee,shipping_fees")
+      .select("*")
       .single();
     if(error)throw error;
     setSessionLockStateTrial(data);
@@ -3175,6 +3225,7 @@ finalizeSalesTrial=async function(){
 };
 function sessionListStatusLabelTrial(session){
   if(session?.locked||session?.status==="closed")return "確定済み";
+  if(session?.provisional_locked)return "仮締め中";
   return session?.status||"active";
 }
 function sessionListTimeTrial(session){
@@ -5134,7 +5185,7 @@ function applyMissingWorkMasterPrices(targetRows){
   return repaired;
 }
 async function persistRecoveredWorkPrices(repairedRows){
-  if(!repairedRows.length||!currentSessionId||currentSessionLocked||!supabaseClient||!currentUser)return;
+  if(!repairedRows.length||!currentSessionId||currentSessionLocked||currentSessionProvisionalLocked||!supabaseClient||!currentUser)return;
   const payloads=repairedRows.map(rowToOrderLinePayload);
   for(let i=0;i<payloads.length;i+=200){
     const {error}=await supabaseClient.from("order_lines").upsert(payloads.slice(i,i+200),{onConflict:"session_id,source_row_no"});
@@ -5146,7 +5197,7 @@ const __openSavedSessionPriceRecoveryBase=openSavedSession;
 openSavedSession=async function(sessionId){
   await loadProductMasterFromSupabase();
   await __openSavedSessionPriceRecoveryBase(sessionId);
-  if(currentSessionLocked)return;
+  if(currentSessionLocked||currentSessionProvisionalLocked)return;
   const repaired=applyMissingWorkMasterPrices(rows);
   if(!repaired.length)return;
   syncOrderRowsFromRows();
@@ -5281,6 +5332,7 @@ async function createWorkSessionFromConfirmedOrders(){
   resetLocalStateForSession();
   currentSessionId=null;
   currentSessionLocked=false;
+  currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
   currentSessionWorkDate=date;
   latestOrderFilename=`order-entry:${date}`;
