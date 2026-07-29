@@ -656,7 +656,7 @@ const baseMasters={
   importers:[]
 };
 
-function today(){return new Date().toISOString().slice(0,10)}
+function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
 function blankOrder(){return{productCode:"",productName:"",englishName:"",qty:"",unit:"",unitPrice:"",unitPriceSource:"",supplierCode:"",supplierName:"",memo:""}}
 function val(id){return document.getElementById(id)?.value||""}
