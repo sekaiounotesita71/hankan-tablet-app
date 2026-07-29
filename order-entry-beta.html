@@ -6595,7 +6595,11 @@ function forceSyncOrderFields(i,fields){
   });
 }
 function applyProductByCode(i,code){
-  const hit=resolveProductMaster(code,{allowSingle:true});
+  const codeKey=String(code||"").normalize("NFKC").trim().toLowerCase();
+  if(!codeKey)return false;
+  const hit=uniqueMasterItems(getMasters().products).find(
+    product=>String(product.code||"").normalize("NFKC").trim().toLowerCase()===codeKey
+  );
   if(!hit)return false;
   const supplierCode=hit.supplierCode||"";
   Object.assign(orders[i],{
