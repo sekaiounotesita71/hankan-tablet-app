@@ -1237,7 +1237,7 @@ async function saveConfirmedBatchToDb(batch){
     source_text:dbText(row.sourceExpression||row.lineExpression)
   }));
   if(payloads.length){
-    const {error:lineError}=await supabaseClient.from("order_entry_lines").insert(payloads);
+    const {data:insertedLines,error:lineError}=await supabaseClient.from("order_entry_lines").insert(payloads).select("line_no");
     if(lineError){
       const {error:cleanupError}=await supabaseClient.from("order_entry_batches").delete().eq("id",batchId);
       if(cleanupError)console.error("Failed to clean up order batch after line insert error",cleanupError);
@@ -1246,8 +1246,36 @@ async function saveConfirmedBatchToDb(batch){
       }
       throw lineError;
     }
+    const savedLineCount=(insertedLines||[]).length;
+    if(savedLineCount!==payloads.length){
+      const {error:cleanupError}=await supabaseClient.from("order_entry_batches").delete().eq("id",batchId);
+      if(cleanupError)console.error("Failed to clean up order batch after line count mismatch",cleanupError);
+      throw new Error(`受注明細の保存件数が一致しません（入力 ${payloads.length}件 / DB ${savedLineCount}件）。入力内容は消していません。`);
+    }
   }
   return batchId;
+}
+async function loadOrderEntryLinesForBatchIds(ids){
+  const lines=[];
+  const batchChunkSize=50;
+  const pageSize=1000;
+  for(let chunkStart=0;chunkStart<ids.length;chunkStart+=batchChunkSize){
+    const chunk=ids.slice(chunkStart,chunkStart+batchChunkSize);
+    for(let offset=0;;offset+=pageSize){
+      const {data,error}=await supabaseClient
+        .from("order_entry_lines")
+        .select("*")
+        .in("batch_id",chunk)
+        .order("batch_id",{ascending:true})
+        .order("line_no",{ascending:true})
+        .range(offset,offset+pageSize-1);
+      if(error)throw error;
+      const page=data||[];
+      lines.push(...page);
+      if(page.length<pageSize)break;
+    }
+  }
+  return lines;
 }
 async function loadConfirmedBatchesFromDb(){
   if(!supabaseClient)return;
@@ -1255,8 +1283,7 @@ async function loadConfirmedBatchesFromDb(){
   if(error)throw error;
   if(!batches?.length){confirmedBatches=[];saveConfirmedBatches();return}
   const ids=batches.map(b=>b.id);
-  const {data:lines,error:lineError}=await supabaseClient.from("order_entry_lines").select("*").in("batch_id",ids).order("line_no",{ascending:true});
-  if(lineError)throw lineError;
+  const lines=await loadOrderEntryLinesForBatchIds(ids);
   const byBatch=new Map();
   (lines||[]).forEach(line=>{
     if(!byBatch.has(line.batch_id))byBatch.set(line.batch_id,[]);
@@ -7415,7 +7442,7 @@ async function confirmCustomerOrder(options={}){
   const completedDraftId=currentImportDraftId;
   if(completedDraftId)removeImportDraftById(completedDraftId);
   currentImportDraftId="";
-  const message=`受注確定しました${learnedCount?` / 辞書更新 ${learnedCount}件`:""}`;
+  const message=`受注確定しました / 明細 ${batch.rows.length}件${learnedCount?` / 辞書更新 ${learnedCount}件`:""}`;
   if(options.silent)document.getElementById("save-state").textContent=message;
   else alert(message+"。次の得意先を入力してください。");
   resetCurrentOrderForm();
