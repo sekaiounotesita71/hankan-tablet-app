@@ -646,6 +646,8 @@ let currentUserRole="user";
 let dbReady=false;
 let dbLoadInFlight=false;
 let appBusy=false;
+let reportFilterCountTimer=null;
+let reportFilterCountRequest=0;
 
 const baseMasters={
   products:[],
@@ -6352,15 +6354,14 @@ function reportFilter(){
     supplier:normalizedImporter(val("report-filter-supplier"))
   };
 }
-function reportRows(showAlert=false){
-  const filter=reportFilter();
+function filterReportRows(sourceRows,filter,showAlert=false){
   if(!filter.date){
     if(showAlert)alert("帳票出力の日付を指定してください");
     return [];
   }
   const allImporters=!filter.importer||["all","全て","すべて"].includes(filter.importer);
   const allSuppliers=!filter.supplier||["all","全て","すべて"].includes(filter.supplier);
-  const rows=printableRows().filter(r=>{
+  const rows=(sourceRows||[]).filter(r=>{
     const date=(r.orderDate||r.shipDate||"")===filter.date;
     const code=normalizedImporter(r.importerCode);
     const name=normalizedImporter(r.importerName);
@@ -6372,10 +6373,64 @@ function reportRows(showAlert=false){
   if(showAlert&&!rows.length)alert("指定した条件に一致する明細がありません");
   return rows;
 }
+function reportRows(showAlert=false){
+  return filterReportRows(printableRows(),reportFilter(),showAlert);
+}
+async function loadConfirmedReportBatchesFromDb(orderDate){
+  const batches=[];
+  const pageSize=500;
+  for(let offset=0;;offset+=pageSize){
+    const {data,error}=await supabaseClient
+      .from("order_entry_batches")
+      .select("*")
+      .eq("status","confirmed")
+      .eq("order_date",orderDate)
+      .order("created_at",{ascending:false})
+      .order("id",{ascending:false})
+      .range(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    batches.push(...page);
+    if(page.length<pageSize)break;
+  }
+  if(!batches.length)return [];
+  const lines=await loadOrderEntryLinesForBatchIds(batches.map(batch=>batch.id));
+  const byBatch=new Map();
+  lines.forEach(line=>{
+    if(!byBatch.has(line.batch_id))byBatch.set(line.batch_id,[]);
+    byBatch.get(line.batch_id).push(line);
+  });
+  return batches.map(batch=>dbBatchToBatch(batch,byBatch.get(batch.id)||[]));
+}
+async function reportRowsForPrint(showAlert=false){
+  const filter=reportFilter();
+  if(!filter.date){
+    if(showAlert)alert("帳票出力の日付を指定してください");
+    return [];
+  }
+  let sourceRows=printableRows();
+  if(dbReady&&supabaseClient){
+    const batches=await loadConfirmedReportBatchesFromDb(filter.date);
+    const currentRows=activeOrderRows().map(r=>({
+      ...r,
+      orderDate:val("order-date"),
+      shipDate:val("order-date"),
+      batchNote:val("batch-note"),
+      importerCode:val("batch-importer-code"),
+      importerName:val("batch-importer-name"),
+      customerCode:val("batch-customer-code"),
+      customerName:val("batch-customer-name")
+    }));
+    sourceRows=[...batches.flatMap(rowsWithBatchMeta),...currentRows];
+  }
+  return filterReportRows(sourceRows,filter,showAlert);
+}
 function renderReportFilterCount(){
   const badge=document.getElementById("report-filter-count");
   if(!badge)return;
   const filter=reportFilter();
+  const requestId=++reportFilterCountRequest;
+  clearTimeout(reportFilterCountTimer);
   if(!filter.date){
     badge.textContent="日付を指定";
     badge.className="pill warn";
@@ -6386,6 +6441,23 @@ function renderReportFilterCount(){
   const allSuppliers=!filter.supplier||["all","全て","すべて"].includes(filter.supplier);
   badge.textContent=`対象 ${rows.length}明細${allImporters?" / 全輸入社":""}${allSuppliers?" / 全発注先":` / 発注先: ${val("report-filter-supplier")}`}`;
   badge.className=rows.length?"pill blue":"pill warn";
+  if(!dbReady||!supabaseClient)return;
+  const filterKey=JSON.stringify(filter);
+  badge.textContent="対象明細をDB確認中...";
+  badge.className="pill warn";
+  reportFilterCountTimer=setTimeout(async ()=>{
+    try{
+      const dbRows=await reportRowsForPrint(false);
+      if(requestId!==reportFilterCountRequest||filterKey!==JSON.stringify(reportFilter()))return;
+      badge.textContent=`対象 ${dbRows.length}明細${allImporters?" / 全輸入社":""}${allSuppliers?" / 全発注先":` / 発注先: ${val("report-filter-supplier")}`}`;
+      badge.className=dbRows.length?"pill blue":"pill warn";
+    }catch(error){
+      if(requestId!==reportFilterCountRequest)return;
+      badge.textContent="帳票データの確認に失敗";
+      badge.className="pill warn";
+      console.warn("Failed to refresh report row count",error);
+    }
+  },250);
 }
 function resetCurrentOrderForm(){
   orders=[blankOrder()];
@@ -7486,12 +7558,22 @@ function sortSupplierGroupsByCode(groups){
     return String(firstA.supplierName||"").localeCompare(String(firstB.supplierName||""),"ja",{numeric:true,sensitivity:"base"});
   });
 }
-function printPurchaseOrders(){
-  const rows=sortRowsByProductCode(reportRows(true));
-  if(!rows.length)return;
-  const groups=groupedBySupplier(rows);
-  const pages=sortSupplierGroupsByCode(groups).map(([supplier,rows],idx)=>purchaseOrderPage(supplier,rows,idx+1)).join("");
-  openPrintDoc("発注書",purchaseOrderCss()+pages);
+async function printPurchaseOrders(){
+  const printWindow=openPrintLoadingWindow("発注書");
+  if(!printWindow)return;
+  setAppBusy(true,"発注書データをDBから読み込んでいます。");
+  try{
+    const rows=sortRowsByProductCode(await reportRowsForPrint(true));
+    if(!rows.length){printWindow.close();return}
+    const groups=groupedBySupplier(rows);
+    const pages=sortSupplierGroupsByCode(groups).map(([supplier,rows],idx)=>purchaseOrderPage(supplier,rows,idx+1)).join("");
+    openPrintDoc("発注書",purchaseOrderCss()+pages,printWindow);
+  }catch(error){
+    printWindow.close();
+    alert(`発注書データを読み込めませんでした: ${dbErrorMessage(error)}`);
+  }finally{
+    setAppBusy(false);
+  }
 }
 function purchaseOrderPage(supplier,rows,no){
   const sortedRows=sortRowsByProductCode(rows);
@@ -7511,14 +7593,24 @@ function purchaseOrderPage(supplier,rows,no){
     </tbody></table>
   </section>`;
 }
-function printPickingTickets(){
-  const rows=sortRowsByProductCode(reportRows(true));
-  if(!rows.length)return;
-  const pages=[];
-  for(let i=0;i<rows.length;i+=8){
-    pages.push(`<section class="ticket-page">${rows.slice(i,i+8).map(ticketHtml).join("")}</section>`);
+async function printPickingTickets(){
+  const printWindow=openPrintLoadingWindow("オーダー現品票");
+  if(!printWindow)return;
+  setAppBusy(true,"現品票データをDBから読み込んでいます。");
+  try{
+    const rows=sortRowsByProductCode(await reportRowsForPrint(true));
+    if(!rows.length){printWindow.close();return}
+    const pages=[];
+    for(let i=0;i<rows.length;i+=8){
+      pages.push(`<section class="ticket-page">${rows.slice(i,i+8).map(ticketHtml).join("")}</section>`);
+    }
+    openPrintDoc("オーダー現品票",ticketCss()+pages.join(""),printWindow);
+  }catch(error){
+    printWindow.close();
+    alert(`現品票データを読み込めませんでした: ${dbErrorMessage(error)}`);
+  }finally{
+    setAppBusy(false);
   }
-  openPrintDoc("オーダー現品票",ticketCss()+pages.join(""));
 }
 function ticketImporterColorKey(value){
   const known=["DIM","FBI","BKK","KL","JKT","EN"];
@@ -7580,11 +7672,20 @@ function purchaseOrderCss(){
 function ticketCss(){
   return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm;break-after:page}.ticket-page:last-child{break-after:auto}.ticket{border:1.5px solid var(--ticket-main,#000);border-left-width:7mm;padding:2.6mm 3.6mm;overflow:hidden;font-size:10.5pt;line-height:1.16;background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:1.7mm}.ticket span{display:inline-block;min-width:18mm;font-size:9pt;font-weight:900}.ticket strong{font-weight:900;overflow-wrap:anywhere}.ticket .ticket-importer{margin:-1.2mm -2mm 2mm -2mm;padding:1.4mm 2mm;background:var(--ticket-main,#000);color:var(--ticket-contrast,#fff);border-bottom:1px solid var(--ticket-main,#000);font-size:11pt;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .en{font-size:7.5pt;line-height:1.08;margin-left:18mm;min-height:7mm}.ticket .ticket-memo{display:grid;grid-template-columns:18mm minmax(0,1fr);gap:0;margin-bottom:0}.ticket .ticket-memo span{min-width:0}</style>`;
 }
-function openPrintDoc(title,html){
+function openPrintLoadingWindow(title){
   const w=window.open("","_blank");
+  if(!w){alert("ポップアップがブロックされました");return}
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title></head><body style="font-family:Arial,Meiryo,sans-serif;padding:24px">データを読み込んでいます...</body></html>`);
+  w.document.close();
+  return w;
+}
+function openPrintDoc(title,html,targetWindow=null){
+  const w=targetWindow||window.open("","_blank");
   if(!w){alert("ポップアップがブロックされました");return}
   const styles=(html.match(/<style[\s\S]*?<\/style>/g)||[]).join("");
   const body=html.replace(/<style[\s\S]*?<\/style>/g,"");
+  w.document.open();
   w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title>${styles}</head><body>${body}<script>setTimeout(()=>window.print(),300)<\/script></body></html>`);
   w.document.close();
 }
