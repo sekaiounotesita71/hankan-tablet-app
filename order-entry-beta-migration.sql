@@ -160,9 +160,20 @@ begin
       from pg_constraint
       where conrelid = 'public.order_entry_lines'::regclass
         and contype = 'f'
-        and confrelid in (
-          coalesce(to_regclass('public.product_master_unified'), 'public.order_entry_lines'::regclass),
-          'public.product_master'::regclass
+        and (
+          confrelid in (
+            coalesce(to_regclass('public.product_master_unified'), 'public.order_entry_lines'::regclass),
+            'public.product_master'::regclass
+          )
+          or conname = 'order_entry_lines_supplier_code_fkey'
+          or (
+            to_regclass('public.supplier_master') is not null
+            and confrelid = to_regclass('public.supplier_master')
+          )
+          or (
+            to_regclass('public.supplier_master_unified') is not null
+            and confrelid = to_regclass('public.supplier_master_unified')
+          )
         )
     loop
       execute format('alter table public.order_entry_lines drop constraint if exists %I', r.conname);
