@@ -1238,7 +1238,14 @@ async function saveConfirmedBatchToDb(batch){
   }));
   if(payloads.length){
     const {error:lineError}=await supabaseClient.from("order_entry_lines").insert(payloads);
-    if(lineError)throw lineError;
+    if(lineError){
+      const {error:cleanupError}=await supabaseClient.from("order_entry_batches").delete().eq("id",batchId);
+      if(cleanupError)console.error("Failed to clean up order batch after line insert error",cleanupError);
+      if(lineError.code==="23503"&&String(lineError.message||"").includes("order_entry_lines_supplier_code_fkey")){
+        throw new Error("仕入先コードの保存制約が未更新です。order-entry-supplier-snapshot-migration.sql をSupabase SQL Editorで実行してください。");
+      }
+      throw lineError;
+    }
   }
   return batchId;
 }
