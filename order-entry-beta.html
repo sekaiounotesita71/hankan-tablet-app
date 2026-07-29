@@ -6492,14 +6492,19 @@ function loadLocal(){
   if(!raw)return;
   try{
     const data=JSON.parse(raw);
-    if(data.orderDate)document.getElementById("order-date").value=data.orderDate;
+    const savedOrders=Array.isArray(data.orders)?data.orders:[];
+    const hasSavedInput=savedOrders.some(row=>!isOrderRowBlank(row))||[
+      data.batchNote,data.importerCode,data.importerName,
+      data.customerCode,data.customerName,data.currentImportDraftId
+    ].some(value=>String(value||"").trim());
+    document.getElementById("order-date").value=data.orderDate&&hasSavedInput?data.orderDate:today();
     document.getElementById("batch-note").value=data.batchNote||"";
     document.getElementById("batch-importer-code").value=data.importerCode||"";
     document.getElementById("batch-importer-name").value=data.importerName||"";
     document.getElementById("batch-customer-code").value=data.customerCode||"";
     document.getElementById("batch-customer-name").value=data.customerName||"";
     confirmed=!!data.confirmed;
-    orders=Array.isArray(data.orders)?data.orders:[];
+    orders=savedOrders;
     currentImportDraftId=data.currentImportDraftId||"";
   }catch(e){}
 }
