@@ -698,11 +698,13 @@ function initSupabase(){
     currentUser=data.session?.user||null;
     updateAuthStatus();
     loadCurrentUserRole();
+    renderReportFilterCount();
   });
   supabaseClient.auth.onAuthStateChange((_event,session)=>{
     currentUser=session?.user||null;
     updateAuthStatus();
     loadCurrentUserRole();
+    renderReportFilterCount();
     if(currentUser)loadDbData();
   });
   return supabaseClient;
@@ -1259,7 +1261,7 @@ async function saveConfirmedBatchToDb(batch){
 }
 async function loadOrderEntryLinesForBatchIds(ids){
   const lines=[];
-  const batchChunkSize=50;
+  const batchChunkSize=100;
   const pageSize=1000;
   for(let chunkStart=0;chunkStart<ids.length;chunkStart+=batchChunkSize){
     const chunk=ids.slice(chunkStart,chunkStart+batchChunkSize);
@@ -6409,7 +6411,7 @@ async function reportRowsForPrint(showAlert=false){
     return [];
   }
   let sourceRows=printableRows();
-  if(dbReady&&supabaseClient){
+  if(supabaseClient&&currentUser){
     const batches=await loadConfirmedReportBatchesFromDb(filter.date);
     const currentRows=activeOrderRows().map(r=>({
       ...r,
@@ -6441,7 +6443,7 @@ function renderReportFilterCount(){
   const allSuppliers=!filter.supplier||["all","全て","すべて"].includes(filter.supplier);
   badge.textContent=`対象 ${rows.length}明細${allImporters?" / 全輸入社":""}${allSuppliers?" / 全発注先":` / 発注先: ${val("report-filter-supplier")}`}`;
   badge.className=rows.length?"pill blue":"pill warn";
-  if(!dbReady||!supabaseClient)return;
+  if(!supabaseClient||!currentUser)return;
   const filterKey=JSON.stringify(filter);
   badge.textContent="対象明細をDB確認中...";
   badge.className="pill warn";
