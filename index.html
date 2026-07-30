@@ -154,6 +154,8 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .export-panel{max-width:460px;max-height:calc(100dvh - 24px);border-radius:20px 20px 0 0;padding:0 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}.export-head-title{font-weight:800}.export-label{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px;flex:0 0 auto}.export-options{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:8px;margin-bottom:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px}.export-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer}.export-option-left{display:flex;align-items:center;gap:12px}.export-option-code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:17px;font-weight:900}.export-option-meta{font-size:13px;color:var(--muted)}.export-all{width:100%;height:54px;flex:0 0 auto;border:1.5px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-weight:900}
 .pending-invoice-panel{width:min(780px,calc(100vw - 24px));max-height:calc(100dvh - 24px);border-radius:12px;background:#fff;box-shadow:0 12px 34px rgba(0,0,0,.22);display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;overflow:hidden}.pending-invoice-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--border)}.pending-invoice-title{font-size:18px;font-weight:900}.pending-invoice-sub{margin-top:4px;color:var(--muted);font-size:13px;font-weight:800;line-height:1.5}.pending-invoice-summary{padding:10px 16px;background:#fff8e8;border-bottom:1px solid #efd58a;color:#795300;font-size:13px;font-weight:900}.pending-invoice-tools{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border)}.pending-invoice-count{margin-left:auto;color:var(--muted);font-size:13px;font-weight:900}.pending-invoice-list{min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:10px 16px;background:#f8fafc}.pending-invoice-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 12px;margin-bottom:8px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer}.pending-invoice-item.hold{background:#fffaf0;border-color:#efd58a}.pending-invoice-item.future{border-style:dashed}.pending-invoice-check{width:21px;height:21px;margin:2px 0 0;accent-color:var(--accent)}.pending-invoice-main{min-width:0}.pending-invoice-name{font-weight:900;line-height:1.4}.pending-invoice-meta{margin-top:4px;color:var(--muted);font-size:12px;font-weight:800;line-height:1.45}.pending-invoice-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.pending-invoice-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:11px;font-weight:900}.pending-invoice-badge.hold{background:#fff0c7;color:#795300}.pending-invoice-badge.future{background:#eef1f4;color:#526071}.pending-invoice-amount{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px;font-weight:900;white-space:nowrap}.pending-invoice-amount.negative{color:var(--danger)}.pending-invoice-actions{display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:#fff}.pending-invoice-actions button{min-height:48px}.pending-invoice-actions .btn-primary{flex:1}.pending-invoice-empty{padding:24px;text-align:center;color:var(--muted);font-weight:800}
 .session-section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 2px;padding:6px 2px 0;font-size:13px;font-weight:900;color:var(--muted)}.session-section-count{font-size:12px;color:var(--muted);font-weight:800}.session-finalized{background:#f8fafc;border-color:#d7dde7}.session-finalized .export-option-code{color:#526071}.session-finalized .export-option-meta{color:#7b8794}.session-empty{min-height:46px;border:1px dashed var(--border);background:var(--bg);cursor:default}.session-locked-badge{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#e8f3ee;color:#167a52;font-size:12px;font-weight:900;white-space:nowrap}
+.session-filter-bar{display:flex;align-items:end;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:2;flex-wrap:wrap}.session-filter-bar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:900;color:var(--muted)}.session-filter-bar input{height:38px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:inherit;color:var(--text);background:#fff}.session-filter-summary{margin-left:auto;font-size:12px;font-weight:900;color:var(--muted);white-space:nowrap}
+@media(max-width:700px){.session-filter-bar{align-items:stretch}.session-filter-bar label{width:100%}.session-filter-bar input{width:100%}.session-filter-summary{width:100%;margin-left:0}}
 .sales-ref-panel{width:min(1180px,calc(100vw - 24px));height:min(820px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden}.sales-ref-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff}.sales-ref-title{font-weight:900}.sales-ref-body{display:grid;grid-template-columns:310px 1fr;min-height:0;overflow:hidden}.sales-ref-list{border-right:1px solid var(--border);overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#f8fafc;padding:10px}.sales-ref-session{width:100%;border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer}.sales-ref-session.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,122,82,.12)}.sales-ref-session-name{display:block;font-weight:900;color:var(--text);margin-bottom:4px}.sales-ref-session-meta{display:block;font-size:12px;color:var(--muted);font-weight:800}.sales-ref-main{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto 1fr;background:#fff;overflow:hidden}.sales-ref-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}.sales-ref-search{height:42px;min-width:180px;flex:1;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-weight:700}.sales-ref-filter{height:42px;min-width:130px;border:1px solid var(--border-strong);border-radius:9px;padding:0 10px;background:#fff;font-weight:800}.sales-ref-filter.date{min-width:145px}.sales-ref-summary{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:800}.sales-ref-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;min-height:0;max-height:100%}.sales-ref-table{width:100%;min-width:1200px;border-collapse:separate;border-spacing:0}.sales-ref-table th,.sales-ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}.sales-ref-table th{position:sticky;top:0;background:#f8fafc;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.sales-ref-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:30px;color:var(--muted);font-weight:800;text-align:center}
 .sales-ref-analysis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#fbfcfd}.sales-ref-card{border:1px solid var(--border);border-radius:9px;background:#fff;min-width:0;overflow:hidden}.sales-ref-card-head{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:900;color:var(--muted);display:flex;justify-content:space-between;gap:8px}.sales-ref-card-body{max-height:132px;overflow:auto;-webkit-overflow-scrolling:touch}.sales-ref-rank{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-ref-rank:last-child{border-bottom:0}.sales-ref-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;color:var(--text)}.sales-ref-rank-value{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}.sales-ref-total-card{background:#eef7f1;border-color:#cfe7d9}.sales-ref-total-card .sales-ref-rank-name,.sales-ref-total-card .sales-ref-rank-value{color:#167a52}
 .customer-master-panel{width:min(980px,calc(100vw - 24px));height:min(760px,calc(100dvh - 24px));max-width:none;border-radius:18px;padding:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:#fff}.customer-master-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}.customer-master-title{font-weight:900}.customer-master-body{display:grid;grid-template-columns:1fr 1fr;min-height:0}.customer-master-section{min-width:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px;border-right:1px solid var(--border)}.customer-master-section:last-child{border-right:0}.customer-master-section h3{margin:0 0 10px;font-size:14px}.customer-master-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.customer-master-form input,.customer-fix-card input,.customer-fix-card select{height:42px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px;font-weight:700;background:#fff}.customer-master-form .wide{grid-column:1/-1}.customer-master-list,.customer-fix-list{display:flex;flex-direction:column;gap:8px}.customer-master-item,.customer-fix-card{border:1px solid var(--border);border-radius:9px;background:#fff;padding:10px}.customer-master-name{font-weight:900;margin-bottom:4px}.customer-master-meta,.customer-fix-meta{font-size:12px;color:var(--muted);font-weight:800}.customer-fix-card{display:grid;grid-template-columns:1fr;gap:8px}.customer-fix-actions{display:flex;gap:8px}.customer-fix-actions button{flex:1}.customer-empty{padding:18px;border:1px dashed var(--border);border-radius:9px;color:var(--muted);font-weight:800;text-align:center}
@@ -207,7 +209,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   <input class="sync-input" id="login-password" type="password" placeholder="パスワード">
   <button class="sync-btn primary" onclick="signInSupabase()">ログイン</button>
   <button class="sync-btn" onclick="signOutSupabase()">ログアウト</button>
-  <button class="sync-btn" onclick="loadSessionList()">作業一覧</button>
+  <button class="sync-btn" onclick="openSessionList()">作業一覧</button>
   <div class="sync-user" id="sync-user"></div>
 </div>
 <div class="export-bg" id="session-bg" onclick="closeSessionPicker()">
@@ -215,6 +217,13 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     <div class="export-head">
       <div class="export-head-title">保存済み作業を開く</div>
       <button class="export-close" onclick="closeSessionPicker()">×</button>
+    </div>
+    <div class="session-filter-bar">
+      <label>一覧の日付（任意）
+        <input id="session-list-date" type="date" onchange="loadSessionList()">
+      </label>
+      <button class="btn" type="button" onclick="clearSessionListDate()">全件表示</button>
+      <span class="session-filter-summary" id="session-list-summary">全期間</span>
     </div>
     <div class="export-options" id="session-options"></div>
   </div>
@@ -244,17 +253,17 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     <div class="work-start-panel" id="work-start-panel">
       <div>
         <div class="work-start-title">作業データを開く</div>
-        <div class="work-start-sub">受注登録・CSV/PDF取込・マスタ更新は発注入力画面で行います。現場では日付を選んで作業を開きます。</div>
+        <div class="work-start-sub">新しい作業を作るときは日付を選択します。既存の作業は、日付に関係なく作業一覧から開けます。</div>
       </div>
       <div class="work-start-controls">
-        <label>作業日<input id="work-session-date" type="date"></label>
+        <label>新規作業日<input id="work-session-date" type="date"></label>
         <label class="work-price-file">価格・産地Excel
           <span class="work-price-file-button">ファイルを選択</span>
           <input id="work-price-origin-file" type="file" accept=".xlsx,.xls" onchange="loadWorkPriceOriginFile(this)">
           <span class="work-price-file-status" id="work-price-origin-status">未選択</span>
         </label>
         <button class="btn btn-primary" type="button" onclick="createWorkSessionFromConfirmedOrders()">受注から作業作成</button>
-        <button class="btn btn-primary" type="button" onclick="loadSessionList()">作業一覧を表示</button>
+        <button class="btn btn-primary" type="button" onclick="openSessionList()">作業一覧を表示</button>
         <button class="btn" type="button" onclick="location.href='./order-entry-beta.html'">発注入力へ</button>
       </div>
     </div>
@@ -3489,8 +3498,10 @@ function currentWorkDateValue(){
 function workSessionDateFilterValue(){
   return String(document.getElementById("work-session-date")?.value||"").trim();
 }
-function workSessionMatchesDate(session){
-  const selected=workSessionDateFilterValue();
+function workSessionListDateFilterValue(){
+  return normalizeWorkDate(document.getElementById("session-list-date")?.value);
+}
+function workSessionMatchesDate(session,selected=workSessionListDateFilterValue()){
   if(!selected)return true;
   const compact=selected.replace(/-/g,"");
   const slash=selected.replace(/-/g,"/");
@@ -3498,24 +3509,37 @@ function workSessionMatchesDate(session){
   const dateFields=[session?.work_date,session?.created_at,session?.updated_at,session?.finalized_at].filter(Boolean).map(value=>String(value).slice(0,10));
   return dateFields.includes(selected)||name.includes(selected)||name.includes(slash)||name.includes(compact);
 }
+function openSessionList(){
+  const input=document.getElementById("session-list-date");
+  if(input)input.value="";
+  loadSessionList();
+}
+function clearSessionListDate(){
+  const input=document.getElementById("session-list-date");
+  if(input)input.value="";
+  loadSessionList();
+}
 loadSessionList=async function(){
   if(!(await requireSupabaseLogin()))return;
-  const selectedDate=workSessionDateFilterValue();
+  const selectedDate=workSessionListDateFilterValue();
   let data;
   try{
-    data=await readAllWorkRows((from,to)=>{
-      let query=supabaseClient.from("work_sessions").select("*").order("updated_at",{ascending:false});
-      if(selectedDate)query=query.eq("work_date",selectedDate);
-      return query.range(from,to);
-    },500);
+    data=await readAllWorkRows((from,to)=>supabaseClient
+      .from("work_sessions")
+      .select("*")
+      .order("updated_at",{ascending:false})
+      .order("id",{ascending:false})
+      .range(from,to),500);
   }catch(error){
     toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));
     return;
   }
-  const sessions=(data||[]).filter(workSessionMatchesDate);
+  const sessions=(data||[]).filter(session=>workSessionMatchesDate(session,selectedDate));
   const active=sessions.filter(s=>!(s.locked||s.status==="closed"));
   const finalized=sessions.filter(s=>s.locked||s.status==="closed").sort((a,b)=>new Date(b.finalized_at||b.updated_at||b.created_at)-new Date(a.finalized_at||a.updated_at||a.created_at));
   const wrap=document.getElementById("session-options");
+  const summary=document.getElementById("session-list-summary");
+  if(summary)summary.textContent=`${selectedDate||"全期間"} / ${sessions.length}件`;
   wrap.innerHTML=[
     `<div class="session-section-title"><span>${selectedDate?esc(selectedDate)+" ":""}作業中</span><span class="session-section-count">${active.length}件</span></div>`,
     active.length?active.map(s=>sessionListItemHtmlTrial(s,false)).join(""):sessionListEmptyHtmlTrial("作業中のデータはありません"),
@@ -5505,6 +5529,13 @@ async function loadConfirmedOrderLinesForWork(batchIds){
 }
 async function createWorkSessionFromConfirmedOrders(){
   if(!(await requireSupabaseLogin()))return;
+  const dateInput=document.getElementById("work-session-date");
+  const date=normalizeWorkDate(dateInput?.value);
+  if(!date){
+    alert("新しい作業を作成する作業日を選択してください。");
+    dateInput?.focus();
+    return;
+  }
   if(!(await loadProductMasterFromSupabase({force:true}))){
     alert("商品マスタを読み込めないため、価格を確定できません。通信状態と商品マスタを確認してから再実行してください。");
     return;
@@ -5514,9 +5545,6 @@ async function createWorkSessionFromConfirmedOrders(){
     alert(`価格・産地Excelを読み込めません。\n${workPriceOriginLoadError}`);
     return;
   }
-  const date=workSessionDateFilterValue()||localDateValue();
-  const dateInput=document.getElementById("work-session-date");
-  if(dateInput)dateInput.value=date;
   if(rows.length||currentSessionId){
     if(!confirm("現在開いている作業があります。受注から新しい作業を作成すると画面を切り替えます。続けますか？"))return;
   }
@@ -5532,7 +5560,7 @@ async function createWorkSessionFromConfirmedOrders(){
     toast("作業一覧確認エラー: "+error.message);
     return;
   }
-  const existingActive=(existing||[]).filter(session=>workSessionMatchesDate(session)&&!(session.locked||session.status==="closed"));
+  const existingActive=(existing||[]).filter(session=>workSessionMatchesDate(session,date)&&!(session.locked||session.status==="closed"));
   if(existingActive.length&&!confirm(`${date} の作業中データがすでに ${existingActive.length} 件あります。別作業として新規作成しますか？`))return;
   setSaveState("受注確定データを読込中...");
   let batches;
@@ -5606,4 +5634,3 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 </script>
 </body>
 </html>
-
