@@ -389,13 +389,17 @@ async function loadImporterDisplayNames(options={}){
   const force=!!options.force;
   if(!supabaseClient||!currentUser)return false;
   if(!force&&importerDisplayNamesUserId===currentUser.id&&Object.keys(importerDisplayNames).length)return true;
-  const {data,error}=await supabaseClient
-    .from("importer_master")
-    .select("importer_code,importer_name")
-    .eq("is_active",true)
-    .order("importer_code",{ascending:true})
-    .limit(500);
-  if(error)return false;
+  let data;
+  try{
+    data=await readAllWorkRows((from,to)=>supabaseClient
+      .from("importer_master")
+      .select("importer_code,importer_name")
+      .eq("is_active",true)
+      .order("importer_code",{ascending:true})
+      .range(from,to));
+  }catch(error){
+    return false;
+  }
   importerDisplayNames={};
   (data||[]).forEach(item=>rememberImporterDisplayName(item.importer_code,item.importer_name));
   importerDisplayNamesUserId=currentUser.id;
@@ -478,7 +482,9 @@ function pendingInvoiceNumber(value){
   return Number.isFinite(n)?n:null;
 }
 function pendingInvoiceTargetDate(){
-  const candidates=[latestOrderFilename,currentSessionName,workSessionDateFilterValue()];
+  const workDate=normalizeWorkDate(currentSessionWorkDate)||normalizeWorkDate(workSessionDateFilterValue());
+  if(workDate)return workDate;
+  const candidates=[latestOrderFilename,currentSessionName];
   for(const value of candidates){
     const match=String(value||"").match(/((?:19|20)\d{2})[-\/.]?(\d{2})[-\/.]?(\d{2})/);
     if(match)return `${match[1]}-${match[2]}-${match[3]}`;
@@ -610,18 +616,29 @@ async function claimPendingInvoiceEntries(entries,targetDate){
   });
   const now=new Date().toISOString();
   const claimed=[];
-  for(const [invoiceNo,group] of groups){
-    const ids=group.map(entry=>entry.id).filter(Boolean);
-    if(!ids.length)continue;
-    const {data,error}=await supabaseClient
-      .from("pending_entries")
-      .update({status:"applied",applied_invoice_no:invoiceNo,applied_work_date:targetDate,applied_at:now,applied_by:currentUser.id})
-      .in("id",ids)
-      .in("status",["pending","hold"])
-      .select("id");
-    if(error)throw error;
-    const claimedIds=new Set((data||[]).map(row=>String(row.id)));
-    group.filter(entry=>claimedIds.has(String(entry.id))).forEach(entry=>claimed.push({...entry,_appliedInvoiceNo:invoiceNo}));
+  try{
+    for(const [invoiceNo,group] of groups){
+      const ids=group.map(entry=>entry.id).filter(Boolean);
+      if(!ids.length)continue;
+      const {data,error}=await supabaseClient
+        .from("pending_entries")
+        .update({status:"applied",applied_invoice_no:invoiceNo,applied_work_date:targetDate,applied_at:now,applied_by:currentUser.id})
+        .in("id",ids)
+        .in("status",["pending","hold"])
+        .select("id");
+      if(error)throw error;
+      const claimedIds=new Set((data||[]).map(row=>String(row.id)));
+      group.filter(entry=>claimedIds.has(String(entry.id))).forEach(entry=>claimed.push({...entry,_appliedInvoiceNo:invoiceNo}));
+    }
+  }catch(error){
+    if(claimed.length){
+      try{
+        await rollbackPendingInvoiceEntries(claimed);
+      }catch(rollbackError){
+        throw new Error(`未処理伝票の反映に失敗し、先に反映した ${claimed.length}件の取消にも失敗しました。管理者確認が必要です。反映: ${error.message} / 取消: ${rollbackError.message}`);
+      }
+    }
+    throw error;
   }
   return claimed;
 }
@@ -1293,6 +1310,23 @@ async function requireSupabaseLogin(){
   await loadImporterDisplayNames();
   return true;
 }
+async function readAllWorkRows(buildPage,pageSize=1000){
+  const data=[];
+  for(let offset=0;;offset+=pageSize){
+    const {data:page,error}=await buildPage(offset,offset+pageSize-1);
+    if(error)throw error;
+    const rows=page||[];
+    data.push(...rows);
+    if(rows.length<pageSize)break;
+  }
+  return data;
+}
+function loadWorkSessionOrderLines(sessionId){
+  return readAllWorkRows((from,to)=>supabaseClient.from("order_lines").select("*").eq("session_id",sessionId).order("source_row_no",{ascending:true}).range(from,to));
+}
+function loadWorkSessionBoxes(sessionId){
+  return readAllWorkRows((from,to)=>supabaseClient.from("boxes").select("*").eq("session_id",sessionId).order("importer_code",{ascending:true}).order("box_no",{ascending:true}).range(from,to));
+}
 async function saveCurrentSessionToSupabase(){
   if(!rows.length){toast("先にCSVを読み込んで表示してください");return}
   if(!(await requireSupabaseLogin()))return;
@@ -1318,12 +1352,23 @@ async function saveCurrentSessionToSupabase(){
   setSaveState("Supabase: 保存済み");
   toast("Supabaseに保存しました");
 }
-async function saveOrderLineToSupabase(row){
-  if(!currentSessionId||!currentUser||!supabaseClient)return;
-  setSaveState("Supabase: 保存中...");
-  const {error}=await supabaseClient.from("order_lines").upsert(rowToOrderLinePayload(row),{onConflict:"session_id,source_row_no"});
-  if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return}
-  setSaveState("Supabase: 保存済み");
+var orderLineSaveQueues=new Map();
+function saveOrderLineToSupabase(row){
+  if(!currentSessionId||!currentUser||!supabaseClient)return Promise.resolve(false);
+  const payload=rowToOrderLinePayload(row);
+  const key=`${payload.session_id}:${payload.source_row_no}`;
+  const previous=orderLineSaveQueues.get(key)||Promise.resolve();
+  const task=previous.catch(()=>{}).then(async()=>{
+    setSaveState("Supabase: 保存中...");
+    const {data,error}=await supabaseClient.from("order_lines").upsert(payload,{onConflict:"session_id,source_row_no"}).select("source_row_no").maybeSingle();
+    if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return false}
+    if(!data){setSaveState("Supabase: 保存失敗",true);toast("明細を保存できませんでした。権限と接続を確認してください");return false}
+    setSaveState("Supabase: 保存済み");
+    return true;
+  });
+  orderLineSaveQueues.set(key,task);
+  task.finally(()=>{if(orderLineSaveQueues.get(key)===task)orderLineSaveQueues.delete(key)});
+  return task;
 }
 async function saveBoxToSupabase(imp,bn){
   if(!currentSessionId||!currentUser||!supabaseClient||!boxMap[imp]?.[bn])return;
@@ -1333,20 +1378,35 @@ async function saveBoxToSupabase(imp,bn){
   setSaveState("Supabase: 保存済み");
 }
 async function saveAllBoxesToSupabase(){
-  if(!currentSessionId||!currentUser||!supabaseClient)return;
+  if(!currentSessionId||!currentUser||!supabaseClient)return true;
   const payloads=[];
   Object.entries(boxMap).forEach(([imp,boxes])=>Object.entries(boxes).forEach(([bn,b])=>payloads.push(boxToPayload(imp,bn,b))));
-  if(!payloads.length)return;
-  const {error}=await supabaseClient.from("boxes").upsert(payloads,{onConflict:"session_id,importer_code,box_no"});
-  if(error){setSaveState("Supabase: 保存失敗",true);toast("箱保存エラー: "+error.message);}
+  if(!payloads.length)return true;
+  for(let index=0;index<payloads.length;index+=300){
+    const chunk=payloads.slice(index,index+300);
+    const {data,error}=await supabaseClient.from("boxes").upsert(chunk,{onConflict:"session_id,importer_code,box_no"}).select("box_no");
+    if(error){setSaveState("Supabase: 保存失敗",true);toast("箱保存エラー: "+error.message);return false}
+    if((data||[]).length!==chunk.length){setSaveState("Supabase: 保存失敗",true);toast(`箱情報の保存件数が一致しません（入力 ${payloads.length}件）`);return false}
+  }
+  return true;
 }
 function closeSessionPicker(){
   document.getElementById("session-bg").classList.remove("open");
 }
 async function loadSessionList(){
   if(!(await requireSupabaseLogin()))return;
-  const {data,error}=await supabaseClient.from("work_sessions").select("id,name,status,created_at,updated_at").order("updated_at",{ascending:false}).limit(20);
-  if(error){toast("作業一覧エラー: "+error.message);return}
+  let data;
+  try{
+    data=await readAllWorkRows((from,to)=>supabaseClient
+      .from("work_sessions")
+      .select("id,name,status,created_at,updated_at")
+      .order("updated_at",{ascending:false})
+      .order("id",{ascending:false})
+      .range(from,to),500);
+  }catch(error){
+    toast("作業一覧エラー: "+error.message);
+    return;
+  }
   const wrap=document.getElementById("session-options");
   wrap.innerHTML=(data||[]).map(s=>`<div class="export-option"><div class="export-option-left" onclick="openSavedSession('${s.id}')" style="flex:1;cursor:pointer"><span class="export-option-code">${esc(s.name)}</span><span class="export-option-meta">${new Date(s.updated_at||s.created_at).toLocaleString("ja-JP")}</span></div><span class="export-option-badge partial">${esc(s.status)}</span><button class="btn-stockout" onclick="deleteSavedSession(event,'${s.id}','${esc(s.name)}')">削除</button></div>`).join("")||`<div class="export-option"><div class="export-option-meta">保存済み作業はまだありません</div></div>`;
   document.getElementById("session-bg").classList.add("open");
@@ -1354,9 +1414,14 @@ async function loadSessionList(){
 async function deleteSavedSession(event,sessionId,name){
   event.stopPropagation();
   if(!(await requireSupabaseLogin()))return;
+  const {data:target,error:targetError}=await supabaseClient.from("work_sessions").select("id,status,locked").eq("id",sessionId).maybeSingle();
+  if(targetError){toast("削除対象の確認エラー: "+targetError.message);return}
+  if(!target){toast("削除対象が見つかりません。再読込してください");return}
+  if(target.locked||target.status==="closed"){alert("売上確定済みの作業は削除できません。売上修正の手順を使用してください。");return}
   if(!confirm(`「${name}」を削除しますか？\n関連する明細と箱情報も削除されます。`))return;
-  const {error}=await supabaseClient.from("work_sessions").delete().eq("id",sessionId);
+  const {data:deleted,error}=await supabaseClient.from("work_sessions").delete().eq("id",sessionId).select("id").maybeSingle();
   if(error){toast("削除エラー: "+error.message);return}
+  if(!deleted){toast("削除できませんでした。権限または最新状態を確認してください");return}
   if(currentSessionId===sessionId){
     currentSessionId=null;
     currentSessionName="";
@@ -1387,10 +1452,13 @@ async function openSavedSession(sessionId){
   closeSessionPicker();
   const {data:session,error:sessionError}=await supabaseClient.from("work_sessions").select("*").eq("id",sessionId).single();
   if(sessionError){toast("作業読込エラー: "+sessionError.message);return}
-  const {data:lineData,error:lineError}=await supabaseClient.from("order_lines").select("*").eq("session_id",sessionId).order("source_row_no",{ascending:true});
-  if(lineError){toast("明細読込エラー: "+lineError.message);return}
-  const {data:boxData,error:boxError}=await supabaseClient.from("boxes").select("*").eq("session_id",sessionId);
-  if(boxError){toast("箱読込エラー: "+boxError.message);return}
+  let lineData,boxData;
+  try{
+    [lineData,boxData]=await Promise.all([loadWorkSessionOrderLines(sessionId),loadWorkSessionBoxes(sessionId)]);
+  }catch(error){
+    toast("作業データ読込エラー: "+error.message);
+    return;
+  }
   resetLocalStateForSession();
   currentSessionId=session.id;
   currentSessionName=session.name;
@@ -1452,12 +1520,23 @@ function sessionBoxesUiSignature(){
 var lastSessionRefreshHadUiChanges=true;
 async function refreshCurrentSessionFromSupabase(){
   if(!currentSessionId||!supabaseClient)return true;
+  const refreshSessionId=currentSessionId;
   const rowsBefore=sessionRowsUiSignature();
   const boxesBefore=sessionBoxesUiSignature();
-  const {data:lineData,error:lineError}=await supabaseClient.from("order_lines").select("*").eq("session_id",currentSessionId).order("source_row_no",{ascending:true});
-  if(lineError){toast("最新明細の取得エラー: "+lineError.message);return false}
-  const {data:boxData,error:boxError}=await supabaseClient.from("boxes").select("*").eq("session_id",currentSessionId);
-  if(boxError){toast("最新箱情報の取得エラー: "+boxError.message);return false}
+  let lineData,boxData;
+  try{
+    [lineData,boxData]=await Promise.all([loadWorkSessionOrderLines(refreshSessionId),loadWorkSessionBoxes(refreshSessionId)]);
+  }catch(error){
+    toast("最新作業データの取得エラー: "+error.message);
+    return false;
+  }
+  if(currentSessionId!==refreshSessionId)return false;
+  if(autoRefreshInFlight){
+    const active=document.activeElement;
+    if(document.getElementById("modal-bg")?.classList.contains("open")||
+      document.getElementById("confirm-bg")?.classList.contains("open")||
+      (active&&["INPUT","TEXTAREA","SELECT"].includes(active.tagName)))return true;
+  }
   (lineData||[]).forEach((dbRow,index)=>upsertRemoteOrderLine(dbRow,index));
   boxMap={};
   (boxData||[]).forEach(b=>{
@@ -1753,7 +1832,7 @@ function inferImporterCodeFromFilename(filename){
   return matches[0]||"";
 }
 function suggestSessionName(){
-  const today=new Date().toISOString().slice(0,10);
+  const today=localDateValue();
   const importers=[...new Set(orderRows.map(r=>r.importer_id||r.importer_code).filter(Boolean))];
   return `${today} ${importers.length?importers.join("/"):"作業マスター"}`;
 }
@@ -1785,10 +1864,11 @@ function readCSV(file,type){
   r.onload=e=>parseCSV(decodeCsvBuffer(e.target.result),type,file.name);
   r.readAsArrayBuffer(file);
 }
-function parseCSV(text,type,filename){
+function parseCSV(text,type,filename,append=false){
   const lines=String(text).trim().replace(/^\uFEFF/,"").split(/\r?\n/);
   if(lines.length<2)return;
   const headers=splitLine(lines[0]);
+  const importerFromFile=type==="order"?inferImporterCodeFromFilename(filename):"";
   const parsed=lines.slice(1).map(line=>{
     const cols=splitLine(line),obj={};
     headers.forEach((h,i)=>{
@@ -1796,19 +1876,24 @@ function parseCSV(text,type,filename){
       obj[key]=(cols[i]||"").replace(/^"|"$/g,"").trim();
     });
     applyContractPricesFromCsv(obj,headers,cols,type);
+    if(type==="order"){
+      obj.source_filename=filename||"";
+      if(importerFromFile&&!obj.importer_id)obj.importer_id=importerFromFile;
+      if(importerFromFile)obj.importer_code=importerFromFile;
+    }
     return obj;
   }).filter(r=>Object.values(r).some(v=>v));
   if(type==="order"){
-    orderRows=parsed;
-    latestOrderFilename=filename||latestOrderFilename;
+    if(append)orderRows.push(...parsed);else orderRows=parsed;
+    if(!append)latestOrderFilename=filename||latestOrderFilename;
     latestInferredImporterCode=inferImporterCodeFromFilename(latestOrderFilename);
     const missingCustomer=parsed.filter(r=>!r.customer).length;
     const importerNote=latestInferredImporterCode?` / 輸入社 ${latestInferredImporterCode}`:"";
     setOk("order-status",`読込済 ${parsed.length}件${importerNote}${missingCustomer?` / 店舗名未取得 ${missingCustomer}件`:""}`);
     if(missingCustomer)toast("店舗名を拾えない行があります。CSVの列名を確認してください。");
   }else{
-    masterMap={};
-    latestMasterFilename=filename||latestMasterFilename;
+    if(!append)masterMap={};
+    if(!append)latestMasterFilename=filename||latestMasterFilename;
     parsed.forEach(r=>{const key=normalizeProductId(r.product_id);if(key)masterMap[key]=r});
     setOk("master-status",`読込済 ${parsed.length}件`);
   }
@@ -1847,6 +1932,20 @@ async function saveCurrentSessionToSupabase(){
   if(!rows.length){toast("先にCSVを読み込んで表示してください");return}
   if(!(await requireSupabaseLogin()))return;
   setSaveState("Supabase: 保存中...");
+  const createdNewSession=!currentSessionId;
+  const failSave=async message=>{
+    let cleanupError=null;
+    if(createdNewSession&&currentSessionId){
+      const result=await supabaseClient.from("work_sessions").delete().eq("id",currentSessionId);
+      cleanupError=result.error||null;
+      if(!cleanupError)currentSessionId=null;
+    }
+    setSaveState("Supabase: 保存失敗",true);
+    updateCloudSaveButton();
+    toast(cleanupError
+      ?`${message} 作成途中データの取消にも失敗しました。管理者確認が必要です: ${cleanupError.message}`
+      :`${message} 入力中の画面は消していません。`);
+  };
   const nameInput=document.getElementById("session-name-input");
   currentSessionName=(nameInput?.value||"").trim()||currentSessionName||suggestSessionName();
   if(nameInput)nameInput.value=currentSessionName;
@@ -1872,10 +1971,15 @@ async function saveCurrentSessionToSupabase(){
   const payloads=rows.map(rowToOrderLinePayload);
   const chunkSize=500;
   for(let i=0;i<payloads.length;i+=chunkSize){
-    const {error}=await supabaseClient.from("order_lines").upsert(payloads.slice(i,i+chunkSize),{onConflict:"session_id,source_row_no"});
-    if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return}
+    const chunk=payloads.slice(i,i+chunkSize);
+    const {data,error}=await supabaseClient.from("order_lines").upsert(chunk,{onConflict:"session_id,source_row_no"}).select("source_row_no");
+    if(error){await failSave("明細保存エラー: "+error.message);return}
+    if((data||[]).length!==chunk.length){await failSave(`明細保存件数が一致しません（入力 ${payloads.length}件）`);return}
   }
-  await saveAllBoxesToSupabase();
+  const {count:savedLineCount,error:countError}=await supabaseClient.from("order_lines").select("source_row_no",{count:"exact",head:true}).eq("session_id",currentSessionId);
+  if(countError){await failSave("明細保存確認エラー: "+countError.message);return}
+  if(savedLineCount!==payloads.length){await failSave(`明細保存件数が一致しません（入力 ${payloads.length}件 / DB ${savedLineCount??0}件）`);return}
+  if(!(await saveAllBoxesToSupabase())){await failSave("箱情報を保存できませんでした。");return}
   document.getElementById("cloud-save-info").textContent=`Supabase保存済み: ${currentSessionName}`;
   updateCloudSaveButton();
   subscribeCurrentSession();
@@ -3207,11 +3311,21 @@ async function checkSalesLockSetupTrial(){
   return true;
 }
 async function upsertSalesRecordsTrial(payloads){
-  for(let i=0;i<payloads.length;i+=200){
-    const chunk=payloads.slice(i,i+200);
-    const {error}=await supabaseClient.from("sales_records").upsert(chunk,{onConflict:"session_id,source_row_no"});
+  try{
+    for(let i=0;i<payloads.length;i+=200){
+      const chunk=payloads.slice(i,i+200);
+      const {data,error}=await supabaseClient.from("sales_records").upsert(chunk,{onConflict:"session_id,source_row_no"}).select("source_row_no");
+      if(error)throw error;
+      if((data||[]).length!==chunk.length)throw new Error(`売上明細の保存件数が一致しません（入力 ${payloads.length}件）`);
+      setSaveState(`Supabase: 売上確定中 ${Math.min(i+200,payloads.length)}/${payloads.length}`);
+    }
+    const {count,error}=await supabaseClient.from("sales_records").select("source_row_no",{count:"exact",head:true}).eq("session_id",currentSessionId);
     if(error)throw error;
-    setSaveState(`Supabase: 売上確定中 ${Math.min(i+200,payloads.length)}/${payloads.length}`);
+    if(count!==payloads.length)throw new Error(`売上明細の保存件数が一致しません（入力 ${payloads.length}件 / DB ${count??0}件）`);
+  }catch(error){
+    const {error:cleanupError}=await supabaseClient.from("sales_records").delete().eq("session_id",currentSessionId);
+    if(cleanupError)throw new Error(`売上確定に失敗し、作成途中の売上明細も取消できませんでした。管理者確認が必要です。保存: ${error.message} / 取消: ${cleanupError.message}`);
+    throw error;
   }
 }
 function finalizedReceivablePayloads(workDate,shippingFees){
@@ -3253,8 +3367,9 @@ function finalizedReceivablePayloads(workDate,shippingFees){
 async function syncFinalizedSessionToReceivables(workDate,shippingFees){
   const payloads=finalizedReceivablePayloads(workDate,shippingFees);
   if(!payloads.length)return 0;
-  const {error}=await supabaseClient.from("accounts_receivable").upsert(payloads,{onConflict:"source_key"});
+  const {data,error}=await supabaseClient.from("accounts_receivable").upsert(payloads,{onConflict:"source_key"}).select("source_key");
   if(error)throw error;
+  if((data||[]).length!==payloads.length)throw new Error(`売掛の反映件数が一致しません（入力 ${payloads.length}件 / DB ${(data||[]).length}件）`);
   return payloads.length;
 }
 finalizeSalesTrial=async function(){
@@ -3282,9 +3397,11 @@ finalizeSalesTrial=async function(){
     const {data,error}=await supabaseClient.from("work_sessions")
       .update({locked:true,work_date:workDate,finalized_at:finalizedAt,finalized_by:currentUser.id,status:"closed",shipping_fee:shippingFee,shipping_fees:shippingFees})
       .eq("id",currentSessionId)
+      .eq("locked",false)
       .select("*")
-      .single();
+      .maybeSingle();
     if(error)throw error;
+    if(!data)throw new Error("別の端末で先に売上確定された可能性があります。最新状態を再読込してください。");
     setSessionLockStateTrial(data);
     try{
       await syncFinalizedSessionToReceivables(workDate,shippingFees);
@@ -3295,7 +3412,17 @@ finalizeSalesTrial=async function(){
       alert(`売上確定は完了しましたが、売掛への自動反映に失敗しました。\n売掛管理の「売上確定を反映」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
     }
   }catch(error){
-    const message=salesLockSetupErrorMessage(error);
+    let cleanupMessage="";
+    try{
+      const {data:sessionState}=await supabaseClient.from("work_sessions").select("locked,status").eq("id",currentSessionId).maybeSingle();
+      if(sessionState&&!(sessionState.locked||sessionState.status==="closed")){
+        const {error:cleanupError}=await supabaseClient.from("sales_records").delete().eq("session_id",currentSessionId);
+        if(cleanupError)cleanupMessage=` / 作成途中の売上明細を取消できませんでした: ${cleanupError.message}`;
+      }
+    }catch(cleanupError){
+      cleanupMessage=` / 売上明細の取消確認に失敗しました: ${cleanupError.message}`;
+    }
+    const message=salesLockSetupErrorMessage(error)+cleanupMessage;
     setSaveState("Supabase: 売上確定失敗",true);
     alert("売上確定エラー: "+message);
   }
@@ -3316,7 +3443,8 @@ function sessionListItemHtmlTrial(session,isFinalized){
   const time=esc(sessionListTimeTrial(session));
   const finalizedClass=isFinalized?" session-finalized":"";
   const finalizedBadge=isFinalized?`<span class="session-locked-badge">売上確定済み</span>`:`<span class="export-option-badge partial">${status}</span>`;
-  return `<div class="export-option${finalizedClass}"><div class="export-option-left" onclick="openSavedSession('${session.id}')" style="flex:1;cursor:pointer"><span class="export-option-code">${name}</span><span class="export-option-meta">${time}</span></div>${finalizedBadge}<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button></div>`;
+  const deleteButton=isFinalized?"":`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`;
+  return `<div class="export-option${finalizedClass}"><div class="export-option-left" onclick="openSavedSession('${session.id}')" style="flex:1;cursor:pointer"><span class="export-option-code">${name}</span><span class="export-option-meta">${time}</span></div>${finalizedBadge}${deleteButton}</div>`;
 }
 function sessionListEmptyHtmlTrial(text){
   return `<div class="export-option session-empty"><div class="export-option-meta">${esc(text)}</div></div>`;
@@ -3372,13 +3500,18 @@ function workSessionMatchesDate(session){
 }
 loadSessionList=async function(){
   if(!(await requireSupabaseLogin()))return;
-  const {data,error}=await supabaseClient
-    .from("work_sessions")
-    .select("*")
-    .order("updated_at",{ascending:false})
-    .limit(200);
-  if(error){toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));return}
   const selectedDate=workSessionDateFilterValue();
+  let data;
+  try{
+    data=await readAllWorkRows((from,to)=>{
+      let query=supabaseClient.from("work_sessions").select("*").order("updated_at",{ascending:false});
+      if(selectedDate)query=query.eq("work_date",selectedDate);
+      return query.range(from,to);
+    },500);
+  }catch(error){
+    toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));
+    return;
+  }
   const sessions=(data||[]).filter(workSessionMatchesDate);
   const active=sessions.filter(s=>!(s.locked||s.status==="closed"));
   const finalized=sessions.filter(s=>s.locked||s.status==="closed").sort((a,b)=>new Date(b.finalized_at||b.updated_at||b.created_at)-new Date(a.finalized_at||a.updated_at||a.created_at));
@@ -3829,28 +3962,19 @@ openSalesReference=async function(){
   currentSalesReferenceSessionId="";
   currentSalesReferenceRows=[];
   currentSalesReferenceMode="all";
-  const {data:sessions,error:sessionError}=await supabaseClient
-    .from("work_sessions")
-    .select("*")
-    .order("finalized_at",{ascending:false,nullsFirst:false})
-    .limit(120);
-  if(sessionError){
-    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(sessionError))}</div>`;
+  let sessions,records;
+  try{
+    [sessions,records]=await Promise.all([
+      readAllWorkRows((from,to)=>supabaseClient.from("work_sessions").select("*").order("finalized_at",{ascending:false,nullsFirst:false}).order("id",{ascending:false}).range(from,to),500),
+      readAllWorkRows((from,to)=>supabaseClient.from("sales_records").select("*").order("finalized_at",{ascending:false}).order("id",{ascending:false}).range(from,to))
+    ]);
+  }catch(error){
+    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
     summary.textContent="Load failed";
     return;
   }
-  salesReferenceSessionsTrial=(sessions||[]).filter(s=>s.locked||s.status==="closed");
-  const {data:records,error:recordError}=await supabaseClient
-    .from("sales_records")
-    .select("*")
-    .order("finalized_at",{ascending:false})
-    .limit(5000);
-  if(recordError){
-    list.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(recordError))}</div>`;
-    summary.textContent="Load failed";
-    return;
-  }
-  currentSalesReferenceRows=records||[];
+  salesReferenceSessionsTrial=sessions.filter(s=>s.locked||s.status==="closed");
+  currentSalesReferenceRows=records;
   currentSalesReferenceSessionId="__all__";
   renderSalesReferenceSessions();
   updateSalesReferenceFilterOptions();
@@ -3889,8 +4013,10 @@ async function loadSalesReferenceAll(){
   const tableWrap=document.getElementById("sales-ref-table-wrap");
   summary.textContent="全売上を読込中...";
   tableWrap.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
-  const {data,error}=await supabaseClient.from("sales_records").select("*").order("finalized_at",{ascending:false}).limit(5000);
-  if(error){
+  let data;
+  try{
+    data=await readAllWorkRows((from,to)=>supabaseClient.from("sales_records").select("*").order("finalized_at",{ascending:false}).order("id",{ascending:false}).range(from,to));
+  }catch(error){
     summary.textContent="売上明細の読込に失敗";
     tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
     return;
@@ -3907,14 +4033,17 @@ loadSalesReferenceSession=async function(sessionId){
   const tableWrap=document.getElementById("sales-ref-table-wrap");
   summary.textContent="売上明細を読込中...";
   tableWrap.innerHTML=`<div class="sales-ref-empty">読込中...</div>`;
-  const {data,error}=await supabaseClient
-    .from("sales_records")
-    .select("*")
-    .eq("session_id",sessionId)
-    .order("importer_code",{ascending:true})
-    .order("store_name",{ascending:true})
-    .order("source_row_no",{ascending:true});
-  if(error){
+  let data;
+  try{
+    data=await readAllWorkRows((from,to)=>supabaseClient
+      .from("sales_records")
+      .select("*")
+      .eq("session_id",sessionId)
+      .order("importer_code",{ascending:true})
+      .order("store_name",{ascending:true})
+      .order("source_row_no",{ascending:true})
+      .range(from,to));
+  }catch(error){
     summary.textContent="売上明細の読込に失敗";
     tableWrap.innerHTML=`<div class="sales-ref-empty">${esc(salesLockSetupErrorMessage(error))}</div>`;
     return;
@@ -5348,6 +5477,32 @@ function orderEntryLineToWorkRow(batch,line,index){
     country:countryCode(importer)
   };
 }
+function loadConfirmedOrderBatchesForWork(orderDate){
+  return readAllWorkRows((from,to)=>supabaseClient
+    .from("order_entry_batches")
+    .select("id,order_date,ship_date,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,source_type,note,created_at")
+    .eq("status","confirmed")
+    .eq("order_date",orderDate)
+    .order("importer_code",{ascending:true})
+    .order("customer_name_snapshot",{ascending:true})
+    .order("id",{ascending:true})
+    .range(from,to),500);
+}
+async function loadConfirmedOrderLinesForWork(batchIds){
+  const lines=[];
+  for(let index=0;index<batchIds.length;index+=100){
+    const ids=batchIds.slice(index,index+100);
+    const chunk=await readAllWorkRows((from,to)=>supabaseClient
+      .from("order_entry_lines")
+      .select("*")
+      .in("batch_id",ids)
+      .order("batch_id",{ascending:true})
+      .order("line_no",{ascending:true})
+      .range(from,to));
+    lines.push(...chunk);
+  }
+  return lines;
+}
 async function createWorkSessionFromConfirmedOrders(){
   if(!(await requireSupabaseLogin()))return;
   if(!(await loadProductMasterFromSupabase({force:true}))){
@@ -5365,31 +5520,39 @@ async function createWorkSessionFromConfirmedOrders(){
   if(rows.length||currentSessionId){
     if(!confirm("現在開いている作業があります。受注から新しい作業を作成すると画面を切り替えます。続けますか？"))return;
   }
-  const {data:existing,error:existingError}=await supabaseClient
-    .from("work_sessions")
-    .select("*")
-    .order("updated_at",{ascending:false})
-    .limit(200);
-  if(existingError){toast("作業一覧確認エラー: "+existingError.message);return}
+  let existing;
+  try{
+    existing=await readAllWorkRows((from,to)=>supabaseClient
+      .from("work_sessions")
+      .select("*")
+      .eq("work_date",date)
+      .order("updated_at",{ascending:false})
+      .range(from,to),500);
+  }catch(error){
+    toast("作業一覧確認エラー: "+error.message);
+    return;
+  }
   const existingActive=(existing||[]).filter(session=>workSessionMatchesDate(session)&&!(session.locked||session.status==="closed"));
   if(existingActive.length&&!confirm(`${date} の作業中データがすでに ${existingActive.length} 件あります。別作業として新規作成しますか？`))return;
   setSaveState("受注確定データを読込中...");
-  const {data:batches,error:batchError}=await supabaseClient
-    .from("order_entry_batches")
-    .select("id,order_date,ship_date,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,source_type,note,created_at")
-    .eq("status","confirmed")
-    .eq("order_date",date)
-    .order("importer_code",{ascending:true})
-    .order("customer_name_snapshot",{ascending:true});
-  if(batchError){setSaveState("受注読込失敗",true);toast("受注読込エラー: "+batchError.message);return}
+  let batches;
+  try{
+    batches=await loadConfirmedOrderBatchesForWork(date);
+  }catch(error){
+    setSaveState("受注読込失敗",true);
+    toast("受注読込エラー: "+error.message);
+    return;
+  }
   if(!batches?.length){setSaveState("受注なし");toast(`${date} の確定済み受注がありません`);return}
   const ids=batches.map(batch=>batch.id);
-  const {data:lines,error:lineError}=await supabaseClient
-    .from("order_entry_lines")
-    .select("*")
-    .in("batch_id",ids)
-    .order("line_no",{ascending:true});
-  if(lineError){setSaveState("受注明細読込失敗",true);toast("受注明細読込エラー: "+lineError.message);return}
+  let lines;
+  try{
+    lines=await loadConfirmedOrderLinesForWork(ids);
+  }catch(error){
+    setSaveState("受注明細読込失敗",true);
+    toast("受注明細読込エラー: "+error.message);
+    return;
+  }
   const byBatch=new Map();
   (lines||[]).forEach(line=>{
     if(!byBatch.has(line.batch_id))byBatch.set(line.batch_id,[]);

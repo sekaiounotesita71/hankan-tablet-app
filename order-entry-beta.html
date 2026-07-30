@@ -635,6 +635,7 @@ let importReviewSourceType="";
 let importReviewOriginalCustomers=[];
 let importReviewOriginalImporters=[];
 let currentImportDraftId="";
+let currentOrderAttemptId="";
 let masterType="products";
 let confirmed=false;
 let lastOrderRowIndex=0;
@@ -661,6 +662,13 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&l
 function blankOrder(){return{productCode:"",productName:"",englishName:"",qty:"",unit:"",unitPrice:"",unitPriceSource:"",supplierCode:"",supplierName:"",memo:""}}
 function val(id){return document.getElementById(id)?.value||""}
 function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""))}
+function newAppUuid(){
+  if(globalThis.crypto?.randomUUID)return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,ch=>{
+    const n=Math.random()*16|0;
+    return (ch==="x"?n:(n&3|8)).toString(16);
+  });
+}
 function setDbStatus(text,type="warn"){
   const el=document.getElementById("db-state");
   if(!el)return;
@@ -1149,37 +1157,47 @@ async function saveMastersToDb(type,items){
   }
   if(type==="products")await saveProductContractsToDb(items);
 }
+async function readAllSupabaseRows(buildPage,pageSize=1000){
+  const rows=[];
+  for(let offset=0;;offset+=pageSize){
+    const {data,error}=await buildPage(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    rows.push(...page);
+    if(page.length<pageSize)break;
+  }
+  return rows;
+}
 async function loadMastersFromDb(){
   if(!supabaseClient)return;
-  let [importersRes,suppliersRes,customersRes,productsRes,contractRes]=await Promise.all([
-    supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code"),
-    supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code"),
-    supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,alias_name,active").eq("active",true).order("customer_code"),
-    supabaseClient.from("product_master").select("product_id,product_name,english_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,guide_category,guide_spec,image_url,image_source_url,image_credit,image_license,is_active").eq("is_active",true).order("product_id",{ascending:true}).limit(10000),
-    supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price")
+  const [importerRows,supplierRows,customerRows,contractRows]=await Promise.all([
+    readAllSupabaseRows((from,to)=>supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code").range(from,to)),
+    readAllSupabaseRows((from,to)=>supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code").range(from,to)),
+    readAllSupabaseRows((from,to)=>supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,alias_name,active").eq("active",true).order("customer_code").range(from,to)),
+    readAllSupabaseRows((from,to)=>supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price").order("product_id").order("importer_code").range(from,to))
   ]);
-  if(productsRes.error&&isMissingColumnError(productsRes.error)){
-    productsRes=await supabaseClient.from("product_master").select("product_id,product_name,english_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,is_active").eq("is_active",true).order("product_id",{ascending:true}).limit(10000);
+  let productRows;
+  try{
+    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,guide_category,guide_spec,image_url,image_source_url,image_credit,image_license,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
+  }catch(error){
+    if(!isMissingColumnError(error))throw error;
+    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
   }
-  const firstError=[importersRes,suppliersRes,customersRes,productsRes].find(r=>r.error)?.error;
-  if(firstError)throw firstError;
-  const importerNames=Object.fromEntries((importersRes.data||[]).map(r=>[r.importer_code,r.importer_name]));
-  const supplierNames=Object.fromEntries((suppliersRes.data||[]).map(r=>[r.supplier_code,r.supplier_name]));
+  const importerNames=Object.fromEntries(importerRows.map(r=>[r.importer_code,r.importer_name]));
+  const supplierNames=Object.fromEntries(supplierRows.map(r=>[r.supplier_code,r.supplier_name]));
   const contractPrices={};
-  if(!contractRes.error){
-    (contractRes.data||[]).forEach(row=>{
-      const productId=String(row.product_id||"").trim();
-      const importerCode=normalizeImporterCode(row.importer_code);
-      if(!productId||!importerCode)return;
-      contractPrices[productId]=contractPrices[productId]||{};
-      contractPrices[productId][importerCode]=row.unit_price??"";
-    });
-  }
+  contractRows.forEach(row=>{
+    const productId=String(row.product_id||"").trim();
+    const importerCode=normalizeImporterCode(row.importer_code);
+    if(!productId||!importerCode)return;
+    contractPrices[productId]=contractPrices[productId]||{};
+    contractPrices[productId][importerCode]=row.unit_price??"";
+  });
   saveMastersObject({
-    importers:(importersRes.data||[]).map(r=>dbMasterToItem("importers",r)),
-    suppliers:(suppliersRes.data||[]).map(r=>dbMasterToItem("suppliers",r)),
-    customers:(customersRes.data||[]).map(r=>dbMasterToItem("customers",r,{importerNames})),
-    products:(productsRes.data||[]).map(r=>dbMasterToItem("products",r,{supplierNames,contractPrices}))
+    importers:importerRows.map(r=>dbMasterToItem("importers",r)),
+    suppliers:supplierRows.map(r=>dbMasterToItem("suppliers",r)),
+    customers:customerRows.map(r=>dbMasterToItem("customers",r,{importerNames})),
+    products:productRows.map(r=>dbMasterToItem("products",r,{supplierNames,contractPrices}))
   });
 }
 function batchToDb(batch){
@@ -1223,9 +1241,19 @@ function dbBatchToBatch(row,lines){
 async function saveConfirmedBatchToDb(batch){
   if(!dbReady||!supabaseClient)return null;
   prepareBatchPrices(batch);
-  const {data,error}=await supabaseClient.from("order_entry_batches").insert(batchToDb(batch)).select("id").single();
-  if(error)throw error;
-  const batchId=data.id;
+  if(!isUuid(batch.id))batch.id=newAppUuid();
+  const batchId=batch.id;
+  const {data:existing,error:existingError}=await supabaseClient.from("order_entry_batches").select("id").eq("id",batchId).maybeSingle();
+  if(existingError)throw existingError;
+  const parentExisted=!!existing;
+  const {data,error}=await supabaseClient.from("order_entry_batches").upsert(batchToDb(batch),{onConflict:"id"}).select("id").single();
+  let savedParent=data;
+  if(error){
+    const verification=await supabaseClient.from("order_entry_batches").select("id").eq("id",batchId).maybeSingle();
+    if(verification.error||!verification.data)throw error;
+    savedParent=verification.data;
+  }
+  if(savedParent.id!==batchId)throw new Error("受注IDの保存結果が一致しません。入力内容は消していません。");
   const payloads=(batch.rows||[]).map((row,index)=>({
     batch_id:batchId,
     line_no:index+1,
@@ -1241,23 +1269,52 @@ async function saveConfirmedBatchToDb(batch){
     source_text:dbText(row.sourceExpression||row.lineExpression)
   }));
   if(payloads.length){
-    const {data:insertedLines,error:lineError}=await supabaseClient.from("order_entry_lines").insert(payloads).select("line_no");
-    if(lineError){
-      const {error:cleanupError}=await supabaseClient.from("order_entry_batches").delete().eq("id",batchId);
-      if(cleanupError)console.error("Failed to clean up order batch after line insert error",cleanupError);
-      if(lineError.code==="23503"&&String(lineError.message||"").includes("order_entry_lines_supplier_code_fkey")){
+    let savedLineCount=0;
+    let lineFailure=null;
+    for(let index=0;index<payloads.length;index+=300){
+      const chunk=payloads.slice(index,index+300);
+      const {data:insertedLines,error:lineError}=await supabaseClient.from("order_entry_lines").upsert(chunk,{onConflict:"batch_id,line_no"}).select("line_no");
+      if(lineError){lineFailure=lineError;break}
+      savedLineCount+=(insertedLines||[]).length;
+      if((insertedLines||[]).length!==chunk.length){
+        lineFailure=new Error(`受注明細の保存件数が一致しません（入力 ${payloads.length}件 / DB ${savedLineCount}件）。`);
+        break;
+      }
+    }
+    if(lineFailure){
+      const verification=await supabaseClient.from("order_entry_lines").select("line_no",{count:"exact",head:true}).eq("batch_id",batchId);
+      if(!verification.error&&verification.count===payloads.length){
+        lineFailure=null;
+        savedLineCount=verification.count;
+      }
+    }
+    if(!lineFailure){
+      const {error:obsoleteError}=await supabaseClient.from("order_entry_lines").delete().eq("batch_id",batchId).gt("line_no",payloads.length);
+      if(obsoleteError)lineFailure=obsoleteError;
+    }
+    if(!lineFailure){
+      const {count,error:countError}=await supabaseClient.from("order_entry_lines").select("line_no",{count:"exact",head:true}).eq("batch_id",batchId);
+      if(countError)lineFailure=countError;
+      else if(count!==payloads.length)lineFailure=new Error(`受注明細の保存件数が一致しません（入力 ${payloads.length}件 / DB ${count??0}件）。`);
+    }
+    if(lineFailure){
+      const {error:cleanupError}=parentExisted?{error:null}:await supabaseClient.from("order_entry_batches").delete().eq("id",batchId);
+      if(cleanupError)console.error("Failed to clean up order batch after line save error",cleanupError);
+      if(lineFailure.code==="23503"&&String(lineFailure.message||"").includes("order_entry_lines_supplier_code_fkey")){
         throw new Error("仕入先コードの保存制約が未更新です。order-entry-supplier-snapshot-migration.sql をSupabase SQL Editorで実行してください。");
       }
-      throw lineError;
-    }
-    const savedLineCount=(insertedLines||[]).length;
-    if(savedLineCount!==payloads.length){
-      const {error:cleanupError}=await supabaseClient.from("order_entry_batches").delete().eq("id",batchId);
-      if(cleanupError)console.error("Failed to clean up order batch after line count mismatch",cleanupError);
-      throw new Error(`受注明細の保存件数が一致しません（入力 ${payloads.length}件 / DB ${savedLineCount}件）。入力内容は消していません。`);
+      if(cleanupError)throw new Error(`受注明細の保存に失敗し、作成途中データの取消にも失敗しました。管理者確認が必要です。保存: ${lineFailure.message} / 取消: ${cleanupError.message}`);
+      throw new Error(`${lineFailure.message} 入力内容は消していません。`);
     }
   }
-  return batchId;
+  return {id:batchId,created:!parentExisted};
+}
+async function deleteConfirmedBatchIds(batchIds){
+  const ids=[...new Set((batchIds||[]).filter(Boolean))];
+  for(let index=0;index<ids.length;index+=100){
+    const {error}=await supabaseClient.from("order_entry_batches").delete().in("id",ids.slice(index,index+100));
+    if(error)throw error;
+  }
 }
 async function loadOrderEntryLinesForBatchIds(ids){
   const lines=[];
@@ -1283,9 +1340,8 @@ async function loadOrderEntryLinesForBatchIds(ids){
 }
 async function loadConfirmedBatchesFromDb(){
   if(!supabaseClient)return;
-  const {data:batches,error}=await supabaseClient.from("order_entry_batches").select("*").eq("status","confirmed").order("order_date",{ascending:false}).order("created_at",{ascending:false}).limit(500);
-  if(error)throw error;
-  if(!batches?.length){confirmedBatches=[];saveConfirmedBatches();return}
+  const batches=await readAllSupabaseRows((from,to)=>supabaseClient.from("order_entry_batches").select("*").eq("status","confirmed").order("order_date",{ascending:false}).order("created_at",{ascending:false}).order("id",{ascending:false}).range(from,to),500);
+  if(!batches.length){confirmedBatches=[];saveConfirmedBatches();return}
   const ids=batches.map(b=>b.id);
   const lines=await loadOrderEntryLinesForBatchIds(ids);
   const byBatch=new Map();
@@ -1535,14 +1591,14 @@ function pendingEntryToDb(entry){
 }
 async function loadPendingEntriesFromDb(){
   if(!supabaseClient)return false;
-  const {data,error}=await supabaseClient
+  const data=await readAllSupabaseRows((from,to)=>supabaseClient
     .from("pending_entries")
     .select("*")
     .order("entry_date",{ascending:false})
     .order("created_at",{ascending:false})
-    .limit(500);
-  if(error)throw error;
-  pendingEntries=(data||[]).map(dbPendingToEntry);
+    .order("id",{ascending:false})
+    .range(from,to),500);
+  pendingEntries=data.map(dbPendingToEntry);
   savePendingLocal();
   return true;
 }
@@ -1749,6 +1805,10 @@ async function savePendingEntry(){
   if(!entry.importerCode){alert("輸入社コードを入力してください。");return}
   if(!entry.customerName&&!entry.customerCode){alert("得意先を入力してください。");return}
   if(!entry.description){alert("商品名・内容を入力してください。");return}
+  if(!dbReady||!supabaseClient){
+    alert("DBへ接続できていないため登録を中止しました。入力内容は画面に残っています。接続後にもう一度保存してください。");
+    return;
+  }
   if(entry.amount===""&&entry.qty!==""&&entry.unitPrice!==""){
     const qty=numberOrBlank(entry.qty),price=numberOrBlank(entry.unitPrice);
     if(qty!==null&&price!==null)entry.amount=qty*price;
@@ -1771,13 +1831,6 @@ async function savePendingEntry(){
       if(idx>=0)pendingEntries[idx]=saved;else pendingEntries.unshift(saved);
       savePendingLocal();
       document.getElementById("pending-state").textContent="未処理伝票を保存しました。";
-    }else{
-      entry.id=entry.id||pendingLocalId();
-      entry.createdAt=entry.createdAt||new Date().toISOString();
-      const idx=pendingEntries.findIndex(x=>x.id===entry.id);
-      if(idx>=0)pendingEntries[idx]=entry;else pendingEntries.unshift(entry);
-      savePendingLocal();
-      document.getElementById("pending-state").textContent="未処理伝票をこの端末に保存しました。";
     }
     resetPendingForm();
     renderPendingEntries();
@@ -1795,6 +1848,10 @@ function editPendingEntry(id){
 async function setPendingStatus(id,status){
   const entry=pendingEntries.find(x=>String(x.id)===String(id));
   if(!entry)return;
+  if(!dbReady||!supabaseClient||String(id).startsWith("local-")){
+    alert("DBへ接続できていないため変更を中止しました。再接続後に操作してください。");
+    return;
+  }
   if(status==="applied"&&!entry.appliedInvoiceNo){
     alert("反映済みへの変更はInvoice Excel出力時に自動で行われます。");
     return;
@@ -2123,13 +2180,14 @@ function salesRefPendingSignedAmount(row={}){
 async function salesRefReadAppliedPendingRows(client=initSupabase(),options={}){
   const records=[];
   const pageSize=500;
-  for(let offset=0;offset<100000;offset+=pageSize){
+  for(let offset=0;;offset+=pageSize){
     const {data,error}=await client
       .from("pending_entries")
       .select("*")
       .eq("status","applied")
       .not("applied_invoice_no","is",null)
       .order("applied_at",{ascending:false,nullsFirst:false})
+      .order("id",{ascending:false})
       .range(offset,offset+pageSize-1);
     if(error)throw error;
     const page=data||[];
@@ -2803,22 +2861,17 @@ async function loadSalesReferenceBoard(){
   if(state)state.textContent="売上データを読込中...";
   try{
     const pageSize=1000;
-    const maxRows=100000;
     const allRows=[];
     let shippingWarning="";
-    const sessionResult=await client
-      .from("work_sessions")
-      .select("*")
-      .order("finalized_at",{ascending:false,nullsFirst:false})
-      .limit(5000);
-    if(sessionResult.error){
+    try{
+      const sessionRows=await arReadAll("work_sessions","updated_at");
+      salesReferenceSessions=sessionRows.filter(session=>session.locked||session.status==="closed");
+    }catch(sessionError){
       salesReferenceSessions=[];
-      shippingWarning=salesRefDbErrorMessage(sessionResult.error);
-    }else{
-      salesReferenceSessions=(sessionResult.data||[]).filter(session=>session.locked||session.status==="closed");
+      shippingWarning=salesRefDbErrorMessage(sessionError);
     }
-    for(let offset=0;offset<maxRows;offset+=pageSize){
-      let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).range(offset,offset+pageSize-1);
+    for(let offset=0;;offset+=pageSize){
+      let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).order("id",{ascending:false}).range(offset,offset+pageSize-1);
       const {data,error}=await query;
       if(error)throw error;
       const page=data||[];
@@ -2828,11 +2881,12 @@ async function loadSalesReferenceBoard(){
     }
     const historicalRows=[];
     try{
-      for(let offset=0;offset<maxRows;offset+=pageSize){
+      for(let offset=0;;offset+=pageSize){
         const {data,error}=await client
           .from("historical_sales_records")
           .select("*")
           .order("finalized_at",{ascending:false})
+          .order("id",{ascending:false})
           .range(offset,offset+pageSize-1);
         if(error)throw error;
         const page=data||[];
@@ -3633,19 +3687,17 @@ async function loadProductGuideTemplates(){
   renderProductGuideTemplateSelect();
   if(!dbReady||!supabaseClient)return;
   try{
-    const [templateResult,variantResult]=await Promise.all([
-      supabaseClient.from("product_guide_templates").select("*").order("guide_year",{ascending:false}).order("updated_at",{ascending:false}).limit(500),
-      supabaseClient.from("product_guide_variants").select("*").order("updated_at",{ascending:false}).limit(10000)
+    const [templateRows,variantRows]=await Promise.all([
+      readAllSupabaseRows((from,to)=>supabaseClient.from("product_guide_templates").select("*").order("guide_year",{ascending:false}).order("updated_at",{ascending:false}).order("id",{ascending:false}).range(from,to),500),
+      readAllSupabaseRows((from,to)=>supabaseClient.from("product_guide_variants").select("*").order("updated_at",{ascending:false}).order("id",{ascending:false}).range(from,to))
     ]);
-    if(templateResult.error)throw templateResult.error;
-    if(variantResult.error)throw variantResult.error;
-    const dbTemplates=(templateResult.data||[]).map(row=>({
+    const dbTemplates=templateRows.map(row=>({
       id:row.id,name:row.template_name||"商品案内",guideYear:row.guide_year||"",season:row.season||"",title:row.title||"商品案内",
       importerCode:row.importer_code||"",currency:row.currency||"JPY",status:row.status||"draft",sourceTemplateId:row.source_template_id||"",updatedAt:row.updated_at||""
     }));
     const dbTemplateIds=new Set(dbTemplates.map(item=>item.id));
     productGuideTemplates=[...dbTemplates,...productGuideTemplates.filter(item=>!dbTemplateIds.has(item.id))];
-    const dbVariants=(variantResult.data||[]).map(productGuideVariantFromDb);
+    const dbVariants=variantRows.map(productGuideVariantFromDb);
     const dbVariantIds=new Set(dbVariants.map(item=>item.id));
     productGuideVariants=[...dbVariants,...productGuideVariants.filter(item=>!dbVariantIds.has(item.id))];
     localStorage.setItem(PRODUCT_GUIDE_VARIANT_LOCAL_KEY,JSON.stringify(productGuideVariants));
@@ -3671,11 +3723,11 @@ function previewProductGuideTemplateSelection(){
 }
 async function productGuideFetchTemplateRows(id){
   if(dbReady&&supabaseClient){
-    const {data,error}=await supabaseClient.from("product_guide_template_rows").select("*").eq("template_id",id).order("display_order",{ascending:true});
-    if(!error){
-      if((data||[]).length)return (data||[]).map(productGuideDbRowToEditor);
-    }else if(!productGuideTemplateDbMissing(error)){
-      throw error;
+    try{
+      const data=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_guide_template_rows").select("*").eq("template_id",id).order("display_order",{ascending:true}).order("id",{ascending:true}).range(from,to));
+      if(data.length)return data.map(productGuideDbRowToEditor);
+    }catch(error){
+      if(!productGuideTemplateDbMissing(error))throw error;
     }
   }
   const local=productGuideLocalTemplateStore().find(item=>item.id===id);
@@ -4965,8 +5017,8 @@ async function arReadAll(table,orderColumn){
   const client=initSupabase();
   const rows=[];
   const pageSize=1000;
-  for(let offset=0;offset<100000;offset+=pageSize){
-    const {data,error}=await client.from(table).select("*").order(orderColumn,{ascending:false}).range(offset,offset+pageSize-1);
+  for(let offset=0;;offset+=pageSize){
+    const {data,error}=await client.from(table).select("*").order(orderColumn,{ascending:false}).order("id",{ascending:false}).range(offset,offset+pageSize-1);
     if(error)throw error;
     const page=data||[];
     rows.push(...page);
@@ -5038,9 +5090,9 @@ function arBuildSalesGroups(salesRows,sessions){
   const sessionMap=new Map((sessions||[])
     .filter(session=>session.locked||session.status==="closed")
     .map(session=>[session.id,session]));
-  const eligible=(salesRows||[]).filter(row=>!row.is_stockout&&isUuid(row.session_id));
+  const eligible=(salesRows||[]).filter(row=>!row.is_stockout&&isUuid(row.session_id)&&sessionMap.has(row.session_id));
   const importerSets=new Map();
-  (salesRows||[]).filter(row=>isUuid(row.session_id)).forEach(row=>{
+  eligible.forEach(row=>{
     const identity=arImporterIdentity({...row,importer_code:row.importer_code||row.importer_id||""},index);
     if(!identity.code)return;
     const set=importerSets.get(row.session_id)||new Set();
@@ -5088,8 +5140,8 @@ async function arReadSalesRows(options={}){
     ?{from:options.from||"",to:options.to||"",raw:`${options.from||""}-${options.to||""}`}
     :salesRefDateRangeFromText(val("ar-date-range"));
   if(range.raw&&(!range.from||!range.to))throw new Error("日付は 20250701-20250731 の形式で入力してください。");
-  for(let offset=0;offset<100000;offset+=pageSize){
-    let query=client.from("sales_records").select("*").order("work_date",{ascending:false,nullsFirst:false}).order("finalized_at",{ascending:false});
+  for(let offset=0;;offset+=pageSize){
+    let query=client.from("sales_records").select("*").order("work_date",{ascending:false,nullsFirst:false}).order("finalized_at",{ascending:false}).order("id",{ascending:false});
     if(range.from)query=query.gte("work_date",range.from);
     if(range.to)query=query.lte("work_date",range.to);
     const {data,error}=await query.range(offset,offset+pageSize-1);
@@ -5109,12 +5161,11 @@ async function syncSalesToReceivables(options={}){
   setAppBusy(true,"売上確定データを売掛へ反映しています。");
   if(state)state.textContent="売上確定データを確認中...";
   try{
-    const [salesRows,sessionResult]=await Promise.all([
+    const [salesRows,sessionRows]=await Promise.all([
       arReadSalesRows(options),
-      client.from("work_sessions").select("*").limit(10000)
+      arReadAll("work_sessions","updated_at")
     ]);
-    if(sessionResult.error)throw sessionResult.error;
-    const groups=arBuildSalesGroups(salesRows,sessionResult.data||[]);
+    const groups=arBuildSalesGroups(salesRows,sessionRows);
     const existingRows=receivablesLoaded?receivableRows:await arReadAll("accounts_receivable","invoice_date");
     const existingByGroup=new Map();
     existingRows.filter(row=>row.source_type==="sales"&&row.source_session_id).forEach(row=>{
@@ -5213,6 +5264,16 @@ function arCsvDate(value){
   if(!text)return "";
   return salesRefNormalizeDateToken(text,false);
 }
+function arStableImportKey(value){
+  const text=String(value||"");
+  let first=2166136261,second=2246822519;
+  for(let index=0;index<text.length;index++){
+    const code=text.charCodeAt(index);
+    first=Math.imul(first^code,16777619);
+    second=Math.imul(second^code,3266489917);
+  }
+  return `${(first>>>0).toString(16).padStart(8,"0")}${(second>>>0).toString(16).padStart(8,"0")}`;
+}
 async function importOpeningReceivablesCsv(input){
   const file=input?.files?.[0];
   if(!file)return;
@@ -5236,7 +5297,7 @@ async function importOpeningReceivablesCsv(input){
       }
       const customerName=rowValue(row,headers,["得意先名","顧客名","customer_name","customername"]);
       payloads.push({
-        source_key:arNewSourceKey("opening"),
+        source_key:`opening_csv:${arStableImportKey(`${file.name}|${index+2}|${JSON.stringify(row)}`)}`,
         source_type:"opening",
         importer_code:importerCode,
         importer_name:rowValue(row,headers,["輸入社名","importer_name","importername"]),
@@ -5262,8 +5323,10 @@ async function importOpeningReceivablesCsv(input){
     if(!confirm(`初期残高 ${payloads.length}件を登録します。${warning}`))return;
     const client=initSupabase();
     for(let index=0;index<payloads.length;index+=100){
-      const {error}=await client.from("accounts_receivable").insert(payloads.slice(index,index+100));
+      const chunk=payloads.slice(index,index+100);
+      const {data,error}=await client.from("accounts_receivable").upsert(chunk,{onConflict:"source_key"}).select("source_key");
       if(error)throw error;
+      if((data||[]).length!==chunk.length)throw new Error(`初期残高の保存件数が一致しません（入力 ${payloads.length}件）`);
     }
     await loadReceivables();
     alert(`初期残高 ${payloads.length}件を登録しました。${issues.length?` 除外 ${issues.length}件。`:""}`);
@@ -5557,13 +5620,12 @@ async function refreshClosingSalesPreview(options={}){
   renderClosingPreview();
   try{
     const client=initSupabase();
-    const [salesRows,sessionResult,pendingRows]=await Promise.all([
+    const [salesRows,sessionRows,pendingRows]=await Promise.all([
       arReadSalesRows({from:calculation.range.from,to:calculation.range.to}),
-      client.from("work_sessions").select("*").limit(10000),
+      arReadAll("work_sessions","updated_at"),
       salesRefReadAppliedPendingRows(client,{from:calculation.range.from,to:calculation.range.to})
     ]);
-    if(sessionResult.error)throw sessionResult.error;
-    const groups=arBuildSalesGroups(salesRows,sessionResult.data||[])
+    const groups=arBuildSalesGroups(salesRows,sessionRows)
       .filter(group=>arSameImporter(group.importerCode,calculation.importerCode));
     const adjustmentRows=pendingRows
       .map(row=>salesRefPendingToRow(row))
@@ -6310,7 +6372,7 @@ function importer(){
 function currentBatch(){
   const rows=activeOrderRows();
   return prepareBatchPrices({
-    id:`B${Date.now()}`,
+    id:currentOrderAttemptId||(currentOrderAttemptId=newAppUuid()),
     confirmedAt:new Date().toISOString(),
     orderDate:val("order-date"),
     shipDate:val("order-date"),
@@ -6462,6 +6524,7 @@ function renderReportFilterCount(){
   },250);
 }
 function resetCurrentOrderForm(){
+  currentOrderAttemptId="";
   orders=[blankOrder()];
   draftRows=[];
   confirmed=false;
@@ -6482,7 +6545,7 @@ function saveLocal(){
   const data={
     orderDate:val("order-date"),shipDate:val("order-date"),batchNote:val("batch-note"),
     importerCode:val("batch-importer-code"),importerName:val("batch-importer-name"),
-    customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),confirmed,orders,currentImportDraftId
+    customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),confirmed,orders,currentImportDraftId,currentOrderAttemptId
   };
   localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
   document.getElementById("save-state").textContent="端末保存済み";
@@ -6508,6 +6571,7 @@ function loadLocal(){
     confirmed=!!data.confirmed;
     orders=savedOrders;
     currentImportDraftId=data.currentImportDraftId||"";
+    currentOrderAttemptId=isUuid(data.currentOrderAttemptId)?data.currentOrderAttemptId:"";
   }catch(e){}
 }
 function setHeaderCustomer(c,options={}){
@@ -7024,14 +7088,6 @@ async function restoreConfirmedBatch(index){
   const batch=confirmedBatches[index];
   if(!batch)return;
   if(orders.length&&!confirm("入力中の明細があります。確定済み受注を修正へ戻すと、入力中の内容は上書きされます。続けますか？"))return;
-  try{
-    await markBatchCancelledInDb(batch);
-  }catch(error){
-    alert(dbErrorMessage(error));
-    return;
-  }
-  confirmedBatches.splice(index,1);
-  saveConfirmedBatches();
   document.getElementById("order-date").value=batch.orderDate||today();
   document.getElementById("batch-note").value=batch.note||"";
   setHeaderCustomer(batch.customer||{}, {skipImporter:!!(batch.importer?.code||batch.importer?.name)});
@@ -7039,7 +7095,21 @@ async function restoreConfirmedBatch(index){
   orders=(batch.rows||[]).map(r=>({...blankOrder(),...r}));
   refreshOrderRowsMasterPrices(orders,batch.importer||{});
   confirmed=false;
-  saveLocal();
+  currentOrderAttemptId=newAppUuid();
+  try{
+    saveLocal();
+  }catch(error){
+    alert(`修正用の下書きを端末へ保存できないため、確定済み受注は変更していません。\n${error.message}`);
+    return;
+  }
+  try{
+    await markBatchCancelledInDb(batch);
+  }catch(error){
+    alert(`修正用の下書きは端末に保存しましたが、確定済み受注を修正待ちへ変更できませんでした。重複確定しないでください。\n${dbErrorMessage(error)}`);
+    return;
+  }
+  confirmedBatches.splice(index,1);
+  saveConfirmedBatches();
   render();
   requestAnimationFrame(()=>document.querySelector('[data-row="0"][data-field="productCode"]')?.focus());
 }
@@ -7505,12 +7575,18 @@ async function confirmCustomerOrder(options={}){
   if(!c.code&&!c.name){alert("得意先を入力してください。");return}
   if(!c.code&&customerNameIsAmbiguous(c.name,im)){alert("同名の得意先が複数あります。得意先コードを選択してください。");return}
   if(!activeOrderRows().length){alert("商品明細がありません。");return}
+  if(!dbReady||!supabaseClient){
+    saveLocal();
+    alert("DBへ接続できていないため受注確定を中止しました。入力内容は端末に残っています。接続後にもう一度確定してください。");
+    return false;
+  }
   const learnedCount=learnLineDictionaryFromOrders(activeOrderRows(),c);
   const batch=currentBatch();
+  saveLocal();
   if(dbReady&&supabaseClient){
     try{
-      const dbId=await saveConfirmedBatchToDb(batch);
-      if(dbId)batch.id=dbId;
+      const saved=await saveConfirmedBatchToDb(batch);
+      if(saved?.id)batch.id=saved.id;
     }catch(error){
       alert(dbErrorMessage(error));
       return false;
@@ -8979,13 +9055,30 @@ function importedBatchesFromGroups(grouped,sourceNames,sourceType){
     rows:group.rows
   }));
 }
-async function persistImportedConfirmedBatches(importedBatches){
-  if(dbReady&&supabaseClient){
+async function saveImportedBatchesToDbAtomically(importedBatches){
+  if(!dbReady||!supabaseClient)throw new Error("DBへ接続できていないため受注確定を中止しました。確認中の内容は画面に残っています。");
+  const savedIds=[];
+  try{
     for(const batch of importedBatches){
-      const dbId=await saveConfirmedBatchToDb(batch);
-      if(dbId)batch.id=dbId;
+      const saved=await saveConfirmedBatchToDb(batch);
+      if(saved?.id){
+        batch.id=saved.id;
+        if(saved.created)savedIds.push(saved.id);
+      }
     }
+  }catch(error){
+    if(savedIds.length){
+      try{
+        await deleteConfirmedBatchIds(savedIds);
+      }catch(rollbackError){
+        throw new Error(`受注の一括確定に失敗し、先に保存された ${savedIds.length}件の取消にも失敗しました。管理者確認が必要です。保存: ${error.message} / 取消: ${rollbackError.message}`);
+      }
+    }
+    throw error;
   }
+}
+async function persistImportedConfirmedBatches(importedBatches){
+  await saveImportedBatchesToDbAtomically(importedBatches);
   confirmedBatches.unshift(...importedBatches);
   resetCurrentOrderForm();
   saveConfirmedBatches();
@@ -9125,16 +9218,11 @@ async function applyImportedOrderItems(items,sourceNames,sourceType,options={}){
     customer:group.customer,
     rows:group.rows
   }));
-  if(dbReady&&supabaseClient){
-    try{
-      for(const batch of importedBatches){
-        const dbId=await saveConfirmedBatchToDb(batch);
-        if(dbId)batch.id=dbId;
-      }
-    }catch(error){
-      alert(dbErrorMessage(error));
-      return false;
-    }
+  try{
+    await saveImportedBatchesToDbAtomically(importedBatches);
+  }catch(error){
+    alert(dbErrorMessage(error));
+    return false;
   }
   confirmedBatches.unshift(...importedBatches);
   resetCurrentOrderForm();

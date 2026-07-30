@@ -246,27 +246,105 @@ alter table public.customer_master enable row level security;
 alter table public.order_entry_batches enable row level security;
 alter table public.order_entry_lines enable row level security;
 
-drop policy if exists "anon all importer master" on public.importer_master;
-drop policy if exists "anon all supplier master" on public.supplier_master;
-drop policy if exists "anon all product master" on public.product_master;
-drop policy if exists "anon all product price contracts" on public.product_price_contracts;
-drop policy if exists "anon all customer master" on public.customer_master;
-drop policy if exists "anon all order entry batches" on public.order_entry_batches;
-drop policy if exists "anon all order entry lines" on public.order_entry_lines;
-drop policy if exists "order entry all importer master" on public.importer_master;
-drop policy if exists "order entry all supplier master" on public.supplier_master;
-drop policy if exists "order entry all product master" on public.product_master;
-drop policy if exists "order entry all product price contracts" on public.product_price_contracts;
-drop policy if exists "order entry all customer master" on public.customer_master;
-drop policy if exists "order entry all order entry batches" on public.order_entry_batches;
-drop policy if exists "order entry all order entry lines" on public.order_entry_lines;
+create table if not exists public.user_roles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'user' check (role in ('user','admin')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-create policy "order entry all importer master" on public.importer_master for all to anon, authenticated using (true) with check (true);
-create policy "order entry all supplier master" on public.supplier_master for all to anon, authenticated using (true) with check (true);
-create policy "order entry all product master" on public.product_master for all to anon, authenticated using (true) with check (true);
-create policy "order entry all product price contracts" on public.product_price_contracts for all to anon, authenticated using (true) with check (true);
-create policy "order entry all customer master" on public.customer_master for all to anon, authenticated using (true) with check (true);
-create policy "order entry all order entry batches" on public.order_entry_batches for all to anon, authenticated using (true) with check (true);
-create policy "order entry all order entry lines" on public.order_entry_lines for all to anon, authenticated using (true) with check (true);
+alter table public.user_roles enable row level security;
+revoke all on public.user_roles from anon;
+grant select on public.user_roles to authenticated;
+
+drop policy if exists "authenticated can read user roles" on public.user_roles;
+create policy "authenticated can read user roles"
+on public.user_roles for select to authenticated
+using (true);
+
+create or replace function public.is_master_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select auth.uid() is not null
+    and exists (
+      select 1
+      from public.user_roles
+      where user_id = auth.uid() and role = 'admin'
+    );
+$$;
+
+revoke all on function public.is_master_admin() from public;
+grant execute on function public.is_master_admin() to authenticated;
+
+do $$
+declare
+  table_name text;
+  policy_row record;
+begin
+  foreach table_name in array array[
+    'importer_master',
+    'supplier_master',
+    'product_master',
+    'product_price_contracts',
+    'customer_master',
+    'order_entry_batches',
+    'order_entry_lines'
+  ]
+  loop
+    for policy_row in
+      select policyname
+      from pg_policies
+      where schemaname = 'public' and tablename = table_name
+    loop
+      execute format('drop policy if exists %I on public.%I', policy_row.policyname, table_name);
+    end loop;
+  end loop;
+end $$;
+
+create policy "authenticated can read importer master" on public.importer_master for select to authenticated using (true);
+create policy "master admins can insert importer master" on public.importer_master for insert to authenticated with check (public.is_master_admin());
+create policy "master admins can update importer master" on public.importer_master for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
+create policy "master admins can delete importer master" on public.importer_master for delete to authenticated using (public.is_master_admin());
+
+create policy "authenticated can read supplier master" on public.supplier_master for select to authenticated using (true);
+create policy "master admins can insert supplier master" on public.supplier_master for insert to authenticated with check (public.is_master_admin());
+create policy "master admins can update supplier master" on public.supplier_master for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
+create policy "master admins can delete supplier master" on public.supplier_master for delete to authenticated using (public.is_master_admin());
+
+create policy "authenticated can read product master" on public.product_master for select to authenticated using (true);
+create policy "master admins can insert product master" on public.product_master for insert to authenticated with check (public.is_master_admin());
+create policy "master admins can update product master" on public.product_master for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
+create policy "master admins can delete product master" on public.product_master for delete to authenticated using (public.is_master_admin());
+
+create policy "authenticated can read product price contracts" on public.product_price_contracts for select to authenticated using (true);
+create policy "master admins can insert product price contracts" on public.product_price_contracts for insert to authenticated with check (public.is_master_admin());
+create policy "master admins can update product price contracts" on public.product_price_contracts for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
+create policy "master admins can delete product price contracts" on public.product_price_contracts for delete to authenticated using (public.is_master_admin());
+
+create policy "authenticated can read customer master" on public.customer_master for select to authenticated using (true);
+create policy "master admins can insert customer master" on public.customer_master for insert to authenticated with check (public.is_master_admin());
+create policy "master admins can update customer master" on public.customer_master for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
+create policy "master admins can delete customer master" on public.customer_master for delete to authenticated using (public.is_master_admin());
+
+create policy "authenticated can read order entry batches" on public.order_entry_batches for select to authenticated using (true);
+create policy "authenticated can insert order entry batches" on public.order_entry_batches for insert to authenticated with check (true);
+create policy "authenticated can update order entry batches" on public.order_entry_batches for update to authenticated using (true) with check (true);
+create policy "authenticated can delete order entry batches" on public.order_entry_batches for delete to authenticated using (true);
+
+create policy "authenticated can read order entry lines" on public.order_entry_lines for select to authenticated using (true);
+create policy "authenticated can insert order entry lines" on public.order_entry_lines for insert to authenticated with check (true);
+create policy "authenticated can update order entry lines" on public.order_entry_lines for update to authenticated using (true) with check (true);
+create policy "authenticated can delete order entry lines" on public.order_entry_lines for delete to authenticated using (true);
+
+revoke all on public.importer_master, public.supplier_master, public.product_master,
+  public.product_price_contracts, public.customer_master,
+  public.order_entry_batches, public.order_entry_lines from anon;
+grant select, insert, update, delete on public.importer_master, public.supplier_master,
+  public.product_master, public.product_price_contracts, public.customer_master to authenticated;
+grant select, insert, update, delete on public.order_entry_batches, public.order_entry_lines to authenticated;
 
 notify pgrst, 'reload schema';

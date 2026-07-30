@@ -23,14 +23,9 @@ security definer
 set search_path = public
 as $$
   select auth.uid() is not null
-    and (
-      exists (
-        select 1 from public.user_roles
-        where user_id = auth.uid() and role = 'admin'
-      )
-      or not exists (
-        select 1 from public.user_roles where role = 'admin'
-      )
+    and exists (
+      select 1 from public.user_roles
+      where user_id = auth.uid() and role = 'admin'
     );
 $$;
 
