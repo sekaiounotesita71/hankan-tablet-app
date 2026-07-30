@@ -1975,6 +1975,40 @@ function salesRefNum(value){
   const n=Number(value);
   return Number.isFinite(n)?n:0;
 }
+function salesRefGrossBoxKey(row={}){
+  const boxNo=salesRefText(row.box_no).normalize("NFKC").trim();
+  if(!boxNo)return "";
+  const scope=salesRefText(
+    row.session_id
+    ||row.source_filename
+    ||`${row.source_type||""}:${salesRefRowDate(row)}`
+  ).trim();
+  return `${scope}::${salesRefRowImporter(row).key}::${boxNo}`;
+}
+function salesRefGrossTotal(rows){
+  const seen=new Set();
+  let total=0;
+  (rows||[]).forEach(row=>{
+    if(row.gross_weight===null||row.gross_weight===undefined||row.gross_weight==="")return;
+    const key=salesRefGrossBoxKey(row);
+    if(!key)return;
+    if(seen.has(key))return;
+    seen.add(key);
+    total+=salesRefNum(row.gross_weight);
+  });
+  return total;
+}
+function salesRefGrossValue(row,seen,index=0){
+  if(row.gross_weight===null||row.gross_weight===undefined||row.gross_weight==="")return "";
+  const key=salesRefGrossBoxKey(row)||`row:${row.id||index}`;
+  if(seen.has(key))return "";
+  seen.add(key);
+  return salesRefNum(row.gross_weight);
+}
+function salesRefGrossDisplay(row,seen,index=0){
+  const value=salesRefGrossValue(row,seen,index);
+  return value===""?"":salesRefMoney(value);
+}
 function salesRefShippingFeesObject(value){
   if(!value)return null;
   if(typeof value==="object")return value;
@@ -2672,6 +2706,7 @@ function salesRefMetrics(rows){
   const shippingSales=salesRefShippingFeeForRows(rows);
   const totalSales=netSales+shippingSales;
   const totalNet=rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0);
+  const totalGross=salesRefGrossTotal(rows);
   const customers=new Set(rows.map(row=>row.store_name||row.customer_code).filter(Boolean));
   const products=new Set(rows.map(row=>row.product_id||row.product_name).filter(Boolean));
   return {
@@ -2681,6 +2716,7 @@ function salesRefMetrics(rows){
     netSales,
     shippingSales,
     totalNet,
+    totalGross,
     customers:customers.size,
     products:products.size,
     avgCustomer:customers.size?totalSales/customers.size:0,
@@ -2831,6 +2867,7 @@ function renderSalesReferenceAnalysis(){
       ${salesRefCompareCard("総売上 昨対",current.totalSales,previous.totalSales)}
       ${salesRefCompareCard("純売上 昨対",current.netSales,previous.netSales)}
       ${salesRefCompareCard("NET 昨対",current.totalNet,previous.totalNet,"kg")}
+      ${salesRefCompareCard("GROSS 昨対",current.totalGross,previous.totalGross,"kg")}
       ${salesRefCompareCard("得意先数 昨対",current.customers,previous.customers,"count")}
       ${salesRefCompareCard("客単価",current.avgCustomer,previous.avgCustomer)}
       ${salesRefCompareCard("kg単価",current.avgNetUnit,previous.avgNetUnit)}
@@ -2949,6 +2986,7 @@ function renderSalesReferenceBoard(){
   const shippingSales=salesRefShippingFeeForRows(rows);
   const totalSales=netSales+shippingSales;
   const totalNet=rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0);
+  const totalGross=salesRefGrossTotal(rows);
   const importers=new Set(rows.map(row=>salesRefRowImporter(row).key).filter(key=>key&&key!=="未設定"));
   const customers=new Set(rows.map(row=>row.store_name).filter(Boolean));
   summary.innerHTML=[
@@ -2957,6 +2995,7 @@ function renderSalesReferenceBoard(){
     ["送料売上",salesRefMoney(shippingSales)],
     ["明細",`${rows.length}件`],
     ["NET",`${salesRefMoney(totalNet)} kg`],
+    ["GROSS",`${salesRefMoney(totalGross)} kg`],
     ["輸入社 / 得意先",`${importers.size} / ${customers.size}`]
   ].map(([label,value])=>`<div class="sales-card"><div class="sales-card-label">${esc(label)}</div><div class="sales-card-value">${esc(value)}</div></div>`).join("");
   renderSalesRefShippingBreakdown(rows);
@@ -2971,11 +3010,12 @@ function renderSalesReferenceBoard(){
     table.innerHTML=`<div class="sales-empty">表示対象の売上データはありません。</div>`;
     return;
   }
+  const displayedGrossBoxes=new Set();
   table.innerHTML=`<table class="sales-table"><thead><tr>
-    <th>区分</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th><th>操作</th>
-  </tr></thead><tbody>${rows.map(row=>`<tr>
+    <th>区分</th><th>日付</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>NET</th><th>GROSS</th><th>箱</th><th>単価</th><th>金額</th><th>メモ</th><th>欠品</th><th>操作</th>
+  </tr></thead><tbody>${rows.map((row,index)=>`<tr>
     <td>${esc(row.source_type||"現場確定")}</td><td>${esc(salesRefRowDate(row))}</td><td>${esc(salesRefRowImporter(row).label)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
-    <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(salesRefDisplayAmount(row)))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
+    <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(salesRefGrossDisplay(row,displayedGrossBoxes,index))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(salesRefDisplayAmount(row)))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
     <td>${currentUserIsAdmin()&&row.source_type==="現場確定"&&row.id?`<button class="small" type="button" onclick="openSalesRecordCorrection('${esc(row.id)}')">修正</button>`:""}</td>
   </tr>`).join("")}</tbody></table>`;
 }
@@ -3115,7 +3155,8 @@ function exportSalesReferenceBoardExcel(){
   if(!rows.length){alert("出力する売上データがありません。");return}
   const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
   const shippingSales=salesRefShippingFeeForRows(rows);
-  const data=rows.map(row=>({
+  const exportGrossBoxes=new Set();
+  const data=rows.map((row,index)=>({
     "区分":row.source_type||"現場確定",
     "日付":salesRefRowDate(row),
     "輸入社":salesRefRowImporter(row).label,
@@ -3127,6 +3168,7 @@ function exportSalesReferenceBoardExcel(){
     "数量":row.input_qty??"",
     "単位":row.input_unit||"",
     "NET":row.net_weight??"",
+    "GROSS":salesRefGrossValue(row,exportGrossBoxes,index),
     "箱番号":row.box_no||"",
     "単価":row.unit_price??"",
     "金額":row.amount??"",
@@ -3140,6 +3182,7 @@ function exportSalesReferenceBoardExcel(){
     "純売上":netSales,
     "送料売上":shippingSales,
     "NET合計":rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0),
+    "GROSS合計":salesRefGrossTotal(rows),
     "輸入社数":new Set(rows.map(row=>row.importer_code).filter(Boolean)).size,
     "得意先数":new Set(rows.map(row=>row.store_name).filter(Boolean)).size
   }];
