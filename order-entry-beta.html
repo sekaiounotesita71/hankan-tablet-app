@@ -546,26 +546,28 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 <div id="sales-correction-modal" class="modal-backdrop" onclick="if(event.target===this)closeSalesCorrectionModal()">
   <div class="modal">
     <div class="modal-head">
-      <span>確定売上の管理者修正</span>
+      <span id="sales-correction-title">売上明細の管理者修正</span>
       <button class="small" type="button" onclick="closeSalesCorrectionModal()">閉じる</button>
     </div>
     <form class="modal-body" onsubmit="saveSalesRecordCorrection(event)">
       <div class="sales-correction-grid">
+        <label>区分<input id="sales-correction-source" readonly></label>
         <label>日付<input id="sales-correction-work-date" type="date" required></label>
         <label>輸入社コード<input id="sales-correction-importer" list="importer-code-list" required autocomplete="off"></label>
         <label>得意先名<input id="sales-correction-store" class="ime-ja" autocomplete="off"></label>
         <label>商品コード<input id="sales-correction-product-id" autocomplete="off"></label>
         <label class="wide">商品名<input id="sales-correction-product-name" class="ime-ja" autocomplete="off"></label>
         <label>産地<input id="sales-correction-origin" autocomplete="off"></label>
-        <label>数量<input id="sales-correction-qty" type="number" step="any" min="0"></label>
+        <label>数量<input id="sales-correction-qty" type="number" step="any" min="0" oninput="updateSalesCorrectionAmountPreview()"></label>
         <label>単位<input id="sales-correction-unit" list="sales-correction-unit-list" autocomplete="off"></label>
         <label>NET重量<input id="sales-correction-net" type="number" step="any" min="0"></label>
-        <label>単価<input id="sales-correction-price" type="number" step="any" min="0"></label>
+        <label>単価<input id="sales-correction-price" type="number" step="any" min="0" oninput="updateSalesCorrectionAmountPreview()"></label>
+        <label>金額<input id="sales-correction-amount" type="number" step="any"></label>
         <label class="wide">メモ<input id="sales-correction-memo" class="ime-ja" autocomplete="off"></label>
         <label class="full">修正理由<textarea id="sales-correction-reason" class="ime-ja" required placeholder="例: 輸入社コードの登録誤り"></textarea></label>
       </div>
       <datalist id="sales-correction-unit-list"><option value="Kg"><option value="pkt"><option value="PC"><option value="CS"></datalist>
-      <div class="hint">保存すると修正履歴を残し、未締め・未入金の売掛も同時に再計算します。</div>
+      <div id="sales-correction-hint" class="hint">保存すると修正履歴を残し、未締め・未入金の売掛も同時に再計算します。</div>
       <div class="sales-correction-actions"><button class="btn" type="button" onclick="closeSalesCorrectionModal()">キャンセル</button><button class="btn primary" type="submit">修正を保存</button></div>
     </form>
   </div>
@@ -611,7 +613,7 @@ let pendingEntries=[];
 let salesReferenceRows=[];
 let salesReferenceSessions=[];
 let salesShippingBreakdownRows=[];
-let salesCorrectionTargetId="";
+let salesCorrectionTarget=null;
 let shippingCorrectionTarget=null;
 let salesReferenceImporterIndex=null;
 let receivableRows=[];
@@ -2263,7 +2265,15 @@ function salesRefPendingToRow(row,index=salesReferenceImporterIndex||salesRefBui
     memo:[row.reason,row.memo,row.applied_invoice_no?`Invoice ${row.applied_invoice_no}`:""].filter(Boolean).join(" / "),
     is_stockout:false,
     _pending_adjustment:true,
-    _shipping_adjustment_amount:isShipping?amount:0
+    _shipping_adjustment_amount:isShipping?amount:0,
+    _pending_entry_type:row.entry_type||"",
+    _pending_customer_code:row.customer_code||"",
+    _pending_description:row.description||"",
+    _pending_product_name:row.product_name_snapshot||"",
+    _pending_amount:amount,
+    _pending_qty:row.qty,
+    _pending_unit_price:row.unit_price,
+    _pending_memo:row.memo||""
   },index);
 }
 function salesRefShippingAdjustmentForRows(rows){
@@ -3016,12 +3026,22 @@ function renderSalesReferenceBoard(){
   </tr></thead><tbody>${rows.map((row,index)=>`<tr>
     <td>${esc(row.source_type||"現場確定")}</td><td>${esc(salesRefRowDate(row))}</td><td>${esc(salesRefRowImporter(row).label)}</td><td>${esc(row.store_name)}</td><td>${esc(row.product_id)}</td><td>${esc(row.product_name)}</td><td>${esc(row.origin)}</td>
     <td>${esc(salesRefMoney(row.input_qty))}</td><td>${esc(row.input_unit)}</td><td>${esc(salesRefMoney(row.net_weight))}</td><td>${esc(salesRefGrossDisplay(row,displayedGrossBoxes,index))}</td><td>${esc(row.box_no)}</td><td>${esc(salesRefMoney(row.unit_price))}</td><td>${esc(salesRefMoney(salesRefDisplayAmount(row)))}</td><td>${esc(row.memo)}</td><td>${row.is_stockout?"欠品":""}</td>
-    <td>${currentUserIsAdmin()&&row.source_type==="現場確定"&&row.id?`<button class="small" type="button" onclick="openSalesRecordCorrection('${esc(row.id)}')">修正</button>`:""}</td>
+    <td>${currentUserIsAdmin()&&salesCorrectionKind(row)?`<button class="small" type="button" onclick="openSalesRecordCorrection('${esc(row.id)}')">修正</button>`:""}</td>
   </tr>`).join("")}</tbody></table>`;
+}
+function salesCorrectionKind(row={}){
+  if(row.pending_entry_id)return "pending";
+  if(row.source_type==="過去データ"&&row.id)return "historical";
+  if(row.source_type==="現場確定"&&row.id)return "sales";
+  return "";
 }
 function salesCorrectionSetValue(id,value){
   const input=document.getElementById(id);
   if(input)input.value=value===null||value===undefined?"":String(value);
+}
+function salesCorrectionSetReadOnly(id,readOnly){
+  const input=document.getElementById(id);
+  if(input)input.readOnly=!!readOnly;
 }
 function salesCorrectionNullableNumber(id){
   const raw=val(id).trim();
@@ -3031,73 +3051,158 @@ function salesCorrectionNullableNumber(id){
 }
 function salesCorrectionErrorMessage(error){
   const msg=String(error?.message||error||"");
+  if(/admin_correct_historical_sales_record|admin_correct_pending_entry/i.test(msg)){
+    return "赤伝・過去売上修正用SQLが未実行です。sales-correction-all-sources-migration.sql をSupabase SQL Editorで実行してください。";
+  }
   if(error?.code==="PGRST202"||/admin_correct_sales_record|admin_update_session_shipping_fee|schema cache/i.test(msg)){
     return "売上修正用SQLが未実行です。sales-correction-provisional-lock-migration.sql をSupabase SQL Editorで実行してください。";
   }
   return msg||"売上修正に失敗しました。";
 }
+function updateSalesCorrectionAmountPreview(){
+  if(salesCorrectionTarget?.kind!=="sales")return;
+  const qty=salesCorrectionNullableNumber("sales-correction-qty");
+  const price=salesCorrectionNullableNumber("sales-correction-price");
+  salesCorrectionSetValue("sales-correction-amount",Number.isFinite(qty)&&Number.isFinite(price)?Math.round(qty*price*100)/100:"");
+}
 function openSalesRecordCorrection(recordId){
   if(!currentUserIsAdmin()){alert("確定売上を修正できるのは管理者のみです。");return}
-  const row=salesReferenceRows.find(item=>item.id===recordId&&item.source_type!=="過去データ");
+  const row=salesReferenceRows.find(item=>String(item.id)===String(recordId));
   if(!row){alert("修正する売上明細が見つかりません。");return}
-  salesCorrectionTargetId=recordId;
+  const kind=salesCorrectionKind(row);
+  if(!kind){alert("この明細は修正対象にできません。");return}
+  salesCorrectionTarget={
+    kind,
+    id:kind==="pending"?row.pending_entry_id:row.id,
+    row
+  };
+  const sourceLabel=kind==="pending"?(row.source_type||"赤伝・調整"):kind==="historical"?"過去取込":"現場確定";
+  const title=document.getElementById("sales-correction-title");
+  const hint=document.getElementById("sales-correction-hint");
+  if(title)title.textContent=`${sourceLabel}の管理者修正`;
+  if(hint)hint.textContent=kind==="historical"
+    ?"過去取込データを修正し、変更前後の履歴を保存します。過去取込データは売掛残高には含まれません。"
+    :"保存すると修正履歴を残し、未締め・未入金の売掛も同時に再計算します。";
+  salesCorrectionSetValue("sales-correction-source",sourceLabel);
   salesCorrectionSetValue("sales-correction-work-date",salesRefRowDate(row));
   salesCorrectionSetValue("sales-correction-importer",salesRefRowImporter(row).code||row.importer_code||row.importer_id);
   salesCorrectionSetValue("sales-correction-store",row.store_name);
-  salesCorrectionSetValue("sales-correction-product-id",row.product_id);
-  salesCorrectionSetValue("sales-correction-product-name",row.product_name);
+  salesCorrectionSetValue("sales-correction-product-id",kind==="pending"&&row.product_id==="ADJUSTMENT"?"":row.product_id);
+  salesCorrectionSetValue("sales-correction-product-name",kind==="pending"?(row._pending_product_name||row._pending_description||row.product_name):row.product_name);
   salesCorrectionSetValue("sales-correction-origin",row.origin);
-  salesCorrectionSetValue("sales-correction-qty",row.input_qty);
+  salesCorrectionSetValue("sales-correction-qty",kind==="pending"?row._pending_qty:row.input_qty);
   salesCorrectionSetValue("sales-correction-unit",row.input_unit);
   salesCorrectionSetValue("sales-correction-net",row.net_weight);
-  salesCorrectionSetValue("sales-correction-price",row.unit_price);
-  salesCorrectionSetValue("sales-correction-memo",row.memo);
+  salesCorrectionSetValue("sales-correction-price",kind==="pending"?row._pending_unit_price:row.unit_price);
+  salesCorrectionSetValue("sales-correction-amount",kind==="pending"?row._pending_amount:row.amount);
+  salesCorrectionSetValue("sales-correction-memo",kind==="pending"?row._pending_memo:row.memo);
   salesCorrectionSetValue("sales-correction-reason","");
+  salesCorrectionSetReadOnly("sales-correction-origin",kind==="pending");
+  salesCorrectionSetReadOnly("sales-correction-net",kind==="pending");
+  salesCorrectionSetReadOnly("sales-correction-amount",kind==="sales");
   document.getElementById("sales-correction-modal")?.classList.add("open");
   setTimeout(()=>document.getElementById("sales-correction-importer")?.focus(),0);
 }
 function closeSalesCorrectionModal(){
   document.getElementById("sales-correction-modal")?.classList.remove("open");
-  salesCorrectionTargetId="";
+  salesCorrectionTarget=null;
 }
-async function refreshAfterSalesCorrection(message){
+async function refreshAfterSalesCorrection(message,affectsReceivables=true){
   await loadSalesReferenceBoard();
-  if(receivablesLoaded)await loadReceivables();
-  alert(`${message}\n修正履歴を保存し、売掛を再計算しました。発行済みのExcel・請求書がある場合は再出力してください。`);
+  if(affectsReceivables&&receivablesLoaded)await loadReceivables();
+  alert(affectsReceivables
+    ?`${message}\n修正履歴を保存し、売掛を再計算しました。発行済みのExcel・請求書がある場合は再出力してください。`
+    :`${message}\n修正履歴を保存しました。`);
 }
 async function saveSalesRecordCorrection(event){
   event.preventDefault();
   if(appBusy)return;
-  if(!salesCorrectionTargetId){alert("修正対象がありません。");return}
+  if(!salesCorrectionTarget){alert("修正対象がありません。");return}
   if(!currentUserIsAdmin()){alert("確定売上を修正できるのは管理者のみです。");return}
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
   const inputQty=salesCorrectionNullableNumber("sales-correction-qty");
   const netWeight=salesCorrectionNullableNumber("sales-correction-net");
   const unitPrice=salesCorrectionNullableNumber("sales-correction-price");
+  let amount=salesCorrectionNullableNumber("sales-correction-amount");
   if([inputQty,netWeight,unitPrice].some(Number.isNaN)){alert("数量・NET重量・単価は数値で入力してください。");return}
+  if(Number.isNaN(amount)){alert("金額は数値で入力してください。");return}
+  if(salesCorrectionTarget.kind==="pending"&&amount===null){alert("赤伝・調整の金額を入力してください。");return}
+  if(salesCorrectionTarget.kind==="historical"&&amount===null&&Number.isFinite(inputQty)&&Number.isFinite(unitPrice)){
+    amount=Math.round(inputQty*unitPrice*100)/100;
+  }
   const reason=val("sales-correction-reason").trim();
   if(!reason){alert("修正理由を入力してください。");return}
-  setAppBusy(true,"確定売上と売掛を修正しています。");
+  const common={
+    workDate:val("sales-correction-work-date"),
+    importerCode:val("sales-correction-importer").trim(),
+    storeName:val("sales-correction-store").trim(),
+    productId:val("sales-correction-product-id").trim(),
+    productName:val("sales-correction-product-name").trim(),
+    origin:val("sales-correction-origin").trim(),
+    inputUnit:val("sales-correction-unit").trim(),
+    memo:val("sales-correction-memo").trim()
+  };
+  setAppBusy(true,"売上明細と関連データを修正しています。");
   try{
-    const {error}=await initSupabase().rpc("admin_correct_sales_record",{
-      p_sales_record_id:salesCorrectionTargetId,
-      p_work_date:val("sales-correction-work-date"),
-      p_importer_code:val("sales-correction-importer").trim(),
-      p_store_name:val("sales-correction-store").trim(),
-      p_product_id:val("sales-correction-product-id").trim(),
-      p_product_name:val("sales-correction-product-name").trim(),
-      p_origin:val("sales-correction-origin").trim(),
-      p_input_qty:inputQty,
-      p_input_unit:val("sales-correction-unit").trim(),
-      p_net_weight:netWeight,
-      p_unit_price:unitPrice,
-      p_memo:val("sales-correction-memo").trim(),
-      p_reason:reason
-    });
+    let result;
+    if(salesCorrectionTarget.kind==="pending"){
+      result=await initSupabase().rpc("admin_correct_pending_entry",{
+        p_pending_entry_id:salesCorrectionTarget.id,
+        p_work_date:common.workDate,
+        p_importer_code:common.importerCode,
+        p_customer_name:common.storeName,
+        p_product_code:common.productId,
+        p_description:common.productName,
+        p_qty:inputQty,
+        p_unit:common.inputUnit,
+        p_unit_price:unitPrice,
+        p_amount:amount,
+        p_memo:common.memo,
+        p_reason:reason
+      });
+    }else if(salesCorrectionTarget.kind==="historical"){
+      result=await initSupabase().rpc("admin_correct_historical_sales_record",{
+        p_historical_sales_record_id:salesCorrectionTarget.id,
+        p_work_date:common.workDate,
+        p_importer_code:common.importerCode,
+        p_store_name:common.storeName,
+        p_product_id:common.productId,
+        p_product_name:common.productName,
+        p_origin:common.origin,
+        p_input_qty:inputQty,
+        p_input_unit:common.inputUnit,
+        p_net_weight:netWeight,
+        p_unit_price:unitPrice,
+        p_amount:amount,
+        p_memo:common.memo,
+        p_reason:reason
+      });
+    }else{
+      result=await initSupabase().rpc("admin_correct_sales_record",{
+        p_sales_record_id:salesCorrectionTarget.id,
+        p_work_date:common.workDate,
+        p_importer_code:common.importerCode,
+        p_store_name:common.storeName,
+        p_product_id:common.productId,
+        p_product_name:common.productName,
+        p_origin:common.origin,
+        p_input_qty:inputQty,
+        p_input_unit:common.inputUnit,
+        p_net_weight:netWeight,
+        p_unit_price:unitPrice,
+        p_memo:common.memo,
+        p_reason:reason
+      });
+    }
+    const {error}=result;
     if(error)throw error;
+    const kind=salesCorrectionTarget.kind;
     closeSalesCorrectionModal();
-    await refreshAfterSalesCorrection("確定売上を修正しました。");
+    await refreshAfterSalesCorrection(
+      kind==="pending"?"赤伝・調整を修正しました。":kind==="historical"?"過去売上を修正しました。":"確定売上を修正しました。",
+      kind!=="historical"
+    );
   }catch(error){
     alert(salesCorrectionErrorMessage(error));
   }finally{

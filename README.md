@@ -13,6 +13,9 @@
 - `product-master-migration.sql`  
   既存のSupabase環境へ商品マスタ保存機能を追加するSQLです。
 
+- `sales-correction-all-sources-migration.sql`
+  売上参照から赤伝・調整・過去取込データを管理者修正するためのSQLです。
+
 ## まず試す方法
 
 1. `index.html` をダブルクリックして開く
