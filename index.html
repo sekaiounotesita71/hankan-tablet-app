@@ -3081,16 +3081,43 @@ applyRemoteBox=function(dbRow){
   __applyRemoteBoxInlineBase(dbRow);
 };
 let currentUserRole="user";
+let currentUserRoleUserId="";
+let currentUserRoleLoadPromise=null;
+let currentUserRoleLoadUserId="";
 let currentSessionLocked=false;
 let currentSessionProvisionalLocked=false;
 let currentSessionFinalizedAt="";
 function currentUserIsAdmin(){return currentUserRole==="admin"}
 async function loadCurrentUserRoleTrial(){
-  currentUserRole="user";
-  if(!supabaseClient||!currentUser){updateLockUITrial();return}
-  const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
-  if(!error&&data?.role)currentUserRole=data.role;
-  updateLockUITrial();
+  if(!supabaseClient||!currentUser){
+    currentUserRole="user";
+    currentUserRoleUserId="";
+    currentUserRoleLoadPromise=null;
+    currentUserRoleLoadUserId="";
+    updateLockUITrial();
+    return currentUserRole;
+  }
+  const requestedUserId=currentUser.id;
+  if(currentUserRoleLoadPromise&&currentUserRoleLoadUserId===requestedUserId)return currentUserRoleLoadPromise;
+  if(currentUserRoleUserId&&currentUserRoleUserId!==requestedUserId)currentUserRole="user";
+  const loadPromise=(async()=>{
+    const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",requestedUserId).maybeSingle();
+    if(currentUser?.id!==requestedUserId)return currentUserRole;
+    currentUserRole=!error&&data?.role?String(data.role).toLowerCase():"user";
+    currentUserRoleUserId=requestedUserId;
+    updateLockUITrial();
+    return currentUserRole;
+  })();
+  currentUserRoleLoadPromise=loadPromise;
+  currentUserRoleLoadUserId=requestedUserId;
+  try{
+    return await loadPromise;
+  }finally{
+    if(currentUserRoleLoadPromise===loadPromise){
+      currentUserRoleLoadPromise=null;
+      currentUserRoleLoadUserId="";
+    }
+  }
 }
 function setSessionLockStateTrial(session){
   currentSessionLocked=!!session?.locked;
@@ -3159,6 +3186,7 @@ async function setProvisionalLockTrial(locked){
   if(locked){
     if(!confirm("入力を仮締めします。売上確定までは管理者だけが解除できます。よろしいですか？"))return;
   }else{
+    await loadCurrentUserRoleTrial();
     if(!currentUserIsAdmin()){toast("仮締め解除は管理者のみ可能です");return}
     reason=prompt("仮締め解除理由を入力してください")||"";
     if(!reason.trim())return;
@@ -3241,6 +3269,8 @@ async function finalizeSalesTrial(){
 }
 async function unlockSessionTrial(){
   if(!currentSessionId||!currentSessionLocked)return;
+  if(!(await requireSupabaseLogin()))return;
+  await loadCurrentUserRoleTrial();
   if(!currentUserIsAdmin()){toast("ロック解除は管理者のみ可能です");return}
   const reason=prompt("ロック解除理由を入力してください");
   if(!reason)return;
