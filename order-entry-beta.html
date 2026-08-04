@@ -48,7 +48,10 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
 .ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}
+.ops-tools{display:grid;grid-template-columns:170px 150px minmax(190px,1fr) minmax(180px,1fr) auto auto;gap:8px;align-items:end}.ops-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.ops-table-wrap{max-height:560px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ops-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.ops-table th,.ops-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.ops-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ops-table input,.ops-table select{height:34px;min-height:34px;border-radius:6px}.ops-table tr.submitted td{background:#fff8e8}.ops-table tr.accepted td{background:#eef8f2}.ops-table tr.returned td{background:#fff0ef}.ops-actions{display:flex;gap:5px;align-items:center}.ops-money{text-align:right;font-family:Consolas,monospace;font-weight:900}.purchase-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-form .wide{grid-column:span 2}.purchase-form .full{grid-column:1/-1}.purchase-receipt{border-bottom:1px solid var(--line)}.purchase-receipt summary{display:grid;grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 120px auto;gap:8px;align-items:center;padding:9px 10px;cursor:pointer;font-weight:900;background:#fff}.purchase-receipt summary:hover{background:#f7f9fb}.purchase-detail{padding:10px;border-top:1px solid var(--line);background:#fbfcfd}.purchase-detail-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-detail-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0;margin-top:8px}.purchase-detail-table th,.purchase-detail-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.purchase-detail-table input{height:32px;min-height:32px}.site-readonly{display:flex;align-items:center;min-height:38px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#f3f5f7;color:#334155;font-weight:900}.admin-box{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}
+.partner-register-tools{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,1fr) 150px auto minmax(200px,1fr);gap:8px;align-items:end}
 @media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.sales-shipping-row{grid-template-columns:90px minmax(150px,1fr) 110px auto}.sales-shipping-session{display:none}.sales-correction-grid{grid-template-columns:1fr 1fr}.sales-correction-grid .wide{grid-column:span 1}.sales-correction-grid .full{grid-column:1/-1}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}}
+@media (max-width:900px){.ops-tools,.purchase-form,.purchase-detail-grid,.partner-register-tools{grid-template-columns:1fr 1fr}.purchase-form .wide,.purchase-form .full{grid-column:1/-1}.partner-register-action,.partner-register-note{grid-column:1/-1}.purchase-receipt summary{min-width:850px}.ops-table-wrap{max-height:460px}}
 @media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
 </style>
 </head>
@@ -63,6 +66,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <button class="app-nav-link" type="button" data-workspace-tab="receivables" onclick="switchWorkspaceTab('receivables')">売掛管理</button>
       <button class="app-nav-link" type="button" data-workspace-tab="guide" onclick="switchWorkspaceTab('guide')">商品案内</button>
       <button class="app-nav-link active" type="button" data-workspace-tab="orders" onclick="switchWorkspaceTab('orders')">発注入力</button>
+      <button class="app-nav-link" type="button" data-workspace-tab="external" onclick="switchWorkspaceTab('external')">外部作業</button>
+      <button class="app-nav-link" type="button" data-workspace-tab="purchases" onclick="switchWorkspaceTab('purchases')">仕入管理</button>
       <button class="app-nav-link" type="button" data-workspace-tab="masters" onclick="switchWorkspaceTab('masters')">マスタ</button>
     </nav>
   </div>
@@ -103,6 +108,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <label>輸入社名<input id="batch-importer-name" list="importer-name-list" autocomplete="off" placeholder="輸入社名"></label>
           <label>得意先コード<input id="batch-customer-code" autocomplete="off" placeholder="例 01-002"></label>
           <label>得意先名<input id="batch-customer-name" class="ime-ja" autocomplete="off" placeholder="得意先名"></label>
+          <label>作業拠点<div id="batch-site-name" class="site-readonly" data-site-code="OSA">大阪</div></label>
           <label class="wide">メモ<textarea id="batch-note" class="ime-ja" autocomplete="off" placeholder="この受注全体のメモ"></textarea></label>
         </div>
         <datalist id="customer-code-list"></datalist>
@@ -488,6 +494,68 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
+  <section class="panel workspace-panel" data-workspace-panel="external" id="external-work-panel" style="margin-top:12px">
+    <div class="panel-head"><span>外部作業依頼</span><a class="small" href="./partner-work.html" target="_blank" rel="noopener">問屋入力画面を開く</a></div>
+    <div class="panel-body">
+      <div class="ops-tools">
+        <label>作業日<input id="external-work-date" type="date"></label>
+        <label>拠点<select id="external-work-site"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+        <label>発注先コード<input id="external-work-supplier" list="supplier-code-list" autocomplete="off" placeholder="発注先コード"></label>
+        <label>依頼メモ<input id="external-work-note" class="ime-ja" autocomplete="off" placeholder="問屋への連絡事項"></label>
+        <button class="btn primary" type="button" onclick="publishExternalAssignment()">問屋へ依頼公開</button>
+        <button class="btn" type="button" onclick="loadExternalAssignments()">一覧更新</button>
+      </div>
+      <div class="ops-summary"><span id="external-work-state" class="pill warn">SQL実行後に利用できます</span><span class="hint" style="margin:0">確定済み受注の「作業日・拠点・発注先」が一致する明細だけを公開します。</span></div>
+      <div id="external-assignment-list" class="ops-table-wrap"><div class="sales-empty">条件を指定して一覧更新してください。</div></div>
+
+      <div class="admin-box">
+        <div style="font-weight:900;margin-bottom:8px">外部担当者の登録（管理者）</div>
+        <div class="partner-register-tools">
+          <label>担当者メール<input id="partner-user-email" type="email" autocomplete="off" placeholder="Supabase Auth登録済みメール"></label>
+          <label>発注先コード<input id="partner-user-supplier" list="supplier-code-list" autocomplete="off"></label>
+          <label>利用拠点<select id="partner-user-site"><option value="OSA,TYO">大阪・東京</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+          <button class="btn partner-register-action" type="button" onclick="registerPartnerUser()">担当者を紐付け</button>
+          <span class="hint partner-register-note" style="margin:0">先にSupabase Authenticationで担当者アカウントを作成します。</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel workspace-panel" data-workspace-panel="purchases" id="purchase-management-panel" style="margin-top:12px">
+    <div class="panel-head"><span>仕入管理</span><button class="small" type="button" onclick="loadPurchaseReceipts()">再読込</button></div>
+    <div class="panel-body">
+      <div class="ops-tools">
+        <label>仕入日<input id="purchase-filter-date" type="date"></label>
+        <label>拠点<select id="purchase-filter-site"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+        <label>仕入先<input id="purchase-filter-supplier" list="supplier-code-list" autocomplete="off" placeholder="空欄で全仕入先"></label>
+        <label>状態<select id="purchase-filter-status"><option value="">全状態</option><option value="expected" selected>未照合</option><option value="invoice_received">請求書受領</option><option value="confirmed">仕入確定</option><option value="cancelled">取消</option></select></label>
+        <button class="btn primary" type="button" onclick="loadPurchaseReceipts()">仕入読込</button>
+        <span id="purchase-state" class="pill warn">未読込</span>
+      </div>
+      <div id="purchase-receipt-list" class="ops-table-wrap"><div class="sales-empty">条件を指定して「仕入読込」を押してください。</div></div>
+
+      <div class="admin-box">
+        <div style="font-weight:900;margin-bottom:8px">発注を伴わない事前仕入</div>
+        <div class="purchase-form">
+          <label>仕入日<input id="advance-purchase-date" type="date"></label>
+          <label>拠点<select id="advance-purchase-site"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+          <label>仕入先コード<input id="advance-purchase-supplier" list="supplier-code-list" autocomplete="off"></label>
+          <label>商品コード<input id="advance-purchase-product" list="product-code-list" autocomplete="off" onchange="fillAdvancePurchaseProduct(this.value)"></label>
+          <label class="wide">商品名<input id="advance-purchase-name" class="ime-ja" autocomplete="off"></label>
+          <label>産地<input id="advance-purchase-origin" lang="en" autocapitalize="none" autocomplete="off"></label>
+          <label>数量<input id="advance-purchase-qty" inputmode="decimal"></label>
+          <label>単位<select id="advance-purchase-unit"><option>Kg</option><option>pkt</option><option>PC</option><option>CS</option></select></label>
+          <label>仕入単価<input id="advance-purchase-price" inputmode="decimal"></label>
+          <label>単価単位<select id="advance-purchase-price-unit"><option>Kg</option><option>pkt</option><option>PC</option><option>CS</option></select></label>
+          <label>請求書番号<input id="advance-purchase-invoice" autocomplete="off" placeholder="未着なら空欄"></label>
+          <label class="wide">メモ<input id="advance-purchase-note" class="ime-ja" autocomplete="off"></label>
+          <label style="flex-direction:row;align-items:center;gap:7px"><input id="advance-purchase-stock" type="checkbox" checked style="width:18px;min-height:18px">在庫として管理</label>
+          <button class="btn primary" type="button" onclick="saveAdvancePurchase()">事前仕入を登録</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="panel workspace-panel" data-workspace-panel="masters" id="master-admin-panel" style="margin-top:12px">
     <div class="panel-head"><span>マスタ管理</span><button class="small" onclick="hideMasterAdminPanel()">発注入力へ戻る</button></div>
     <div class="panel-body">
@@ -512,6 +580,10 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="product-image-url-wrap" class="wide">商品画像URL<input id="master-image-url" inputmode="url" placeholder="空欄なら商品案内から画像候補を取得可能"></label>
         <label id="customer-importer-code-wrap">既定輸入社コード<input id="master-importer-code" list="importer-code-list" placeholder="得意先マスタのみ"></label>
         <label id="customer-importer-name-wrap">既定輸入社名<input id="master-importer-name" list="importer-name-list" placeholder="得意先マスタのみ"></label>
+        <label id="customer-site-wrap">作業拠点<select id="master-site-code"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+        <label id="supplier-external-wrap" style="flex-direction:row;align-items:center;gap:7px"><input id="master-external-enabled" type="checkbox" style="width:18px;min-height:18px">外部作業を依頼する仕入先</label>
+        <label id="supplier-box-prefix-wrap">箱番号の固定コード<input id="master-box-prefix" autocomplete="off" placeholder="例 TKY"></label>
+        <label id="supplier-default-site-wrap">仕入先の既定拠点<select id="master-supplier-site-code"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
       </div>
       <div class="actions" style="margin-top:8px">
         <button class="btn primary" onclick="addMasterItem()">マスタ追加/更新</button>
@@ -651,6 +723,8 @@ let dbLoadInFlight=false;
 let appBusy=false;
 let reportFilterCountTimer=null;
 let reportFilterCountRequest=0;
+let externalAssignments=[];
+let purchaseReceipts=[];
 
 const baseMasters={
   products:[],
@@ -929,10 +1003,18 @@ function masterItemToDb(type,item){
     return {importer_code:item.code,importer_name:item.name,aliases:item.aliases||[],is_active:true};
   }
   if(type==="suppliers"){
-    return {supplier_code:item.code,supplier_name:item.name,aliases:item.aliases||[],is_active:true};
+    return {
+      supplier_code:item.code,
+      supplier_name:item.name,
+      aliases:item.aliases||[],
+      external_work_enabled:!!item.externalWorkEnabled,
+      box_prefix:dbText(item.boxPrefix),
+      default_site_code:dbText(item.siteCode||"OSA"),
+      is_active:true
+    };
   }
   if(type==="customers"){
-    return {customer_code:item.code,customer_name:item.name,importer_code:dbText(item.importerCode),alias_name:(item.aliases||[]).join("|")||null,active:true};
+    return {customer_code:item.code,customer_name:item.name,importer_code:dbText(item.importerCode),site_code:item.siteCode||"OSA",alias_name:(item.aliases||[]).join("|")||null,active:true};
   }
   return {
     product_id:item.code,
@@ -955,7 +1037,14 @@ function masterItemToDb(type,item){
 }
 function dbMasterToItem(type,row,lookups={}){
   if(type==="importers")return {code:row.importer_code||"",name:row.importer_name||"",aliases:row.aliases||[]};
-  if(type==="suppliers")return {code:row.supplier_code||"",name:row.supplier_name||"",aliases:row.aliases||[]};
+  if(type==="suppliers")return {
+    code:row.supplier_code||"",
+    name:row.supplier_name||"",
+    aliases:row.aliases||[],
+    externalWorkEnabled:!!row.external_work_enabled,
+    boxPrefix:row.box_prefix||"",
+    siteCode:row.default_site_code||"OSA"
+  };
   if(type==="customers"){
     const importerCode=row.importer_code||"";
     return {
@@ -963,7 +1052,8 @@ function dbMasterToItem(type,row,lookups={}){
       name:row.customer_name||"",
       aliases:aliasesFrom(row.alias_name||""),
       importerCode,
-      importerName:lookups.importerNames?.[importerCode]||""
+      importerName:lookups.importerNames?.[importerCode]||"",
+      siteCode:row.site_code||"OSA"
     };
   }
   const supplierCode=row.default_supplier_code||"";
@@ -1097,15 +1187,26 @@ async function saveMasterItemToDb(type,item){
       if(error)throw error;
       existing=data;
     }
-    const result=existing?.id
+    let result=existing?.id
       ? await supabaseClient.from("customer_master").update(payload).eq("id",existing.id)
       : await supabaseClient.from("customer_master").insert(payload);
+    if(result.error&&isMissingColumnError(result.error)){
+      const {site_code,...legacyPayload}=payload;
+      result=existing?.id
+        ? await supabaseClient.from("customer_master").update(legacyPayload).eq("id",existing.id)
+        : await supabaseClient.from("customer_master").insert(legacyPayload);
+    }
     if(result.error)throw result.error;
     return true;
   }
   const table={products:"product_master",customers:"customer_master",suppliers:"supplier_master",importers:"importer_master"}[type];
   const conflict={products:"product_id",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
-  const {error}=await supabaseClient.from(table).upsert(masterItemToDb(type,item),{onConflict:conflict});
+  const payload=masterItemToDb(type,item);
+  let {error}=await supabaseClient.from(table).upsert(payload,{onConflict:conflict});
+  if(error&&type==="suppliers"&&isMissingColumnError(error)){
+    const {external_work_enabled,box_prefix,default_site_code,...legacyPayload}=payload;
+    ({error}=await supabaseClient.from(table).upsert(legacyPayload,{onConflict:conflict}));
+  }
   if(error)throw error;
   if(type==="products")await saveProductContractsToDb([item]);
   return true;
@@ -1152,9 +1253,14 @@ async function saveMastersToDb(type,items){
   }
   const table={products:"product_master",customers:"customer_master",suppliers:"supplier_master",importers:"importer_master"}[type];
   const conflict={products:"product_id",customers:"customer_code",suppliers:"supplier_code",importers:"importer_code"}[type];
-  const payloads=items.map(item=>masterItemToDb(type,item));
+  let payloads=items.map(item=>masterItemToDb(type,item));
   for(let i=0;i<payloads.length;i+=300){
-    const {error}=await supabaseClient.from(table).upsert(payloads.slice(i,i+300),{onConflict:conflict});
+    let chunk=payloads.slice(i,i+300);
+    let {error}=await supabaseClient.from(table).upsert(chunk,{onConflict:conflict});
+    if(error&&type==="suppliers"&&isMissingColumnError(error)){
+      chunk=chunk.map(({external_work_enabled,box_prefix,default_site_code,...legacyPayload})=>legacyPayload);
+      ({error}=await supabaseClient.from(table).upsert(chunk,{onConflict:conflict}));
+    }
     if(error)throw error;
   }
   if(type==="products")await saveProductContractsToDb(items);
@@ -1172,10 +1278,18 @@ async function readAllSupabaseRows(buildPage,pageSize=1000){
 }
 async function loadMastersFromDb(){
   if(!supabaseClient)return;
+  const loadCustomerRows=async()=>{
+    try{
+      return await readAllSupabaseRows((from,to)=>supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,site_code,alias_name,active").eq("active",true).order("customer_code").range(from,to));
+    }catch(error){
+      if(!isMissingColumnError(error))throw error;
+      return readAllSupabaseRows((from,to)=>supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,alias_name,active").eq("active",true).order("customer_code").range(from,to));
+    }
+  };
   const [importerRows,supplierRows,customerRows,contractRows]=await Promise.all([
     readAllSupabaseRows((from,to)=>supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code").range(from,to)),
     readAllSupabaseRows((from,to)=>supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code").range(from,to)),
-    readAllSupabaseRows((from,to)=>supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,alias_name,active").eq("active",true).order("customer_code").range(from,to)),
+    loadCustomerRows(),
     readAllSupabaseRows((from,to)=>supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price").order("product_id").order("importer_code").range(from,to))
   ]);
   let productRows;
@@ -1203,6 +1317,7 @@ async function loadMastersFromDb(){
   });
 }
 function batchToDb(batch){
+  const customerMaster=findMasterCustomer(batch.customer?.code,batch.customer?.name,batch.importer||{});
   return {
     id:isUuid(batch.id)?batch.id:undefined,
     order_date:batch.orderDate||today(),
@@ -1211,6 +1326,7 @@ function batchToDb(batch){
     importer_name_snapshot:dbText(batch.importer?.name),
     customer_code:dbText(batch.customer?.code),
     customer_name_snapshot:dbText(batch.customer?.name),
+    site_code:customerMaster?.siteCode||batch.siteCode||"OSA",
     status:"confirmed",
     source_type:String(batch.note||batch.id||"").includes("取込")?"csv":"manual",
     note:dbText(batch.note),
@@ -1226,6 +1342,7 @@ function dbBatchToBatch(row,lines){
     note:row.note||"",
     importer:{code:row.importer_code||"",name:row.importer_name_snapshot||""},
     customer:{code:row.customer_code||"",name:row.customer_name_snapshot||""},
+    siteCode:row.site_code||"OSA",
     rows:(lines||[]).map(line=>({
       productCode:line.product_code||"",
       productName:line.product_name_snapshot||"",
@@ -1248,7 +1365,12 @@ async function saveConfirmedBatchToDb(batch){
   const {data:existing,error:existingError}=await supabaseClient.from("order_entry_batches").select("id").eq("id",batchId).maybeSingle();
   if(existingError)throw existingError;
   const parentExisted=!!existing;
-  const {data,error}=await supabaseClient.from("order_entry_batches").upsert(batchToDb(batch),{onConflict:"id"}).select("id").single();
+  const batchPayload=batchToDb(batch);
+  let {data,error}=await supabaseClient.from("order_entry_batches").upsert(batchPayload,{onConflict:"id"}).select("id").single();
+  if(error&&isMissingColumnError(error)){
+    const {site_code,...legacyBatchPayload}=batchPayload;
+    ({data,error}=await supabaseClient.from("order_entry_batches").upsert(legacyBatchPayload,{onConflict:"id"}).select("id").single());
+  }
   let savedParent=data;
   if(error){
     const verification=await supabaseClient.from("order_entry_batches").select("id").eq("id",batchId).maybeSingle();
@@ -6322,11 +6444,172 @@ async function printStatementOfAccount(){
     alert(arDbErrorMessage(error));
   }
 }
+function siteNameFromCode(code){return code==="TYO"?"東京":"大阪"}
+function externalStatusLabel(status){return {draft:"下書き",published:"未着手",in_progress:"入力中",submitted:"提出済み",accepted:"本社確認済み",returned:"差し戻し",cancelled:"取消"}[status]||status||""}
+function sitePartnerDbError(error){
+  const message=String(error?.message||error||"");
+  if(error?.code==="42P01"||error?.code==="42883"||/does not exist|schema cache|could not find the function/i.test(message))return "拠点・外部作業・仕入管理SQLが未実行です。site-partner-purchase-migration.sql をSupabase SQL Editorで実行してください。";
+  return message||"外部作業DB処理でエラーが発生しました。";
+}
+async function publishExternalAssignment(){
+  if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
+  const workDate=val("external-work-date");
+  const siteCode=val("external-work-site")||"OSA";
+  const supplierCode=val("external-work-supplier").trim();
+  if(!workDate||!supplierCode){alert("作業日・拠点・発注先コードを指定してください。");return}
+  setAppBusy(true,"問屋向け作業を作成しています...");
+  try{
+    const {error}=await supabaseClient.rpc("publish_external_work_assignment",{p_work_date:workDate,p_site_code:siteCode,p_supplier_code:supplierCode,p_note:val("external-work-note").trim()||null});
+    if(error)throw error;
+    alert("問屋へ作業依頼を公開しました。");
+    await loadExternalAssignments();
+  }catch(error){alert(sitePartnerDbError(error))}
+  finally{setAppBusy(false)}
+}
+async function registerPartnerUser(){
+  if(!currentUserIsAdmin()){alert("外部担当者を登録できるのは管理者のみです。");return}
+  const email=val("partner-user-email").trim();
+  const supplierCode=val("partner-user-supplier").trim();
+  const siteCodes=val("partner-user-site").split(",").filter(Boolean);
+  if(!email||!supplierCode){alert("担当者メールと発注先コードを入力してください。");return}
+  setAppBusy(true,"外部担当者を登録しています...");
+  try{
+    const {error}=await supabaseClient.rpc("admin_register_partner_user",{p_email:email,p_supplier_code:supplierCode,p_site_codes:siteCodes});
+    if(error)throw error;
+    alert(`${email} を ${supplierCode} の外部担当者として登録しました。`);
+    document.getElementById("partner-user-email").value="";
+  }catch(error){alert(sitePartnerDbError(error))}
+  finally{setAppBusy(false)}
+}
+async function loadExternalAssignments(){
+  if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
+  const state=document.getElementById("external-work-state");
+  state.textContent="読込中...";state.className="pill warn";
+  try{
+    let query=supabaseClient.from("external_work_assignments").select("*").order("work_date",{ascending:false}).order("created_at",{ascending:false}).limit(300);
+    const date=val("external-work-date");
+    const site=val("external-work-site");
+    const supplier=val("external-work-supplier").trim();
+    if(date)query=query.eq("work_date",date);
+    if(site)query=query.eq("site_code",site);
+    if(supplier)query=query.eq("supplier_code",supplier);
+    const {data,error}=await query;
+    if(error)throw error;
+    externalAssignments=data||[];
+    const ids=externalAssignments.map(row=>row.id);
+    let lines=[];
+    let inputs=[];
+    if(ids.length){
+      for(let index=0;index<ids.length;index+=100){
+        const lineResult=await supabaseClient.from("external_work_assignment_lines").select("*").in("assignment_id",ids.slice(index,index+100)).eq("active",true).order("customer_name").order("line_no");
+        if(lineResult.error)throw lineResult.error;
+        lines.push(...(lineResult.data||[]));
+      }
+      const lineIds=lines.map(row=>row.id);
+      for(let index=0;index<lineIds.length;index+=300){
+        const inputResult=await supabaseClient.from("external_work_inputs").select("*").in("assignment_line_id",lineIds.slice(index,index+300));
+        if(inputResult.error)throw inputResult.error;
+        inputs.push(...(inputResult.data||[]));
+      }
+    }
+    const linesByAssignment=new Map();
+    lines.forEach(line=>{if(!linesByAssignment.has(line.assignment_id))linesByAssignment.set(line.assignment_id,[]);linesByAssignment.get(line.assignment_id).push(line)});
+    const inputByLine=new Map(inputs.map(input=>[input.assignment_line_id,input]));
+    externalAssignments=externalAssignments.map(row=>({...row,lines:linesByAssignment.get(row.id)||[],inputByLine}));
+    renderExternalAssignments();
+    state.textContent=`${externalAssignments.length}件`;state.className="pill blue";
+  }catch(error){
+    state.textContent="読込失敗";state.className="pill warn";
+    document.getElementById("external-assignment-list").innerHTML=`<div class="sales-empty">${esc(sitePartnerDbError(error))}</div>`;
+  }
+}
+function renderExternalAssignments(){
+  const box=document.getElementById("external-assignment-list");
+  if(!externalAssignments.length){box.innerHTML='<div class="sales-empty">条件に一致する外部作業はありません。</div>';return}
+  box.innerHTML=externalAssignments.map(assignment=>{
+    const complete=assignment.lines.filter(line=>assignment.inputByLine.get(line.id)?.completed).length;
+    const details=assignment.lines.map(line=>{
+      const input=assignment.inputByLine.get(line.id)||{};
+      const boxNo=[assignment.box_prefix_snapshot,input.box_sequence].filter(Boolean).join("-");
+      return `<tr><td>${input.completed?"完了":"未完了"}</td><td>${esc(line.customer_name)}</td><td>${esc(line.product_code||"")} ${esc(line.product_name)}</td><td>${esc(line.ordered_qty??"")} ${esc(line.ordered_unit||"")}</td><td>${esc(input.input_qty??"")} ${esc(input.input_unit||"")}</td><td>${esc(input.net_weight??"")}</td><td>${esc(input.origin||"")}</td><td>${esc(boxNo)}</td><td>${esc(input.gross_weight??"")}</td><td>${esc(input.purchase_unit_price??"")} / ${esc(input.purchase_price_unit||"")}</td><td>${esc(input.memo||"")}</td></tr>`;
+    }).join("");
+    const actions=assignment.status==="submitted"
+      ?`<button class="small primary" type="button" onclick="reviewExternalAssignment('${esc(assignment.id)}','accept')">確認済みにする</button><button class="small danger" type="button" onclick="reviewExternalAssignment('${esc(assignment.id)}','return')">差し戻す</button>`
+      :assignment.status==="accepted"?`<button class="small" type="button" onclick="reviewExternalAssignment('${esc(assignment.id)}','return')">再入力を依頼</button>`:"";
+    return `<details class="purchase-receipt ${esc(assignment.status)}"><summary><span>${esc(assignment.work_date)}</span><span>${esc(siteNameFromCode(assignment.site_code))}</span><span>${esc(assignment.supplier_code)} ${esc(assignment.supplier_name_snapshot||"")}</span><span>${esc(externalStatusLabel(assignment.status))}</span><span>${complete}/${assignment.lines.length}件</span><span>${esc(assignment.box_prefix_snapshot||"箱コードなし")}</span><span class="ops-actions">${actions}</span></summary><div class="purchase-detail"><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>状態</th><th>得意先</th><th>商品</th><th>注文</th><th>実績</th><th>NET</th><th>産地</th><th>箱番号</th><th>グロス</th><th>仕入単価</th><th>メモ</th></tr></thead><tbody>${details||'<tr><td colspan="11">明細なし</td></tr>'}</tbody></table></div></div></details>`;
+  }).join("");
+}
+async function reviewExternalAssignment(id,action){
+  const isReturn=action==="return";
+  const note=isReturn?prompt("差し戻し理由を入力してください。",""):"";
+  if(isReturn&&note===null)return;
+  if(!isReturn&&!confirm("問屋の入力内容を本社確認済みにしますか？"))return;
+  setAppBusy(true,isReturn?"差し戻しています...":"確認結果を保存しています...");
+  try{
+    const {error}=await supabaseClient.rpc("review_external_work_assignment",{p_assignment_id:id,p_action:action,p_note:note||null});
+    if(error)throw error;
+    await loadExternalAssignments();
+  }catch(error){alert(sitePartnerDbError(error))}
+  finally{setAppBusy(false)}
+}
+function purchaseStatusLabel(status){return {expected:"未照合",invoice_received:"請求書受領",confirmed:"仕入確定",cancelled:"取消"}[status]||status||""}
+async function loadPurchaseReceipts(){
+  if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
+  const state=document.getElementById("purchase-state");state.textContent="読込中...";state.className="pill warn";
+  try{
+    let query=supabaseClient.from("purchase_receipts").select("*").order("purchase_date",{ascending:false}).order("created_at",{ascending:false}).limit(500);
+    const date=val("purchase-filter-date");const site=val("purchase-filter-site");const supplier=val("purchase-filter-supplier").trim();const status=val("purchase-filter-status");
+    if(date)query=query.eq("purchase_date",date);if(site)query=query.eq("site_code",site);if(supplier)query=query.eq("supplier_code",supplier);if(status)query=query.eq("status",status);
+    const {data,error}=await query;if(error)throw error;
+    purchaseReceipts=data||[];
+    const lines=[];const ids=purchaseReceipts.map(row=>row.id);
+    for(let index=0;index<ids.length;index+=200){const result=await supabaseClient.from("purchase_receipt_lines").select("*").in("receipt_id",ids.slice(index,index+200)).order("created_at");if(result.error)throw result.error;lines.push(...(result.data||[]))}
+    const byReceipt=new Map();lines.forEach(line=>{if(!byReceipt.has(line.receipt_id))byReceipt.set(line.receipt_id,[]);byReceipt.get(line.receipt_id).push(line)});
+    purchaseReceipts=purchaseReceipts.map(row=>({...row,lines:byReceipt.get(row.id)||[]}));
+    renderPurchaseReceipts();state.textContent=`${purchaseReceipts.length}件`;state.className="pill blue";
+  }catch(error){state.textContent="読込失敗";document.getElementById("purchase-receipt-list").innerHTML=`<div class="sales-empty">${esc(sitePartnerDbError(error))}</div>`}
+}
+function renderPurchaseReceipts(){
+  const box=document.getElementById("purchase-receipt-list");
+  if(!purchaseReceipts.length){box.innerHTML='<div class="sales-empty">条件に一致する仕入はありません。</div>';return}
+  box.innerHTML=purchaseReceipts.map(receipt=>{
+    const locked=receipt.status==="confirmed";const disabled=locked?"disabled":"";
+    const lines=receipt.lines.map(line=>`<tr><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name)}</td><td><input value="${esc(line.origin||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','origin',this.value)"></td><td><input class="ops-money" inputmode="decimal" value="${esc(line.actual_qty??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_qty',this.value)"></td><td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_unit',this.value)">${purchaseUnitOptions(line.actual_unit)}</select></td><td><input class="ops-money" inputmode="decimal" value="${esc(line.unit_price??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','unit_price',this.value)"></td><td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','price_unit',this.value)">${purchaseUnitOptions(line.price_unit)}</select></td><td class="ops-money">${Number(line.line_amount||0).toLocaleString("ja-JP")}</td><td><input type="checkbox" style="width:18px;min-height:18px" ${line.track_inventory?"checked":""} ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','track_inventory',this.checked)"></td></tr>`).join("");
+    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(receipt.receipt_type==="advance"?"事前仕入":"外部作業")}</span><span>${esc(purchaseStatusLabel(receipt.status))}</span><span class="ops-money">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid"><label>請求書番号<input value="${esc(receipt.supplier_invoice_no||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','supplier_invoice_no',this.value)"></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','tax_amount',this.value)"></label><label>合計<div class="site-readonly">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end"><button class="btn primary" type="button" ${disabled} onclick="confirmPurchaseReceipt('${esc(receipt.id)}')">仕入確定</button></div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税抜金額</th><th>在庫</th></tr></thead><tbody>${lines||'<tr><td colspan="9">明細なし</td></tr>'}</tbody></table></div></div></details>`;
+  }).join("");
+}
+function purchaseUnitOptions(value){return ["Kg","pkt","PC","CS"].map(unit=>`<option value="${unit}" ${String(value||"").toLowerCase()===unit.toLowerCase()?"selected":""}>${unit}</option>`).join("")}
+async function savePurchaseReceiptField(id,field,value){
+  const receipt=purchaseReceipts.find(row=>row.id===id);if(!receipt||receipt.status==="confirmed")return;
+  const numeric=["shipping_fee","other_fee","tax_amount"].includes(field);const clean=numeric?(dbNumber(value)??0):(String(value||"").trim()||null);receipt[field]=clean;
+  const payload={[field]:clean};if(field==="supplier_invoice_no"&&clean)payload.status="invoice_received";
+  payload.total_amount=Number(receipt.subtotal||0)+Number(receipt.shipping_fee||0)+Number(receipt.other_fee||0)+Number(receipt.tax_amount||0);
+  const {error}=await supabaseClient.from("purchase_receipts").update(payload).eq("id",id);if(error){alert(sitePartnerDbError(error));return}receipt.total_amount=payload.total_amount;renderPurchaseReceipts();
+}
+async function savePurchaseLineField(id,field,value){
+  let receipt=null,line=null;for(const row of purchaseReceipts){const found=row.lines.find(item=>item.id===id);if(found){receipt=row;line=found;break}}
+  if(!line||receipt.status==="confirmed")return;const numeric=["actual_qty","unit_price"].includes(field);line[field]=field==="track_inventory"?!!value:numeric?dbNumber(value):(String(value||"").trim()||null);line.line_amount=Number(line.actual_qty||0)*Number(line.unit_price||0);
+  const {error}=await supabaseClient.from("purchase_receipt_lines").update({[field]:line[field],line_amount:line.line_amount}).eq("id",id);if(error){alert(sitePartnerDbError(error));return}
+  receipt.subtotal=receipt.lines.reduce((sum,item)=>sum+Number(item.line_amount||0),0);receipt.total_amount=receipt.subtotal+Number(receipt.shipping_fee||0)+Number(receipt.other_fee||0)+Number(receipt.tax_amount||0);
+  const headerResult=await supabaseClient.from("purchase_receipts").update({subtotal:receipt.subtotal,total_amount:receipt.total_amount}).eq("id",receipt.id);if(headerResult.error){alert(sitePartnerDbError(headerResult.error));return}renderPurchaseReceipts();
+}
+async function confirmPurchaseReceipt(id){
+  const receipt=purchaseReceipts.find(row=>row.id===id);if(!receipt)return;if(!receipt.supplier_invoice_no){alert("請求書番号を入力してください。");return}if(!confirm("数量・単価・請求書を照合済みとして仕入を確定しますか？"))return;
+  setAppBusy(true,"仕入を確定しています...");try{const {error}=await supabaseClient.rpc("confirm_purchase_receipt",{p_receipt_id:id});if(error)throw error;await loadPurchaseReceipts()}catch(error){alert(sitePartnerDbError(error))}finally{setAppBusy(false)}
+}
+function fillAdvancePurchaseProduct(value){const product=findMasterProduct(value,"");if(!product)return;document.getElementById("advance-purchase-product").value=product.code||"";document.getElementById("advance-purchase-name").value=product.name||"";document.getElementById("advance-purchase-origin").value=product.origin||""}
+async function saveAdvancePurchase(){
+  const payload={p_purchase_date:val("advance-purchase-date"),p_site_code:val("advance-purchase-site")||"OSA",p_supplier_code:val("advance-purchase-supplier").trim(),p_product_code:val("advance-purchase-product").trim()||null,p_product_name:val("advance-purchase-name").trim(),p_origin:val("advance-purchase-origin").trim()||null,p_actual_qty:dbNumber(val("advance-purchase-qty")),p_actual_unit:val("advance-purchase-unit"),p_unit_price:dbNumber(val("advance-purchase-price")),p_price_unit:val("advance-purchase-price-unit"),p_supplier_invoice_no:val("advance-purchase-invoice").trim()||null,p_track_inventory:!!document.getElementById("advance-purchase-stock").checked,p_note:val("advance-purchase-note").trim()||null};
+  if(!payload.p_purchase_date||!payload.p_supplier_code||!payload.p_product_name||payload.p_actual_qty===null||payload.p_unit_price===null){alert("仕入日・仕入先・商品・数量・仕入単価を入力してください。");return}
+  setAppBusy(true,"事前仕入を登録しています...");try{const {error}=await supabaseClient.rpc("create_advance_purchase",payload);if(error)throw error;["advance-purchase-product","advance-purchase-name","advance-purchase-origin","advance-purchase-qty","advance-purchase-price","advance-purchase-invoice","advance-purchase-note"].forEach(key=>document.getElementById(key).value="");alert("事前仕入を登録しました。");await loadPurchaseReceipts()}catch(error){alert(sitePartnerDbError(error))}finally{setAppBusy(false)}
+}
 function initialWorkspaceTab(){
   const hash=String(location.hash||"").replace(/^#/,"");
   if(hash==="sales-reference-panel"||hash==="sales")return "sales";
   if(hash==="accounts-receivable-panel"||hash==="receivables"||hash==="ar")return "receivables";
   if(hash==="product-guide-panel"||hash==="guide"||hash==="product-guide")return "guide";
+  if(hash==="external-work-panel"||hash==="external")return "external";
+  if(hash==="purchase-management-panel"||hash==="purchases")return "purchases";
   if(hash==="master-admin-panel"||hash==="master-list"||hash==="masters")return "masters";
   return "orders";
 }
@@ -6338,7 +6621,7 @@ function confirmLeaveImportReview(){
   return confirm("取込内容の確認作業が未完了です。\nこのまま移動すると、確認中の内容が見えなくなります。\n移動しますか？");
 }
 function switchWorkspaceTab(tab,options={}){
-  const target=["orders","sales","receivables","guide","masters"].includes(tab)?tab:"orders";
+  const target=["orders","sales","receivables","guide","external","purchases","masters"].includes(tab)?tab:"orders";
   const current=document.querySelector("[data-workspace-panel].active")?.dataset.workspacePanel||"orders";
   if(target!==current&&!options.skipConfirm&&!confirmLeaveImportReview())return false;
   document.querySelectorAll("[data-workspace-panel]").forEach(panel=>{
@@ -6356,6 +6639,8 @@ function switchWorkspaceTab(tab,options={}){
     if(!receivablesLoaded)loadReceivables();
   }
   if(target==="guide")renderProductGuide();
+  if(target==="external")loadExternalAssignments();
+  if(target==="purchases")loadPurchaseReceipts();
   if(target==="masters")renderMasters();
   window.scrollTo({top:0,behavior:"auto"});
   return true;
@@ -6366,6 +6651,9 @@ function init(){
   document.getElementById("ar-opening-invoice-date").value=today();
   document.getElementById("ar-payment-date").value=today();
   document.getElementById("ar-closing-month").value=today().slice(0,7);
+  document.getElementById("external-work-date").value=today();
+  document.getElementById("purchase-filter-date").value=today();
+  document.getElementById("advance-purchase-date").value=today();
   const guideYear=document.getElementById("product-guide-year");
   if(guideYear&&!guideYear.value)guideYear.value=new Date().getFullYear();
   const guideRange=document.getElementById("product-guide-range");
@@ -6514,6 +6802,16 @@ function toggleMasterAdminPanel(){
 function customer(){
   return {code:val("batch-customer-code").trim(),name:val("batch-customer-name").trim()};
 }
+function currentOrderSiteCode(){
+  return document.getElementById("batch-site-name")?.dataset.siteCode||"OSA";
+}
+function setCurrentOrderSite(siteCode){
+  const code=siteCode==="TYO"?"TYO":"OSA";
+  const el=document.getElementById("batch-site-name");
+  if(!el)return;
+  el.dataset.siteCode=code;
+  el.textContent=code==="TYO"?"東京":"大阪";
+}
 function importer(){
   return {code:val("batch-importer-code").trim(),name:val("batch-importer-name").trim()};
 }
@@ -6525,6 +6823,7 @@ function currentBatch(){
     orderDate:val("order-date"),
     shipDate:val("order-date"),
     note:val("batch-note"),
+    siteCode:currentOrderSiteCode(),
     importer:importer(),
     customer:customer(),
     rows:rows.map(r=>({...r}))
@@ -6539,7 +6838,8 @@ function rowsWithBatchMeta(batch){
     importerCode:batch.importer?.code||"",
     importerName:batch.importer?.name||"",
     customerCode:batch.customer?.code||"",
-    customerName:batch.customer?.name||""
+    customerName:batch.customer?.name||"",
+    siteCode:batch.siteCode||"OSA"
   }));
 }
 function printableRows(){
@@ -6681,6 +6981,7 @@ function resetCurrentOrderForm(){
     const el=document.getElementById(id);
     if(el)el.value="";
   });
+  setCurrentOrderSite("OSA");
   const preview=document.getElementById("line-preview");
   if(preview)preview.textContent="商品コードなしの文面は候補として追加します。最後に商品コード・仕入先を修正してください。";
   hideAllProductSuggestions();
@@ -6693,7 +6994,7 @@ function saveLocal(){
   const data={
     orderDate:val("order-date"),shipDate:val("order-date"),batchNote:val("batch-note"),
     importerCode:val("batch-importer-code"),importerName:val("batch-importer-name"),
-    customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),confirmed,orders,currentImportDraftId,currentOrderAttemptId
+    customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),siteCode:currentOrderSiteCode(),confirmed,orders,currentImportDraftId,currentOrderAttemptId
   };
   localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
   document.getElementById("save-state").textContent="端末保存済み";
@@ -6716,6 +7017,7 @@ function loadLocal(){
     document.getElementById("batch-importer-name").value=data.importerName||"";
     document.getElementById("batch-customer-code").value=data.customerCode||"";
     document.getElementById("batch-customer-name").value=data.customerName||"";
+    setCurrentOrderSite(data.siteCode||"OSA");
     confirmed=!!data.confirmed;
     orders=savedOrders;
     currentImportDraftId=data.currentImportDraftId||"";
@@ -6730,6 +7032,7 @@ function setHeaderCustomer(c,options={}){
   if(!options.skipImporter&&(resolved.importer.code||resolved.importer.name)){
     setHeaderImporter(resolved.importer);
   }
+  setCurrentOrderSite(resolved.master?.siteCode||c.siteCode||"OSA");
 }
 function resolveCustomerWithImporter(c,options={}){
   const source=c||{};
@@ -6748,7 +7051,7 @@ function resolveCustomerWithImporter(c,options={}){
     importer.code=resolvedImporter.code||importer.code;
     importer.name=resolvedImporter.name||importer.name||importer.code;
   }
-  return {customer,importer,master};
+  return {customer,importer,master,siteCode:master?.siteCode||source.siteCode||"OSA"};
 }
 function resolveImporter(input){
   const code=String(input?.code||"").trim();
@@ -7925,7 +8228,10 @@ function setMasterType(type){
   renderMasters();
 }
 function clearMasterForm(){
-  ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name"].forEach(id=>document.getElementById(id).value="");
+  ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("master-site-code").value="OSA";
+  document.getElementById("master-supplier-site-code").value="OSA";
+  document.getElementById("master-external-enabled").checked=false;
 }
 function editMasterItem(index){
   const item=(getMasters()[masterType]||[])[index];
@@ -7944,6 +8250,10 @@ function editMasterItem(index){
   document.getElementById("master-image-url").value=item.imageUrl||item.image_url||"";
   document.getElementById("master-importer-code").value=item.importerCode||item.importer_code||"";
   document.getElementById("master-importer-name").value=item.importerName||item.importer_name||"";
+  document.getElementById("master-site-code").value=item.siteCode||item.site_code||"OSA";
+  document.getElementById("master-external-enabled").checked=!!(item.externalWorkEnabled??item.external_work_enabled);
+  document.getElementById("master-box-prefix").value=item.boxPrefix||item.box_prefix||"";
+  document.getElementById("master-supplier-site-code").value=item.siteCode||item.default_site_code||"OSA";
   document.getElementById("master-code").focus();
   document.getElementById("save-state").textContent=`${item.code||""} を編集中`;
 }
@@ -7978,8 +8288,13 @@ async function addMasterItem(){
   if(masterType==="customers"){
     item.importerCode=val("master-importer-code").trim();
     item.importerName=val("master-importer-name").trim();
+    item.siteCode=val("master-site-code")||"OSA";
   }
-  const result=upsertCustomMaster(masterType,item);
+  if(masterType==="suppliers"){
+    item.externalWorkEnabled=!!document.getElementById("master-external-enabled").checked;
+    item.boxPrefix=val("master-box-prefix").trim().toUpperCase();
+    item.siteCode=val("master-supplier-site-code")||"OSA";
+  }
   if(dbReady&&supabaseClient){
     try{
       await saveMasterItemToDb(masterType,item);
@@ -7987,8 +8302,10 @@ async function addMasterItem(){
     }catch(error){
       alert(dbErrorMessage(error));
       setDbStatus("DB保存失敗");
+      return;
     }
   }
+  const result=upsertCustomMaster(masterType,item);
   clearMasterForm();
   refreshCustomerLists();
   refreshImporterLists();
@@ -8098,8 +8415,10 @@ function renderMasters(){
   refreshMasterCodeList();
   const isProduct=masterType==="products";
   const isCustomer=masterType==="customers";
+  const isSupplier=masterType==="suppliers";
   ["product-en-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap","product-origin-wrap","product-guide-category-wrap","product-guide-spec-wrap","product-image-url-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
-  ["customer-importer-code-wrap","customer-importer-name-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
+  ["customer-importer-code-wrap","customer-importer-name-wrap","customer-site-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
+  ["supplier-external-wrap","supplier-box-prefix-wrap","supplier-default-site-wrap"].forEach(id=>document.getElementById(id).style.display=isSupplier?"flex":"none");
   const masters=getMasters()[masterType]||[];
   const title={products:"商品",customers:"得意先",suppliers:"仕入先",importers:"輸入社"}[masterType];
   document.getElementById("master-list").innerHTML=masters.length?`<div class="hint" style="padding:6px 8px;margin:0;border-bottom:1px solid var(--line)">一覧行をクリックすると上の入力欄へ反映されます。編集後は「マスタ追加/更新」で保存します。</div>`+masters.map((m,index)=>{
@@ -8111,6 +8430,8 @@ function renderMasters(){
       m.guideSpec?`SPEC: ${m.guideSpec}`:"",
       m.imageUrl?"画像あり":"",
       m.importerCode||m.importerName?`輸入社: ${[m.importerCode,m.importerName].filter(Boolean).join(" ")}`:"",
+      m.siteCode?`拠点: ${m.siteCode==="TYO"?"東京":"大阪"}`:"",
+      m.externalWorkEnabled?`外部依頼 / 箱コード: ${m.boxPrefix||"未設定"}`:"",
       (m.aliases||[]).join(", ")
     ].filter(Boolean).join(" / ");
     const deleteBtn=currentUserIsAdmin()
@@ -8154,14 +8475,14 @@ function exportMasters(){
   const importerCodes=masterType==="products"
     ?[...new Set(masters.flatMap(m=>Object.keys(m.contractPrices||m.importer_prices||{})))].sort()
     :[];
-  const header=["type","code","name","english_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","aliases"];
+  const header=["type","code","name","english_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","aliases"];
   const rows=[header,...masters.map(m=>{
     const prices=m.contractPrices||m.importer_prices||{};
     return [
       masterType,m.code,m.name,m.englishName||"",m.supplierCode||"",m.supplierName||"",m.unitPrice||m.unit_price||"",formatContractPrices(prices),
       ...importerCodes.map(code=>prices[code]||""),
       m.origin||"",m.guideCategory||"",m.guideSpec||"",m.imageUrl||"",m.imageSourceUrl||"",m.imageCredit||"",m.imageLicense||"",
-      m.importerCode||"",m.importerName||"",(m.aliases||[]).join("|")
+      m.importerCode||"",m.importerName||"",m.siteCode||"",m.externalWorkEnabled?"1":"",m.boxPrefix||"",(m.aliases||[]).join("|")
     ];
   })];
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
@@ -8310,6 +8631,12 @@ function masterItemFromCsvRow(row,headers,type){
   if(type==="customers"){
     item.importerCode=rowValue(row,headers,["importer_code","importercode","import_code","importcode","輸入社コード","輸入先コード","輸入会社コード","輸入元コード","既定輸入社コード","紐づけ輸入社コード"])||String(row[2]||"").trim();
     item.importerName=rowValue(row,headers,["importer_name","importername","import_name","importname","輸入社名","輸入先名","輸入会社名","輸入元名","既定輸入社名","紐づけ輸入社名"])||String(row[3]||"").trim();
+    item.siteCode=(rowValue(row,headers,["site_code","sitecode","拠点コード","拠点"])||"OSA").toUpperCase()==="TYO"?"TYO":"OSA";
+  }
+  if(type==="suppliers"){
+    item.externalWorkEnabled=["1","true","yes","on","対象","有効"].includes(rowValue(row,headers,["external_work_enabled","externalworkenabled","外部作業","外部入力"]).toLowerCase());
+    item.boxPrefix=rowValue(row,headers,["box_prefix","boxprefix","箱コード","箱番号コード"]).toUpperCase();
+    item.siteCode=(rowValue(row,headers,["site_code","sitecode","default_site_code","拠点コード","既定拠点"])||"OSA").toUpperCase()==="TYO"?"TYO":"OSA";
   }
   return item;
 }

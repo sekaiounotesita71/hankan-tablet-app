@@ -257,6 +257,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       </div>
       <div class="work-start-controls">
         <label>新規作業日<input id="work-session-date" type="date"></label>
+        <label>作業拠点<select id="work-session-site"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label class="work-price-file">価格・産地Excel
           <span class="work-price-file-button">ファイルを選択</span>
           <input id="work-price-origin-file" type="file" accept=".xlsx,.xls" onchange="loadWorkPriceOriginFile(this)">
@@ -369,7 +370,8 @@ let activeCountry=null,activeCustomer={},activeImporter=null,boxMap={},currentPh
 const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2Z2pzY3h5am9zanFxaHh1dHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMTc3ODgsImV4cCI6MjA5NDc5Mzc4OH0.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
 let supabaseClient=null,currentUser=null;
-let currentSessionId=null,currentSessionName="",currentSessionWorkDate="";
+let currentSessionId=null,currentSessionName="",currentSessionWorkDate="",currentSessionSiteCode="OSA";
+let sitePartnerSchemaReady=false;
 let realtimeChannels=[];
 let saveStateTimer=null;
 let importerDisplayNames={};
@@ -1207,7 +1209,7 @@ function importerCodeFromRow(r){
   return importerCode(r.importer_id);
 }
 function rowToOrderLinePayload(r){
-  return{
+  const payload={
     session_id:currentSessionId,
     source_row_no:r._idx+1,
     country_code:r.country||null,
@@ -1230,10 +1232,13 @@ function rowToOrderLinePayload(r){
     is_stockout:!!r._stockout,
     updated_by:currentUser?.id||null
   };
+  if(sitePartnerSchemaReady&&r._sourceOrderLineId)payload.source_order_line_id=r._sourceOrderLineId;
+  return payload;
 }
 function orderLineToLocalRow(dbRow,indexFallback=0){
   return{
     _idx:(dbRow.source_row_no||indexFallback+1)-1,
+    _sourceOrderLineId:dbRow.source_order_line_id||null,
     _qty:dbRow.input_qty??"",
     _net:dbRow.net_weight??"",
     _box:dbRow.box_no||"",
@@ -1298,7 +1303,7 @@ function upsertRemoteOrderLine(dbRow,indexFallback=0){
   return {changed:true,added:false,oldCountry,oldCustomer,row:r};
 }
 function boxToPayload(imp,bn,b){
-  return{
+  const payload={
     session_id:currentSessionId,
     importer_code:imp,
     box_no:bn,
@@ -1435,6 +1440,7 @@ async function deleteSavedSession(event,sessionId,name){
     currentSessionId=null;
     currentSessionName="";
     currentSessionWorkDate="";
+    currentSessionSiteCode="OSA";
     unsubscribeRealtime();
     updateCloudSaveButton();
   }
@@ -1450,6 +1456,7 @@ function resetLocalStateForSession(){
   activeCustomer={};
   activeImporter=null;
   currentSessionWorkDate="";
+  currentSessionSiteCode="OSA";
   document.getElementById("merge-bar").style.display="none";
   document.getElementById("cloud-save-bar").style.display="flex";
   document.getElementById("p1-tabs-wrap").style.display="none";
@@ -1472,13 +1479,18 @@ async function openSavedSession(sessionId){
   currentSessionId=session.id;
   currentSessionName=session.name;
   currentSessionWorkDate=workDateFromSession(session);
+  currentSessionSiteCode=session.site_code||"OSA";
+  sitePartnerSchemaReady=Object.prototype.hasOwnProperty.call(session,"site_code");
   updateCloudSaveButton();
   const nameInput=document.getElementById("session-name-input");
   if(nameInput)nameInput.value=currentSessionName;
   const dateInput=document.getElementById("work-session-date");
   if(dateInput&&currentSessionWorkDate)dateInput.value=currentSessionWorkDate;
+  const siteInput=document.getElementById("work-session-site");
+  if(siteInput)siteInput.value=currentSessionSiteCode;
   rows=(lineData||[]).map((r,i)=>({
     _idx:(r.source_row_no||i+1)-1,
+    _sourceOrderLineId:r.source_order_line_id||null,
     _qty:r.input_qty??"",
     _net:r.net_weight??"",
     _box:r.box_no||"",
@@ -1926,6 +1938,7 @@ function mergeAndRender(){
   currentSessionId=null;
   currentSessionName="";
   currentSessionWorkDate=normalizeWorkDate(document.getElementById("work-session-date")?.value)||localDateValue();
+  currentSessionSiteCode=document.getElementById("work-session-site")?.value||"OSA";
   updateCloudSaveButton();
   buildP1Tabs();
   document.getElementById("merge-bar").style.display="none";
@@ -1959,11 +1972,12 @@ async function saveCurrentSessionToSupabase(){
   currentSessionName=(nameInput?.value||"").trim()||currentSessionName||suggestSessionName();
   if(nameInput)nameInput.value=currentSessionName;
   currentSessionWorkDate=currentWorkDateValue();
-  const sessionPayload={name:currentSessionName,status:"active",work_date:currentSessionWorkDate,source_order_filename:latestOrderFilename||null,source_master_filename:latestMasterFilename||null};
+  currentSessionSiteCode=document.getElementById("work-session-site")?.value||currentSessionSiteCode||"OSA";
+  const sessionPayload={name:currentSessionName,status:"active",work_date:currentSessionWorkDate,site_code:currentSessionSiteCode||"OSA",source_order_filename:latestOrderFilename||null,source_master_filename:latestMasterFilename||null};
   if(!currentSessionId){
     let {data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...sessionPayload,created_by:currentUser.id}).select("id,name").single();
-    if(sessionError?.code==="42703"&&/work_date/i.test(String(sessionError.message||""))){
-      const {work_date,...legacyPayload}=sessionPayload;
+    if(sessionError?.code==="42703"&&/(work_date|site_code)/i.test(String(sessionError.message||""))){
+      const {work_date,site_code,...legacyPayload}=sessionPayload;
       ({data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...legacyPayload,created_by:currentUser.id}).select("id,name").single());
     }
     if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業作成エラー: "+sessionError.message);return}
@@ -1971,8 +1985,8 @@ async function saveCurrentSessionToSupabase(){
     updateCloudSaveButton();
   }else{
     let {error:sessionError}=await supabaseClient.from("work_sessions").update(sessionPayload).eq("id",currentSessionId);
-    if(sessionError?.code==="42703"&&/work_date/i.test(String(sessionError.message||""))){
-      const {work_date,...legacyPayload}=sessionPayload;
+    if(sessionError?.code==="42703"&&/(work_date|site_code)/i.test(String(sessionError.message||""))){
+      const {work_date,site_code,...legacyPayload}=sessionPayload;
       ({error:sessionError}=await supabaseClient.from("work_sessions").update(legacyPayload).eq("id",currentSessionId));
     }
     if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業更新エラー: "+sessionError.message);return}
@@ -3213,7 +3227,7 @@ function salesRecordPayloadTrial(row,finalizedAt=""){
   const box=row._box?(boxMap[imp]?.[row._box]||{}):{};
   const qty=numberOrNull(row._qty);
   const price=numberOrNull(row.unit_price);
-  return{
+  const payload={
     session_id:currentSessionId,
     source_row_no:row._idx+1,
     work_date:currentWorkDateValue(),
@@ -3243,6 +3257,8 @@ function salesRecordPayloadTrial(row,finalizedAt=""){
     memo:row._memo||null,
     is_stockout:!!row._stockout
   };
+  if(sitePartnerSchemaReady)payload.site_code=currentSessionSiteCode||"OSA";
+  return payload;
 }
 async function finalizeSalesTrial(){
   if(!currentSessionId){
@@ -3411,6 +3427,28 @@ async function syncFinalizedSessionToReceivables(workDate,shippingFees){
   if((data||[]).length!==payloads.length)throw new Error(`売掛の反映件数が一致しません（入力 ${payloads.length}件 / DB ${(data||[]).length}件）`);
   return payloads.length;
 }
+async function confirmOutstandingExternalWorkBeforeSales(){
+  if(!sitePartnerSchemaReady)return true;
+  const {data,error}=await supabaseClient
+    .from("external_work_assignments")
+    .select("id,supplier_code,supplier_name_snapshot,status")
+    .eq("work_date",currentWorkDateValue())
+    .eq("site_code",currentSessionSiteCode||"OSA")
+    .not("status","in","(accepted,cancelled)");
+  if(error){
+    if(error.code==="42P01")return true;
+    alert("外部作業の完了状態を確認できないため、売上確定を中止しました: "+error.message);
+    return false;
+  }
+  const outstanding=data||[];
+  if(!outstanding.length)return true;
+  const label=outstanding.map(row=>`${row.supplier_code} ${row.supplier_name_snapshot||""}（${row.status}）`).join("\n");
+  if(!currentUserIsAdmin()){
+    alert(`未確認の外部作業があります。管理者が確認または差し戻しを完了してください。\n\n${label}`);
+    return false;
+  }
+  return confirm(`未確認の外部作業が ${outstanding.length}件あります。管理者権限で売上確定を続けますか？\n\n${label}`);
+}
 finalizeSalesTrial=async function(){
   if(!currentSessionId){
     await saveCurrentSessionToSupabase();
@@ -3418,6 +3456,7 @@ finalizeSalesTrial=async function(){
   }
   if(currentSessionLocked){toast("すでに売上確定済みです");return}
   if(!(await checkSalesLockSetupTrial()))return;
+  if(!(await confirmOutstandingExternalWorkBeforeSales()))return;
   const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
   if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
   if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
@@ -3479,7 +3518,7 @@ function sessionListTimeTrial(session){
 function sessionListItemHtmlTrial(session,isFinalized){
   const name=esc(session.name||"(名称なし)");
   const status=esc(sessionListStatusLabelTrial(session));
-  const time=esc(sessionListTimeTrial(session));
+  const time=esc(`${session.site_code==="TYO"?"東京":"大阪"} / ${sessionListTimeTrial(session)}`);
   const finalizedClass=isFinalized?" session-finalized":"";
   const finalizedBadge=isFinalized?`<span class="session-locked-badge">売上確定済み</span>`:`<span class="export-option-badge partial">${status}</span>`;
   const deleteButton=isFinalized?"":`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`;
@@ -5500,7 +5539,7 @@ function workPriceOriginSummaryText(summary){
   if(!summary)return "";
   return `価格表照合 ${summary.matched}/${summary.total}件（未一致 ${summary.unmatched}・候補複数 ${summary.ambiguous}）`;
 }
-function orderEntryLineToWorkRow(batch,line,index){
+function orderEntryLineToWorkRow(batch,line,index,externalWork=null){
   const importer=batch.importer_code||batch.importer_name_snapshot||"";
   const importerName=batch.importer_name_snapshot||"";
   rememberImporterDisplayName(importer,importerName);
@@ -5508,13 +5547,14 @@ function orderEntryLineToWorkRow(batch,line,index){
   const price=workMasterPriceResolution(line.unit_price,master,importer);
   return {
     _idx:index,
-    _qty:"",
-    _net:"",
-    _box:"",
-    _memo:line.purchase_note||"",
+    _sourceOrderLineId:line.id||null,
+    _qty:externalWork?.input_qty??"",
+    _net:externalWork?.net_weight??"",
+    _box:externalWork?.boxLabel||"",
+    _memo:[line.purchase_note||"",externalWork?.memo||""].filter(Boolean).join(" / "),
     _priceSourceText:line.source_text||"",
-    _unit:"Kg",
-    _stockout:false,
+    _unit:externalWork?.input_unit||"Kg",
+    _stockout:!!externalWork?.is_stockout,
     customer:batch.customer_name_snapshot||batch.customer_code||"UNKNOWN_STORE",
     product_id:line.product_code||"",
     product_name:line.product_name_snapshot||"-",
@@ -5522,7 +5562,7 @@ function orderEntryLineToWorkRow(batch,line,index){
     csv_qty:line.order_qty??"",
     en_name:line.english_name_snapshot||"",
     sci_name:"",
-    origin:workOriginRomanize(line.origin||""),
+    origin:workOriginRomanize(externalWork?.origin||line.origin||""),
     unit_price:price.value,
     _priceSource:price.source,
     _masterOrigin:workOriginRomanize(master.origin||""),
@@ -5531,16 +5571,34 @@ function orderEntryLineToWorkRow(batch,line,index){
     country:countryCode(importer)
   };
 }
-function loadConfirmedOrderBatchesForWork(orderDate){
-  return readAllWorkRows((from,to)=>supabaseClient
-    .from("order_entry_batches")
-    .select("id,order_date,ship_date,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,source_type,note,created_at")
-    .eq("status","confirmed")
-    .eq("order_date",orderDate)
-    .order("importer_code",{ascending:true})
-    .order("customer_name_snapshot",{ascending:true})
-    .order("id",{ascending:true})
-    .range(from,to),500);
+async function loadConfirmedOrderBatchesForWork(orderDate,siteCode="OSA"){
+  try{
+    const data=await readAllWorkRows((from,to)=>supabaseClient
+      .from("order_entry_batches")
+      .select("id,order_date,ship_date,site_code,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,source_type,note,created_at")
+      .eq("status","confirmed")
+      .eq("order_date",orderDate)
+      .eq("site_code",siteCode)
+      .order("importer_code",{ascending:true})
+      .order("customer_name_snapshot",{ascending:true})
+      .order("id",{ascending:true})
+      .range(from,to),500);
+    sitePartnerSchemaReady=true;
+    return data;
+  }catch(error){
+    if(!(error?.code==="42703"||/site_code|schema cache/i.test(String(error?.message||""))))throw error;
+    sitePartnerSchemaReady=false;
+    if(siteCode!=="OSA")throw new Error("東京拠点を使うには site-partner-purchase-migration.sql を実行してください。");
+    return readAllWorkRows((from,to)=>supabaseClient
+      .from("order_entry_batches")
+      .select("id,order_date,ship_date,importer_code,importer_name_snapshot,customer_code,customer_name_snapshot,source_type,note,created_at")
+      .eq("status","confirmed")
+      .eq("order_date",orderDate)
+      .order("importer_code",{ascending:true})
+      .order("customer_name_snapshot",{ascending:true})
+      .order("id",{ascending:true})
+      .range(from,to),500);
+  }
 }
 async function loadConfirmedOrderLinesForWork(batchIds){
   const lines=[];
@@ -5557,10 +5615,54 @@ async function loadConfirmedOrderLinesForWork(batchIds){
   }
   return lines;
 }
+async function loadAcceptedExternalInputsForWork(workDate,siteCode){
+  if(!sitePartnerSchemaReady)return new Map();
+  const {data:assignments,error:assignmentError}=await supabaseClient
+    .from("external_work_assignments")
+    .select("id,box_prefix_snapshot")
+    .eq("work_date",workDate)
+    .eq("site_code",siteCode)
+    .eq("status","accepted");
+  if(assignmentError){
+    if(assignmentError.code==="42P01")return new Map();
+    throw assignmentError;
+  }
+  const assignmentIds=(assignments||[]).map(row=>row.id);
+  if(!assignmentIds.length)return new Map();
+  const prefixByAssignment=new Map((assignments||[]).map(row=>[row.id,row.box_prefix_snapshot||""]));
+  const {data:externalLines,error:lineError}=await supabaseClient
+    .from("external_work_assignment_lines")
+    .select("id,assignment_id,order_line_id,importer_code")
+    .in("assignment_id",assignmentIds)
+    .eq("active",true);
+  if(lineError)throw lineError;
+  const externalLineIds=(externalLines||[]).map(row=>row.id);
+  if(!externalLineIds.length)return new Map();
+  const inputs=[];
+  for(let index=0;index<externalLineIds.length;index+=300){
+    const {data,error}=await supabaseClient.from("external_work_inputs").select("*").in("assignment_line_id",externalLineIds.slice(index,index+300));
+    if(error)throw error;
+    inputs.push(...(data||[]));
+  }
+  const inputByExternalLine=new Map(inputs.map(input=>[input.assignment_line_id,input]));
+  const result=new Map();
+  (externalLines||[]).forEach(line=>{
+    const input=inputByExternalLine.get(line.id);
+    if(!input||!line.order_line_id)return;
+    const prefix=prefixByAssignment.get(line.assignment_id)||"";
+    result.set(line.order_line_id,{
+      ...input,
+      importerCode:line.importer_code||"",
+      boxLabel:[prefix,input.box_sequence].filter(Boolean).join("-")
+    });
+  });
+  return result;
+}
 async function createWorkSessionFromConfirmedOrders(){
   if(!(await requireSupabaseLogin()))return;
   const dateInput=document.getElementById("work-session-date");
   const date=normalizeWorkDate(dateInput?.value);
+  const siteCode=document.getElementById("work-session-site")?.value||"OSA";
   if(!date){
     alert("新しい作業を作成する作業日を選択してください。");
     dateInput?.focus();
@@ -5580,12 +5682,26 @@ async function createWorkSessionFromConfirmedOrders(){
   }
   let existing;
   try{
-    existing=await readAllWorkRows((from,to)=>supabaseClient
-      .from("work_sessions")
-      .select("*")
-      .eq("work_date",date)
-      .order("updated_at",{ascending:false})
-      .range(from,to),500);
+    try{
+      existing=await readAllWorkRows((from,to)=>supabaseClient
+        .from("work_sessions")
+        .select("*")
+        .eq("work_date",date)
+        .eq("site_code",siteCode)
+        .order("updated_at",{ascending:false})
+        .range(from,to),500);
+      sitePartnerSchemaReady=true;
+    }catch(schemaError){
+      if(!(schemaError?.code==="42703"||/site_code|schema cache/i.test(String(schemaError?.message||""))))throw schemaError;
+      sitePartnerSchemaReady=false;
+      if(siteCode!=="OSA")throw new Error("東京拠点を使うには site-partner-purchase-migration.sql を実行してください。");
+      existing=await readAllWorkRows((from,to)=>supabaseClient
+        .from("work_sessions")
+        .select("*")
+        .eq("work_date",date)
+        .order("updated_at",{ascending:false})
+        .range(from,to),500);
+    }
   }catch(error){
     toast("作業一覧確認エラー: "+error.message);
     return;
@@ -5595,7 +5711,7 @@ async function createWorkSessionFromConfirmedOrders(){
   setSaveState("受注確定データを読込中...");
   let batches;
   try{
-    batches=await loadConfirmedOrderBatchesForWork(date);
+    batches=await loadConfirmedOrderBatchesForWork(date,siteCode);
   }catch(error){
     setSaveState("受注読込失敗",true);
     toast("受注読込エラー: "+error.message);
@@ -5616,10 +5732,18 @@ async function createWorkSessionFromConfirmedOrders(){
     if(!byBatch.has(line.batch_id))byBatch.set(line.batch_id,[]);
     byBatch.get(line.batch_id).push(line);
   });
+  let acceptedExternalInputs=new Map();
+  try{
+    acceptedExternalInputs=await loadAcceptedExternalInputsForWork(date,siteCode);
+  }catch(error){
+    setSaveState("外部入力読込失敗",true);
+    toast("外部入力読込エラー: "+error.message);
+    return;
+  }
   const nextRows=[];
   batches.forEach(batch=>{
     (byBatch.get(batch.id)||[]).forEach(line=>{
-      nextRows.push(orderEntryLineToWorkRow(batch,line,nextRows.length));
+      nextRows.push(orderEntryLineToWorkRow(batch,line,nextRows.length,acceptedExternalInputs.get(line.id)));
     });
   });
   if(!nextRows.length){setSaveState("明細なし");toast(`${date} の受注明細がありません`);return}
@@ -5633,14 +5757,23 @@ async function createWorkSessionFromConfirmedOrders(){
   currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
   currentSessionWorkDate=date;
+  currentSessionSiteCode=siteCode;
   latestOrderFilename=`order-entry:${date}`;
   latestMasterFilename=workPriceOriginFilename?`Supabase master + ${workPriceOriginFilename}`:"Supabase master";
   importIdentityConfirmed=true;
   rows=nextRows;
+  boxMap={};
+  acceptedExternalInputs.forEach(input=>{
+    if(!input.boxLabel)return;
+    const imp=importerCode(input.importerCode);
+    if(!imp)return;
+    if(!boxMap[imp])boxMap[imp]={};
+    boxMap[imp][input.boxLabel]={gross:input.gross_weight??"",dry_ice:input.dry_ice_weight??"",dry_ice_enabled:!!input.dry_ice_enabled,box_size:input.box_size||""};
+  });
   syncOrderRowsFromRows();
   const importers=[...new Set(rows.map(row=>importerCode(row.importer_id)).filter(Boolean))].sort();
   const importerNames=importers.map(importerDisplayName);
-  currentSessionName=`${date} ${importerNames.length?importerNames.join("/"):"受注"} 作業`;
+  currentSessionName=`${date} ${siteCode==="TYO"?"東京":"大阪"} ${importerNames.length?importerNames.join("/"):"受注"} 作業`;
   const nameInput=document.getElementById("session-name-input");
   if(nameInput)nameInput.value=currentSessionName;
   activeCountry=null;
@@ -5651,7 +5784,7 @@ async function createWorkSessionFromConfirmedOrders(){
   document.getElementById("p2-empty").style.display="none";
   document.getElementById("cloud-save-bar").style.display="flex";
   const priceOriginText=workPriceOriginSummaryText(priceOriginSummary);
-  document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${batches.length}得意先 / ${rows.length}明細 / ${masterPriceSummary}${priceOriginText?` / ${priceOriginText}`:""}`;
+  document.getElementById("cloud-save-info").textContent=`受注確定データから作成: ${date} / ${siteCode==="TYO"?"東京":"大阪"} / ${batches.length}得意先 / ${rows.length}明細 / 外部反映 ${acceptedExternalInputs.size}件 / ${masterPriceSummary}${priceOriginText?` / ${priceOriginText}`:""}`;
   document.getElementById("export-btn").disabled=false;
   setWorkStartPanelVisible(false);
   updateCloudSaveButton();
