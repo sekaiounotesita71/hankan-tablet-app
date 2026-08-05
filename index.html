@@ -1400,6 +1400,31 @@ function saveOrderLineToSupabase(row){
   task.finally(()=>{if(orderLineSaveQueues.get(key)===task)orderLineSaveQueues.delete(key)});
   return task;
 }
+function updateOrderLineFieldsToSupabase(row,fields){
+  if(!requireEditableTrial())return Promise.resolve(false);
+  if(!currentSessionId||!currentUser||!supabaseClient)return Promise.resolve(false);
+  const sourceRowNo=row._idx+1;
+  const key=`${currentSessionId}:${sourceRowNo}`;
+  const payload={...fields,updated_by:currentUser.id};
+  const previous=orderLineSaveQueues.get(key)||Promise.resolve();
+  const task=previous.catch(()=>{}).then(async()=>{
+    setSaveState("Supabase: 保存中...");
+    const {data,error}=await supabaseClient
+      .from("order_lines")
+      .update(payload)
+      .eq("session_id",currentSessionId)
+      .eq("source_row_no",sourceRowNo)
+      .select("source_row_no")
+      .maybeSingle();
+    if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return false}
+    if(!data){setSaveState("Supabase: 保存失敗",true);toast("明細を保存できませんでした。作業一覧から開き直してください");return false}
+    setSaveState("Supabase: 保存済み");
+    return true;
+  });
+  orderLineSaveQueues.set(key,task);
+  task.finally(()=>{if(orderLineSaveQueues.get(key)===task)orderLineSaveQueues.delete(key)});
+  return task;
+}
 async function saveBoxToSupabase(imp,bn){
   if(!currentSessionId||!currentUser||!supabaseClient||!boxMap[imp]?.[bn])return;
   setSaveState("Supabase: 保存中...");
@@ -2273,13 +2298,16 @@ function scheduleP15Refresh(){
   };
   p15RefreshTimer=setTimeout(refresh,250);
 }
-function saveP15Field(rowIdx,field,value){
+async function saveP15Field(rowIdx,field,value){
   const row=rows[rowIdx];
   if(!row||!(field==="origin"||field==="unit_price"))return;
   const next=String(value||"").trim();
   if(row[field]===next)return;
+  const previous=row[field];
   row[field]=next;
-  saveOrderLineToSupabase(row);
+  const dbValue=field==="unit_price"?numberOrNull(next):(next||null);
+  const saved=await updateOrderLineFieldsToSupabase(row,{[field]:dbValue});
+  if(!saved)row[field]=previous;
   scheduleP15Refresh();
 }
 function setImportPanelVisible(visible){
