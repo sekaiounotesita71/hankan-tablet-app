@@ -3,7 +3,7 @@ param(
   [string]$BackupFile,
   [string]$DriveId = $env:YUMIRUME_ONEDRIVE_DRIVE_ID,
   [int]$DailyRetentionDays = 90,
-  [int]$MonthlyRetentionDays = 3650
+  [int]$MonthlyRetentionDays = 3660
 )
 
 $ErrorActionPreference = "Stop"
