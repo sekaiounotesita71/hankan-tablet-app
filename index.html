@@ -1328,6 +1328,7 @@ function boxToPayload(imp,bn,b){
     box_size:b.box_size||null,
     updated_by:currentUser?.id||null
   };
+  return payload;
 }
 async function requireSupabaseLogin(){
   if(!supabaseClient)initSupabase();
