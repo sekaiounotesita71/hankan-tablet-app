@@ -61,6 +61,7 @@ try {
     table_count = [int]$manifest.table_count
     row_count = [long]$manifest.total_rows
     monthly_copy = [bool]$upload.monthly_copy
+    yearly_copy = [bool]$upload.yearly_copy
   }
 
   if ($env:GITHUB_OUTPUT) {

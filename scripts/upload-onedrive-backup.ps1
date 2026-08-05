@@ -3,7 +3,7 @@ param(
   [string]$BackupFile,
   [string]$DriveId = $env:YUMIRUME_ONEDRIVE_DRIVE_ID,
   [int]$DailyRetentionDays = 90,
-  [int]$MonthlyRetentionDays = 1095
+  [int]$MonthlyRetentionDays = 3650
 )
 
 $ErrorActionPreference = "Stop"
@@ -163,12 +163,17 @@ function Get-JapanNow {
 $appRoot = Invoke-GraphJson -Method Get -Uri "$graphBase/special/approot"
 $dailyFolder = Get-OrCreateFolder -ParentId $appRoot.id -Name "daily"
 $monthlyFolder = Get-OrCreateFolder -ParentId $appRoot.id -Name "monthly"
+$yearlyFolder = Get-OrCreateFolder -ParentId $appRoot.id -Name "yearly"
 
 $dailyResult = Send-OneDriveFile -FolderId $dailyFolder.id -FilePath $BackupFile
 $japanNow = Get-JapanNow
 $isMonthEnd = $japanNow.AddDays(1).Month -ne $japanNow.Month
+$isYearEnd = $isMonthEnd -and $japanNow.Month -eq 12
 if ($isMonthEnd) {
   Send-OneDriveFile -FolderId $monthlyFolder.id -FilePath $BackupFile | Out-Null
+}
+if ($isYearEnd) {
+  Send-OneDriveFile -FolderId $yearlyFolder.id -FilePath $BackupFile | Out-Null
 }
 
 Remove-ExpiredFiles -FolderId $dailyFolder.id -RetentionDays $DailyRetentionDays
@@ -179,4 +184,5 @@ Remove-ExpiredFiles -FolderId $monthlyFolder.id -RetentionDays $MonthlyRetention
   folder_path = "Apps/Yumirume Cloud Backup/daily"
   web_url = $dailyResult.webUrl
   monthly_copy = $isMonthEnd
+  yearly_copy = $isYearEnd
 }
