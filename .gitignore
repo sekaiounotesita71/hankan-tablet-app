@@ -3,3 +3,4 @@ Thumbs.db
 *.xlsx
 *.csv
 node_modules/
+backups/
