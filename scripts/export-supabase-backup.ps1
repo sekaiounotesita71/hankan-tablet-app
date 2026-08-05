@@ -69,11 +69,9 @@ try {
         apikey = $serviceRoleKey
         Authorization = "Bearer $serviceRoleKey"
         Accept = "application/json"
-        "Range-Unit" = "items"
-        Range = "$offset-$($offset + $PageSize - 1)"
       }
       $order = (($tableOrder[$table] -split ",") | ForEach-Object { "$_.asc" }) -join ","
-      $uri = "$ProjectUrl/rest/v1/$table`?select=*&order=$([uri]::EscapeDataString($order))"
+      $uri = "$ProjectUrl/rest/v1/$table`?select=*&order=$([uri]::EscapeDataString($order))&limit=$PageSize&offset=$offset"
       $response = Invoke-WebRequest -Method Get -Uri $uri -Headers $headers -UserAgent $backupUserAgent -UseBasicParsing
       $rawPage = [string]$response.Content
       $page = @($rawPage | ConvertFrom-Json)
