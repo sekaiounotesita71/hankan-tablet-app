@@ -31,6 +31,9 @@
 - `audit-backup-restore-migration.sql`
   受注・作業・売上・売掛・仕入・買掛・マスタの変更履歴と、管理者による安全な単票復元、手動バックアップを追加するSQLです。
 
+- `scheduled-business-snapshot-migration.sql`
+  毎日19:00（日本時間）に主要業務データのスナップショットを自動作成するSQLです。`audit-backup-restore-migration.sql` の後に1回実行します。
+
 - `scripts/export-supabase-backup.ps1`
   Supabaseの主要データをOneDrive配下へZIP保存する外部バックアップ用スクリプトです。秘密鍵は環境変数からだけ読み込みます。
 
@@ -145,4 +148,5 @@ CSV更新時は商品コード単位で上書きされます。CSVに含まれ�
 - 同じレコードの最新の更新・削除だけ、理由入力後に変更前へ戻せます。
 - 復元操作も監査ログへ記録されます。
 - `手動バックアップ作成` はSupabase内へ現在値を保存します。
+- `scheduled-business-snapshot-migration.sql` 実行後は、毎日19:00（日本時間）に自動バックアップが作成されます。
 - Supabase障害にも備える外部バックアップは `BACKUP-AND-RESTORE.md` の手順でOneDriveへ保存します。
