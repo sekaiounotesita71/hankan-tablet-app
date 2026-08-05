@@ -6,9 +6,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="./i18n.js?v=20260724-soa"></script>
+<script src="./i18n.js?v=20260805-home"></script>
 <script data-soa-logo>window.YUMIRUME_SOA_LOGO="data:image/jpeg;base64,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";</script>
-<title>受注登録</title>
+<title>販売・業務管理</title>
 <style>
 :root{
   --bg:#f5f6f7;--panel:#fff;--line:#d8dde3;--line2:#b8c0ca;--text:#15181c;--muted:#64707d;
@@ -23,10 +23,11 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .app-nav{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:9px;background:#f7f9fb;padding:4px}
 .app-nav-link{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--muted);text-decoration:none;font-size:12px;font-weight:900;white-space:nowrap;cursor:pointer}
 .app-nav-link.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.app-nav-divider{width:1px;height:22px;flex:0 0 1px;margin:0 3px;background:var(--line)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
 .language-switch{height:40px;min-width:58px;border:1px solid var(--line2);border-radius:8px;background:#fff;color:var(--text);font-weight:900;cursor:pointer}
 main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:1fr;gap:12px}.workspace-panel{display:none!important}.workspace-panel.active{display:block!important}.workspace-panel.layout.active{display:grid!important}.workspace-action-hidden{display:none!important}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
-.auth-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}.auth-bar input{width:220px;min-height:36px}.auth-bar .btn{height:36px}.auth-bar .pill{min-height:28px}
+.auth-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}.auth-bar input{width:220px;min-height:36px}.auth-bar .btn{flex:0 0 auto;min-width:82px;height:36px;white-space:nowrap}.auth-bar .pill{min-height:28px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .price{width:96px;text-align:right;font-family:Consolas,monospace}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
@@ -35,6 +36,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .workspace-panel.import-review-hidden{display:none!important}.import-review-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.import-review-search{height:38px;min-width:240px;flex:1;border:1px solid var(--line2);border-radius:7px;padding:0 9px;font-weight:700}.import-review-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:900}.import-review-check input{width:auto;min-height:auto}.import-review-table-wrap{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}.import-review-table{width:100%;min-width:1860px;border-collapse:separate;border-spacing:0}.import-review-table th,.import-review-table td{padding:6px 7px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.import-review-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.import-review-table tbody tr.review-error td{background:#fff0ef}.import-review-table tbody tr.review-warning td{background:#fff8e8}.import-review-table tbody tr.review-ready td{background:#f2faf5}.import-review-table input{height:34px;min-height:34px;border-radius:6px}.import-review-importer{width:110px;font-family:Consolas,monospace}.import-review-code{width:105px;font-family:Consolas,monospace;text-transform:uppercase}.import-review-customer-code{width:120px;font-family:Consolas,monospace}.import-review-customer{width:210px}.import-review-product{width:240px}.import-review-qty{width:82px;text-align:right}.import-review-unit{width:76px}.import-review-price{width:96px;text-align:right;font-family:Consolas,monospace}.import-review-supplier-code{width:110px;font-family:Consolas,monospace}.import-review-supplier{width:170px}.import-review-memo{width:220px}.import-review-status{font-weight:900}.import-review-status.error{color:#b42318}.import-review-status.warning{color:#a16207}.import-review-status.ready{color:#0f7a3b}.import-review-meta{color:var(--muted);font-weight:800;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .import-review-table tbody tr.review-ready td{background:#eef6ff}.import-review-status.ready{color:var(--blue)}.small.primary{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}.small:disabled{opacity:.45;cursor:not-allowed;background:#f3f5f7;color:var(--muted);border-color:var(--line)}
 .master-tabs{display:flex;gap:6px;margin-bottom:8px}.master-tabs button{flex:1}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.home-workspace{display:grid;gap:14px}.home-intro{padding:4px 2px 12px;border-bottom:1px solid var(--line)}.home-intro h1{margin:0;font-size:22px;letter-spacing:0}.home-intro p{margin:5px 0 0;color:var(--muted);font-weight:800}.home-group{display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}.home-group:last-child{border-bottom:0}.home-group-title{padding:4px 0 4px 12px;border-left:5px solid var(--accent);font-size:15px;font-weight:900}.home-group-title span{display:block;margin-top:4px;color:var(--muted);font-size:11px;font-weight:800}.home-group.flow-sales .home-group-title{border-left-color:var(--blue)}.home-group.flow-purchase .home-group-title{border-left-color:#b7791f}.home-group.flow-master .home-group-title{border-left-color:#6b4f8a}.home-command-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.home-command{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;min-height:62px;padding:10px 12px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);text-decoration:none;text-align:left;cursor:pointer}.home-command:hover{border-color:#7f8c99;background:#fbfcfd}.home-command b{font-size:14px}.home-command>span{display:block;margin:0;color:inherit;font-size:inherit}.home-command>span>span{display:block;margin-top:3px;color:var(--muted);font-size:11px;font-weight:800}.home-command::after{content:'›';color:var(--muted);font-size:22px;font-weight:700}.home-command.disabled{background:#f3f5f7;color:var(--muted);cursor:default}.home-command.disabled::after{content:'準備中';font-size:11px}.master-return-bar{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding:9px 10px;border:1px solid #a9c8b8;border-radius:7px;background:var(--accent-bg);color:var(--accent);font-weight:900}.master-return-bar.open{display:flex}.master-view-hidden{display:none!important}.quick-master-button{width:38px;min-width:38px;height:38px;border:1px solid var(--accent);border-radius:7px;background:var(--accent-bg);color:var(--accent);font-weight:900;cursor:pointer}
 .pending-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.pending-grid .wide{grid-column:span 2}.pending-grid .full{grid-column:1/-1}.pending-list{display:grid;gap:8px}.pending-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}.pending-card.hold{background:#fffaf0}.pending-card.applied{opacity:.68}.pending-card.cancelled{opacity:.52}.pending-main{display:grid;gap:4px}.pending-title{font-weight:900}.pending-meta{color:var(--muted);font-size:12px;font-weight:800}.pending-amount{font-family:Consolas,monospace;font-weight:900}.pending-amount.negative{color:var(--danger)}.pending-actions{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
 .pending-save-note{display:flex;align-items:center;min-height:40px;color:var(--muted);font-size:12px;font-weight:900}
 .sales-board-tools{display:grid;grid-template-columns:230px 160px minmax(220px,1fr) auto auto;gap:8px;align-items:end}.sales-board-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.sales-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.sales-card-label{color:var(--muted);font-size:12px;font-weight:900}.sales-card-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.sales-board-ranks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:10px}.sales-rank{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}.sales-rank-head{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#fbfcfd;color:var(--muted);font-size:12px;font-weight:900}.sales-rank-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-rank-row:last-child{border-bottom:0}.sales-rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}.sales-rank-value{font-family:Consolas,monospace;color:var(--muted);font-weight:900}.sales-shipping-panel{margin-top:10px;border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden}.sales-shipping-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-bottom:1px solid var(--line);background:#fbfcfd;font-size:12px;font-weight:900}.sales-shipping-list{max-height:240px;overflow:auto}.sales-shipping-row{display:grid;grid-template-columns:110px minmax(180px,1fr) minmax(180px,1fr) 120px auto;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #eef1f4;font-size:12px}.sales-shipping-row:last-child{border-bottom:0}.sales-shipping-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.sales-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.sales-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.sales-table th,.sales-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.sales-table th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-weight:900}.sales-empty{padding:18px;color:var(--muted);font-weight:800;text-align:center}.sales-correction-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.sales-correction-grid .wide{grid-column:span 2}.sales-correction-grid .full{grid-column:1/-1}.sales-correction-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.sales-analysis{display:grid;gap:8px;margin-top:10px}.sales-analysis-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}.sales-analysis-title{font-weight:900}.sales-analysis-note{color:var(--muted);font-size:12px;font-weight:800}.sales-analysis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.sales-compare-card{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px}.sales-compare-main{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.sales-compare-sub{margin-top:4px;color:var(--muted);font-size:12px;font-weight:800}.sales-delta{display:inline-flex;margin-top:7px;padding:3px 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:12px;font-weight:900}.sales-delta.positive{background:#eaf7ef;color:#0f7a3b}.sales-delta.negative{background:#fff0ef;color:#b42318}.sales-analysis-tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}.sales-analysis-table{border:1px solid var(--line);border-radius:8px;overflow:auto;background:#fff;max-height:260px}.sales-analysis-table table{width:100%;border-collapse:separate;border-spacing:0}.sales-analysis-table th,.sales-analysis-table td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap;text-align:left}.sales-analysis-table th{position:sticky;top:0;background:#f7f9fb;color:var(--muted);font-weight:900}.sales-analysis-table caption{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:900;background:#fbfcfd}
@@ -51,7 +53,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .ops-tools{display:grid;grid-template-columns:170px 150px minmax(190px,1fr) minmax(180px,1fr) auto auto;gap:8px;align-items:end}.ops-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.ops-table-wrap{max-height:560px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ops-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.ops-table th,.ops-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.ops-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ops-table input,.ops-table select{height:34px;min-height:34px;border-radius:6px}.ops-table tr.submitted td{background:#fff8e8}.ops-table tr.accepted td{background:#eef8f2}.ops-table tr.returned td{background:#fff0ef}.ops-actions{display:flex;gap:5px;align-items:center}.ops-money{text-align:right;font-family:Consolas,monospace;font-weight:900}.purchase-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-form .wide{grid-column:span 2}.purchase-form .full{grid-column:1/-1}.purchase-receipt{border-bottom:1px solid var(--line)}.purchase-receipt summary{display:grid;grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 120px auto;gap:8px;align-items:center;padding:9px 10px;cursor:pointer;font-weight:900;background:#fff}.purchase-receipt summary:hover{background:#f7f9fb}.purchase-detail{padding:10px;border-top:1px solid var(--line);background:#fbfcfd}.purchase-detail-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-detail-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0;margin-top:8px}.purchase-detail-table th,.purchase-detail-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.purchase-detail-table input{height:32px;min-height:32px}.site-readonly{display:flex;align-items:center;min-height:38px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#f3f5f7;color:#334155;font-weight:900}.admin-box{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}
 .advance-entry-head{display:grid;grid-template-columns:150px 120px 180px minmax(180px,1fr) 180px minmax(220px,1.2fr);gap:8px;align-items:end}.advance-entry-head .wide{grid-column:span 2}.advance-entry-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}.advance-entry-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}.advance-entry-table-wrap{max-height:460px;overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:7px;background:#fff}.advance-entry-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.advance-entry-table th,.advance-entry-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap;vertical-align:middle}.advance-entry-table th{position:sticky;top:0;z-index:3;background:#f7f9fb;color:var(--muted);font-weight:900}.advance-entry-table input,.advance-entry-table select{height:34px;min-height:34px;border-radius:6px}.advance-entry-table .product-code{width:118px}.advance-entry-table .product-name{width:220px}.advance-entry-table .origin{width:140px}.advance-entry-table .quantity{width:85px}.advance-entry-table .unit{width:76px}.advance-entry-table .price{width:100px}.advance-entry-table .memo{width:190px}.advance-entry-table .line-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.advance-entry-table tr.invalid td{background:#fff0ef}.advance-stock-check{display:flex;align-items:center;justify-content:center}.advance-stock-check input{width:18px;height:18px;min-height:18px}.advance-row-actions{display:flex;gap:4px}.advance-row-actions .small{min-width:46px}.advance-entry-hint{margin-left:auto;color:var(--muted);font-size:12px}
 .partner-register-tools{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,1fr) 150px auto minmax(200px,1fr);gap:8px;align-items:end}
-@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.sales-shipping-row{grid-template-columns:90px minmax(150px,1fr) 110px auto}.sales-shipping-session{display:none}.sales-correction-grid{grid-template-columns:1fr 1fr}.sales-correction-grid .wide{grid-column:span 1}.sales-correction-grid .full{grid-column:1/-1}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}}
+@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.sales-shipping-row{grid-template-columns:90px minmax(150px,1fr) 110px auto}.sales-shipping-session{display:none}.sales-correction-grid{grid-template-columns:1fr 1fr}.sales-correction-grid .wide{grid-column:span 1}.sales-correction-grid .full{grid-column:1/-1}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}.home-group{grid-template-columns:1fr}.home-command-grid{grid-template-columns:1fr 1fr}.master-return-bar{align-items:flex-start;flex-direction:column}}
+@media (max-width:620px){.home-command-grid{grid-template-columns:1fr}}
 @media (max-width:900px){.ops-tools,.purchase-form,.purchase-detail-grid,.partner-register-tools,.advance-entry-head{grid-template-columns:1fr 1fr}.purchase-form .wide,.purchase-form .full,.advance-entry-head .wide{grid-column:1/-1}.partner-register-action,.partner-register-note{grid-column:1/-1}.purchase-receipt summary{min-width:850px}.ops-table-wrap,.advance-entry-table-wrap{max-height:460px}.advance-entry-hint{width:100%;margin-left:0}}
 @media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
 </style>
@@ -59,17 +62,23 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 <body>
 <header>
   <div class="title-wrap">
-    <div><div class="title">受注登録</div></div>
+    <div><div class="title">販売・業務管理</div></div>
     <button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button>
     <nav class="app-nav" aria-label="アプリ切替">
+      <button class="app-nav-link active" type="button" data-workspace-tab="home" onclick="switchWorkspaceTab('home')">HOME</button>
+      <span class="app-nav-divider" aria-hidden="true"></span>
+      <button class="app-nav-link" type="button" data-workspace-tab="orders" onclick="switchWorkspaceTab('orders')">発注入力</button>
       <a class="app-nav-link" href="./index.html">作業アプリ</a>
+      <button class="app-nav-link" type="button" data-workspace-tab="external" onclick="switchWorkspaceTab('external')">外部作業</button>
+      <span class="app-nav-divider" aria-hidden="true"></span>
       <button class="app-nav-link" type="button" data-workspace-tab="sales" onclick="switchWorkspaceTab('sales')">売上参照</button>
       <button class="app-nav-link" type="button" data-workspace-tab="receivables" onclick="switchWorkspaceTab('receivables')">売掛管理</button>
-      <button class="app-nav-link" type="button" data-workspace-tab="guide" onclick="switchWorkspaceTab('guide')">商品案内</button>
-      <button class="app-nav-link active" type="button" data-workspace-tab="orders" onclick="switchWorkspaceTab('orders')">発注入力</button>
-      <button class="app-nav-link" type="button" data-workspace-tab="external" onclick="switchWorkspaceTab('external')">外部作業</button>
-      <button class="app-nav-link" type="button" data-workspace-tab="purchases" onclick="switchWorkspaceTab('purchases')">仕入管理</button>
+      <span class="app-nav-divider" aria-hidden="true"></span>
+      <button class="app-nav-link" type="button" data-workspace-tab="purchase-entry" onclick="switchWorkspaceTab('purchase-entry')">仕入入力</button>
+      <button class="app-nav-link" type="button" data-workspace-tab="purchases" onclick="switchWorkspaceTab('purchases')">仕入参照</button>
+      <span class="app-nav-divider" aria-hidden="true"></span>
       <button class="app-nav-link" type="button" data-workspace-tab="masters" onclick="switchWorkspaceTab('masters')">マスタ</button>
+      <button class="app-nav-link" type="button" data-workspace-tab="guide" onclick="switchWorkspaceTab('guide')">商品案内</button>
     </nav>
   </div>
   <div class="actions">
@@ -91,6 +100,46 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <button class="btn" type="button" onclick="signOutSupabase()">ログアウト</button>
     <span id="auth-state" class="pill warn">未ログイン</span>
   </div>
+
+  <section class="workspace-panel active" data-workspace-panel="home" id="home-panel">
+    <div class="home-workspace">
+      <div class="home-intro">
+        <h1>業務メニュー</h1>
+        <p>受注から作業、売上・仕入管理まで、業務の順番に並んでいます。</p>
+      </div>
+      <div class="home-group flow-order">
+        <div class="home-group-title">受注・現場<span>注文を受けて作業へ渡す</span></div>
+        <div class="home-command-grid">
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('orders')"><span><b>発注入力</b><span>受注登録・帳票出力</span></span></button>
+          <a class="home-command" href="./index.html"><span><b>作業アプリ</b><span>現場数量・箱・売上確定</span></span></a>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('external')"><span><b>外部作業</b><span>問屋への依頼と進捗確認</span></span></button>
+        </div>
+      </div>
+      <div class="home-group flow-sales">
+        <div class="home-group-title">売上・回収<span>確定売上から入金まで</span></div>
+        <div class="home-command-grid">
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('sales')"><span><b>売上参照</b><span>日別・輸入社別の売上分析</span></span></button>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('receivables')"><span><b>売掛管理</b><span>請求締め・入金・SOA</span></span></button>
+        </div>
+      </div>
+      <div class="home-group flow-purchase">
+        <div class="home-group-title">仕入・支払<span>仕入登録から支払管理へ</span></div>
+        <div class="home-command-grid">
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchase-entry')"><span><b>仕入入力</b><span>事前仕入・発注なし仕入</span></span></button>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchases')"><span><b>仕入参照</b><span>仕入伝票の検索・照合</span></span></button>
+          <div class="home-command disabled" aria-disabled="true"><span><b>買掛管理</b><span>請求書照合・支払管理</span></span></div>
+        </div>
+      </div>
+      <div class="home-group flow-master">
+        <div class="home-group-title">基盤・案内<span>共通マスタと販売資料</span></div>
+        <div class="home-command-grid">
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('masters')"><span><b>マスタ</b><span>商品・得意先・仕入先・輸入社・請求条件</span></span></button>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('guide')"><span><b>商品案内</b><span>季節商品と価格案内</span></span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div class="layout workspace-panel active" data-workspace-panel="orders">
     <section class="panel">
       <div class="panel-head">LINE文面貼り付け</div>
@@ -105,9 +154,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="panel-body">
         <div class="form-grid">
           <label class="wide">日付<input id="order-date" type="date"></label>
-          <label>輸入社コード<input id="batch-importer-code" list="importer-code-list" autocomplete="off" placeholder="輸入社コード"></label>
+          <label>輸入社コード<div class="lookup-cell"><input id="batch-importer-code" list="importer-code-list" autocomplete="off" placeholder="輸入社コード"><button class="quick-master-button" type="button" title="輸入社マスタを追加" onclick="openMasterForQuickAdd('importers',{codeId:'batch-importer-code',nameId:'batch-importer-name'})">+</button></div></label>
           <label>輸入社名<input id="batch-importer-name" list="importer-name-list" autocomplete="off" placeholder="輸入社名"></label>
-          <label>得意先コード<input id="batch-customer-code" autocomplete="off" placeholder="例 01-002"></label>
+          <label>得意先コード<div class="lookup-cell"><input id="batch-customer-code" autocomplete="off" placeholder="例 01-002"><button class="quick-master-button" type="button" title="得意先マスタを追加" onclick="openMasterForQuickAdd('customers',{codeId:'batch-customer-code',nameId:'batch-customer-name'})">+</button></div></label>
           <label>得意先名<input id="batch-customer-name" class="ime-ja" autocomplete="off" placeholder="得意先名"></label>
           <label>作業拠点<div id="batch-site-name" class="site-readonly" data-site-code="OSA">大阪</div></label>
           <label class="wide">メモ<textarea id="batch-note" class="ime-ja" autocomplete="off" placeholder="この受注全体のメモ"></textarea></label>
@@ -300,7 +349,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel" data-workspace-panel="receivables" id="accounts-receivable-panel" style="margin-top:12px">
-    <div class="panel-head"><span>売掛管理</span></div>
+    <div class="panel-head"><span>売掛管理</span><button class="small" type="button" onclick="openStatementProfileMasterFromReceivables()">請求条件マスタ</button></div>
     <div class="panel-body">
       <div class="ar-tools">
         <label>請求日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderReceivables()"></label>
@@ -374,33 +423,6 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           </div>
         </details>
       </div>
-      <details class="ar-entry ar-statement-profile">
-        <summary>請求先・締め条件マスタ</summary>
-        <div class="ar-entry-body">
-          <div class="ar-form">
-            <label>輸入社コード<input id="ar-statement-importer-code" list="importer-code-list" class="ime-en" autocomplete="off"></label>
-            <label class="wide">請求先名<input id="ar-statement-customer-name" class="ime-en" autocomplete="off"></label>
-            <label class="full">住所<textarea id="ar-statement-address" class="ime-en" autocomplete="off" placeholder="改行して複数行入力できます"></textarea></label>
-            <label>電話番号<input id="ar-statement-phone" class="ime-en" autocomplete="off"></label>
-            <label>通貨<input id="ar-statement-currency" class="ime-en" value="JPY" autocomplete="off"></label>
-            <label>締め日<input id="ar-statement-closing-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
-            <label>支払月
-              <select id="ar-statement-payment-month-offset">
-                <option value="0">当月</option>
-                <option value="1" selected>翌月</option>
-                <option value="2">翌々月</option>
-                <option value="3">3か月後</option>
-              </select>
-            </label>
-            <label>支払日<input id="ar-statement-payment-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
-          </div>
-          <div class="actions" style="margin-top:8px">
-            <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter()">選択輸入社を読込</button>
-            <button class="btn primary" type="button" onclick="saveStatementProfile()">請求条件を保存</button>
-          </div>
-          <div class="hint" id="ar-statement-profile-state">締め日・支払日は1～31で登録します。31は月末として扱います。</div>
-        </div>
-      </details>
       <details class="ar-entry ar-statement-profile" open>
         <summary>請求締め</summary>
         <div class="ar-entry-body">
@@ -522,8 +544,37 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 
-  <section class="panel workspace-panel" data-workspace-panel="purchases" id="purchase-management-panel" style="margin-top:12px">
-    <div class="panel-head"><span>仕入管理</span><button class="small" type="button" onclick="loadPurchaseReceipts()">再読込</button></div>
+  <section class="panel workspace-panel" data-workspace-panel="purchase-entry" id="purchase-entry-panel" style="margin-top:12px">
+    <div class="panel-head"><span>仕入入力</span></div>
+    <div class="panel-body">
+      <div style="font-weight:900;margin-bottom:8px">発注を伴わない事前仕入</div>
+      <div class="advance-entry-head">
+        <label>仕入日<input id="advance-purchase-date" type="date" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
+        <label>拠点<select id="advance-purchase-site" data-advance-header onchange="updateAdvancePurchaseHeader()"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+        <label>仕入先コード<div class="lookup-cell"><input id="advance-purchase-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" onchange="updateAdvancePurchaseHeader()"><button class="quick-master-button" type="button" title="仕入先マスタを追加" onclick="openMasterForQuickAdd('suppliers',{codeId:'advance-purchase-supplier'})">+</button></div></label>
+        <label>仕入先名<div id="advance-purchase-supplier-name" class="site-readonly">未設定</div></label>
+        <label>請求書番号<input id="advance-purchase-invoice" class="ime-en" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="未着なら空欄"></label>
+        <label>伝票メモ<input id="advance-purchase-note" class="ime-ja" autocomplete="off" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
+      </div>
+      <div class="advance-entry-actions">
+        <button class="btn" type="button" onclick="addAdvancePurchaseRow(null,{focus:true})">明細追加</button>
+        <button class="btn" type="button" onclick="clearAdvancePurchaseRows()">明細クリア</button>
+        <button class="btn primary" type="button" onclick="saveAdvancePurchaseBatch()">一括登録 Ctrl+Enter</button>
+        <span id="advance-purchase-state" class="pill warn">入力待ち</span>
+        <span class="advance-entry-hint">Enterで右へ、Shift+Enterで左へ、上下キーで同じ列を移動</span>
+      </div>
+      <div class="advance-entry-summary" id="advance-purchase-summary"></div>
+      <div class="advance-entry-table-wrap">
+        <table class="advance-entry-table">
+          <thead><tr><th>No.</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税抜金額</th><th>在庫</th><th>明細メモ</th><th></th></tr></thead>
+          <tbody id="advance-purchase-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel workspace-panel" data-workspace-panel="purchases" id="purchase-reference-panel" style="margin-top:12px">
+    <div class="panel-head"><span>仕入参照</span><button class="small" type="button" onclick="loadPurchaseReceipts()">再読込</button></div>
     <div class="panel-body">
       <div class="ops-tools">
         <label>仕入日<input id="purchase-filter-date" type="date"></label>
@@ -534,44 +585,21 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <span id="purchase-state" class="pill warn">未読込</span>
       </div>
       <div id="purchase-receipt-list" class="ops-table-wrap"><div class="sales-empty">条件を指定して「仕入読込」を押してください。</div></div>
-
-      <div class="admin-box">
-        <div style="font-weight:900;margin-bottom:8px">発注を伴わない事前仕入</div>
-        <div class="advance-entry-head">
-          <label>仕入日<input id="advance-purchase-date" type="date" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
-          <label>拠点<select id="advance-purchase-site" data-advance-header onchange="updateAdvancePurchaseHeader()"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
-          <label>仕入先コード<input id="advance-purchase-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" onchange="updateAdvancePurchaseHeader()"></label>
-          <label>仕入先名<div id="advance-purchase-supplier-name" class="site-readonly">未設定</div></label>
-          <label>請求書番号<input id="advance-purchase-invoice" class="ime-en" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="未着なら空欄"></label>
-          <label>伝票メモ<input id="advance-purchase-note" class="ime-ja" autocomplete="off" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
-        </div>
-        <div class="advance-entry-actions">
-          <button class="btn" type="button" onclick="addAdvancePurchaseRow(null,{focus:true})">明細追加</button>
-          <button class="btn" type="button" onclick="clearAdvancePurchaseRows()">明細クリア</button>
-          <button class="btn primary" type="button" onclick="saveAdvancePurchaseBatch()">一括登録 Ctrl+Enter</button>
-          <span id="advance-purchase-state" class="pill warn">入力待ち</span>
-          <span class="advance-entry-hint">Enterで右へ、Shift+Enterで左へ、上下キーで同じ列を移動</span>
-        </div>
-        <div class="advance-entry-summary" id="advance-purchase-summary"></div>
-        <div class="advance-entry-table-wrap">
-          <table class="advance-entry-table">
-            <thead><tr><th>No.</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税抜金額</th><th>在庫</th><th>明細メモ</th><th></th></tr></thead>
-            <tbody id="advance-purchase-body"></tbody>
-          </table>
-        </div>
-      </div>
     </div>
   </section>
 
   <section class="panel workspace-panel" data-workspace-panel="masters" id="master-admin-panel" style="margin-top:12px">
-    <div class="panel-head"><span>マスタ管理</span><button class="small" onclick="hideMasterAdminPanel()">発注入力へ戻る</button></div>
+    <div class="panel-head"><span>マスタ管理</span><button class="small" onclick="hideMasterAdminPanel()">閉じる</button></div>
     <div class="panel-body">
+      <div class="master-return-bar" id="master-return-bar"><span id="master-return-label">入力内容は保持されています。</span><button class="small" type="button" onclick="returnFromMasterQuickAdd()">元の入力へ戻る</button></div>
       <div class="master-tabs">
-        <button class="btn" onclick="setMasterType('products')">商品</button>
-        <button class="btn" onclick="setMasterType('customers')">得意先</button>
-        <button class="btn" onclick="setMasterType('suppliers')">仕入先</button>
-        <button class="btn" onclick="setMasterType('importers')">輸入社</button>
+        <button class="btn" data-master-tab="products" onclick="setMasterType('products')">商品</button>
+        <button class="btn" data-master-tab="customers" onclick="setMasterType('customers')">得意先</button>
+        <button class="btn" data-master-tab="suppliers" onclick="setMasterType('suppliers')">仕入先</button>
+        <button class="btn" data-master-tab="importers" onclick="setMasterType('importers')">輸入社</button>
+        <button class="btn" data-master-tab="billing" onclick="showStatementProfileMaster()">請求条件</button>
       </div>
+      <div id="master-core-editor">
       <div class="form-grid">
         <label>コード<input id="master-code" list="master-code-list" placeholder="コード" onchange="fillMasterFormByCode(this.value)"></label>
         <label>名称<input id="master-name" placeholder="名称"></label>
@@ -601,6 +629,31 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       </div>
       <div class="master-list" id="master-list" style="margin-top:10px"></div>
       <div class="master-list" id="master-change-history" style="display:none;margin-top:10px"></div>
+      </div>
+      <div id="statement-profile-master" class="master-view-hidden">
+        <div class="ar-form">
+          <label>輸入社コード<input id="ar-statement-importer-code" list="importer-code-list" class="ime-en" autocomplete="off"></label>
+          <label class="wide">請求先名<input id="ar-statement-customer-name" class="ime-en" autocomplete="off"></label>
+          <label class="full">住所<textarea id="ar-statement-address" class="ime-en" autocomplete="off" placeholder="改行して複数行入力できます"></textarea></label>
+          <label>電話番号<input id="ar-statement-phone" class="ime-en" autocomplete="off"></label>
+          <label>通貨<input id="ar-statement-currency" class="ime-en" value="JPY" autocomplete="off"></label>
+          <label>締め日<input id="ar-statement-closing-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
+          <label>支払月
+            <select id="ar-statement-payment-month-offset">
+              <option value="0">当月</option>
+              <option value="1" selected>翌月</option>
+              <option value="2">翌々月</option>
+              <option value="3">3か月後</option>
+            </select>
+          </label>
+          <label>支払日<input id="ar-statement-payment-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
+        </div>
+        <div class="actions" style="margin-top:8px">
+          <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter()">選択輸入社を読込</button>
+          <button class="btn primary" type="button" onclick="saveStatementProfile()">請求条件を保存</button>
+        </div>
+        <div class="hint" id="ar-statement-profile-state">締め日・支払日は1～31で登録します。31は月末として扱います。</div>
+      </div>
     </div>
   </section>
 </main>
@@ -611,11 +664,12 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <button class="small" onclick="closeProductLookup()">閉じる</button>
     </div>
     <div class="modal-body">
-      <div class="search-grid" style="grid-template-columns:minmax(220px,1fr) auto">
+      <div class="search-grid" style="grid-template-columns:minmax(220px,1fr) auto auto">
         <label>商品検索
           <input id="product-lookup-search" class="ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="商品コード・商品名・別名で検索" oninput="renderProductLookup()" onkeydown="handleProductLookupKey(event)">
         </label>
         <button class="btn" onclick="document.getElementById('product-lookup-search').value='';renderProductLookup();document.getElementById('product-lookup-search').focus()">クリア</button>
+        <button class="btn" type="button" onclick="openProductMasterFromLookup()">新規商品マスタ</button>
       </div>
       <div class="hint">商品を選択すると、選択中の明細行へ商品コード・商品名・仕入先が入ります。</div>
       <div id="product-lookup-results" class="lookup-results"></div>
@@ -719,6 +773,8 @@ let importReviewOriginalImporters=[];
 let currentImportDraftId="";
 let currentOrderAttemptId="";
 let masterType="products";
+let masterView="core";
+let quickMasterContext=null;
 let confirmed=false;
 let lastOrderRowIndex=0;
 let productLookupRowIndex=0;
@@ -5840,6 +5896,7 @@ async function saveStatementProfile(){
   const importerFilter=document.getElementById("ar-importer");
   if(importerFilter&&!importerFilter.value)importerFilter.value=importerCode;
   renderClosingPreview();
+  if(quickMasterContext?.type==="billing")returnFromMasterQuickAdd();
 }
 function arMonthDay(month,day,monthOffset=0){
   const match=String(month||"").match(/^(\d{4})-(\d{2})$/);
@@ -6833,13 +6890,16 @@ async function saveAdvancePurchaseBatch(){
 }
 function initialWorkspaceTab(){
   const hash=String(location.hash||"").replace(/^#/,"");
+  if(hash==="home"||hash==="home-panel")return "home";
   if(hash==="sales-reference-panel"||hash==="sales")return "sales";
   if(hash==="accounts-receivable-panel"||hash==="receivables"||hash==="ar")return "receivables";
   if(hash==="product-guide-panel"||hash==="guide"||hash==="product-guide")return "guide";
   if(hash==="external-work-panel"||hash==="external")return "external";
-  if(hash==="purchase-management-panel"||hash==="purchases")return "purchases";
+  if(hash==="purchase-entry-panel"||hash==="purchase-entry")return "purchase-entry";
+  if(hash==="purchase-management-panel"||hash==="purchase-reference-panel"||hash==="purchases")return "purchases";
   if(hash==="master-admin-panel"||hash==="master-list"||hash==="masters")return "masters";
-  return "orders";
+  if(hash==="orders")return "orders";
+  return "home";
 }
 function hasPendingImportReview(){
   return Array.isArray(importReviewItems)&&importReviewItems.length>0;
@@ -6849,9 +6909,16 @@ function confirmLeaveImportReview(){
   return confirm("取込内容の確認作業が未完了です。\nこのまま移動すると、確認中の内容が見えなくなります。\n移動しますか？");
 }
 function switchWorkspaceTab(tab,options={}){
-  const target=["orders","sales","receivables","guide","external","purchases","masters"].includes(tab)?tab:"orders";
+  const target=["home","orders","sales","receivables","guide","external","purchase-entry","purchases","masters"].includes(tab)?tab:"home";
   const current=document.querySelector("[data-workspace-panel].active")?.dataset.workspacePanel||"orders";
   if(target!==current&&!options.skipConfirm&&!confirmLeaveImportReview())return false;
+  if(target==="masters"&&current!=="masters"&&!options.quickMaster){
+    quickMasterContext=null;
+    updateMasterReturnBar();
+    masterType="products";
+    showCoreMasterEditor();
+  }
+  if(current==="masters"&&target!=="masters"&&!options.quickReturn){quickMasterContext=null;updateMasterReturnBar()}
   document.querySelectorAll("[data-workspace-panel]").forEach(panel=>{
     panel.classList.toggle("active",panel.dataset.workspacePanel===target);
   });
@@ -6868,8 +6935,13 @@ function switchWorkspaceTab(tab,options={}){
   }
   if(target==="guide")renderProductGuide();
   if(target==="external")loadExternalAssignments();
+  if(target==="purchase-entry"){
+    updateAdvancePurchaseHeader({save:false});
+    renderAdvancePurchaseRows();
+  }
   if(target==="purchases")loadPurchaseReceipts();
   if(target==="masters")renderMasters();
+  if(options.updateHash!==false)history.replaceState(null,"",`#${target}`);
   window.scrollTo({top:0,behavior:"auto"});
   return true;
 }
@@ -7015,18 +7087,22 @@ function ensureStarterRow(){
   if(!orders.length)orders=[blankOrder()];
 }
 function hideMasterAdminPanel(){
-  switchWorkspaceTab("orders");
+  if(quickMasterContext){returnFromMasterQuickAdd();return}
+  switchWorkspaceTab("home");
 }
 function showMasterAdminPanel(){
   const list=document.getElementById("master-list");
   const panel=list?.closest(".panel");
   if(!panel)return;
+  quickMasterContext=null;
+  updateMasterReturnBar();
   if(!switchWorkspaceTab("masters"))return;
+  showCoreMasterEditor();
   renderMasters();
   requestAnimationFrame(()=>window.scrollTo({top:0,behavior:"auto"}));
 }
 function toggleMasterAdminPanel(){
-  switchWorkspaceTab("masters");
+  showMasterAdminPanel();
 }
 function customer(){
   return {code:val("batch-customer-code").trim(),name:val("batch-customer-name").trim()};
@@ -7695,7 +7771,7 @@ function render(){
     <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
     <td><input class="code ime-en" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
     <td><input class="price ime-en" inputmode="decimal" data-order-input data-row="${i}" data-field="unitPrice" value="${esc(r.unitPrice)}" oninput="setRow(${i},'unitPrice',this.value)" title="受注価格。未入力時は輸入社別契約価格、商品マスタ価格の順で補完します"></td>
-    <td><input class="code ime-en" list="supplier-code-list" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"></td>
+    <td><div class="lookup-cell"><input class="code ime-en" list="supplier-code-list" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierCode" value="${esc(r.supplierCode)}" oninput="setRow(${i},'supplierCode',this.value)" onchange="setRow(${i},'supplierCode',this.value)"><button class="lookup-btn" type="button" title="仕入先マスタを追加" onclick="openOrderSupplierMaster(${i})">+</button></div></td>
     <td><input class="supplier ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="supplierName" value="${esc(r.supplierName)}" oninput="setRow(${i},'supplierName',this.value)"></td>
     <td><input class="memo ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="memo" value="${esc(r.memo)}" oninput="setRow(${i},'memo',this.value)"></td>
     <td><button class="small" onclick="removeRow(${i})">削除</button></td>
@@ -8473,9 +8549,118 @@ function openPrintDoc(title,html,targetWindow=null){
   w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title>${styles}</head><body>${body}<script>setTimeout(()=>window.print(),300)<\/script></body></html>`);
   w.document.close();
 }
+function updateMasterTabState(){
+  document.querySelectorAll("[data-master-tab]").forEach(button=>{
+    const active=masterView==="billing"?button.dataset.masterTab==="billing":button.dataset.masterTab===masterType;
+    button.classList.toggle("blue",active);
+  });
+}
+function showCoreMasterEditor(){
+  masterView="core";
+  document.getElementById("master-core-editor")?.classList.remove("master-view-hidden");
+  document.getElementById("statement-profile-master")?.classList.add("master-view-hidden");
+  updateMasterTabState();
+}
 function setMasterType(type){
-  masterType=type;
+  masterType=["products","customers","suppliers","importers"].includes(type)?type:"products";
+  showCoreMasterEditor();
   renderMasters();
+}
+function showStatementProfileMaster(importerCode=""){
+  masterView="billing";
+  document.getElementById("master-core-editor")?.classList.add("master-view-hidden");
+  document.getElementById("statement-profile-master")?.classList.remove("master-view-hidden");
+  updateMasterTabState();
+  const code=arCanonicalImporterCode(importerCode||val("ar-statement-importer-code")||val("ar-importer"));
+  if(code){
+    const input=document.getElementById("ar-statement-importer-code");
+    if(input)input.value=code;
+    if(dbReady&&currentUser)loadStatementProfile(code,{silent:true});
+  }
+  requestAnimationFrame(()=>document.getElementById("ar-statement-importer-code")?.focus());
+}
+function updateMasterReturnBar(){
+  const bar=document.getElementById("master-return-bar");
+  const label=document.getElementById("master-return-label");
+  if(!bar)return;
+  bar.classList.toggle("open",!!quickMasterContext);
+  if(label&&quickMasterContext)label.textContent=`${quickMasterContext.label||"入力"}の内容は保持されています。保存後に元の画面へ戻れます。`;
+}
+function openMasterForQuickAdd(type,options={}){
+  const current=document.querySelector("[data-workspace-panel].active")?.dataset.workspacePanel||"orders";
+  const code=options.code??(options.codeId?val(options.codeId):"");
+  const name=options.name??(options.nameId?val(options.nameId):"");
+  quickMasterContext={...options,type,returnTab:current==="masters"?"home":current,label:options.label||masterTypeLabel(type)};
+  document.getElementById("product-lookup-modal")?.classList.remove("open");
+  if(!switchWorkspaceTab("masters",{skipConfirm:true,quickMaster:true}))return;
+  setMasterType(type);
+  clearMasterForm();
+  document.getElementById("master-code").value=String(code||"").trim();
+  document.getElementById("master-name").value=String(name||"").trim();
+  if(type==="customers"){
+    document.getElementById("master-importer-code").value=val("batch-importer-code").trim();
+    document.getElementById("master-importer-name").value=val("batch-importer-name").trim();
+    document.getElementById("master-site-code").value=currentOrderSiteCode();
+  }
+  updateMasterReturnBar();
+  requestAnimationFrame(()=>document.getElementById(code?"master-name":"master-code")?.focus());
+}
+function openProductMasterFromLookup(){
+  const query=val("product-lookup-search").trim();
+  openMasterForQuickAdd("products",{name:query,productTarget:{...productLookupTarget},label:"商品入力"});
+}
+function openOrderSupplierMaster(index){
+  const row=orders[index]||{};
+  openMasterForQuickAdd("suppliers",{code:row.supplierCode||"",name:row.supplierName||"",rowIndex:index,label:`${index+1}行目`});
+}
+function openStatementProfileMasterFromReceivables(){
+  quickMasterContext={type:"billing",returnTab:"receivables",label:"売掛管理"};
+  if(!switchWorkspaceTab("masters",{skipConfirm:true,quickMaster:true}))return;
+  updateMasterReturnBar();
+  showStatementProfileMaster(val("ar-importer"));
+}
+function returnFromMasterQuickAdd(){
+  const target=quickMasterContext?.returnTab||"home";
+  quickMasterContext=null;
+  updateMasterReturnBar();
+  switchWorkspaceTab(target,{skipConfirm:true,quickReturn:true});
+}
+function completeMasterQuickAdd(item){
+  const context=quickMasterContext;
+  if(!context)return false;
+  if(context.type==="products"&&context.productTarget){
+    const target=context.productTarget;
+    if(target.type==="importReview")applyProductToImportReviewRow(target.index,item);
+    else if(target.type==="pending")applyPendingProduct(item);
+    else if(target.type==="advancePurchase")applyAdvancePurchaseProduct(target.index,item);
+    else applyProductToRow(target.index,item);
+  }else if(context.type==="suppliers"&&Number.isInteger(context.rowIndex)){
+    const row=orders[context.rowIndex];
+    if(row){row.supplierCode=item.code;row.supplierName=item.name;saveLocal();render()}
+  }else if(context.type==="importers"&&context.codeId==="batch-importer-code"){
+    setHeaderImporter(item);
+    saveLocal();
+    renderSummary();
+  }else if(context.type==="customers"&&context.codeId==="batch-customer-code"){
+    setHeaderCustomer(item);
+    saveLocal();
+    renderSummary();
+  }else{
+    const codeInput=context.codeId?document.getElementById(context.codeId):null;
+    const nameInput=context.nameId?document.getElementById(context.nameId):null;
+    if(codeInput)codeInput.value=item.code||"";
+    if(nameInput)nameInput.value=item.name||"";
+    if(context.codeId==="advance-purchase-supplier")updateAdvancePurchaseHeader();
+  }
+  const target=context.returnTab||"home";
+  quickMasterContext=null;
+  updateMasterReturnBar();
+  switchWorkspaceTab(target,{skipConfirm:true,quickReturn:true});
+  requestAnimationFrame(()=>{
+    if(context.codeId)document.getElementById(context.codeId)?.focus();
+    else if(context.type==="suppliers"&&Number.isInteger(context.rowIndex))focusOrderCell(context.rowIndex,"supplierCode");
+  });
+  return true;
 }
 function clearMasterForm(){
   ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix"].forEach(id=>document.getElementById(id).value="");
@@ -8563,6 +8748,7 @@ async function addMasterItem(){
   refreshSupplierLists();
   renderMasters();
   alert(result==="updated"?`コード ${code} を更新しました。`:`コード ${code} を追加しました。`);
+  completeMasterQuickAdd(item);
 }
 function removeLocalMasterItem(type,item){
   const saved=savedMastersObject();
@@ -8662,6 +8848,7 @@ async function deactivateMastersMissingFromCsv(beforeItems,importedItems,type=ma
 function renderMasters(){
   const list=document.getElementById("master-list");
   if(!list)return;
+  updateMasterTabState();
   refreshMasterCodeList();
   const isProduct=masterType==="products";
   const isCustomer=masterType==="customers";
@@ -10215,7 +10402,7 @@ document.addEventListener("keydown",e=>{
     }
   }
   const target=e.target;
-  const purchasePanelActive=!!document.querySelector('[data-workspace-panel="purchases"].active');
+  const purchasePanelActive=!!document.querySelector('[data-workspace-panel="purchase-entry"].active');
   if(e.key==="Enter"&&e.ctrlKey&&purchasePanelActive){
     e.preventDefault();
     e.stopImmediatePropagation();
