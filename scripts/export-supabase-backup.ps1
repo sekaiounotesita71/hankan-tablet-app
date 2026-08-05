@@ -15,6 +15,7 @@ $serviceRoleKey = $env:YUMIRUME_SUPABASE_SERVICE_ROLE_KEY
 if ([string]::IsNullOrWhiteSpace($serviceRoleKey)) {
   throw "YUMIRUME_SUPABASE_SERVICE_ROLE_KEY is not set. Do not put the service-role key in this script."
 }
+$backupUserAgent = "YumirumeCloudBackup/1.0"
 
 $tables = @(
   "work_sessions", "order_lines", "boxes", "sales_records",
@@ -73,7 +74,7 @@ try {
       }
       $order = (($tableOrder[$table] -split ",") | ForEach-Object { "$_.asc" }) -join ","
       $uri = "$ProjectUrl/rest/v1/$table`?select=*&order=$([uri]::EscapeDataString($order))"
-      $response = Invoke-WebRequest -Method Get -Uri $uri -Headers $headers -UseBasicParsing
+      $response = Invoke-WebRequest -Method Get -Uri $uri -Headers $headers -UserAgent $backupUserAgent -UseBasicParsing
       $rawPage = [string]$response.Content
       $page = @($rawPage | ConvertFrom-Json)
       if ($page.Count) {

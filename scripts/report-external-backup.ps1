@@ -28,6 +28,7 @@ $serviceRoleKey = $env:YUMIRUME_SUPABASE_SERVICE_ROLE_KEY
 if ([string]::IsNullOrWhiteSpace($serviceRoleKey)) {
   throw "YUMIRUME_SUPABASE_SERVICE_ROLE_KEY is not set."
 }
+$backupUserAgent = "YumirumeCloudBackup/1.0"
 
 $headers = @{
   apikey = $serviceRoleKey
@@ -58,5 +59,5 @@ if ($RowCount -gt 0) { $payload.row_count = $RowCount }
 if ($ErrorMessage) { $payload.error_message = $ErrorMessage.Substring(0, [Math]::Min(1500, $ErrorMessage.Length)) }
 
 $uri = "$ProjectUrl/rest/v1/external_backup_runs?on_conflict=execution_key"
-Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body ($payload | ConvertTo-Json -Depth 5) | Out-Null
+Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -UserAgent $backupUserAgent -Body ($payload | ConvertTo-Json -Depth 5) | Out-Null
 Write-Host "External backup status recorded: $Status"
