@@ -27,7 +27,7 @@ $tables = @(
   "importer_master", "supplier_master", "product_master", "product_price_contracts", "customer_master",
   "product_guide_templates", "product_guide_variants", "product_guide_template_rows",
   "site_master", "internal_user_access", "partner_user_access", "user_roles",
-  "audit_events", "audit_snapshots"
+  "audit_events", "audit_snapshots", "external_backup_runs"
 )
 $tableOrder = @{
   work_sessions = "id"; order_lines = "id"; boxes = "id"; sales_records = "id"
@@ -41,7 +41,7 @@ $tableOrder = @{
   product_price_contracts = "product_id,importer_code"; customer_master = "id"
   product_guide_templates = "id"; product_guide_variants = "id"; product_guide_template_rows = "id"
   site_master = "site_code"; internal_user_access = "user_id"; partner_user_access = "user_id,supplier_code"
-  user_roles = "user_id"; audit_events = "id"; audit_snapshots = "id"
+  user_roles = "user_id"; audit_events = "id"; audit_snapshots = "id"; external_backup_runs = "id"
 }
 
 $outputRoot = [IO.Path]::GetFullPath($OutputDirectory)

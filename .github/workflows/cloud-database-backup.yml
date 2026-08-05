@@ -1,0 +1,85 @@
+name: Cloud database backup
+
+on:
+  schedule:
+    - cron: "15 19 * * *"
+      timezone: "Asia/Tokyo"
+  workflow_dispatch:
+
+concurrency:
+  group: yumirume-cloud-database-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  backup:
+    if: vars.CLOUD_BACKUP_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: Asia/Tokyo
+      YUMIRUME_SUPABASE_URL: https://bvgjscxyjosjqqhxutyk.supabase.co
+      YUMIRUME_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      YUMIRUME_BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+      YUMIRUME_ONEDRIVE_DRIVE_ID: ${{ vars.ONEDRIVE_DRIVE_ID }}
+      YUMIRUME_BACKUP_EXECUTION_KEY: ${{ github.run_id }}-${{ github.run_attempt }}
+      YUMIRUME_BACKUP_WORKFLOW_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+    steps:
+      - name: Check out application code
+        uses: actions/checkout@v4
+
+      - name: Validate backup configuration
+        shell: pwsh
+        run: |
+          $required = @{
+            SUPABASE_SERVICE_ROLE_KEY = "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+            BACKUP_ENCRYPTION_PASSWORD = "${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}"
+            AZURE_CLIENT_ID = "${{ vars.AZURE_CLIENT_ID }}"
+            AZURE_TENANT_ID = "${{ vars.AZURE_TENANT_ID }}"
+            ONEDRIVE_DRIVE_ID = "${{ vars.ONEDRIVE_DRIVE_ID }}"
+          }
+          $missing = @($required.GetEnumerator() | Where-Object { [string]::IsNullOrWhiteSpace($_.Value) } | ForEach-Object Key)
+          if ($missing.Count) { throw "Missing GitHub backup configuration: $($missing -join ', ')" }
+
+      - name: Record backup start
+        id: started
+        shell: pwsh
+        run: ./scripts/report-external-backup.ps1 -Status running
+
+      - name: Sign in to Microsoft Graph without a password
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Export, verify, encrypt and upload
+        id: backup
+        shell: pwsh
+        run: ./scripts/run-cloud-backup.ps1
+
+      - name: Record successful backup
+        if: success()
+        shell: pwsh
+        run: |
+          ./scripts/report-external-backup.ps1 `
+            -Status complete `
+            -FileName '${{ steps.backup.outputs.file_name }}' `
+            -FolderPath '${{ steps.backup.outputs.folder_path }}' `
+            -FileSizeBytes '${{ steps.backup.outputs.file_size_bytes }}' `
+            -Sha256 '${{ steps.backup.outputs.sha256 }}' `
+            -TableCount '${{ steps.backup.outputs.table_count }}' `
+            -RowCount '${{ steps.backup.outputs.row_count }}'
+
+      - name: Record failed backup
+        if: failure()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          ./scripts/report-external-backup.ps1 `
+            -Status failed `
+            -ErrorMessage 'Cloud backup failed. Open the workflow URL for the detailed error.'

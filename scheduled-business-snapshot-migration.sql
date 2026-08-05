@@ -18,6 +18,7 @@ declare
   inserted_rows bigint;
   total_rows bigint := 0;
   completed_tables integer := 0;
+  deleted_snapshots bigint := 0;
 begin
   insert into public.audit_snapshots(label,created_by,created_by_email)
   values (
@@ -60,10 +61,18 @@ begin
       completed_at = now()
   where id = snapshot_id;
 
+  -- Keep one month of application-level snapshots. Snapshot rows are removed
+  -- automatically by the foreign key's ON DELETE CASCADE rule.
+  delete from public.audit_snapshots
+  where created_at < now() - interval '30 days';
+  get diagnostics deleted_snapshots = row_count;
+
   return jsonb_build_object(
     'snapshot_id',snapshot_id,
     'table_count',completed_tables,
     'row_count',total_rows,
+    'deleted_snapshots',deleted_snapshots,
+    'retention_days',30,
     'status','complete'
   );
 exception when others then

@@ -4,3 +4,4 @@ Thumbs.db
 *.csv
 node_modules/
 backups/
+restored-backups/
