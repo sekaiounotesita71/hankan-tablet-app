@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./i18n.js"></script>
+<script src="./app-nav.js?v=20260806" defer></script>
 <style>
 :root{
   --bg:#f6f4ef;--surface:#fff;--surface-2:#fbfaf7;--border:#ded9cf;--border-strong:#bfb7aa;
@@ -184,23 +185,37 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   .sales-ref-card-body{max-height:90px}
 }
 </style>
+<link rel="stylesheet" href="./app-nav.css?v=20260806">
 </head>
 <body>
-<header>
-  <div class="header-title-wrap"><div class="header-title">オーダー管理</div><button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button></div>
-  <div class="header-right">
-    <nav class="app-nav" aria-label="アプリ切替">
-      <a class="app-nav-link active" href="./index.html">作業アプリ</a>
-      <a class="app-nav-link" href="./order-entry-beta.html#sales">売上参照</a>
-      <a class="app-nav-link" href="./order-entry-beta.html">発注入力</a>
-      <a class="app-nav-link" href="./order-entry-beta.html#masters">マスタ</a>
-    </nav>
+<header class="app-shell-header">
+  <nav class="app-nav" aria-label="アプリ切替">
+    <a class="app-nav-link" href="./order-entry-beta.html#home">HOME</a>
+    <span class="app-nav-divider" aria-hidden="true"></span>
+    <a class="app-nav-link" href="./order-entry-beta.html#orders">発注入力</a>
+    <a class="app-nav-link active" href="./index.html" aria-current="page">作業アプリ</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#external">外部作業</a>
+    <span class="app-nav-divider" aria-hidden="true"></span>
+    <a class="app-nav-link" href="./order-entry-beta.html#sales">売上参照</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#receivables">売掛管理</a>
+    <span class="app-nav-divider" aria-hidden="true"></span>
+    <a class="app-nav-link" href="./order-entry-beta.html#purchase-entry">仕入入力</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#purchases">仕入参照</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#payables">買掛管理</a>
+    <span class="app-nav-divider" aria-hidden="true"></span>
+    <a class="app-nav-link" href="./order-entry-beta.html#masters">マスタ</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#guide">商品案内</a>
+  </nav>
+  <div class="app-header-row">
+    <div class="header-title-wrap"><div class="header-title">オーダー管理</div><button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button></div>
+    <div class="header-right">
     <div class="phase-switcher">
       <button class="phase-btn active" id="btn-p1" onclick="switchPhase(1)">Phase 1 入力</button>
       <button class="phase-btn p15" id="btn-p15" onclick="switchPhase(1.5)">Phase 1.5 産地・売価</button>
       <button class="phase-btn p2" id="btn-p2" onclick="switchPhase(2)">Phase 2 箱一覧</button>
     </div>
     <button class="btn btn-primary" id="export-btn" disabled onclick="exportExcel()">Excel出力</button>
+    </div>
   </div>
 </header>
 <div class="sync-bar">
