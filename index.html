@@ -132,6 +132,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .p15-price{max-width:120px;text-align:right;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .p15-input:focus{outline:2px solid rgba(163,109,0,.22);border-color:var(--warn)}
 .p15-source{font-size:12px;color:var(--muted);white-space:nowrap}
+.p15-price-cell{min-width:210px}.p15-price-line{display:flex;align-items:center;gap:7px}.p15-history-toggle{min-height:36px;padding:0 9px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--muted);font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}.p15-history-suggestion{display:flex;align-items:center;gap:6px;min-height:26px;margin-top:4px;font-size:11px;font-weight:800;color:var(--muted)}.p15-history-apply{border:0;background:transparent;color:#805400;padding:2px 0;font-weight:900;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.p15-history-empty{color:var(--muted)}.p15-history-detail-row{display:none}.p15-history-detail-row.open{display:table-row}.p15-history-detail-row td{padding:0;border-bottom:1px solid var(--border);background:#fffaf0}.p15-history-band{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:9px 12px}.p15-history-label{flex:0 0 auto;color:#805400;font-size:12px;font-weight:900}.p15-history-item{flex:0 0 auto;display:grid;grid-template-columns:auto auto;gap:2px 8px;min-width:175px;padding:7px 9px;border:1px solid #efd58a;border-radius:7px;background:#fff;text-align:left;cursor:pointer}.p15-history-price{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px;font-weight:900;color:var(--text)}.p15-history-date{font-size:11px;color:var(--muted);text-align:right}.p15-history-meta{grid-column:1/-1;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:800}.p15-history-match{color:var(--success)}
 .modal-bg.open{align-items:center;padding:12px}
 .np-panel{max-height:calc(100dvh - 24px)}
 .np-grid{position:sticky;bottom:68px;background:var(--surface);padding-top:8px;z-index:3}
@@ -2225,6 +2226,134 @@ function renderP1Cell(country,customer){
     return `<tr class="${d?"done":p?"partial":"pending"}" onclick="openP1NP(${r._idx},'qty')"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${p1TouchCell(r,"qty","数量","")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${p1TouchCell(r,"net","NET","")}</td><td>${boxInput(r)}</td><td>${memoCell(r._memo)}</td><td>${d?'<span class="badge badge-done">完了</span>':p?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
   }).join("");
 }
+const p15PriceHistoryCache=new Map();
+const p15PriceHistoryLoading=new Map();
+let p15HistoryOpenRowIdx=null;
+function p15HistoryKey(importer,productId){return `${normalizeImporterCode(importer)}|${normalizeProductId(productId)}`}
+function p15HistoryText(value){return String(value??"").trim().toLowerCase()}
+function p15HistoryUnit(value){return p15HistoryText(value).replace(/\s+/g,"")}
+function p15HistoryMoney(value){
+  const number=Number(value);
+  return Number.isFinite(number)?number.toLocaleString("ja-JP",{maximumFractionDigits:2}):String(value??"");
+}
+function p15HistoryForRow(row){
+  const history=p15PriceHistoryCache.get(p15HistoryKey(importerCode(row.importer_id),row.product_id))||[];
+  const customer=p15HistoryText(row.customer),unit=p15HistoryUnit(row._unit||row.unit);
+  return history.slice().sort((a,b)=>{
+    const score=entry=>{
+      const sameCustomer=customer&&p15HistoryText(entry.store_name)===customer;
+      const sameUnit=unit&&p15HistoryUnit(entry.input_unit)===unit;
+      return (sameCustomer?4:0)+(sameUnit?2:0);
+    };
+    return score(b)-score(a)||String(b.sold_on||b.finalized_at||"").localeCompare(String(a.sold_on||a.finalized_at||""));
+  });
+}
+function p15HistoryMatchLabel(row,entry){
+  const sameCustomer=p15HistoryText(row.customer)===p15HistoryText(entry.store_name);
+  const sameUnit=p15HistoryUnit(row._unit||row.unit)===p15HistoryUnit(entry.input_unit);
+  if(sameCustomer&&sameUnit)return "同じ得意先・単位";
+  if(sameCustomer)return "同じ得意先";
+  if(sameUnit)return "同じ単位";
+  return "同じ輸入社";
+}
+function p15HistorySuggestionHtml(row){
+  const importer=importerCode(row.importer_id),key=p15HistoryKey(importer,row.product_id);
+  if(p15PriceHistoryLoading.has(importer)&&!p15PriceHistoryCache.has(key))return `<span class="p15-history-empty">履歴読込中...</span>`;
+  const entry=p15HistoryForRow(row)[0];
+  if(!entry)return `<span class="p15-history-empty">単価履歴なし</span>`;
+  return `<span>直近候補</span><button class="p15-history-apply" type="button" onclick="event.stopPropagation();applyP15HistoryPrice(${row._idx},'${esc(String(entry.unit_price))}')">${esc(p15HistoryMoney(entry.unit_price))}</button><span>${esc(entry.sold_on||"")}</span>`;
+}
+function p15HistoryDetailHtml(row){
+  const history=p15HistoryForRow(row).slice(0,8);
+  if(!history.length)return `<div class="p15-history-band"><span class="p15-history-label">単価履歴</span><span class="p15-history-empty">該当履歴はありません</span></div>`;
+  return `<div class="p15-history-band"><span class="p15-history-label">単価履歴</span>${history.map(entry=>`<button class="p15-history-item" type="button" onclick="event.stopPropagation();applyP15HistoryPrice(${row._idx},'${esc(String(entry.unit_price))}')"><span class="p15-history-price">${esc(p15HistoryMoney(entry.unit_price))}</span><span class="p15-history-date">${esc(entry.sold_on||"")}</span><span class="p15-history-meta"><span class="p15-history-match">${esc(p15HistoryMatchLabel(row,entry))}</span> / ${esc(entry.store_name||"得意先不明")} / ${esc(entry.input_unit||"単位不明")} / ${esc(entry.origin||"産地なし")} / ${esc(entry.source_type||"")}</span></button>`).join("")}</div>`;
+}
+function refreshP15HistoryDisplays(importer){
+  rows.filter(row=>importerCode(row.importer_id)===importer).forEach(row=>{
+    const suggestion=document.getElementById(`p15history-suggestion-${row._idx}`);
+    if(suggestion)suggestion.innerHTML=p15HistorySuggestionHtml(row);
+    const detail=document.getElementById(`p15history-detail-${row._idx}`);
+    if(detail)detail.innerHTML=p15HistoryDetailHtml(row);
+  });
+}
+async function loadP15PriceHistoryForImporter(importer){
+  importer=normalizeImporterCode(importer);
+  if(!importer||!supabaseClient||!currentUser)return;
+  const productIds=[...new Set(rows.filter(row=>importerCode(row.importer_id)===importer).map(row=>String(row.product_id||"").trim()).filter(Boolean))];
+  const missing=productIds.filter(productId=>!p15PriceHistoryCache.has(p15HistoryKey(importer,productId)));
+  if(!missing.length){refreshP15HistoryDisplays(importer);return}
+  if(p15PriceHistoryLoading.has(importer))return p15PriceHistoryLoading.get(importer);
+  const task=(async()=>{
+    try{
+      for(let index=0;index<missing.length;index+=25){
+        const productChunk=missing.slice(index,index+25);
+        const salesRequest=supabaseClient.from("sales_records")
+          .select("product_id,store_name,input_unit,unit_price,origin,work_date,finalized_at")
+          .in("product_id",productChunk)
+          .eq("importer_code",importer)
+          .eq("is_stockout",false)
+          .not("unit_price","is",null)
+          .neq("unit_price",0)
+          .order("work_date",{ascending:false,nullsFirst:false})
+          .order("finalized_at",{ascending:false})
+          .limit(500);
+        const historicalRequest=supabaseClient.from("historical_sales_records")
+          .select("product_id,store_name,input_unit,unit_price,origin,finalized_at")
+          .in("product_id",productChunk)
+          .eq("importer_code",importer)
+          .eq("is_stockout",false)
+          .not("unit_price","is",null)
+          .neq("unit_price",0)
+          .order("finalized_at",{ascending:false})
+          .limit(500);
+        const [salesResult,historicalResult]=await Promise.all([salesRequest,historicalRequest]);
+        if(salesResult.error&&historicalResult.error)throw salesResult.error;
+        const data=[
+          ...(!salesResult.error&&salesResult.data||[]).map(entry=>({...entry,sold_on:entry.work_date||String(entry.finalized_at||"").slice(0,10),source_type:"確定売上"})),
+          ...(!historicalResult.error&&historicalResult.data||[]).map(entry=>({...entry,sold_on:String(entry.finalized_at||"").slice(0,10),source_type:"過去売上"}))
+        ].sort((a,b)=>String(b.sold_on||b.finalized_at||"").localeCompare(String(a.sold_on||a.finalized_at||"")));
+        const byProduct=new Map();
+        data.forEach(entry=>{
+          const productId=normalizeProductId(entry.product_id);
+          if(!byProduct.has(productId))byProduct.set(productId,[]);
+          if(byProduct.get(productId).length<20)byProduct.get(productId).push(entry);
+        });
+        productChunk.forEach(productId=>p15PriceHistoryCache.set(p15HistoryKey(importer,productId),byProduct.get(normalizeProductId(productId))||[]));
+      }
+    }catch(error){
+      toast("単価履歴を取得できません: "+String(error?.message||error));
+    }finally{
+      p15PriceHistoryLoading.delete(importer);
+      refreshP15HistoryDisplays(importer);
+    }
+  })();
+  p15PriceHistoryLoading.set(importer,task);
+  refreshP15HistoryDisplays(importer);
+  return task;
+}
+function showP15History(rowIdx,input){
+  if(input)input.select();
+  if(p15HistoryOpenRowIdx!==null&&p15HistoryOpenRowIdx!==rowIdx)document.getElementById(`p15history-row-${p15HistoryOpenRowIdx}`)?.classList.remove("open");
+  p15HistoryOpenRowIdx=rowIdx;
+  document.getElementById(`p15history-row-${rowIdx}`)?.classList.add("open");
+  const row=rows[rowIdx];
+  if(row)loadP15PriceHistoryForImporter(importerCode(row.importer_id));
+}
+function toggleP15History(rowIdx){
+  const detail=document.getElementById(`p15history-row-${rowIdx}`);
+  if(!detail)return;
+  if(detail.classList.contains("open")){detail.classList.remove("open");p15HistoryOpenRowIdx=null;return}
+  showP15History(rowIdx);
+}
+async function applyP15HistoryPrice(rowIdx,price){
+  const row=rows[rowIdx];
+  if(!row||!requireEditableTrial())return;
+  const input=document.querySelector(`.p15-price[data-row-idx="${rowIdx}"]`);
+  if(input)input.value=price;
+  await saveP15Field(rowIdx,"unit_price",price);
+  if(input){input.focus();input.select()}
+  showP15History(rowIdx);
+}
 function buildP15(){
   const wrap=document.getElementById("p15-tabs-wrap");
   const empty=document.getElementById("p15-empty");
@@ -2244,6 +2373,7 @@ function buildP15(){
   }).join("");
   document.getElementById("p15-importer-panels").innerHTML=importers.map(imp=>`<div class="country-panel${imp===activeImporter?" active":""}" id="p15panel-${cid(imp)}"><div id="p15content-${cid(imp)}"></div></div>`).join("");
   importers.forEach(renderP15Importer);
+  loadP15PriceHistoryForImporter(activeImporter);
 }
 function p15SwitchImporter(imp){
   activeImporter=imp;
@@ -2251,11 +2381,12 @@ function p15SwitchImporter(imp){
   document.getElementById("p15imp-"+cid(imp))?.classList.add("active");
   document.querySelectorAll("#p15-importer-panels .country-panel").forEach(el=>el.classList.remove("active"));
   document.getElementById("p15panel-"+cid(imp))?.classList.add("active");
+  loadP15PriceHistoryForImporter(imp);
 }
 function renderP15Importer(imp){
   const impRows=rows.filter(r=>importerCode(r.importer_id)===imp);
   const done=impRows.filter(r=>r.origin&&r.unit_price!=="").length,total=impRows.length,pct=total?Math.round(done/total*100):0;
-  const body=impRows.map((r,i)=>`<tr><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td><input class="p15-input p15-price" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td></tr>`).join("");
+  const body=impRows.map((r,i)=>`<tr><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td class="p15-price-cell"><div class="p15-price-line"><input class="p15-input p15-price" data-row-idx="${r._idx}" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation()" onfocus="showP15History(${r._idx},this)" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"><button class="p15-history-toggle" type="button" onclick="event.stopPropagation();toggleP15History(${r._idx})">履歴</button></div><div class="p15-history-suggestion" id="p15history-suggestion-${r._idx}">${p15HistorySuggestionHtml(r)}</div></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td></tr><tr class="p15-history-detail-row${p15HistoryOpenRowIdx===r._idx?" open":""}" id="p15history-row-${r._idx}"><td colspan="7" id="p15history-detail-${r._idx}">${p15HistoryDetailHtml(r)}</td></tr>`).join("");
   const wrap=document.getElementById("p15content-"+cid(imp));
   if(!wrap)return;
   wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">産地・売価入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="table-scroll"><table><thead><tr><th>#</th><th>店舗名</th><th>商品名</th><th>商品コード</th><th>産地</th><th>売価</th><th>状態</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -5559,7 +5690,7 @@ function applyWorkPriceOriginToRows(targetRows){
     const prices=workPriceOriginPrices(entry,row.importer_id);
     summary.matched++;
     if(entry.origin&&!row.origin){row.origin=workOriginRomanize(entry.origin);summary.origin++}
-    if(prices.length&&!workPriceValuePresent(row.unit_price)){row.unit_price=prices[0];row._priceSource="添付Excel";summary.price++}
+    if(prices.length&&row._priceSource!=="受注価格"){row.unit_price=prices[0];row._priceSource="添付Excel";summary.price++}
     if(entry.unit){row._unit=entry.unit;summary.unit++}
     if(prices.length>1){row._memo=workPriceOriginAppendMemo(row._memo,prices);summary.twoPrices++}
     row._priceOriginSource=`${workPriceOriginFilename} / ${entry.sheetName}!${entry.sheetRow}`;
