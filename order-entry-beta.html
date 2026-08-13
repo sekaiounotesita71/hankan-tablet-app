@@ -132,7 +132,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="home-group flow-purchase">
         <div class="home-group-title">仕入・支払<span>仕入登録から支払管理へ</span></div>
         <div class="home-command-grid">
-          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchase-entry')"><span><b>仕入入力</b><span>事前仕入・発注なし仕入</span></span></button>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchase-entry')"><span><b>仕入入力</b><span>売上引用・事前仕入</span></span></button>
           <button class="home-command" type="button" onclick="switchWorkspaceTab('purchases')"><span><b>仕入参照</b><span>仕入伝票の検索・照合</span></span></button>
           <button class="home-command" type="button" onclick="switchWorkspaceTab('payables')"><span><b>買掛管理</b><span>請求書照合・支払管理</span></span></button>
         </div>
@@ -554,21 +554,23 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   <section class="panel workspace-panel" data-workspace-panel="purchase-entry" id="purchase-entry-panel" style="margin-top:12px">
     <div class="panel-head"><span>仕入入力</span></div>
     <div class="panel-body">
-      <div style="font-weight:900;margin-bottom:8px">発注を伴わない事前仕入</div>
+      <div style="font-weight:900;margin-bottom:8px">仕入明細入力</div>
       <div class="advance-entry-head">
         <label>仕入日<input id="advance-purchase-date" type="date" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
         <label>拠点<select id="advance-purchase-site" data-advance-header onchange="updateAdvancePurchaseHeader()"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label>仕入先コード<div class="lookup-cell"><input id="advance-purchase-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" onchange="updateAdvancePurchaseHeader()"><button class="quick-master-button" type="button" title="仕入先マスタを追加" onclick="openMasterForQuickAdd('suppliers',{codeId:'advance-purchase-supplier'})">+</button></div></label>
         <label>仕入先名<div id="advance-purchase-supplier-name" class="site-readonly">未設定</div></label>
+        <label>輸入社コード<input id="advance-purchase-importer" class="ime-en" list="importer-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="空欄でALL"></label>
         <label>請求書番号<input id="advance-purchase-invoice" class="ime-en" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="未着なら空欄"></label>
         <label>伝票メモ<input id="advance-purchase-note" class="ime-ja" autocomplete="off" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
       </div>
       <div class="advance-entry-actions">
+        <button class="btn" type="button" onclick="importSalesIntoAdvancePurchase()">売上から引用</button>
         <button class="btn" type="button" onclick="addAdvancePurchaseRow(null,{focus:true})">明細追加</button>
         <button class="btn" type="button" onclick="clearAdvancePurchaseRows()">明細クリア</button>
         <button class="btn primary" type="button" onclick="saveAdvancePurchaseBatch()">一括登録 Ctrl+Enter</button>
         <span id="advance-purchase-state" class="pill warn">入力待ち</span>
-        <span class="advance-entry-hint">Enterで右へ、Shift+Enterで左へ、上下キーで同じ列を移動</span>
+        <span class="advance-entry-hint">売上引用は仕入日・拠点・仕入先で抽出。Enterで右へ、Shift+Enterで左へ、上下キーで同じ列を移動</span>
       </div>
       <div class="advance-entry-summary" id="advance-purchase-summary"></div>
       <div class="advance-entry-table-wrap">
@@ -7149,6 +7151,7 @@ function saveAdvancePurchaseDraft(){
     purchaseDate:val("advance-purchase-date")||today(),
     siteCode:val("advance-purchase-site")||"OSA",
     supplierCode:val("advance-purchase-supplier").trim(),
+    importerCode:normalizeImporterCode(val("advance-purchase-importer")),
     supplierInvoiceNo:val("advance-purchase-invoice").trim(),
     note:val("advance-purchase-note").trim(),
     rows:advancePurchaseRows.map(({invalid,...row})=>row)
@@ -7161,6 +7164,7 @@ function loadAdvancePurchaseDraft(){
   if(saved.purchaseDate)document.getElementById("advance-purchase-date").value=saved.purchaseDate;
   if(saved.siteCode)document.getElementById("advance-purchase-site").value=saved.siteCode;
   if(saved.supplierCode)document.getElementById("advance-purchase-supplier").value=saved.supplierCode;
+  if(saved.importerCode)document.getElementById("advance-purchase-importer").value=saved.importerCode;
   if(saved.supplierInvoiceNo)document.getElementById("advance-purchase-invoice").value=saved.supplierInvoiceNo;
   if(saved.note)document.getElementById("advance-purchase-note").value=saved.note;
   advancePurchaseRows=Array.isArray(saved.rows)&&saved.rows.length?saved.rows.map(row=>({...blankAdvancePurchaseRow(),...row,id:row.id||newAppUuid(),invalid:false})):[blankAdvancePurchaseRow()];
@@ -7172,6 +7176,88 @@ function updateAdvancePurchaseHeader(options={}){
   const label=document.getElementById("advance-purchase-supplier-name");
   if(label)label.textContent=supplier?.name||"未設定";
   if(options.save!==false)saveAdvancePurchaseDraft();
+}
+async function readSalesForAdvancePurchase(workDate){
+  const result=[];
+  const pageSize=1000;
+  for(let offset=0;;offset+=pageSize){
+    const {data,error}=await supabaseClient.from("sales_records")
+      .select("id,session_id,work_date,importer_code,importer_id,product_id,product_name,origin,input_qty,input_unit,net_weight,is_stockout")
+      .eq("work_date",workDate)
+      .order("id")
+      .range(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    result.push(...page);
+    if(page.length<pageSize)break;
+  }
+  return result;
+}
+async function importSalesIntoAdvancePurchase(){
+  if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
+  const purchaseDate=val("advance-purchase-date");
+  const siteCode=val("advance-purchase-site")||"OSA";
+  const supplierCode=val("advance-purchase-supplier").trim();
+  const supplier=lookupSupplierByCode(supplierCode);
+  const importerCode=normalizeImporterCode(val("advance-purchase-importer"));
+  if(!purchaseDate||!supplierCode||!supplier){alert("仕入日と、仕入先マスタに登録済みの仕入先コードを入力してから引用してください。");return}
+  setAppBusy(true,"確定売上から仕入明細を確認しています...");
+  try{
+    const salesRows=await readSalesForAdvancePurchase(purchaseDate);
+    const sessionIds=[...new Set(salesRows.map(row=>row.session_id).filter(Boolean))];
+    const sessionSites=new Map();
+    for(let index=0;index<sessionIds.length;index+=200){
+      const {data,error}=await supabaseClient.from("work_sessions").select("id,site_code").in("id",sessionIds.slice(index,index+200));
+      if(error)throw error;
+      (data||[]).forEach(session=>sessionSites.set(session.id,session.site_code||"OSA"));
+    }
+    const existingSalesIds=new Set(advancePurchaseRows.flatMap(row=>Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[]));
+    const grouped=new Map();
+    let differentSupplier=0,unmapped=0,invalidQty=0,duplicate=0;
+    salesRows.forEach(sale=>{
+      if(sale.is_stockout)return;
+      if((sessionSites.get(sale.session_id)||"OSA")!==siteCode)return;
+      if(importerCode&&normalizeImporterCode(sale.importer_code||sale.importer_id)!==importerCode)return;
+      if(existingSalesIds.has(sale.id)){duplicate++;return}
+      const product=findMasterProduct(sale.product_id,sale.product_name);
+      if(!product||!product.supplierCode){unmapped++;return}
+      if(String(product.supplierCode).trim().toLowerCase()!==supplierCode.toLowerCase()){differentSupplier++;return}
+      let unit=normalizeLineUnit(sale.input_unit);
+      let qty=dbNumber(sale.input_qty);
+      if(!["Kg","pkt","PC","CS"].includes(unit)){
+        unit="Kg";
+        qty=dbNumber(sale.net_weight);
+      }
+      if(qty===null||qty<=0){invalidQty++;return}
+      const productCode=String(sale.product_id||product.code||"").trim();
+      const productName=String(sale.product_name||product.name||"").trim();
+      const origin=String(sale.origin||product.origin||"").trim();
+      const key=[productCode||productName,origin,unit].map(value=>String(value).toLowerCase()).join("|");
+      if(!grouped.has(key))grouped.set(key,{...blankAdvancePurchaseRow(),productCode,productName,origin,actualQty:0,actualUnit:unit,priceUnit:unit,trackInventory:false,sourceSalesIds:[]});
+      const row=grouped.get(key);
+      row.actualQty=Math.round((Number(row.actualQty)+qty)*1000)/1000;
+      row.sourceSalesIds.push(sale.id);
+    });
+    const imported=[...grouped.values()];
+    if(!imported.length){
+      alert(`引用できる売上明細がありません。\n商品マスタの仕入先設定、日付・拠点・輸入社を確認してください。${unmapped?`\n仕入先未設定: ${unmapped}件`:""}${duplicate?`\n引用済み: ${duplicate}件`:""}`);
+      return;
+    }
+    const active=advancePurchaseActiveRows();
+    if(active.length&&!confirm(`入力中の明細 ${active.length}件を残したまま、売上から ${imported.length}件を追加しますか？`))return;
+    advancePurchaseRows=active.length?[...active,...imported]:imported;
+    renderAdvancePurchaseRows();
+    saveAdvancePurchaseDraft();
+    const state=document.getElementById("advance-purchase-state");
+    if(state){state.textContent=`売上引用 ${imported.length}件`;state.className="pill blue"}
+    const skipped=unmapped+invalidQty+duplicate;
+    alert(`確定売上から ${imported.length}件を仕入明細へ引用しました。${skipped?`\n確認対象外: ${skipped}件`:""}${differentSupplier?`\n他の仕入先: ${differentSupplier}件`:""}`);
+    requestAnimationFrame(()=>focusAdvancePurchaseCell(Math.max(0,advancePurchaseRows.length-imported.length),"unitPrice"));
+  }catch(error){
+    alert("売上からの引用に失敗しました: "+sitePartnerDbError(error));
+  }finally{
+    setAppBusy(false);
+  }
 }
 function updateAdvancePurchaseSummary(){
   const rows=advancePurchaseActiveRows();
