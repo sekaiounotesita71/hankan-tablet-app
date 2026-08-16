@@ -2616,6 +2616,7 @@ async function salesRefReadAppliedPendingRows(client=initSupabase(),options={}){
   }
   return records.filter(row=>{
     const date=salesRefAppliedPendingDate(row);
+    if(options.ranges?.length)return options.ranges.some(range=>(!range.from||date>=range.from)&&(!range.to||date<=range.to));
     if(options.from&&date<options.from)return false;
     if(options.to&&date>options.to)return false;
     return true;
@@ -3280,8 +3281,21 @@ function salesRefRankHtml(title,rows,unitLabel="金額"){
 function salesRefDatabaseRange(){
   const input=salesRefDateRangeFromInput();
   if(input.raw&&(!input.from||!input.to))return {error:"期間の形式を確認してください。例: 20250701-20250731 / 202507 / 20250701"};
-  if(!input.raw)return {from:"",to:"",label:"全期間"};
-  return {from:salesRefShiftYear(input.from,-1),to:input.to,label:`${input.from} - ${input.to}（前年比較を含む）`};
+  if(!input.raw)return {ranges:[{from:"",to:""}],label:"全期間"};
+  const ranges=[
+    {from:salesRefShiftYear(input.from,-1),to:salesRefShiftYear(input.to,-1)},
+    {from:input.from,to:input.to}
+  ].sort((a,b)=>a.from.localeCompare(b.from,"ja"));
+  const merged=[];
+  ranges.forEach(range=>{
+    const last=merged[merged.length-1];
+    if(last&&range.from<=last.to){
+      if(range.to>last.to)last.to=range.to;
+    }else{
+      merged.push({...range});
+    }
+  });
+  return {ranges:merged,label:`${input.from} - ${input.to}（前年比較を含む）`};
 }
 async function salesRefReadPaged(buildQuery,pageSize=1000){
   const rows=[];
@@ -3295,28 +3309,31 @@ async function salesRefReadPaged(buildQuery,pageSize=1000){
   return rows;
 }
 async function salesRefReadCurrentRows(client,range){
-  return salesRefReadPaged(()=>{
+  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(()=>{
     let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).order("id",{ascending:false});
-    if(range.from)query=query.gte("work_date",range.from);
-    if(range.to)query=query.lte("work_date",range.to);
+    if(part.from)query=query.gte("work_date",part.from);
+    if(part.to)query=query.lte("work_date",part.to);
     return query;
-  });
+  })));
+  return batches.flat();
 }
 async function salesRefReadHistoricalRows(client,range){
-  return salesRefReadPaged(()=>{
+  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(()=>{
     let query=client.from("historical_sales_records").select("*").order("finalized_at",{ascending:false}).order("id",{ascending:false});
-    if(range.from)query=query.gte("finalized_at",`${range.from}T00:00:00`);
-    if(range.to)query=query.lte("finalized_at",`${range.to}T23:59:59.999`);
+    if(part.from)query=query.gte("finalized_at",`${part.from}T00:00:00`);
+    if(part.to)query=query.lte("finalized_at",`${part.to}T23:59:59.999`);
     return query;
-  });
+  })));
+  return batches.flat();
 }
 async function salesRefReadSessions(client,range){
-  return salesRefReadPaged(()=>{
+  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(()=>{
     let query=client.from("work_sessions").select("id,name,work_date,shipping_fee,shipping_fees,locked,status,finalized_at,updated_at,created_at").order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
-    if(range.from)query=query.gte("work_date",range.from);
-    if(range.to)query=query.lte("work_date",range.to);
+    if(part.from)query=query.gte("work_date",part.from);
+    if(part.to)query=query.lte("work_date",part.to);
     return query;
-  });
+  })));
+  return batches.flat();
 }
 async function loadSalesReferenceBoard(){
   const client=initSupabase();
@@ -3342,7 +3359,7 @@ async function loadSalesReferenceBoard(){
       if(/historical_sales_records|relation .* does not exist/i.test(msg))return {rows:[],warning:"過去売上SQL未実行"};
       throw error;
     });
-    const pendingTask=salesRefReadAppliedPendingRows(client,{from:range.from,to:range.to}).then(rows=>({rows,warning:""})).catch(error=>{
+    const pendingTask=salesRefReadAppliedPendingRows(client,{ranges:range.ranges}).then(rows=>({rows,warning:""})).catch(error=>{
       const msg=String(error?.message||error||"");
       if(/pending_entries|relation .* does not exist/i.test(msg))return {rows:[],warning:"未処理伝票SQL未実行"};
       throw error;
