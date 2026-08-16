@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-08-17 phase 1.5 price history
+
+- 作業APPの価格候補に閉じるボタンを追加
+- 売価入力中はEscキーでも価格候補を閉じられるように変更
+
 ## 2026-08-16 login and user administration
 
 - 販売管理と現場作業にログイン専用画面を追加
