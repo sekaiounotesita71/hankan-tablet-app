@@ -61,6 +61,7 @@ header{
 .sync-btn{height:38px;border:1px solid #98c4ac;border-radius:8px;background:#fff;color:#24513d;font-weight:900;padding:0 12px;cursor:pointer}
 .sync-btn.primary{background:#1c7a55;color:#fff;border-color:#1c7a55}
 .sync-user{font-size:13px;font-weight:800}
+.work-auth-gate{position:fixed;inset:0;z-index:300;display:none;place-items:center;padding:20px;background:#eef1f3}.work-auth-shell{width:min(430px,100%);overflow:hidden;border:1px solid var(--border-strong);border-radius:10px;background:#fff;box-shadow:0 18px 48px rgba(30,38,46,.16)}.work-auth-head{padding:22px 24px 16px;border-bottom:1px solid var(--border);background:#fbfaf7}.work-auth-title{font-size:21px;font-weight:900}.work-auth-head p{margin:6px 0 0;color:var(--muted);font-size:12px;font-weight:800}.work-auth-form{display:grid;gap:12px;padding:20px 24px 24px}.work-auth-form label{display:grid;gap:5px;color:var(--muted);font-size:12px;font-weight:900}.work-auth-form input{width:100%;min-height:46px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px}.work-auth-check{display:flex!important;grid-template-columns:auto 1fr;align-items:center;gap:7px!important}.work-auth-check input{width:18px;height:18px;min-height:18px}.work-auth-button{width:100%;min-height:46px}.work-auth-link{border:0;background:transparent;color:#174ea6;padding:3px 0;text-align:left;font-size:12px;font-weight:900;cursor:pointer}.work-auth-state{min-height:20px;padding:7px 9px;border-radius:6px;background:#f2f1ee;color:var(--muted);font-size:12px;font-weight:800}.work-auth-state.error{background:var(--danger-bg);color:var(--danger)}.work-auth-state.ok{background:var(--success-bg);color:var(--success)}.work-auth-checking .work-auth-gate,.work-auth-locked .work-auth-gate{display:grid}.work-auth-checking>header,.work-auth-checking>.sync-bar,.work-auth-checking>main,.work-auth-locked>header,.work-auth-locked>.sync-bar,.work-auth-locked>main{visibility:hidden}.work-auth-checking,.work-auth-locked{overflow:hidden}
 main{width:min(1280px,100%);margin:0 auto;padding:18px max(14px,env(safe-area-inset-left)) 28px max(14px,env(safe-area-inset-right))}
 .view{display:none}.view.active{display:block}
 .ops-entry-only{display:none!important}
@@ -188,7 +189,20 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260806-2">
 </head>
-<body>
+<body class="work-auth-checking">
+<div class="work-auth-gate" aria-live="polite">
+  <div class="work-auth-shell">
+    <div class="work-auth-head"><div class="work-auth-title">ゆみるめ 現場作業</div><p>登録されたアカウントでログインしてください。</p></div>
+    <form class="work-auth-form" onsubmit="signInSupabase(event)">
+      <label>メールアドレス<input id="login-email" type="email" autocomplete="username" inputmode="email" required></label>
+      <label>パスワード<input id="login-password" type="password" autocomplete="current-password" required></label>
+      <label class="work-auth-check"><input type="checkbox" onchange="document.getElementById('login-password').type=this.checked?'text':'password'">パスワードを表示</label>
+      <button class="btn btn-primary work-auth-button" type="submit">ログイン</button>
+      <button class="work-auth-link" type="button" onclick="sendWorkPasswordReset()">パスワードを忘れた場合</button>
+      <div id="work-auth-state" class="work-auth-state">認証状態を確認しています。</div>
+    </form>
+  </div>
+</div>
 <header class="app-shell-header">
   <nav class="app-nav" aria-label="アプリ切替">
     <a class="app-nav-link" href="./order-entry-beta.html#home">HOME</a>
@@ -221,9 +235,6 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 </header>
 <div class="sync-bar">
   <div class="sync-status" id="sync-status">Supabase: 未接続</div>
-  <input class="sync-input" id="login-email" type="email" placeholder="メール">
-  <input class="sync-input" id="login-password" type="password" placeholder="パスワード">
-  <button class="sync-btn primary" onclick="signInSupabase()">ログイン</button>
   <button class="sync-btn" onclick="signOutSupabase()">ログアウト</button>
   <button class="sync-btn" onclick="openSessionList()">作業一覧</button>
   <div class="sync-user" id="sync-user"></div>
@@ -1135,6 +1146,9 @@ function initSupabase(){
   const status=document.getElementById("sync-status");
   if(!window.supabase){
     if(status)status.textContent="Supabase: ライブラリ読込待ち";
+    currentUser=null;
+    updateSupabaseStatus();
+    setWorkAuthState("認証サービスを読み込めません。ネット接続を確認してください。","error");
     return;
   }
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -1154,15 +1168,28 @@ function updateSupabaseStatus(){
   const userEl=document.getElementById("sync-user");
   if(!supabaseClient){
     if(status)status.textContent="Supabase: 未接続";
+    document.body.classList.remove("work-auth-checking","work-auth-ready");
+    document.body.classList.add("work-auth-locked");
     return;
   }
   if(currentUser){
     if(status)status.textContent="Supabase: ログイン済み";
     if(userEl)userEl.textContent=currentUser.email||"";
+    document.body.classList.remove("work-auth-checking","work-auth-locked");
+    document.body.classList.add("work-auth-ready");
   }else{
     if(status)status.textContent="Supabase: 未ログイン";
     if(userEl)userEl.textContent="";
+    document.body.classList.remove("work-auth-checking","work-auth-ready");
+    document.body.classList.add("work-auth-locked");
+    setWorkAuthState("メールアドレスとパスワードを入力してください。");
   }
+}
+function setWorkAuthState(message,type=""){
+  const state=document.getElementById("work-auth-state");
+  if(!state)return;
+  state.textContent=message;
+  state.className=`work-auth-state${type?` ${type}`:""}`;
 }
 function setSaveState(message,isError){
   const status=document.getElementById("sync-status");
@@ -1174,19 +1201,34 @@ function setSaveState(message,isError){
     saveStateTimer=setTimeout(()=>updateSupabaseStatus(),1800);
   }
 }
-async function signInSupabase(){
+async function signInSupabase(event){
+  event?.preventDefault?.();
   if(!supabaseClient)initSupabase();
-  if(!supabaseClient){toast("Supabaseを読み込めませんでした");return}
+  if(!supabaseClient){setWorkAuthState("認証サービスを読み込めません。","error");return}
   const email=document.getElementById("login-email").value.trim();
   const password=document.getElementById("login-password").value;
-  if(!email||!password){toast("メールとパスワードを入力してください");return}
+  if(!email||!password){setWorkAuthState("メールとパスワードを入力してください。","error");return}
+  setWorkAuthState("ログインしています...");
   const {error}=await supabaseClient.auth.signInWithPassword({email,password});
-  if(error){toast("ログインできません: "+error.message);return}
-  toast("ログインしました");
+  if(error){setWorkAuthState(/invalid login credentials/i.test(error.message)?"メールアドレスまたはパスワードが違います。":error.message,"error");return}
+  document.getElementById("login-password").value="";
+  setWorkAuthState("ログインしました。","ok");
+}
+async function sendWorkPasswordReset(){
+  if(!supabaseClient)initSupabase();
+  const email=document.getElementById("login-email").value.trim();
+  if(!supabaseClient||!email){setWorkAuthState("先にメールアドレスを入力してください。","error");return}
+  setWorkAuthState("再設定メールを送信しています...");
+  const redirectTo=`${location.origin}/order-entry-beta?reset=1`;
+  const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo});
+  if(error){setWorkAuthState(error.message,"error");return}
+  setWorkAuthState("パスワード再設定メールを送信しました。","ok");
 }
 async function signOutSupabase(){
   if(!supabaseClient)return;
   await supabaseClient.auth.signOut();
+  currentUser=null;
+  updateSupabaseStatus();
   toast("ログアウトしました");
 }
 function numberOrNull(v){

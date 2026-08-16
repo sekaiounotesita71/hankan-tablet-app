@@ -28,7 +28,9 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-c
 .actions{display:flex;gap:8px;flex-wrap:wrap}.btn{height:40px;border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:8px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:#fff5f4;border-color:#efb9b3;color:var(--danger)}
 .language-switch{height:40px;min-width:58px;border:1px solid var(--line2);border-radius:8px;background:#fff;color:var(--text);font-weight:900;cursor:pointer}
 main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-template-columns:1fr;gap:12px}.workspace-panel{display:none!important}.workspace-panel.active{display:block!important}.workspace-panel.layout.active{display:grid!important}.workspace-action-hidden{display:none!important}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.panel-body{padding:12px}
-.auth-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}.auth-bar input{width:220px;min-height:36px}.auth-bar .btn{flex:0 0 auto;min-width:82px;height:36px;white-space:nowrap}.auth-bar .pill{min-height:28px}
+.auth-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}.auth-user{display:flex;align-items:center;gap:8px;min-width:0}.auth-user-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:900}.auth-bar .btn{flex:0 0 auto;min-width:82px;height:36px;white-space:nowrap}.auth-bar .pill{min-height:28px}
+.auth-gate{position:fixed;inset:0;z-index:2000;display:none;place-items:center;padding:20px;background:#eef1f3}.auth-shell{width:min(430px,100%);border:1px solid var(--line2);border-radius:8px;background:#fff;box-shadow:0 18px 48px rgba(30,38,46,.16);overflow:hidden}.auth-shell-head{padding:22px 24px 16px;border-bottom:1px solid var(--line);background:#fbfcfd}.auth-brand{font-size:21px;font-weight:900}.auth-shell-head p{margin:6px 0 0;color:var(--muted);font-size:12px;font-weight:800}.auth-shell-body{display:grid;gap:12px;padding:20px 24px 24px}.auth-shell-body label{font-size:12px}.auth-shell-body input{min-height:44px}.auth-password-option{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:800}.auth-password-option input{width:18px;height:18px;min-height:18px}.auth-primary{width:100%;height:44px}.auth-text-button{border:0;background:transparent;color:var(--blue);padding:3px;text-align:left;font-size:12px;font-weight:900;cursor:pointer}.auth-message{min-height:20px;padding:7px 9px;border-radius:6px;background:#f3f5f7;color:var(--muted);font-size:12px;font-weight:800}.auth-message.error{background:#fff0ef;color:var(--danger)}.auth-message.ok{background:var(--accent-bg);color:var(--accent)}.auth-setup{display:none;gap:12px}.auth-setup.open{display:grid}.auth-login-form.hidden{display:none}.auth-checking .auth-gate,.auth-locked .auth-gate,.auth-password-setup .auth-gate{display:grid}.auth-checking header,.auth-checking main,.auth-locked header,.auth-locked main,.auth-password-setup header,.auth-password-setup main{visibility:hidden}.auth-checking,.auth-locked,.auth-password-setup{overflow:hidden}
+.user-admin-layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:12px}.user-admin-form{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}.user-site-checks{display:flex;align-items:center;gap:12px;min-height:38px}.user-site-checks label{flex-direction:row;align-items:center;gap:6px;color:var(--text)}.user-site-checks input{width:18px;height:18px;min-height:18px}.user-admin-actions{display:flex;gap:7px;flex-wrap:wrap}.user-admin-list-tools{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:8px;align-items:end}.user-admin-table-wrap{max-height:580px;overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:8px}.user-admin-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0}.user-admin-table th,.user-admin-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.user-admin-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.user-admin-table tbody tr{cursor:pointer}.user-admin-table tbody tr:hover td,.user-admin-table tbody tr.selected td{background:#eaf2ff}.user-admin-table tbody tr.inactive td{color:#7c8793;background:#f6f7f8}.user-admin-email{font-weight:900}.user-admin-meta{color:var(--muted);font-size:11px}.admin-only-hidden{display:none!important}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .price{width:96px;text-align:right;font-family:Consolas,monospace}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
@@ -56,14 +58,37 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .ops-tools{display:grid;grid-template-columns:170px 150px minmax(190px,1fr) minmax(180px,1fr) auto auto;gap:8px;align-items:end}.ops-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.ops-table-wrap{max-height:560px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ops-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.ops-table th,.ops-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.ops-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ops-table input,.ops-table select{height:34px;min-height:34px;border-radius:6px}.ops-table tr.submitted td{background:#fff8e8}.ops-table tr.accepted td{background:#eef8f2}.ops-table tr.returned td{background:#fff0ef}.ops-actions{display:flex;gap:5px;align-items:center}.ops-money{text-align:right;font-family:Consolas,monospace;font-weight:900}.purchase-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-form .wide{grid-column:span 2}.purchase-form .full{grid-column:1/-1}.purchase-receipt{border-bottom:1px solid var(--line)}.purchase-receipt summary{display:grid;grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 120px auto;gap:8px;align-items:center;padding:9px 10px;cursor:pointer;font-weight:900;background:#fff}.purchase-receipt summary:hover{background:#f7f9fb}.purchase-detail{padding:10px;border-top:1px solid var(--line);background:#fbfcfd}.purchase-detail-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-detail-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0;margin-top:8px}.purchase-detail-table th,.purchase-detail-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.purchase-detail-table input{height:32px;min-height:32px}.site-readonly{display:flex;align-items:center;min-height:38px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#f3f5f7;color:#334155;font-weight:900}.admin-box{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}
 .advance-entry-head{display:grid;grid-template-columns:150px 120px 180px minmax(180px,1fr) 180px minmax(220px,1.2fr);gap:8px;align-items:end}.advance-entry-head .wide{grid-column:span 2}.advance-entry-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}.advance-entry-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}.advance-entry-table-wrap{max-height:460px;overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:7px;background:#fff}.advance-entry-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.advance-entry-table th,.advance-entry-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap;vertical-align:middle}.advance-entry-table th{position:sticky;top:0;z-index:3;background:#f7f9fb;color:var(--muted);font-weight:900}.advance-entry-table input,.advance-entry-table select{height:34px;min-height:34px;border-radius:6px}.advance-entry-table .product-code{width:118px}.advance-entry-table .product-name{width:220px}.advance-entry-table .origin{width:140px}.advance-entry-table .quantity{width:85px}.advance-entry-table .unit{width:76px}.advance-entry-table .price{width:100px}.advance-entry-table .memo{width:190px}.advance-entry-table .line-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.advance-entry-table tr.invalid td{background:#fff0ef}.advance-stock-check{display:flex;align-items:center;justify-content:center}.advance-stock-check input{width:18px;height:18px;min-height:18px}.advance-row-actions{display:flex;gap:4px}.advance-row-actions .small{min-width:46px}.advance-entry-hint{margin-left:auto;color:var(--muted);font-size:12px}
 .partner-register-tools{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,1fr) 150px auto minmax(200px,1fr);gap:8px;align-items:end}
-@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.sales-shipping-row{grid-template-columns:90px minmax(150px,1fr) 110px auto}.sales-shipping-session{display:none}.sales-correction-grid{grid-template-columns:1fr 1fr}.sales-correction-grid .wide{grid-column:span 1}.sales-correction-grid .full{grid-column:1/-1}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}.home-group{grid-template-columns:1fr}.home-command-grid{grid-template-columns:1fr 1fr}.master-return-bar{align-items:flex-start;flex-direction:column}.audit-toolbar{grid-template-columns:1fr 1fr}.audit-toolbar label:nth-child(5),.audit-toolbar>button{grid-column:1/-1}.audit-detail-grid{grid-template-columns:1fr}.audit-snapshot-row{grid-template-columns:1fr 1fr}.backup-health{grid-template-columns:1fr}}
+@media (max-width:900px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.title-wrap{width:100%;align-items:flex-start;flex-direction:column}.app-nav{width:100%;overflow-x:auto}.app-nav-link{flex:0 0 auto}.actions{width:100%}.btn{flex:1}.orders{min-width:900px}.report-tools{grid-template-columns:1fr 1fr}.report-count{grid-column:1/-1}.pending-grid{grid-template-columns:1fr}.pending-grid .wide,.pending-grid .full{grid-column:1/-1}.pending-card{grid-template-columns:1fr}.pending-actions{justify-content:flex-start}.sales-board-tools,.sales-board-summary,.sales-board-ranks,.product-guide-template-tools,.product-guide-tools,.product-guide-price-tools,.product-guide-summary,.ar-tools,.ar-summary{grid-template-columns:1fr}.sales-shipping-row{grid-template-columns:90px minmax(150px,1fr) 110px auto}.sales-shipping-session{display:none}.sales-correction-grid{grid-template-columns:1fr 1fr}.sales-correction-grid .wide{grid-column:span 1}.sales-correction-grid .full{grid-column:1/-1}.product-guide-template-state{grid-column:1}.sales-table-wrap,.product-guide-table-wrap,.ar-table-wrap{max-height:420px}.ar-entry-grid{grid-template-columns:1fr}.ar-form{grid-template-columns:1fr 1fr}.ar-form .wide,.ar-form .full{grid-column:1/-1}.home-group{grid-template-columns:1fr}.home-command-grid{grid-template-columns:1fr 1fr}.master-return-bar{align-items:flex-start;flex-direction:column}.audit-toolbar{grid-template-columns:1fr 1fr}.audit-toolbar label:nth-child(5),.audit-toolbar>button{grid-column:1/-1}.audit-detail-grid{grid-template-columns:1fr}.audit-snapshot-row{grid-template-columns:1fr 1fr}.backup-health{grid-template-columns:1fr}.user-admin-layout{grid-template-columns:1fr}}
 @media (max-width:620px){.home-command-grid{grid-template-columns:1fr}}
 @media (max-width:900px){.ops-tools,.purchase-form,.purchase-detail-grid,.partner-register-tools,.advance-entry-head{grid-template-columns:1fr 1fr}.purchase-form .wide,.purchase-form .full,.advance-entry-head .wide{grid-column:1/-1}.partner-register-action,.partner-register-note{grid-column:1/-1}.purchase-receipt summary{min-width:850px}.ops-table-wrap,.advance-entry-table-wrap{max-height:460px}.advance-entry-hint{width:100%;margin-left:0}}
 @media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260806-2">
 </head>
-<body>
+<body class="auth-checking">
+<div id="auth-gate" class="auth-gate" aria-live="polite">
+  <div class="auth-shell">
+    <div class="auth-shell-head"><div class="auth-brand">ゆみるめ 業務管理</div><p>登録されたアカウントでログインしてください。</p></div>
+    <div class="auth-shell-body">
+      <form id="auth-login-form" class="auth-login-form" onsubmit="signInSupabase(event)">
+        <div style="display:grid;gap:12px">
+          <label>メールアドレス<input id="login-email" type="email" autocomplete="username" inputmode="email" required></label>
+          <label>パスワード<input id="login-password" type="password" autocomplete="current-password" required></label>
+          <label class="auth-password-option"><input type="checkbox" onchange="toggleLoginPassword(this.checked)">パスワードを表示</label>
+          <button class="btn primary auth-primary" type="submit">ログイン</button>
+          <button class="auth-text-button" type="button" onclick="sendPasswordReset()">パスワードを忘れた場合</button>
+        </div>
+      </form>
+      <form id="auth-password-setup" class="auth-setup" onsubmit="saveNewPassword(event)">
+        <b>新しいパスワードを設定</b>
+        <label>新しいパスワード<input id="new-login-password" type="password" autocomplete="new-password" minlength="10" required></label>
+        <label>確認<input id="new-login-password-confirm" type="password" autocomplete="new-password" minlength="10" required></label>
+        <button class="btn primary auth-primary" type="submit">パスワードを保存</button>
+      </form>
+      <div id="login-state" class="auth-message">認証状態を確認しています。</div>
+    </div>
+  </div>
+</div>
 <header class="app-shell-header">
   <nav class="app-nav" aria-label="アプリ切替">
       <button class="app-nav-link active" type="button" data-workspace-tab="home" onclick="switchWorkspaceTab('home')">HOME</button>
@@ -80,6 +105,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <button class="app-nav-link" type="button" data-workspace-tab="payables" onclick="switchWorkspaceTab('payables')">買掛管理</button>
       <span class="app-nav-divider" aria-hidden="true"></span>
       <button class="app-nav-link" type="button" data-workspace-tab="masters" onclick="switchWorkspaceTab('masters')">マスタ</button>
+      <button class="app-nav-link admin-only-hidden" type="button" data-admin-only data-workspace-tab="users" onclick="switchWorkspaceTab('users')">ユーザー</button>
       <button class="app-nav-link" type="button" data-workspace-tab="guide" onclick="switchWorkspaceTab('guide')">商品案内</button>
   </nav>
   <div class="app-header-row">
@@ -101,11 +127,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 </header>
 <main>
   <div class="auth-bar">
-    <input id="order-login-email" type="email" autocomplete="username" placeholder="メール">
-    <input id="order-login-password" type="password" autocomplete="current-password" placeholder="パスワード">
-    <button class="btn" type="button" onclick="signInSupabase()">ログイン</button>
+    <div class="auth-user"><span id="auth-state" class="pill warn">確認中</span><span id="auth-user-email" class="auth-user-email"></span><span id="auth-role-state" class="pill">一般</span></div>
     <button class="btn" type="button" onclick="signOutSupabase()">ログアウト</button>
-    <span id="auth-state" class="pill warn">未ログイン</span>
   </div>
 
   <section class="workspace-panel active" data-workspace-panel="home" id="home-panel">
@@ -138,9 +161,10 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         </div>
       </div>
       <div class="home-group flow-master">
-        <div class="home-group-title">基盤・案内<span>共通マスタと販売資料</span></div>
+        <div class="home-group-title">基盤・案内<span>共通設定と販売資料</span></div>
         <div class="home-command-grid">
           <button class="home-command" type="button" onclick="switchWorkspaceTab('masters')"><span><b>マスタ</b><span>商品・得意先・仕入先・輸入社・請求条件・支払条件</span></span></button>
+          <button class="home-command admin-only-hidden" type="button" data-admin-only onclick="switchWorkspaceTab('users')"><span><b>ユーザー管理</b><span>社内・外部担当者の招待と権限設定</span></span></button>
           <button class="home-command" type="button" onclick="switchWorkspaceTab('guide')"><span><b>商品案内</b><span>季節商品と価格案内</span></span></button>
         </div>
       </div>
@@ -538,16 +562,6 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="ops-summary"><span id="external-work-state" class="pill warn">SQL実行後に利用できます</span><span class="hint" style="margin:0">確定済み受注の「作業日・拠点・発注先」が一致する明細だけを公開します。</span></div>
       <div id="external-assignment-list" class="ops-table-wrap"><div class="sales-empty">条件を指定して一覧更新してください。</div></div>
 
-      <div class="admin-box">
-        <div style="font-weight:900;margin-bottom:8px">外部担当者の登録（管理者）</div>
-        <div class="partner-register-tools">
-          <label>担当者メール<input id="partner-user-email" type="email" autocomplete="off" placeholder="Supabase Auth登録済みメール"></label>
-          <label>発注先コード<input id="partner-user-supplier" list="supplier-code-list" autocomplete="off"></label>
-          <label>利用拠点<select id="partner-user-site"><option value="OSA,TYO">大阪・東京</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
-          <button class="btn partner-register-action" type="button" onclick="registerPartnerUser()">担当者を紐付け</button>
-          <span class="hint partner-register-note" style="margin:0">先にSupabase Authenticationで担当者アカウントを作成します。</span>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -813,6 +827,36 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       </div>
     </div>
   </section>
+
+  <section class="panel workspace-panel" data-workspace-panel="users" id="user-admin-panel" style="margin-top:12px">
+    <div class="panel-head"><span>ユーザー管理</span><span id="user-admin-count" class="pill">0名</span></div>
+    <div class="panel-body">
+      <div id="user-admin-denied" class="audit-admin-denied" style="display:none">ユーザーを管理できるのは管理者のみです。</div>
+      <div id="user-admin-content" class="user-admin-layout">
+        <div class="user-admin-form">
+          <b id="user-admin-form-title">新しいユーザーを招待</b>
+          <label>氏名<input id="user-admin-name" class="ime-ja" autocomplete="off" placeholder="担当者名"></label>
+          <label>メールアドレス<input id="user-admin-email" type="email" autocomplete="off" inputmode="email" placeholder="name@example.com"></label>
+          <label>利用区分<select id="user-admin-type" onchange="updateUserAdminFormState()"><option value="internal">社内ユーザー</option><option value="partner">外部作業者</option></select></label>
+          <label id="user-admin-role-wrap">権限<select id="user-admin-role"><option value="user">一般</option><option value="admin">管理者</option></select></label>
+          <div><div class="user-admin-meta" style="margin-bottom:5px">利用拠点</div><div class="user-site-checks"><label><input id="user-admin-site-osa" type="checkbox" checked>大阪</label><label><input id="user-admin-site-tyo" type="checkbox" checked>東京</label></div></div>
+          <label id="user-admin-supplier-wrap" style="display:none">発注先コード<input id="user-admin-supplier" list="supplier-code-list" class="ime-en" autocomplete="off" placeholder="外部作業者のみ"></label>
+          <label class="auth-password-option"><input id="user-admin-active" type="checkbox" checked>利用を有効にする</label>
+          <div class="user-admin-actions">
+            <button id="user-admin-invite" class="btn primary" type="button" onclick="inviteManagedUser()">招待メールを送る</button>
+            <button id="user-admin-save" class="btn blue" type="button" onclick="saveManagedUser()" disabled>変更を保存</button>
+            <button class="btn" type="button" onclick="clearManagedUserForm()">新規入力</button>
+          </div>
+          <button id="user-admin-reset" class="btn" type="button" onclick="sendManagedUserPasswordReset()" disabled>パスワード再設定メール</button>
+          <div id="user-admin-state" class="auth-message">管理者確認後に一覧を読み込みます。</div>
+        </div>
+        <div>
+          <div class="user-admin-list-tools"><label>検索<input id="user-admin-search" autocomplete="off" placeholder="氏名・メール・仕入先コード" oninput="renderManagedUsers()"></label><button class="btn" type="button" onclick="loadManagedUsers()">一覧更新</button></div>
+          <div id="user-admin-list" class="user-admin-table-wrap"><div class="sales-empty">ユーザー一覧を読み込んでください。</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 <div id="product-lookup-modal" class="modal-backdrop" onclick="if(event.target===this)closeProductLookup()">
   <div class="modal">
@@ -962,6 +1006,10 @@ let productLookupTarget={type:"order",index:0};
 let supabaseClient=null;
 let currentUser=null;
 let currentUserRole="user";
+let authPasswordSetupMode=new URLSearchParams(location.search).has("setup")||new URLSearchParams(location.search).has("reset");
+let managedUsers=[];
+let selectedManagedUserId="";
+let managedUsersLoaded=false;
 let dbReady=false;
 let dbLoadInFlight=false;
 let appBusy=false;
@@ -1008,14 +1056,40 @@ function setDbStatus(text,type="warn"){
 }
 function updateAuthStatus(){
   const el=document.getElementById("auth-state");
-  if(!el)return;
+  const emailEl=document.getElementById("auth-user-email");
+  const roleEl=document.getElementById("auth-role-state");
   if(currentUser){
-    el.textContent=currentUser.email||"ログイン済み";
-    el.className="pill blue";
+    if(el){el.textContent="ログイン済み";el.className="pill blue"}
+    if(emailEl)emailEl.textContent=currentUser.email||"";
+    if(roleEl){roleEl.textContent=currentUserIsAdmin()?"管理者":"一般";roleEl.className=currentUserIsAdmin()?"pill blue":"pill"}
   }else{
-    el.textContent="未ログイン";
-    el.className="pill warn";
+    if(el){el.textContent="未ログイン";el.className="pill warn"}
+    if(emailEl)emailEl.textContent="";
+    if(roleEl){roleEl.textContent="一般";roleEl.className="pill"}
   }
+  document.getElementById("auth-login-form")?.classList.toggle("hidden",!!currentUser&&authPasswordSetupMode);
+  document.getElementById("auth-password-setup")?.classList.toggle("open",!!currentUser&&authPasswordSetupMode);
+  document.body.classList.remove("auth-checking","auth-locked","auth-ready","auth-password-setup");
+  document.body.classList.add(currentUser?(authPasswordSetupMode?"auth-password-setup":"auth-ready"):"auth-locked");
+  if(!currentUser)setLoginState("メールアドレスとパスワードを入力してください。");
+}
+function setLoginState(message,type=""){
+  const state=document.getElementById("login-state");
+  if(!state)return;
+  state.textContent=message;
+  state.className=`auth-message${type?` ${type}`:""}`;
+}
+function authErrorText(error){
+  const message=String(error?.message||error||"");
+  if(/invalid login credentials/i.test(message))return "メールアドレスまたはパスワードが違います。";
+  if(/email not confirmed/i.test(message))return "招待メールを開いて登録を完了してください。";
+  if(/password should be at least/i.test(message))return "パスワードは10文字以上で設定してください。";
+  if(/rate limit|too many/i.test(message))return "試行回数が多いため、少し待ってから再度お試しください。";
+  return message||"認証処理に失敗しました。";
+}
+function toggleLoginPassword(visible){
+  const input=document.getElementById("login-password");
+  if(input)input.type=visible?"text":"password";
 }
 function setAppBusy(active,message="受注を確定しています。画面を閉じないでください。"){
   appBusy=!!active;
@@ -1031,7 +1105,13 @@ function setAppBusy(active,message="受注を確定しています。画面を�
 }
 function initSupabase(){
   if(supabaseClient)return supabaseClient;
-  if(!window.supabase){setDbStatus("DB未読込");return null}
+  if(!window.supabase){
+    setDbStatus("DB未読込");
+    currentUser=null;
+    updateAuthStatus();
+    setLoginState("認証サービスを読み込めません。ネット接続を確認してください。","error");
+    return null;
+  }
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   supabaseClient.auth.getSession().then(({data})=>{
     currentUser=data.session?.user||null;
@@ -1039,10 +1119,11 @@ function initSupabase(){
     loadCurrentUserRole();
     renderReportFilterCount();
   });
-  supabaseClient.auth.onAuthStateChange((_event,session)=>{
+  supabaseClient.auth.onAuthStateChange((event,session)=>{
     currentUser=session?.user||null;
+    if(event==="PASSWORD_RECOVERY")authPasswordSetupMode=true;
     updateAuthStatus();
-    loadCurrentUserRole();
+    setTimeout(()=>loadCurrentUserRole(),0);
     renderReportFilterCount();
     if(currentUser)loadDbData();
   });
@@ -1056,39 +1137,97 @@ async function ensureCurrentUser(){
   updateAuthStatus();
   return currentUser;
 }
-async function signInSupabase(){
+async function signInSupabase(event){
+  event?.preventDefault?.();
   const client=initSupabase();
-  if(!client){alert("Supabaseを読み込めません。");return}
-  const email=val("order-login-email").trim();
-  const password=val("order-login-password");
-  if(!email||!password){alert("メールとパスワードを入力してください。");return}
+  if(!client){setLoginState("認証サービスを読み込めません。","error");return}
+  const email=val("login-email").trim();
+  const password=val("login-password");
+  if(!email||!password){setLoginState("メールアドレスとパスワードを入力してください。","error");return}
+  setLoginState("ログインしています...");
   const {error}=await client.auth.signInWithPassword({email,password});
-  if(error){alert("ログインできません: "+error.message);return}
-  const passwordEl=document.getElementById("order-login-password");
+  if(error){setLoginState(authErrorText(error),"error");return}
+  const passwordEl=document.getElementById("login-password");
   if(passwordEl)passwordEl.value="";
+  setLoginState("ログインしました。","ok");
+}
+async function sendPasswordReset(){
+  const client=initSupabase();
+  const email=val("login-email").trim();
+  if(!client||!email){setLoginState("先にメールアドレスを入力してください。","error");return}
+  setLoginState("再設定メールを送信しています...");
+  const redirectTo=`${location.origin}${location.pathname}?reset=1`;
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});
+  if(error){setLoginState(authErrorText(error),"error");return}
+  setLoginState("パスワード再設定メールを送信しました。","ok");
+}
+async function saveNewPassword(event){
+  event?.preventDefault?.();
+  const password=val("new-login-password");
+  const confirmation=val("new-login-password-confirm");
+  if(password.length<10){setLoginState("パスワードは10文字以上で設定してください。","error");return}
+  if(password!==confirmation){setLoginState("確認用パスワードが一致しません。","error");return}
+  setLoginState("パスワードを保存しています...");
+  const {error}=await initSupabase().auth.updateUser({password});
+  if(error){setLoginState(authErrorText(error),"error");return}
+  authPasswordSetupMode=false;
+  history.replaceState(null,"",`${location.pathname}#home`);
+  document.getElementById("new-login-password").value="";
+  document.getElementById("new-login-password-confirm").value="";
+  updateAuthStatus();
+  setLoginState("パスワードを設定しました。","ok");
+  await redirectPartnerUserIfNeeded();
 }
 async function signOutSupabase(){
   const client=initSupabase();
   if(!client)return;
   await client.auth.signOut();
+  currentUser=null;
+  currentUserRole="user";
+  managedUsers=[];
+  selectedManagedUserId="";
+  managedUsersLoaded=false;
+  updateAuthStatus();
   dbReady=false;
   setDbStatus("DB未ログイン");
 }
 function currentUserIsAdmin(){return currentUserRole==="admin"}
 async function loadCurrentUserRole(){
   currentUserRole="user";
-  if(!supabaseClient||!currentUser){updateAuthStatus();renderMasters();return}
+  if(!supabaseClient||!currentUser){updateAuthStatus();updateAdminOnlyVisibility();renderMasters();return}
   try{
     const {data,error}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
     if(!error&&data?.role)currentUserRole=data.role;
-    if(!error&&currentUserRole!=="admin"){
-      const {data:admins,error:adminError}=await supabaseClient.from("user_roles").select("user_id").eq("role","admin").limit(1);
-      if(!adminError&&!(admins||[]).length)currentUserRole="admin";
-    }
   }catch(e){}
+  updateAuthStatus();
+  updateAdminOnlyVisibility();
+  await redirectPartnerUserIfNeeded();
+  if(!currentUserIsAdmin()&&document.querySelector('[data-workspace-panel="users"].active')&&currentUser)switchWorkspaceTab("home",{skipConfirm:true});
   renderMasters();
   renderClosingHistory();
   renderSalesReferenceBoard();
+  if(currentUserIsAdmin()&&document.querySelector('[data-workspace-panel="users"].active'))loadManagedUsers();
+}
+function updateAdminOnlyVisibility(){
+  document.querySelectorAll("[data-admin-only]").forEach(element=>element.classList.toggle("admin-only-hidden",!currentUserIsAdmin()));
+  const denied=document.getElementById("user-admin-denied");
+  const content=document.getElementById("user-admin-content");
+  if(denied)denied.style.display=currentUserIsAdmin()?"none":"block";
+  if(content)content.style.display=currentUserIsAdmin()?"grid":"none";
+}
+async function redirectPartnerUserIfNeeded(){
+  if(!supabaseClient||!currentUser||currentUserIsAdmin()||authPasswordSetupMode)return false;
+  try{
+    const [internalResult,partnerResult]=await Promise.all([
+      supabaseClient.from("internal_user_access").select("active").eq("user_id",currentUser.id).maybeSingle(),
+      supabaseClient.from("partner_user_access").select("active").eq("user_id",currentUser.id).eq("active",true).limit(1)
+    ]);
+    if(!internalResult.error&&!partnerResult.error&&!internalResult.data?.active&&(partnerResult.data||[]).length){
+      location.replace("./partner-work.html");
+      return true;
+    }
+  }catch(error){}
+  return false;
 }
 function dbErrorMessage(error){
   const msg=String(error?.message||error||"");
@@ -6781,6 +6920,175 @@ async function registerPartnerUser(){
   }catch(error){alert(sitePartnerDbError(error))}
   finally{setAppBusy(false)}
 }
+function setUserAdminState(message,type=""){
+  const state=document.getElementById("user-admin-state");
+  if(!state)return;
+  state.textContent=message;
+  state.className=`auth-message${type?` ${type}`:""}`;
+}
+function managedUserSitesFromForm(){
+  return [
+    document.getElementById("user-admin-site-osa")?.checked?"OSA":"",
+    document.getElementById("user-admin-site-tyo")?.checked?"TYO":""
+  ].filter(Boolean);
+}
+function updateUserAdminFormState(){
+  const type=val("user-admin-type")||"internal";
+  const isPartner=type==="partner";
+  const supplierWrap=document.getElementById("user-admin-supplier-wrap");
+  const roleWrap=document.getElementById("user-admin-role-wrap");
+  if(supplierWrap)supplierWrap.style.display=isPartner?"flex":"none";
+  if(roleWrap)roleWrap.style.display=isPartner?"none":"flex";
+  if(isPartner)document.getElementById("user-admin-role").value="user";
+}
+function clearManagedUserForm(){
+  selectedManagedUserId="";
+  document.getElementById("user-admin-form-title").textContent="新しいユーザーを招待";
+  document.getElementById("user-admin-name").value="";
+  document.getElementById("user-admin-email").value="";
+  document.getElementById("user-admin-email").readOnly=false;
+  document.getElementById("user-admin-type").value="internal";
+  document.getElementById("user-admin-role").value="user";
+  document.getElementById("user-admin-site-osa").checked=true;
+  document.getElementById("user-admin-site-tyo").checked=true;
+  document.getElementById("user-admin-supplier").value="";
+  document.getElementById("user-admin-active").checked=true;
+  document.getElementById("user-admin-invite").disabled=false;
+  document.getElementById("user-admin-save").disabled=true;
+  document.getElementById("user-admin-reset").disabled=true;
+  updateUserAdminFormState();
+  renderManagedUsers();
+  setUserAdminState("メールアドレスを入力して招待メールを送ります。");
+}
+function managedUserDisplayName(user){
+  return String(user?.displayName||user?.user_metadata?.display_name||user?.user_metadata?.name||"").trim();
+}
+function managedUserTypeLabel(user){
+  return user.accountType==="partner"?"外部作業者":user.accountType==="internal"?"社内":"未設定";
+}
+function managedUserSiteLabel(user){
+  const sites=user.siteCodes||[];
+  return [sites.includes("OSA")?"大阪":"",sites.includes("TYO")?"東京":""].filter(Boolean).join("・")||"なし";
+}
+function renderManagedUsers(){
+  const host=document.getElementById("user-admin-list");
+  const count=document.getElementById("user-admin-count");
+  if(!host)return;
+  const query=val("user-admin-search").trim().toLowerCase();
+  const rows=managedUsers.filter(user=>[
+    user.email,managedUserDisplayName(user),user.role,(user.supplierCodes||[]).join(" "),managedUserTypeLabel(user)
+  ].some(value=>String(value||"").toLowerCase().includes(query)));
+  if(count)count.textContent=`${rows.length}名`;
+  if(!managedUsersLoaded){host.innerHTML='<div class="sales-empty">「一覧更新」を押してください。</div>';return}
+  if(!rows.length){host.innerHTML='<div class="sales-empty">該当するユーザーはいません。</div>';return}
+  host.innerHTML=`<table class="user-admin-table"><thead><tr><th>氏名・メール</th><th>区分</th><th>権限</th><th>拠点</th><th>発注先</th><th>状態</th><th>最終ログイン</th></tr></thead><tbody>${rows.map(user=>`<tr class="${user.active?"":"inactive"} ${selectedManagedUserId===user.id?"selected":""}" onclick="selectManagedUser('${esc(user.id)}')">
+    <td><div class="user-admin-email">${esc(managedUserDisplayName(user)||"名称未登録")}</div><div class="user-admin-meta">${esc(user.email||"")}</div></td>
+    <td>${esc(managedUserTypeLabel(user))}</td><td>${user.role==="admin"?"管理者":"一般"}</td><td>${esc(managedUserSiteLabel(user))}</td><td>${esc((user.supplierCodes||[]).join(", ")||"-")}</td><td>${user.active?"有効":"停止"}</td><td>${esc(user.lastSignInAt?new Date(user.lastSignInAt).toLocaleString("ja-JP"):"未ログイン")}</td>
+  </tr>`).join("")}</tbody></table>`;
+}
+function selectManagedUser(userId){
+  const user=managedUsers.find(item=>item.id===userId);
+  if(!user)return;
+  selectedManagedUserId=user.id;
+  document.getElementById("user-admin-form-title").textContent="ユーザー情報を編集";
+  document.getElementById("user-admin-name").value=managedUserDisplayName(user);
+  document.getElementById("user-admin-email").value=user.email||"";
+  document.getElementById("user-admin-email").readOnly=true;
+  document.getElementById("user-admin-type").value=user.accountType==="partner"?"partner":"internal";
+  document.getElementById("user-admin-role").value=user.role==="admin"?"admin":"user";
+  document.getElementById("user-admin-site-osa").checked=(user.siteCodes||[]).includes("OSA");
+  document.getElementById("user-admin-site-tyo").checked=(user.siteCodes||[]).includes("TYO");
+  document.getElementById("user-admin-supplier").value=(user.supplierCodes||[])[0]||"";
+  document.getElementById("user-admin-active").checked=!!user.active;
+  document.getElementById("user-admin-invite").disabled=true;
+  document.getElementById("user-admin-save").disabled=false;
+  document.getElementById("user-admin-reset").disabled=false;
+  updateUserAdminFormState();
+  renderManagedUsers();
+  setUserAdminState(`${user.email} を選択しています。`);
+}
+async function userAdminApi(method="GET",payload=null){
+  if(!currentUserIsAdmin())throw new Error("管理者権限が必要です。");
+  const {data}=await initSupabase().auth.getSession();
+  const accessToken=data.session?.access_token;
+  if(!accessToken)throw new Error("ログインし直してください。");
+  const response=await fetch("/api/admin-users",{
+    method,
+    headers:{"Authorization":`Bearer ${accessToken}`,...(payload?{"Content-Type":"application/json"}:{})},
+    body:payload?JSON.stringify(payload):undefined
+  });
+  let result={};
+  try{result=await response.json()}catch(error){}
+  if(!response.ok)throw new Error(result.error||`ユーザー管理APIエラー (${response.status})`);
+  return result;
+}
+async function loadManagedUsers(){
+  if(!currentUserIsAdmin()){updateAdminOnlyVisibility();return}
+  setUserAdminState("ユーザー一覧を読み込んでいます...");
+  try{
+    const result=await userAdminApi("GET");
+    managedUsers=Array.isArray(result.users)?result.users:[];
+    managedUsersLoaded=true;
+    renderManagedUsers();
+    setUserAdminState(`${managedUsers.length}名を読み込みました。`,"ok");
+  }catch(error){
+    managedUsersLoaded=false;
+    renderManagedUsers();
+    setUserAdminState(String(error?.message||error),"error");
+  }
+}
+function managedUserPayload(){
+  const accountType=val("user-admin-type")||"internal";
+  const siteCodes=managedUserSitesFromForm();
+  if(!siteCodes.length)throw new Error("利用拠点を1つ以上選択してください。");
+  const supplierCode=val("user-admin-supplier").trim();
+  if(accountType==="partner"&&!supplierCode)throw new Error("外部作業者には発注先コードが必要です。");
+  return {
+    displayName:val("user-admin-name").trim(),
+    email:val("user-admin-email").trim(),
+    accountType,
+    role:accountType==="internal"?val("user-admin-role")||"user":"user",
+    siteCodes,
+    supplierCode:accountType==="partner"?supplierCode:"",
+    active:document.getElementById("user-admin-active").checked
+  };
+}
+async function inviteManagedUser(){
+  try{
+    const payload=managedUserPayload();
+    if(!payload.email)throw new Error("メールアドレスを入力してください。");
+    setUserAdminState("招待メールを送信しています...");
+    document.getElementById("user-admin-invite").disabled=true;
+    await userAdminApi("POST",{action:"invite",...payload});
+    await loadManagedUsers();
+    clearManagedUserForm();
+    setUserAdminState(`${payload.email} へ招待メールを送信しました。`,"ok");
+  }catch(error){setUserAdminState(String(error?.message||error),"error")}
+  finally{if(!selectedManagedUserId)document.getElementById("user-admin-invite").disabled=false}
+}
+async function saveManagedUser(){
+  if(!selectedManagedUserId)return;
+  try{
+    const payload=managedUserPayload();
+    setUserAdminState("ユーザー情報を保存しています...");
+    document.getElementById("user-admin-save").disabled=true;
+    await userAdminApi("POST",{action:"save",userId:selectedManagedUserId,...payload});
+    const selectedId=selectedManagedUserId;
+    await loadManagedUsers();
+    selectManagedUser(selectedId);
+    setUserAdminState("ユーザー情報を保存しました。","ok");
+  }catch(error){setUserAdminState(String(error?.message||error),"error")}
+  finally{if(selectedManagedUserId)document.getElementById("user-admin-save").disabled=false}
+}
+async function sendManagedUserPasswordReset(){
+  const user=managedUsers.find(item=>item.id===selectedManagedUserId);
+  if(!user?.email)return;
+  setUserAdminState("パスワード再設定メールを送信しています...");
+  const redirectTo=`${location.origin}${location.pathname}?reset=1`;
+  const {error}=await initSupabase().auth.resetPasswordForEmail(user.email,{redirectTo});
+  if(error){setUserAdminState(authErrorText(error),"error");return}
+  setUserAdminState(`${user.email} へ再設定メールを送信しました。`,"ok");
+}
 async function loadExternalAssignments(){
   if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
   const state=document.getElementById("external-work-state");
@@ -7504,6 +7812,7 @@ function initialWorkspaceTab(){
   if(hash==="purchase-management-panel"||hash==="purchase-reference-panel"||hash==="purchases")return "purchases";
   if(hash==="accounts-payable-panel"||hash==="payables"||hash==="ap")return "payables";
   if(hash==="master-admin-panel"||hash==="master-list"||hash==="masters")return "masters";
+  if(hash==="user-admin-panel"||hash==="users")return "users";
   if(hash==="orders")return "orders";
   return "home";
 }
@@ -7515,7 +7824,11 @@ function confirmLeaveImportReview(){
   return confirm("取込内容の確認作業が未完了です。\nこのまま移動すると、確認中の内容が見えなくなります。\n移動しますか？");
 }
 function switchWorkspaceTab(tab,options={}){
-  const target=["home","orders","sales","receivables","guide","external","purchase-entry","purchases","payables","masters"].includes(tab)?tab:"home";
+  let target=["home","orders","sales","receivables","guide","external","purchase-entry","purchases","payables","masters","users"].includes(tab)?tab:"home";
+  if(target==="users"&&!currentUserIsAdmin()&&!options.allowAdminPending){
+    alert("ユーザー管理は管理者のみ利用できます。");
+    target="home";
+  }
   const current=document.querySelector("[data-workspace-panel].active")?.dataset.workspacePanel||"orders";
   if(target!==current&&!options.skipConfirm&&!confirmLeaveImportReview())return false;
   if(target==="masters"&&current!=="masters"&&!options.quickMaster){
@@ -7551,11 +7864,17 @@ function switchWorkspaceTab(tab,options={}){
     if(!payablesLoaded)loadPayables();
   }
   if(target==="masters")renderMasters();
+  if(target==="users"){
+    updateAdminOnlyVisibility();
+    updateUserAdminFormState();
+    if(!managedUsersLoaded)loadManagedUsers();else renderManagedUsers();
+  }
   if(options.updateHash!==false)history.replaceState(null,"",`#${target}`);
   window.scrollTo({top:0,behavior:"auto"});
   return true;
 }
 function init(){
+  initSupabase();
   document.getElementById("order-date").value=today();
   document.getElementById("report-filter-date").value=today();
   document.getElementById("ar-opening-invoice-date").value=today();
@@ -7582,11 +7901,13 @@ function init(){
   refreshProductLists();
   refreshSupplierLists();
   loadAdvancePurchaseDraft();
+  updateUserAdminFormState();
   render();
   renderPendingEntries();
   renderMasters();
   renderReportFilterCount();
-  switchWorkspaceTab(initialWorkspaceTab(),{skipConfirm:true});
+  const authCallback=/access_token=|type=(?:invite|recovery)/i.test(String(location.hash||""));
+  switchWorkspaceTab(initialWorkspaceTab(),{skipConfirm:true,allowAdminPending:true,updateHash:!authCallback});
   resetPendingForm();
   loadDbData();
 }
