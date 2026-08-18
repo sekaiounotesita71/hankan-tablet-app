@@ -54,7 +54,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue,.ar-status.overpaid{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
-.ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}
+.ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.ar-mode-tabs{display:flex;align-items:center;gap:4px;margin-bottom:10px;padding:4px;border:1px solid var(--line);border-radius:8px;background:#f3f5f7;overflow-x:auto}.ar-mode-tab{flex:0 0 auto;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}.ar-mode-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.13)}.ar-group-table{min-width:980px}.ar-group-table tbody tr:hover td{background:#f7f9fb}.ar-group-code{font-size:14px;font-weight:900}.ar-group-name{margin-left:5px;color:var(--muted)}.ar-group-alert{color:var(--danger);font-weight:900}.ar-summary-card.balance{border-color:#9bc9af;background:#f1faf4}.ar-summary-card.overdue{border-color:#efb9b3;background:#fff5f4}
 .ops-tools{display:grid;grid-template-columns:170px 150px minmax(190px,1fr) minmax(180px,1fr) auto auto;gap:8px;align-items:end}.ops-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.ops-table-wrap{max-height:560px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ops-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.ops-table th,.ops-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.ops-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ops-table input,.ops-table select{height:34px;min-height:34px;border-radius:6px}.ops-table tr.submitted td{background:#fff8e8}.ops-table tr.accepted td{background:#eef8f2}.ops-table tr.returned td{background:#fff0ef}.ops-actions{display:flex;gap:5px;align-items:center}.ops-money{text-align:right;font-family:Consolas,monospace;font-weight:900}.purchase-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-form .wide{grid-column:span 2}.purchase-form .full{grid-column:1/-1}.purchase-receipt{border-bottom:1px solid var(--line)}.purchase-receipt summary{display:grid;grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 120px auto;gap:8px;align-items:center;padding:9px 10px;cursor:pointer;font-weight:900;background:#fff}.purchase-receipt summary:hover{background:#f7f9fb}.purchase-detail{padding:10px;border-top:1px solid var(--line);background:#fbfcfd}.purchase-detail-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-detail-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0;margin-top:8px}.purchase-detail-table th,.purchase-detail-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.purchase-detail-table input{height:32px;min-height:32px}.site-readonly{display:flex;align-items:center;min-height:38px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#f3f5f7;color:#334155;font-weight:900}.admin-box{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}
 .advance-entry-head{display:grid;grid-template-columns:150px 120px 180px minmax(180px,1fr) 180px minmax(220px,1.2fr);gap:8px;align-items:end}.advance-entry-head .wide{grid-column:span 2}.advance-entry-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}.advance-import-mode{display:inline-flex;align-items:stretch;height:38px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fff}.advance-import-mode-label{display:flex;align-items:center;padding:0 9px;background:#f3f5f7;color:var(--muted);font-size:11px;font-weight:900}.advance-import-mode button{min-width:92px;border:0;border-left:1px solid var(--line);border-radius:0;background:#fff;color:var(--text);font-weight:900;cursor:pointer}.advance-import-mode button.active{background:#174ea6;color:#fff}.advance-entry-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}.advance-entry-table-wrap{max-height:460px;overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:7px;background:#fff}.advance-entry-table{width:100%;min-width:1280px;border-collapse:separate;border-spacing:0}.advance-entry-table th,.advance-entry-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap;vertical-align:middle}.advance-entry-table th{position:sticky;top:0;z-index:3;background:#f7f9fb;color:var(--muted);font-weight:900}.advance-entry-table input,.advance-entry-table select{height:34px;min-height:34px;border-radius:6px}.advance-entry-table .product-code{width:118px}.advance-entry-table .product-name{width:220px}.advance-entry-table .origin{width:140px}.advance-entry-table .quantity{width:85px}.advance-entry-table .unit{width:76px}.advance-entry-table .price{width:100px}.advance-entry-table .memo{width:190px}.advance-entry-table .line-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.advance-entry-table tr.invalid td{background:#fff0ef}.advance-stock-check{display:flex;align-items:center;justify-content:center}.advance-stock-check input{width:18px;height:18px;min-height:18px}.advance-row-actions{display:flex;gap:4px}.advance-row-actions .small{min-width:46px}.advance-entry-hint{margin-left:auto;color:var(--muted);font-size:12px}
 .partner-register-tools{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,1fr) 150px auto minmax(200px,1fr);gap:8px;align-items:end}
@@ -392,10 +392,16 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   <section class="panel workspace-panel" data-workspace-panel="receivables" id="accounts-receivable-panel" style="margin-top:12px">
     <div class="panel-head"><span>売掛管理</span><button class="small" type="button" onclick="openStatementProfileMasterFromReceivables()">請求条件マスタ</button></div>
     <div class="panel-body">
+      <div class="ar-mode-tabs" role="tablist" aria-label="売掛管理メニュー">
+        <button class="ar-mode-tab active" type="button" data-ar-view="summary" onclick="setReceivableView('summary')">残高一覧</button>
+        <button class="ar-mode-tab" type="button" data-ar-view="detail" onclick="setReceivableView('detail')">請求・入金明細</button>
+        <button class="ar-mode-tab" type="button" data-ar-view="closing" onclick="setReceivableView('closing')">請求締め</button>
+        <button class="ar-mode-tab" type="button" data-ar-view="setup" onclick="setReceivableView('setup')">初期残高</button>
+      </div>
       <div class="ar-tools">
-        <label>請求日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderReceivables()"></label>
-        <label>輸入社<input id="ar-importer" list="importer-code-list" placeholder="空欄=ALL" oninput="renderReceivables();scheduleClosingPreview()"></label>
-        <label>状態
+        <label id="ar-date-filter">売上日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderReceivables()"></label>
+        <label id="ar-importer-filter">輸入社<input id="ar-importer" list="importer-code-list" placeholder="空欄=ALL" oninput="renderReceivables();scheduleClosingPreview()"></label>
+        <label id="ar-status-filter">状態
           <select id="ar-status" onchange="renderReceivables()">
             <option value="open" selected>未回収すべて</option>
             <option value="">全件</option>
@@ -406,17 +412,19 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             <option value="overpaid">過入金</option>
           </select>
         </label>
-        <label>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
-        <button class="btn" type="button" onclick="loadReceivables()">売掛読込</button>
-        <button class="btn primary" type="button" onclick="syncSalesToReceivables()">売上確定を反映</button>
-        <button class="btn blue" type="button" onclick="printStatementOfAccount()">SOA出力</button>
+        <label id="ar-search-filter">検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
+        <button class="btn" id="ar-reload-button" type="button" onclick="loadReceivables()">再読込</button>
+        <button class="btn primary" id="ar-sync-button" type="button" onclick="syncSalesToReceivables()">対象期間を再同期</button>
+        <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">SOA出力</button>
       </div>
       <div class="hint" id="ar-state">売上確定データから輸入社別の売掛を作成できます。</div>
-      <div class="ar-summary" id="ar-summary"></div>
-      <div class="ar-table-wrap" id="ar-table"><div class="sales-empty">「売掛読込」を押してください。</div></div>
+      <div id="ar-results">
+        <div class="ar-summary" id="ar-summary"></div>
+        <div class="ar-table-wrap" id="ar-table"><div class="sales-empty">売掛データを読み込んでいます。</div></div>
+      </div>
 
-      <div class="ar-entry-grid">
-        <details class="ar-entry">
+      <div class="ar-entry-grid" id="ar-entry-grid">
+        <details class="ar-entry" id="ar-opening-section">
           <summary>初期残高を登録</summary>
           <div class="ar-entry-body">
             <div class="ar-form">
@@ -444,7 +452,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           </div>
         </details>
 
-        <details class="ar-entry" open>
+        <details class="ar-entry" id="ar-payment-section" open>
           <summary>入金を登録</summary>
           <div class="ar-entry-body">
             <input id="ar-payment-receivable-id" type="hidden">
@@ -464,7 +472,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           </div>
         </details>
       </div>
-      <details class="ar-entry ar-statement-profile" open>
+      <details class="ar-entry ar-statement-profile" id="ar-closing-section" open>
         <summary>請求締め</summary>
         <div class="ar-entry-body">
           <div class="ar-closing-grid">
@@ -1030,6 +1038,7 @@ let receivableRows=[];
 let receivablePayments=[];
 let receivableClosings=[];
 let receivablesLoaded=false;
+let receivableView="summary";
 let receivableStatementProfile=null;
 let receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,adjustmentCount:0,error:""};
 let productGuideRows=[];
@@ -5869,37 +5878,110 @@ function arFilteredRows(){
 function arSourceLabel(sourceType){
   return {sales:"売上確定",opening:"初期残高",manual:"手入力",adjustment:"調整"}[sourceType]||sourceType||"";
 }
-function renderReceivables(){
-  const table=document.getElementById("ar-table");
-  const summary=document.getElementById("ar-summary");
-  const state=document.getElementById("ar-state");
-  if(!table||!summary)return;
-  const result=arFilteredRows();
-  if(result.error){
-    if(state)state.textContent=result.error;
-    summary.innerHTML="";
-    table.innerHTML=`<div class="sales-empty">${esc(result.error)}</div>`;
-    return;
+function setReceivableView(view,options={}){
+  receivableView=["summary","detail","closing","setup"].includes(view)?view:"summary";
+  if(options.importerCode!==undefined){
+    const importer=document.getElementById("ar-importer");
+    if(importer)importer.value=options.importerCode||"";
   }
-  const enriched=result.rows.map(row=>({...row,_state:arRecordState(row)}));
-  const total=enriched.reduce((sum,row)=>sum+row._state.amount,0);
+  document.querySelectorAll("[data-ar-view]").forEach(button=>{
+    const active=button.dataset.arView===receivableView;
+    button.classList.toggle("active",active);
+    button.setAttribute("aria-selected",active?"true":"false");
+  });
+  const results=document.getElementById("ar-results");
+  const entryGrid=document.getElementById("ar-entry-grid");
+  const opening=document.getElementById("ar-opening-section");
+  const payment=document.getElementById("ar-payment-section");
+  const closing=document.getElementById("ar-closing-section");
+  const showResults=receivableView==="summary"||receivableView==="detail";
+  if(results)results.hidden=!showResults;
+  if(entryGrid)entryGrid.style.display=(receivableView==="detail"||receivableView==="setup")?"grid":"none";
+  if(opening)opening.hidden=receivableView!=="setup";
+  if(payment)payment.hidden=receivableView!=="detail";
+  if(closing)closing.hidden=receivableView!=="closing";
+  const visibility={
+    "ar-date-filter":showResults,
+    "ar-importer-filter":receivableView!=="setup",
+    "ar-status-filter":showResults,
+    "ar-search-filter":showResults,
+    "ar-reload-button":true,
+    "ar-sync-button":receivableView==="detail",
+    "ar-soa-button":receivableView==="closing"
+  };
+  Object.entries(visibility).forEach(([id,visible])=>{
+    const element=document.getElementById(id);
+    if(element)element.hidden=!visible;
+  });
+  renderReceivables();
+  if(receivableView==="closing"){
+    loadStatementProfileFromSelectedImporter().then(()=>refreshClosingSalesPreview({force:true}));
+  }
+}
+function openReceivableImporterDetail(button){
+  const importerCode=typeof button==="string"?button:button?.dataset?.importer||"";
+  const search=document.getElementById("ar-search");
+  if(search)search.value="";
+  setReceivableView("detail",{importerCode});
+}
+function arSummaryCards(enriched){
+  const operating=enriched
+    .filter(row=>row.source_type!=="opening")
+    .reduce((sum,row)=>sum+row._state.amount,0);
+  const opening=enriched
+    .filter(row=>row.source_type==="opening")
+    .reduce((sum,row)=>sum+row._state.amount,0);
   const settled=enriched.reduce((sum,row)=>sum+row._state.settled,0);
   const balance=enriched.reduce((sum,row)=>sum+row._state.balance,0);
-  const overdue=enriched.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0);
-  summary.innerHTML=[
-    ["請求総額",total],
-    ["消込額",settled],
-    ["売掛残",balance],
-    ["期限超過",overdue]
-  ].map(([label,value])=>`<div class="ar-summary-card"><div class="ar-summary-label">${esc(label)}</div><div class="ar-summary-value">¥${esc(salesRefMoney(value)||"0")}</div></div>`).join("");
-  if(state&&receivablesLoaded)state.textContent=`売掛 ${receivableRows.length}件中 ${enriched.length}件を表示しています。`;
-  if(!enriched.length){
-    table.innerHTML=`<div class="sales-empty">${receivablesLoaded?"条件に合う売掛はありません。":"「売掛読込」を押してください。"}</div>`;
-    return;
-  }
+  const overdue=enriched
+    .filter(row=>row._state.key==="overdue")
+    .reduce((sum,row)=>sum+row._state.balance,0);
+  return [
+    ["売上・調整",operating,""],
+    ["初期残高",opening,""],
+    ["入金消込",settled,""],
+    ["現在の売掛残",balance,"balance"],
+    ["期限超過",overdue,"overdue"]
+  ].map(([label,value,className])=>`<div class="ar-summary-card ${className}"><div class="ar-summary-label">${esc(label)}</div><div class="ar-summary-value">¥${esc(salesRefMoney(value)||"0")}</div></div>`).join("");
+}
+function arRenderGroupedTable(enriched){
+  const groups=new Map();
+  enriched.forEach(row=>{
+    const importer=arImporterIdentity(row);
+    const key=importer.key||`raw:${row.importer_code||""}`;
+    const group=groups.get(key)||{importer,rows:[]};
+    group.rows.push(row);
+    groups.set(key,group);
+  });
+  const items=[...groups.values()].map(group=>{
+    const opening=group.rows.filter(row=>row.source_type==="opening").reduce((sum,row)=>sum+row._state.amount,0);
+    const operating=group.rows.filter(row=>row.source_type!=="opening").reduce((sum,row)=>sum+row._state.amount,0);
+    const settled=group.rows.reduce((sum,row)=>sum+row._state.settled,0);
+    const balance=group.rows.reduce((sum,row)=>sum+row._state.balance,0);
+    const overdue=group.rows.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0);
+    const latest=group.rows.filter(row=>row.source_type!=="opening").map(row=>String(row.invoice_date||"")).sort().at(-1)||"-";
+    return {...group,opening,operating,settled,balance,overdue,latest};
+  }).sort((left,right)=>right.balance-left.balance||left.importer.code.localeCompare(right.importer.code,"ja"));
+  if(!items.length)return `<div class="sales-empty">条件に合う売掛はありません。</div>`;
+  return `<table class="ar-table ar-group-table">
+    <thead><tr><th>輸入社</th><th>売上・調整</th><th>初期残高</th><th>入金消込</th><th>売掛残</th><th>期限超過</th><th>最終売上日</th><th>明細数</th><th>操作</th></tr></thead>
+    <tbody>${items.map(item=>`<tr>
+      <td><span class="ar-group-code">${esc(item.importer.code||"未設定")}</span><span class="ar-group-name">${esc(item.importer.name||"")}</span></td>
+      <td class="ar-money">${esc(salesRefMoney(item.operating)||"0")}</td>
+      <td class="ar-money">${esc(salesRefMoney(item.opening)||"0")}</td>
+      <td class="ar-money">${esc(salesRefMoney(item.settled)||"0")}</td>
+      <td class="ar-money">${esc(salesRefMoney(item.balance)||"0")}</td>
+      <td class="ar-money ${item.overdue>.005?"ar-group-alert":""}">${esc(salesRefMoney(item.overdue)||"0")}</td>
+      <td>${esc(item.latest)}</td>
+      <td class="ar-money">${item.rows.length}</td>
+      <td><button class="small primary" type="button" data-importer="${esc(item.importer.code)}" onclick="openReceivableImporterDetail(this)">明細</button></td>
+    </tr>`).join("")}</tbody>
+  </table>`;
+}
+function arRenderDetailTable(enriched){
   const selectedId=val("ar-payment-receivable-id");
-  table.innerHTML=`<table class="ar-table">
-    <thead><tr><th>請求日</th><th>Invoice</th><th>輸入社</th><th>得意先</th><th>請求額</th><th>消込額</th><th>売掛残</th><th>支払期限</th><th>状態</th><th>締め</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
+  return `<table class="ar-table">
+    <thead><tr><th>売上日</th><th>Invoice</th><th>輸入社</th><th>得意先</th><th>請求額</th><th>消込額</th><th>売掛残</th><th>支払期限</th><th>状態</th><th>締め</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
     <tbody>${enriched.slice(0,2000).map(row=>{
       const customers=arCustomerNames(row).join(" / ")||row.customer_name||"";
       const freee=row.freee_excluded?"計上済":(row.freee_exported_at?"出力済":"未出力");
@@ -5923,6 +6005,32 @@ function renderReceivables(){
       </tr>`;
     }).join("")}</tbody>
   </table>`;
+}
+function renderReceivables(){
+  const table=document.getElementById("ar-table");
+  const summary=document.getElementById("ar-summary");
+  const state=document.getElementById("ar-state");
+  if(!table||!summary)return;
+  const result=arFilteredRows();
+  if(result.error){
+    if(state)state.textContent=result.error;
+    summary.innerHTML="";
+    table.innerHTML=`<div class="sales-empty">${esc(result.error)}</div>`;
+    return;
+  }
+  const enriched=result.rows.map(row=>({...row,_state:arRecordState(row)}));
+  summary.innerHTML=arSummaryCards(enriched);
+  if(state&&receivablesLoaded){
+    const importerCount=new Set(enriched.map(row=>arImporterIdentity(row).key)).size;
+    state.textContent=receivableView==="summary"
+      ?`輸入社 ${importerCount}社、売掛明細 ${enriched.length}件です。入金登録は輸入社の「明細」から行います。`
+      :`売掛 ${receivableRows.length}件中 ${enriched.length}件を表示しています。`;
+  }
+  if(!enriched.length){
+    table.innerHTML=`<div class="sales-empty">${receivablesLoaded?"条件に合う売掛はありません。":"「売掛読込」を押してください。"}</div>`;
+    return;
+  }
+  table.innerHTML=receivableView==="summary"?arRenderGroupedTable(enriched):arRenderDetailTable(enriched);
 }
 async function arReadAll(table,orderColumn){
   const client=initSupabase();
@@ -6069,6 +6177,10 @@ async function syncSalesToReceivables(options={}){
   if(!client){alert("Supabaseを読み込めません。");return}
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
+  if(!options.from&&!options.to&&!val("ar-date-range").trim()){
+    alert("再同期する売上日を 20250701-20250731 の形式で指定してください。初期残高との二重計上を防ぐため、期間未指定では実行できません。");
+    return false;
+  }
   setAppBusy(true,"売上確定データを売掛へ反映しています。");
   if(state)state.textContent="売上確定データを確認中...";
   try{
@@ -6077,19 +6189,11 @@ async function syncSalesToReceivables(options={}){
       arReadAll("work_sessions","updated_at")
     ]);
     const groups=arBuildSalesGroups(salesRows,sessionRows);
-    const existingRows=receivablesLoaded?receivableRows:await arReadAll("accounts_receivable","invoice_date");
-    const existingByGroup=new Map();
-    existingRows.filter(row=>row.source_type==="sales"&&row.source_session_id).forEach(row=>{
-      const identity=arImporterIdentity(row);
-      const key=`${row.source_session_id}|${identity.key}`;
-      if(!existingByGroup.has(key))existingByGroup.set(key,row);
-    });
     const payloads=groups.map(group=>{
       const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
-      const existing=existingByGroup.get(`${group.sessionId}|${group.importerKey}`);
       const invoiceDate=group.invoiceDate||today();
       return {
-        source_key:existing?.source_key||`sales:${group.sessionId}:${group.importerCode}`,
+        source_key:`sales:${group.sessionId}:${group.importerCode}`,
         source_type:"sales",
         source_session_id:group.sessionId,
         importer_code:group.importerCode,
@@ -6106,8 +6210,10 @@ async function syncSalesToReceivables(options={}){
       };
     }).filter(row=>Math.abs(row.amount_jpy)>.005);
     for(let index=0;index<payloads.length;index+=100){
-      const {error}=await client.from("accounts_receivable").upsert(payloads.slice(index,index+100),{onConflict:"source_key"});
+      const chunk=payloads.slice(index,index+100);
+      const {data,error}=await client.from("accounts_receivable").upsert(chunk,{onConflict:"source_key"}).select("source_key");
       if(error)throw error;
+      if((data||[]).length!==chunk.length)throw new Error(`売掛の反映件数が一致しません（入力 ${chunk.length}件 / DB ${(data||[]).length}件）`);
       if(state)state.textContent=`売掛へ反映中... ${Math.min(index+100,payloads.length)} / ${payloads.length}件`;
     }
     await loadReceivables();
@@ -8148,7 +8254,7 @@ function switchWorkspaceTab(tab,options={}){
   });
   if(target==="sales")renderSalesReferenceBoard();
   if(target==="receivables"){
-    renderReceivables();
+    setReceivableView(receivableView);
     if(!receivablesLoaded)loadReceivables();
   }
   if(target==="guide")renderProductGuide();
