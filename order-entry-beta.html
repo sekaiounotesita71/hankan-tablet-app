@@ -393,7 +393,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-head"><span>売掛管理</span><button class="small" type="button" onclick="openStatementProfileMasterFromReceivables()">請求条件マスタ</button></div>
     <div class="panel-body">
       <div class="ar-mode-tabs" role="tablist" aria-label="売掛管理メニュー">
-        <button class="ar-mode-tab active" type="button" data-ar-view="summary" onclick="setReceivableView('summary')">残高一覧</button>
+        <button class="ar-mode-tab active" type="button" data-ar-view="summary" onclick="setReceivableView('summary',{clearImporter:true})">残高一覧</button>
         <button class="ar-mode-tab" type="button" data-ar-view="detail" onclick="setReceivableView('detail')">請求・入金明細</button>
         <button class="ar-mode-tab" type="button" data-ar-view="closing" onclick="setReceivableView('closing')">請求締め</button>
         <button class="ar-mode-tab" type="button" data-ar-view="setup" onclick="setReceivableView('setup')">初期残高</button>
@@ -5882,6 +5882,10 @@ function arSourceLabel(sourceType){
 }
 function setReceivableView(view,options={}){
   receivableView=["summary","detail","closing","setup"].includes(view)?view:"summary";
+  if(options.clearImporter){
+    const importer=document.getElementById("ar-importer");
+    if(importer)importer.value="";
+  }
   if(options.importerCode!==undefined){
     const importer=document.getElementById("ar-importer");
     if(importer)importer.value=options.importerCode||"";
