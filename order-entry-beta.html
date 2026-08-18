@@ -353,7 +353,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </section>
 
   <section class="panel workspace-panel" data-workspace-panel="sales" id="sales-reference-panel" style="margin-top:12px">
-    <div class="panel-head"><span>売上参照</span></div>
+    <div class="panel-head"><span>売上参照</span><button class="small primary admin-only-hidden" data-admin-only type="button" onclick="openPostSaleAdjustmentModal()">後日修正・追加</button></div>
     <div class="panel-body">
       <div class="sales-board-tools">
         <label>期間<input id="sales-ref-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731"></label>
@@ -890,6 +890,43 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="hint">商品を選択すると、選択中の明細行へ商品コード・商品名・仕入先が入ります。</div>
       <div id="product-lookup-results" class="lookup-results"></div>
     </div>
+  </div>
+</div>
+<div id="post-sale-adjustment-modal" class="modal-backdrop" onclick="if(event.target===this)closePostSaleAdjustmentModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <span>確定後の修正・追加</span>
+      <button class="small" type="button" onclick="closePostSaleAdjustmentModal()">閉じる</button>
+    </div>
+    <form class="modal-body" onsubmit="savePostSaleAdjustment(event)">
+      <div class="sales-correction-grid">
+        <label>処理区分
+          <select id="post-sale-entry-type" onchange="updatePostSaleAmountPreview()">
+            <option value="credit_note">赤伝</option>
+            <option value="correction" selected>訂正</option>
+            <option value="extra_charge">追加請求</option>
+            <option value="discount">値引き</option>
+            <option value="shipping_adjustment">送料調整</option>
+          </select>
+        </label>
+        <label>反映日<input id="post-sale-work-date" type="date" required onchange="updatePostSaleInvoicePreview()"></label>
+        <label>輸入社コード<input id="post-sale-importer" list="importer-code-list" required autocomplete="off" oninput="postSaleApplyImporter(this.value)" onblur="postSaleApplyImporter(this.value)"></label>
+        <label>輸入社名<input id="post-sale-importer-name" readonly></label>
+        <label>得意先コード<input id="post-sale-customer-code" list="customer-code-list" autocomplete="off" onblur="postSaleApplyCustomer(this.value)"></label>
+        <label>得意先名<input id="post-sale-customer-name" class="ime-ja" list="customer-name-list" required autocomplete="off" onblur="postSaleApplyCustomer(this.value)"></label>
+        <label>商品コード<input id="post-sale-product-code" autocomplete="off" onblur="postSaleApplyProduct()"></label>
+        <label class="wide">商品名・内容<input id="post-sale-description" class="ime-ja" required autocomplete="off"></label>
+        <label>数量<input id="post-sale-qty" type="number" step="any" min="0" oninput="updatePostSaleAmountPreview()"></label>
+        <label>単位<input id="post-sale-unit" list="sales-correction-unit-list" autocomplete="off"></label>
+        <label>単価<input id="post-sale-unit-price" type="number" step="any" min="0" oninput="updatePostSaleAmountPreview()"></label>
+        <label>金額<input id="post-sale-amount" type="number" step="any" required></label>
+        <label class="wide">対象Invoice No.<input id="post-sale-invoice-no" readonly></label>
+        <label class="full">登録理由<textarea id="post-sale-reason" class="ime-ja" required placeholder="例: 確定後に数量訂正が判明"></textarea></label>
+        <label class="full">メモ<textarea id="post-sale-memo" class="ime-ja" placeholder="請求書や社内共有に残す補足"></textarea></label>
+      </div>
+      <div class="hint">赤伝・値引きはマイナス、追加請求はプラスで反映します。請求締め済みの期間へ追加する場合は、先に売掛管理で締めを解除してください。</div>
+      <div class="sales-correction-actions"><button class="btn" type="button" onclick="closePostSaleAdjustmentModal()">キャンセル</button><button class="btn primary" type="submit">売上・売掛へ反映</button></div>
+    </form>
   </div>
 </div>
 <div id="sales-correction-modal" class="modal-backdrop" onclick="if(event.target===this)closeSalesCorrectionModal()">
@@ -3624,6 +3661,156 @@ function salesCorrectionNullableNumber(id){
   if(raw==="")return null;
   const value=Number(raw);
   return Number.isFinite(value)?value:NaN;
+}
+function postSaleSetValue(id,value){
+  const element=document.getElementById(id);
+  if(element)element.value=value??"";
+}
+function postSaleApplyImporter(value){
+  const raw=String(value||"").trim();
+  const hit=lookupImporterByInput(raw)||findMasterImporter(raw,raw,"");
+  if(hit){
+    postSaleSetValue("post-sale-importer",hit.code||raw);
+    postSaleSetValue("post-sale-importer-name",hit.name||"");
+  }else if(raw){
+    const identity=salesRefImporterIdentity({importer_code:raw});
+    postSaleSetValue("post-sale-importer",identity.code||raw);
+    postSaleSetValue("post-sale-importer-name",identity.name||"");
+  }
+  updatePostSaleInvoicePreview();
+  return hit||null;
+}
+function postSaleApplyCustomer(value){
+  const raw=String(value||"").trim();
+  if(!raw)return null;
+  const importerInfo={code:val("post-sale-importer"),name:val("post-sale-importer-name")};
+  const hit=lookupCustomerByInput(raw,importerInfo);
+  if(!hit)return null;
+  postSaleSetValue("post-sale-customer-code",hit.code||"");
+  postSaleSetValue("post-sale-customer-name",hit.name||"");
+  if(hit.importerCode||hit.importerName){
+    postSaleSetValue("post-sale-importer",hit.importerCode||val("post-sale-importer"));
+    postSaleSetValue("post-sale-importer-name",hit.importerName||val("post-sale-importer-name"));
+    postSaleApplyImporter(val("post-sale-importer"));
+  }
+  return hit;
+}
+function postSaleApplyProduct(){
+  const code=val("post-sale-product-code").trim();
+  const name=val("post-sale-description").trim();
+  const hit=findMasterProduct(code,name);
+  if(!hit)return null;
+  postSaleSetValue("post-sale-product-code",hit.code||code);
+  if(!name)postSaleSetValue("post-sale-description",hit.name||"");
+  return hit;
+}
+function postSaleNormalizedAmount(value,type=val("post-sale-entry-type")){
+  if(value===null||value===undefined||value==="")return null;
+  const amount=Number(value);
+  if(!Number.isFinite(amount))return null;
+  if(type==="credit_note"||type==="discount")return -Math.abs(amount);
+  if(type==="extra_charge")return Math.abs(amount);
+  return amount;
+}
+function updatePostSaleAmountPreview(){
+  const amountInput=document.getElementById("post-sale-amount");
+  if(!amountInput)return;
+  const qty=salesCorrectionNullableNumber("post-sale-qty");
+  const price=salesCorrectionNullableNumber("post-sale-unit-price");
+  let amount=salesCorrectionNullableNumber("post-sale-amount");
+  if((amount===null||Number.isNaN(amount))&&Number.isFinite(qty)&&Number.isFinite(price))amount=Math.round(qty*price*100)/100;
+  const normalized=postSaleNormalizedAmount(amount);
+  if(normalized!==null)amountInput.value=normalized;
+}
+function updatePostSaleInvoicePreview(){
+  const identity=salesRefImporterIdentity({
+    importer_code:val("post-sale-importer"),
+    importer_name:val("post-sale-importer-name")
+  });
+  postSaleSetValue("post-sale-invoice-no",arInvoiceNumber(val("post-sale-work-date"),identity));
+}
+function openPostSaleAdjustmentModal(){
+  if(!currentUserIsAdmin()){alert("確定後の売上を追加できるのは管理者のみです。");return}
+  const inputRange=salesRefDateRangeFromInput();
+  postSaleSetValue("post-sale-entry-type","correction");
+  postSaleSetValue("post-sale-work-date",inputRange.to||today());
+  postSaleSetValue("post-sale-importer",val("sales-ref-importer"));
+  postSaleSetValue("post-sale-importer-name","");
+  postSaleSetValue("post-sale-customer-code","");
+  postSaleSetValue("post-sale-customer-name","");
+  postSaleSetValue("post-sale-product-code","");
+  postSaleSetValue("post-sale-description","");
+  postSaleSetValue("post-sale-qty","");
+  postSaleSetValue("post-sale-unit","");
+  postSaleSetValue("post-sale-unit-price","");
+  postSaleSetValue("post-sale-amount","");
+  postSaleSetValue("post-sale-reason","");
+  postSaleSetValue("post-sale-memo","");
+  postSaleApplyImporter(val("post-sale-importer"));
+  updatePostSaleInvoicePreview();
+  document.getElementById("post-sale-adjustment-modal")?.classList.add("open");
+  setTimeout(()=>document.getElementById("post-sale-work-date")?.focus(),0);
+}
+function closePostSaleAdjustmentModal(){
+  document.getElementById("post-sale-adjustment-modal")?.classList.remove("open");
+}
+function postSaleErrorMessage(error){
+  const message=String(error?.message||error||"");
+  if(error?.code==="PGRST202"||/admin_create_post_sale_entry|schema cache/i.test(message))return "確定後の修正・追加機能がDBへ反映されていません。管理者へ確認してください。";
+  if(/請求締め済み|締め済み|締め解除|入金処理済み/i.test(message))return message;
+  if(error?.code==="42501"||/permission denied|row-level security/i.test(message))return "この操作を行う管理者権限がありません。ログイン状態を確認してください。";
+  return message||"確定後の修正・追加を保存できませんでした。";
+}
+async function savePostSaleAdjustment(event){
+  event.preventDefault();
+  if(appBusy)return;
+  if(!currentUserIsAdmin()){alert("確定後の売上を追加できるのは管理者のみです。");return}
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  postSaleApplyImporter(val("post-sale-importer"));
+  postSaleApplyCustomer(val("post-sale-customer-code")||val("post-sale-customer-name"));
+  postSaleApplyProduct();
+  updatePostSaleAmountPreview();
+  const identity=salesRefImporterIdentity({
+    importer_code:val("post-sale-importer"),
+    importer_name:val("post-sale-importer-name")
+  });
+  const qty=salesCorrectionNullableNumber("post-sale-qty");
+  const unitPrice=salesCorrectionNullableNumber("post-sale-unit-price");
+  const amount=postSaleNormalizedAmount(salesCorrectionNullableNumber("post-sale-amount"));
+  if(!val("post-sale-work-date")||!/^\d{1,3}$/.test(normalizeImporterCode(identity.code))){alert("反映日と輸入社マスタを確認してください。");return}
+  if(!val("post-sale-customer-name").trim()){alert("得意先名を入力してください。");return}
+  if(!val("post-sale-description").trim()){alert("商品名・内容を入力してください。");return}
+  if(Number.isNaN(qty)||Number.isNaN(unitPrice)||amount===null||!Number.isFinite(amount)){alert("数量・単価・金額を数値で入力してください。");return}
+  if(Math.abs(amount)<=0.005){alert("金額は0以外で入力してください。");return}
+  if(!val("post-sale-reason").trim()){alert("登録理由を入力してください。");return}
+  setAppBusy(true,"売上と売掛へ反映しています。");
+  try{
+    const {error}=await initSupabase().rpc("admin_create_post_sale_entry",{
+      p_entry_type:val("post-sale-entry-type"),
+      p_work_date:val("post-sale-work-date"),
+      p_importer_code:identity.code,
+      p_customer_code:val("post-sale-customer-code").trim()||null,
+      p_customer_name:val("post-sale-customer-name").trim(),
+      p_product_code:val("post-sale-product-code").trim()||null,
+      p_description:val("post-sale-description").trim(),
+      p_qty:qty,
+      p_unit:val("post-sale-unit").trim()||null,
+      p_unit_price:unitPrice,
+      p_amount:amount,
+      p_reason:val("post-sale-reason").trim(),
+      p_memo:val("post-sale-memo").trim()||null
+    });
+    if(error)throw error;
+    closePostSaleAdjustmentModal();
+    await loadSalesReferenceBoard();
+    if(receivablesLoaded)await loadReceivables();
+    alert("確定後の修正・追加を売上と売掛へ反映しました。発行済みのInvoice・請求書がある場合は再出力してください。");
+  }catch(error){
+    alert(postSaleErrorMessage(error));
+  }finally{
+    setAppBusy(false);
+  }
 }
 function salesCorrectionErrorMessage(error){
   const msg=String(error?.message||error||"");
