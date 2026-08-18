@@ -19,10 +19,10 @@ body.auth-ready #auth-gate{display:none}
 .auth-shell-head{padding:22px;border-bottom:1px solid var(--line);background:#f7f9fa}.auth-brand{font-size:21px;font-weight:900}.auth-shell-head p{margin:7px 0 0;color:var(--muted)}
 .auth-shell-body{display:grid;gap:13px;padding:20px}.auth-message{min-height:20px;color:var(--muted);font-weight:700}.auth-message.error{color:var(--danger)}.auth-message.ok{color:var(--accent)}
 .auth-password-option{display:flex;align-items:center;gap:7px}.auth-password-option input{width:18px;height:18px;min-height:18px}.auth-text-button{border:0;background:transparent;color:var(--blue);font-weight:800;text-decoration:underline}
-.app-header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.title{font-size:18px;font-weight:900}.subtitle{margin-top:2px;color:var(--muted);font-size:12px;font-weight:700}
+.app-header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.title{font-size:18px;font-weight:900}
 .header-user{display:flex;align-items:center;gap:7px;min-width:0}.header-email{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px;font-weight:800}
 main{width:min(1540px,100%);margin:0 auto;padding:12px 14px 36px}
-.status-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.status-left{display:flex;align-items:center;gap:7px;min-width:0}.status-message{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px;font-weight:800}
+.status-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}.status-left{display:flex;align-items:center;gap:7px;min-width:0}.status-message{display:none}
 .pill{display:inline-flex;align-items:center;min-height:25px;padding:0 8px;border-radius:5px;background:#edf0f2;color:#4d5965;font-size:11px;font-weight:900;white-space:nowrap}.pill.ok{background:var(--accent-bg);color:var(--accent)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.danger{background:var(--danger-bg);color:var(--danger)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
 .workspace{display:none}.workspace.active{display:block}
 .panel{overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 2px rgba(20,35,45,.04)}.panel+.panel{margin-top:12px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:43px;padding:8px 11px;border-bottom:1px solid var(--line);background:#f7f9fa;font-weight:900}.panel-body{padding:11px}
@@ -75,13 +75,13 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
     <a class="app-nav-link" href="./order-entry-beta.html#masters">共通マスタ</a>
   </nav>
   <div class="app-header-row">
-    <div><div class="title">国内販売管理</div><div class="subtitle">売上確定から売掛・入金までを一元管理</div></div>
+    <div class="title">国内販売管理</div>
     <div class="header-user"><span id="role-pill" class="pill">一般</span><span id="user-email" class="header-email"></span><button class="btn small" type="button" onclick="signOut()">ログアウト</button></div>
   </div>
 </header>
 
 <main>
-  <div class="status-bar"><div class="status-left"><span id="db-pill" class="pill warn">確認中</span><span id="status-message" class="status-message">DB接続を確認しています。</span></div><span class="pill">商品・仕入先マスタ共用</span></div>
+  <div class="status-bar"><div class="status-left"><span id="db-pill" class="pill warn">確認中</span><span id="status-message" class="status-message" aria-hidden="true">DB接続を確認しています。</span></div></div>
 
   <section class="workspace active" data-panel="entry">
     <div class="panel">
@@ -221,7 +221,6 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="panel-body">
           <div class="master-search"><label>検索<input id="customer-search" autocomplete="off" placeholder="コード・得意先名" oninput="renderCustomerList()"></label><button class="btn" type="button" onclick="loadCustomerMaster()">再読込</button></div>
           <div class="table-wrap" style="max-height:67vh"><table class="data-table customer-table"><thead><tr><th>コード</th><th>得意先名</th><th>締め・支払条件</th><th>連絡先</th><th>状態</th><th>操作</th></tr></thead><tbody id="customer-body"></tbody></table></div>
-          <div class="master-note">商品・仕入先マスタは輸出管理の「共通マスタ」を使用します。</div>
         </div>
       </div>
     </div>
@@ -268,7 +267,7 @@ function setLoginState(message,type=""){
 function setStatus(message,type="ok"){
   const pill=document.getElementById("db-pill");
   const detail=document.getElementById("status-message");
-  pill.textContent=type==="ok"?"DB接続済":type==="danger"?"DBエラー":"確認中";
+  pill.textContent=type==="ok"?"利用可能":type==="danger"?"接続エラー":"確認中";
   pill.className=`pill ${type}`;
   detail.textContent=message;
 }
@@ -287,8 +286,8 @@ function setBusy(active,message="処理しています。"){
 }
 function friendlyError(error){
   const message=String(error?.message||error||"");
-  if(error?.code==="42P01"||/relation .* does not exist/i.test(message))return "国内販売用SQLが未実行です。domestic-sales-migration.sql を実行してください。";
-  if(error?.code==="PGRST202"||/schema cache|function .* not found/i.test(message))return "国内販売用SQLの反映待ちです。domestic-sales-migration.sql を再実行してください。";
+  if(error?.code==="42P01"||/relation .* does not exist/i.test(message))return "国内販売の初期設定が完了していません。管理者へ連絡してください。";
+  if(error?.code==="PGRST202"||/schema cache|function .* not found/i.test(message))return "国内販売の設定を確認中です。時間をおいて再度お試しください。";
   if(/row-level security|permission denied|Internal access/i.test(message))return "この操作を行う社内権限がありません。管理者へ確認してください。";
   return message||"処理に失敗しました。";
 }
@@ -554,7 +553,7 @@ function resetEntry(){
   document.getElementById("draft-state").textContent="下書き自動保存";
 }
 function clearEntryDraft(){
-  if(hasEntryDraft()&&!confirm("入力中の国内売上下書きだけを消去します。確定済みDBデータは消えません。よろしいですか？"))return;
+  if(hasEntryDraft()&&!confirm("入力中の国内売上下書きだけを消去します。確定済み売上は削除されません。よろしいですか？"))return;
   resetEntry();
 }
 async function confirmDomesticSale(){
