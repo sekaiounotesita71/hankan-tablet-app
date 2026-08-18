@@ -584,7 +584,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" type="button" onclick="clearAdvancePurchaseRows()">明細クリア</button>
         <button class="btn primary" type="button" onclick="saveAdvancePurchaseBatch()">一括登録 Ctrl+Enter</button>
         <span id="advance-purchase-state" class="pill warn">入力待ち</span>
-        <span class="advance-entry-hint">売上引用は仕入日・拠点・仕入先で抽出。Enterで右へ、Shift+Enterで左へ、上下キーで同じ列を移動</span>
+        <span class="advance-entry-hint">売上引用は受注明細の発注先コードと、仕入日・拠点・輸入社で抽出。Enterで右へ、Shift+Enterで左へ、上下キーで同じ列を移動</span>
       </div>
       <div class="advance-entry-summary" id="advance-purchase-summary"></div>
       <div class="advance-entry-table-wrap">
@@ -7538,7 +7538,7 @@ async function readSalesForAdvancePurchase(workDate){
   const pageSize=1000;
   for(let offset=0;;offset+=pageSize){
     const {data,error}=await supabaseClient.from("sales_records")
-      .select("id,session_id,work_date,importer_code,importer_id,product_id,product_name,origin,input_qty,input_unit,net_weight,is_stockout")
+      .select("id,session_id,source_row_no,work_date,importer_code,importer_id,product_id,product_name,origin,input_qty,input_unit,net_weight,is_stockout")
       .eq("work_date",workDate)
       .order("id")
       .range(offset,offset+pageSize-1);
@@ -7548,6 +7548,44 @@ async function readSalesForAdvancePurchase(workDate){
     if(page.length<pageSize)break;
   }
   return result;
+}
+function advancePurchaseSaleSourceKey(row){
+  return `${row?.session_id||""}|${Number(row?.source_row_no)||0}`;
+}
+async function readOrderSuppliersForAdvancePurchase(salesRows){
+  const sessionIds=[...new Set((salesRows||[]).map(row=>row.session_id).filter(Boolean))];
+  const sourceLineBySale=new Map();
+  for(let index=0;index<sessionIds.length;index+=100){
+    const ids=sessionIds.slice(index,index+100);
+    const links=await readAllSupabaseRows((from,to)=>supabaseClient
+      .from("order_lines")
+      .select("session_id,source_row_no,source_order_line_id")
+      .in("session_id",ids)
+      .not("source_order_line_id","is",null)
+      .order("session_id",{ascending:true})
+      .order("source_row_no",{ascending:true})
+      .range(from,to));
+    links.forEach(line=>sourceLineBySale.set(advancePurchaseSaleSourceKey(line),line.source_order_line_id));
+  }
+  const sourceIds=[...new Set(sourceLineBySale.values())];
+  const supplierBySourceLine=new Map();
+  for(let index=0;index<sourceIds.length;index+=200){
+    const {data,error}=await supabaseClient
+      .from("order_entry_lines")
+      .select("id,supplier_code")
+      .in("id",sourceIds.slice(index,index+200));
+    if(error)throw error;
+    (data||[]).forEach(line=>{
+      const supplierCode=String(line.supplier_code||"").trim();
+      if(supplierCode)supplierBySourceLine.set(line.id,supplierCode);
+    });
+  }
+  const supplierBySale=new Map();
+  sourceLineBySale.forEach((sourceId,key)=>{
+    const supplierCode=supplierBySourceLine.get(sourceId);
+    if(supplierCode)supplierBySale.set(key,supplierCode);
+  });
+  return supplierBySale;
 }
 async function importSalesIntoAdvancePurchase(){
   if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
@@ -7560,6 +7598,7 @@ async function importSalesIntoAdvancePurchase(){
   setAppBusy(true,"確定売上から仕入明細を確認しています...");
   try{
     const salesRows=await readSalesForAdvancePurchase(purchaseDate);
+    const orderSupplierBySale=await readOrderSuppliersForAdvancePurchase(salesRows);
     const sessionIds=[...new Set(salesRows.map(row=>row.session_id).filter(Boolean))];
     const sessionSites=new Map();
     for(let index=0;index<sessionIds.length;index+=200){
@@ -7569,15 +7608,20 @@ async function importSalesIntoAdvancePurchase(){
     }
     const existingSalesIds=new Set(advancePurchaseRows.flatMap(row=>Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[]));
     const grouped=new Map();
-    let differentSupplier=0,unmapped=0,invalidQty=0,duplicate=0;
+    let differentSupplier=0,unmapped=0,invalidQty=0,duplicate=0,orderSupplierMatched=0,masterSupplierFallback=0;
     salesRows.forEach(sale=>{
       if(sale.is_stockout)return;
       if((sessionSites.get(sale.session_id)||"OSA")!==siteCode)return;
       if(importerCode&&normalizeImporterCode(sale.importer_code||sale.importer_id)!==importerCode)return;
       if(existingSalesIds.has(sale.id)){duplicate++;return}
-      const product=findMasterProduct(sale.product_id,sale.product_name);
-      if(!product||!product.supplierCode){unmapped++;return}
-      if(String(product.supplierCode).trim().toLowerCase()!==supplierCode.toLowerCase()){differentSupplier++;return}
+      const product=findMasterProduct(sale.product_id,sale.product_name)||{};
+      const orderSupplierCode=String(orderSupplierBySale.get(advancePurchaseSaleSourceKey(sale))||"").trim();
+      const masterSupplierCode=String(product.supplierCode||"").trim();
+      const effectiveSupplierCode=orderSupplierCode||masterSupplierCode;
+      if(!effectiveSupplierCode){unmapped++;return}
+      if(effectiveSupplierCode.toLowerCase()!==supplierCode.toLowerCase()){differentSupplier++;return}
+      if(orderSupplierCode)orderSupplierMatched++;
+      else masterSupplierFallback++;
       let unit=normalizeLineUnit(sale.input_unit);
       let qty=dbNumber(sale.input_qty);
       if(!["Kg","pkt","PC","CS"].includes(unit)){
@@ -7596,7 +7640,7 @@ async function importSalesIntoAdvancePurchase(){
     });
     const imported=[...grouped.values()];
     if(!imported.length){
-      alert(`引用できる売上明細がありません。\n商品マスタの仕入先設定、日付・拠点・輸入社を確認してください。${unmapped?`\n仕入先未設定: ${unmapped}件`:""}${duplicate?`\n引用済み: ${duplicate}件`:""}`);
+      alert(`引用できる売上明細がありません。\n受注明細の発注先コード、日付・拠点・輸入社を確認してください。${unmapped?`\n発注先未設定: ${unmapped}件`:""}${duplicate?`\n引用済み: ${duplicate}件`:""}`);
       return;
     }
     const active=advancePurchaseActiveRows();
@@ -7607,7 +7651,7 @@ async function importSalesIntoAdvancePurchase(){
     const state=document.getElementById("advance-purchase-state");
     if(state){state.textContent=`売上引用 ${imported.length}件`;state.className="pill blue"}
     const skipped=unmapped+invalidQty+duplicate;
-    alert(`確定売上から ${imported.length}件を仕入明細へ引用しました。${skipped?`\n確認対象外: ${skipped}件`:""}${differentSupplier?`\n他の仕入先: ${differentSupplier}件`:""}`);
+    alert(`確定売上から ${imported.length}件を仕入明細へ引用しました。\n受注明細の発注先コード: ${orderSupplierMatched}明細${masterSupplierFallback?`\n商品マスタを代替使用: ${masterSupplierFallback}明細`:""}${skipped?`\n確認対象外: ${skipped}件`:""}${differentSupplier?`\n他の仕入先: ${differentSupplier}件`:""}`);
     requestAnimationFrame(()=>focusAdvancePurchaseCell(Math.max(0,advancePurchaseRows.length-imported.length),"unitPrice"));
   }catch(error){
     alert("売上からの引用に失敗しました: "+sitePartnerDbError(error));
