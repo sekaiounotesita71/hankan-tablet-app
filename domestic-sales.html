@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./app-nav.js?v=20260806-2" defer></script>
+<title>国内販売管理</title>
+<style>
+:root{--bg:#f4f6f7;--panel:#fff;--line:#d8dde3;--line2:#b5bec8;--text:#15181c;--muted:#64707d;--accent:#0f6848;--accent-bg:#e9f5ef;--blue:#174ea6;--blue-bg:#eaf2ff;--danger:#b42318;--danger-bg:#fff0ef;--warn:#8a5700;--warn-bg:#fff7e7}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Meiryo,sans-serif;font-size:14px}
+button,input,select,textarea{font:inherit;letter-spacing:0}
+button{cursor:pointer}
+body.auth-checking main,body.auth-locked main,body.auth-checking .app-shell-header,body.auth-locked .app-shell-header{visibility:hidden}
+body.auth-ready #auth-gate{display:none}
+.auth-gate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px;background:#edf1f3}
+.auth-shell{width:min(430px,100%);overflow:hidden;border:1px solid var(--line2);border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(20,35,45,.16)}
+.auth-shell-head{padding:22px;border-bottom:1px solid var(--line);background:#f7f9fa}.auth-brand{font-size:21px;font-weight:900}.auth-shell-head p{margin:7px 0 0;color:var(--muted)}
+.auth-shell-body{display:grid;gap:13px;padding:20px}.auth-message{min-height:20px;color:var(--muted);font-weight:700}.auth-message.error{color:var(--danger)}.auth-message.ok{color:var(--accent)}
+.auth-password-option{display:flex;align-items:center;gap:7px}.auth-password-option input{width:18px;height:18px;min-height:18px}.auth-text-button{border:0;background:transparent;color:var(--blue);font-weight:800;text-decoration:underline}
+.app-header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.title{font-size:18px;font-weight:900}.subtitle{margin-top:2px;color:var(--muted);font-size:12px;font-weight:700}
+.header-user{display:flex;align-items:center;gap:7px;min-width:0}.header-email{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px;font-weight:800}
+main{width:min(1540px,100%);margin:0 auto;padding:12px 14px 36px}
+.status-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.status-left{display:flex;align-items:center;gap:7px;min-width:0}.status-message{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px;font-weight:800}
+.pill{display:inline-flex;align-items:center;min-height:25px;padding:0 8px;border-radius:5px;background:#edf0f2;color:#4d5965;font-size:11px;font-weight:900;white-space:nowrap}.pill.ok{background:var(--accent-bg);color:var(--accent)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.danger{background:var(--danger-bg);color:var(--danger)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
+.workspace{display:none}.workspace.active{display:block}
+.panel{overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 1px 2px rgba(20,35,45,.04)}.panel+.panel{margin-top:12px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:43px;padding:8px 11px;border-bottom:1px solid var(--line);background:#f7f9fa;font-weight:900}.panel-body{padding:11px}
+label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--text);padding:7px 9px}input:focus,select:focus,textarea:focus{outline:2px solid rgba(23,78,166,.22);border-color:var(--blue)}input[readonly]{background:#f1f3f5;color:#46515c}textarea{min-height:70px;resize:vertical}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;padding:0 11px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--text);font-weight:900;white-space:nowrap}.btn:hover{background:#f2f4f6}.btn.primary{border-color:var(--accent);background:var(--accent);color:#fff}.btn.blue{border-color:var(--blue);background:var(--blue);color:#fff}.btn.danger{border-color:#ddbab7;background:#fff;color:var(--danger)}.btn.small{min-height:30px;padding:0 8px;font-size:11px}.btn:disabled{cursor:not-allowed;opacity:.5}
+.toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.entry-head{display:grid;grid-template-columns:150px 160px minmax(220px,1.1fr) 150px minmax(220px,1.2fr);gap:9px;align-items:end}.lookup-input{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:5px}.lookup-input .btn{min-width:38px;padding:0;font-size:18px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fff}.entry-table-wrap{max-height:52vh;margin-top:11px}.data-table{width:100%;border-collapse:separate;border-spacing:0}.data-table th,.data-table td{padding:6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.data-table th{position:sticky;top:0;z-index:3;background:#f7f9fa;color:var(--muted);font-weight:900}.data-table tbody tr:last-child td{border-bottom:0}.data-table tbody tr.selected td{background:var(--blue-bg)}.entry-table{min-width:1230px;table-layout:fixed}.entry-table .col-no{width:44px;text-align:center}.entry-table .col-code{width:120px}.entry-table .col-name{width:220px}.entry-table .col-qty{width:90px}.entry-table .col-unit{width:76px}.entry-table .col-price{width:112px}.entry-table .col-tax{width:72px}.entry-table .col-amount{width:118px}.entry-table .col-memo{width:210px}.entry-table .col-actions{width:170px}.entry-table input,.entry-table select{min-height:34px;height:34px;padding:5px 7px}.money{text-align:right!important;font-family:Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:900}.entry-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}.entry-summary{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}.summary-item{min-width:120px;border:1px solid var(--line);border-radius:6px;background:#f8fafb;padding:6px 9px}.summary-label{color:var(--muted);font-size:10px;font-weight:900}.summary-value{margin-top:2px;text-align:right;font-family:Consolas,monospace;font-size:17px;font-weight:900}
+.filter-grid{display:grid;grid-template-columns:145px 145px 180px minmax(190px,1fr) auto;gap:8px;align-items:end}.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;margin:10px 0}.summary-card{border:1px solid var(--line);border-radius:7px;background:#f9fafb;padding:9px}.summary-card b{display:block;margin-top:4px;text-align:right;font-family:Consolas,monospace;font-size:20px}.summary-card span{color:var(--muted);font-size:11px;font-weight:900}
+.sales-table{min-width:1030px}.ar-table{min-width:1100px}.customer-table{min-width:930px}.status-chip{display:inline-flex;align-items:center;min-height:23px;padding:0 7px;border-radius:5px;background:#edf0f2;color:#4d5965;font-size:10px;font-weight:900}.status-chip.unpaid,.status-chip.overdue{background:var(--warn-bg);color:var(--warn)}.status-chip.partial{background:var(--blue-bg);color:var(--blue)}.status-chip.paid{background:var(--accent-bg);color:var(--accent)}.status-chip.cancelled{background:var(--danger-bg);color:var(--danger)}
+.sale-detail td{padding:0!important;background:#f8fafb}.sale-detail-box{padding:9px 12px;white-space:normal}.detail-table{width:100%;border-collapse:collapse}.detail-table th,.detail-table td{padding:5px 7px!important;border:1px solid var(--line);background:#fff;font-size:11px}.empty{padding:26px;text-align:center;color:var(--muted);font-weight:800}
+.ar-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:11px}.side-stack{display:grid;gap:11px;align-content:start}.selected-box{border:1px solid var(--line);border-radius:7px;background:#f8fafb;padding:10px}.selected-box b{display:block;margin-bottom:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .full{grid-column:1/-1}.admin-only-hidden{display:none!important}
+.master-layout{display:grid;grid-template-columns:minmax(330px,.72fr) minmax(0,1.45fr);gap:11px}.master-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.master-form .full{grid-column:1/-1}.check-label{display:flex;align-items:center;gap:7px;min-height:38px;color:var(--text);font-size:12px}.check-label input{width:18px;height:18px;min-height:18px}.master-search{display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:7px;align-items:end;margin-bottom:8px}.master-note{margin-top:8px;color:var(--muted);font-size:11px;font-weight:700}
+.busy-overlay{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(21,24,28,.56)}.busy-overlay.open{display:flex}.busy-box{display:flex;align-items:center;gap:12px;max-width:430px;padding:17px 20px;border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(0,0,0,.26);font-weight:900}.spinner{width:25px;height:25px;flex:0 0 25px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;right:16px;bottom:16px;z-index:1200;display:none;max-width:min(440px,calc(100vw - 32px));padding:11px 13px;border:1px solid #aacdbd;border-radius:7px;background:#eff9f3;color:#0b5d3d;box-shadow:0 8px 24px rgba(20,35,45,.18);font-weight:900}.toast.open{display:block}.toast.error{border-color:#e2b5b1;background:#fff1f0;color:var(--danger)}
+@media(max-width:1000px){.entry-head{grid-template-columns:1fr 1fr}.entry-head label:last-child{grid-column:1/-1}.filter-grid{grid-template-columns:1fr 1fr}.filter-grid label:nth-child(4){grid-column:1/-1}.summary-grid{grid-template-columns:1fr 1fr}.ar-layout,.master-layout{grid-template-columns:1fr}.table-wrap{max-height:55vh}.header-user{width:100%;justify-content:space-between}.app-header-row{align-items:flex-start;flex-direction:column}}
+@media(max-width:620px){main{padding:9px 9px 28px}.entry-head,.filter-grid,.form-grid,.master-form{grid-template-columns:1fr}.entry-head label:last-child,.filter-grid label:nth-child(4),.form-grid .full,.master-form .full{grid-column:auto}.summary-grid{grid-template-columns:1fr 1fr}.summary-item{min-width:105px}.status-message{display:none}}
+</style>
+<link rel="stylesheet" href="./app-nav.css?v=20260806-2">
+</head>
+<body class="auth-checking">
+<div id="auth-gate" class="auth-gate" aria-live="polite">
+  <div class="auth-shell">
+    <div class="auth-shell-head"><div class="auth-brand">ゆみるめ 業務管理</div><p>登録された社内アカウントでログインしてください。</p></div>
+    <div class="auth-shell-body">
+      <form onsubmit="signIn(event)">
+        <div style="display:grid;gap:12px">
+          <label>メールアドレス<input id="login-email" type="email" autocomplete="username" required></label>
+          <label>パスワード<input id="login-password" type="password" autocomplete="current-password" required></label>
+          <label class="auth-password-option"><input type="checkbox" onchange="document.getElementById('login-password').type=this.checked?'text':'password'">パスワードを表示</label>
+          <button class="btn primary" type="submit">ログイン</button>
+          <button class="auth-text-button" type="button" onclick="sendPasswordReset()">パスワードを忘れた場合</button>
+        </div>
+      </form>
+      <div id="login-state" class="auth-message">認証状態を確認しています。</div>
+    </div>
+  </div>
+</div>
+
+<header class="app-shell-header">
+  <nav class="app-nav" aria-label="アプリ切替">
+    <a class="app-nav-link" href="./order-entry-beta.html#home">HOME</a>
+    <span class="app-nav-divider" aria-hidden="true"></span>
+    <a class="app-nav-link" href="./order-entry-beta.html#orders">輸出管理</a>
+    <span class="app-nav-divider" aria-hidden="true"></span>
+    <button class="app-nav-link active" type="button" data-domestic-tab="entry" onclick="switchTab('entry')">国内売上入力</button>
+    <button class="app-nav-link" type="button" data-domestic-tab="sales" onclick="switchTab('sales')">国内売上参照</button>
+    <button class="app-nav-link" type="button" data-domestic-tab="receivables" onclick="switchTab('receivables')">国内売掛管理</button>
+    <button class="app-nav-link" type="button" data-domestic-tab="customers" onclick="switchTab('customers')">国内得意先</button>
+    <span class="app-nav-divider" aria-hidden="true"></span>
+    <a class="app-nav-link" href="./order-entry-beta.html#masters">共通マスタ</a>
+  </nav>
+  <div class="app-header-row">
+    <div><div class="title">国内販売管理</div><div class="subtitle">売上確定から売掛・入金までを一元管理</div></div>
+    <div class="header-user"><span id="role-pill" class="pill">一般</span><span id="user-email" class="header-email"></span><button class="btn small" type="button" onclick="signOut()">ログアウト</button></div>
+  </div>
+</header>
+
+<main>
+  <div class="status-bar"><div class="status-left"><span id="db-pill" class="pill warn">確認中</span><span id="status-message" class="status-message">DB接続を確認しています。</span></div><span class="pill">商品・仕入先マスタ共用</span></div>
+
+  <section class="workspace active" data-panel="entry">
+    <div class="panel">
+      <div class="panel-head"><span>国内売上入力</span><span id="draft-state" class="pill">下書き自動保存</span></div>
+      <div class="panel-body">
+        <div class="entry-head">
+          <label>売上日<input id="entry-date" type="date" data-entry-header></label>
+          <label>得意先コード<div class="lookup-input"><input id="entry-customer-code" list="domestic-customer-list" autocomplete="off" data-entry-header oninput="resolveEntryCustomer()"><button class="btn" type="button" title="国内得意先を登録" onclick="openCustomerMasterFromEntry()">+</button></div></label>
+          <label>得意先名<input id="entry-customer-name" readonly></label>
+          <label>送料（税抜・10%）<input id="entry-shipping" type="number" min="0" step="1" inputmode="decimal" value="0" data-entry-header oninput="updateEntryTotals()"></label>
+          <label>伝票メモ<input id="entry-memo" class="ime-ja" autocomplete="off" data-entry-header></label>
+        </div>
+        <div class="table-wrap entry-table-wrap">
+          <table class="data-table entry-table">
+            <thead><tr><th class="col-no">No.</th><th class="col-code">商品コード</th><th class="col-name">商品名</th><th class="col-qty">数量</th><th class="col-unit">単位</th><th class="col-price">単価（税抜）</th><th class="col-tax">税率</th><th class="col-amount money">金額</th><th class="col-memo">明細メモ</th><th class="col-actions">操作</th></tr></thead>
+            <tbody id="entry-lines"></tbody>
+          </table>
+        </div>
+        <datalist id="domestic-product-list"></datalist>
+        <datalist id="domestic-customer-list"></datalist>
+        <div class="entry-actions">
+          <div class="toolbar"><button class="btn" type="button" onclick="addEntryLine(true)">行追加</button><button class="btn danger" type="button" onclick="clearEntryDraft()">入力クリア</button></div>
+          <div class="entry-summary">
+            <div class="summary-item"><div class="summary-label">税抜合計</div><div id="entry-net" class="summary-value">0</div></div>
+            <div class="summary-item"><div class="summary-label">消費税</div><div id="entry-tax" class="summary-value">0</div></div>
+            <div class="summary-item"><div class="summary-label">税込合計</div><div id="entry-total" class="summary-value">0</div></div>
+            <button id="confirm-sale-button" class="btn primary" type="button" onclick="confirmDomesticSale()">売上確定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="workspace" data-panel="sales">
+    <div class="panel">
+      <div class="panel-head"><span>国内売上参照</span><button class="btn small" type="button" onclick="loadSalesReference()">再読込</button></div>
+      <div class="panel-body">
+        <div class="filter-grid">
+          <label>開始日<input id="sales-from" type="date"></label>
+          <label>終了日<input id="sales-to" type="date"></label>
+          <label>得意先<input id="sales-customer" list="domestic-customer-list" autocomplete="off" placeholder="コード・名称"></label>
+          <label>商品<input id="sales-product" autocomplete="off" placeholder="商品コード・商品名"></label>
+          <button class="btn blue" type="button" onclick="loadSalesReference()">検索</button>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-card"><span>伝票数</span><b id="sales-count">0</b></div>
+          <div class="summary-card"><span>税抜売上</span><b id="sales-net">0</b></div>
+          <div class="summary-card"><span>消費税</span><b id="sales-tax">0</b></div>
+          <div class="summary-card"><span>税込売上</span><b id="sales-total">0</b></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table sales-table"><thead><tr><th>売上日</th><th>売上番号</th><th>得意先</th><th class="money">8%商品</th><th class="money">10%商品</th><th class="money">送料</th><th class="money">税額</th><th class="money">税込合計</th><th>状態</th><th>操作</th></tr></thead><tbody id="sales-body"><tr><td colspan="10" class="empty">検索すると表示します。</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="workspace" data-panel="receivables">
+    <div class="ar-layout">
+      <div class="panel">
+        <div class="panel-head"><span>国内売掛管理</span><button class="btn small" type="button" onclick="loadReceivables()">再読込</button></div>
+        <div class="panel-body">
+          <div class="filter-grid" style="grid-template-columns:190px 150px auto">
+            <label>得意先<input id="ar-customer" list="domestic-customer-list" autocomplete="off" placeholder="コード・名称"></label>
+            <label>状態<select id="ar-status"><option value="open">未回収のみ</option><option value="">すべて</option><option value="unpaid">未入金</option><option value="partial">一部入金</option><option value="paid">入金済み</option></select></label>
+            <button class="btn blue" type="button" onclick="loadReceivables()">検索</button>
+          </div>
+          <div class="summary-grid" style="grid-template-columns:repeat(3,minmax(130px,1fr))">
+            <div class="summary-card"><span>請求額</span><b id="ar-billed">0</b></div>
+            <div class="summary-card"><span>入金済</span><b id="ar-paid">0</b></div>
+            <div class="summary-card"><span>売掛残高</span><b id="ar-balance">0</b></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table ar-table"><thead><tr><th>売上日</th><th>得意先</th><th>種別</th><th>支払期限</th><th class="money">請求額</th><th class="money">入金済</th><th class="money">残高</th><th>状態</th><th>操作</th></tr></thead><tbody id="ar-body"><tr><td colspan="9" class="empty">読込中です。</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="side-stack">
+        <div class="panel">
+          <div class="panel-head">入金登録</div>
+          <div class="panel-body">
+            <div id="payment-target" class="selected-box">左の一覧から売掛を選択してください。</div>
+            <div class="form-grid" style="margin-top:9px">
+              <label>入金日<input id="payment-date" type="date"></label>
+              <label>入金額<input id="payment-amount" type="number" min="1" step="1" inputmode="decimal"></label>
+              <label>振込手数料<input id="payment-fee" type="number" min="0" step="1" inputmode="decimal" value="0"></label>
+              <label>振込番号<input id="payment-reference" autocomplete="off"></label>
+              <label class="full">メモ<input id="payment-memo" class="ime-ja" autocomplete="off"></label>
+            </div>
+            <button id="payment-button" class="btn primary" style="width:100%;margin-top:9px" type="button" disabled onclick="recordPayment()">入金を登録</button>
+            <div id="payment-history" class="master-note">入金履歴は売掛選択後に表示します。</div>
+          </div>
+        </div>
+        <div class="panel admin-only-hidden" data-admin-only>
+          <div class="panel-head">開始残高</div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <label class="full">得意先<input id="opening-customer" list="domestic-customer-list" autocomplete="off"></label>
+              <label>基準日<input id="opening-date" type="date"></label>
+              <label>支払期限<input id="opening-due" type="date"></label>
+              <label class="full">開始残高<input id="opening-amount" type="number" min="1" step="1" inputmode="decimal"></label>
+              <label class="full">メモ<input id="opening-memo" class="ime-ja" autocomplete="off"></label>
+            </div>
+            <button class="btn" style="width:100%;margin-top:9px" type="button" onclick="createOpeningBalance()">開始残高を登録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="workspace" data-panel="customers">
+    <div class="master-layout">
+      <div class="panel">
+        <div class="panel-head"><span>国内得意先マスタ</span><button class="btn small" type="button" onclick="resetCustomerForm()">新規</button></div>
+        <div class="panel-body">
+          <div id="master-admin-warning" class="pill warn">管理者のみ更新できます。</div>
+          <div class="master-form" style="margin-top:9px">
+            <label>得意先コード<input id="master-customer-code" autocomplete="off"></label>
+            <label>得意先名<input id="master-customer-name" class="ime-ja" autocomplete="off"></label>
+            <label>郵便番号<input id="master-postal" autocomplete="postal-code"></label>
+            <label>電話<input id="master-phone" autocomplete="tel"></label>
+            <label class="full">住所<input id="master-address" class="ime-ja" autocomplete="street-address"></label>
+            <label class="full">メール<input id="master-email" type="email" autocomplete="email"></label>
+            <label>締め日<input id="master-closing-day" type="number" min="1" max="31" value="31"></label>
+            <label>支払月<select id="master-payment-offset"><option value="0">当月</option><option value="1" selected>翌月</option><option value="2">翌々月</option><option value="3">3か月後</option></select></label>
+            <label>支払日<input id="master-payment-day" type="number" min="1" max="31" value="31"></label>
+            <label class="check-label"><input id="master-active" type="checkbox" checked>有効</label>
+            <label class="full">別名（カンマ区切り）<input id="master-aliases" class="ime-ja" autocomplete="off"></label>
+            <label class="full">メモ<textarea id="master-memo" class="ime-ja"></textarea></label>
+          </div>
+          <button id="save-customer-button" class="btn primary" style="width:100%;margin-top:9px" type="button" onclick="saveCustomerMaster()">上書き保存</button>
+          <div class="master-note">コード変更は新規登録として扱います。既存コードを一覧から選ぶと編集できます。</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span>登録済み得意先</span><span id="customer-count" class="pill">0件</span></div>
+        <div class="panel-body">
+          <div class="master-search"><label>検索<input id="customer-search" autocomplete="off" placeholder="コード・得意先名" oninput="renderCustomerList()"></label><button class="btn" type="button" onclick="loadCustomerMaster()">再読込</button></div>
+          <div class="table-wrap" style="max-height:67vh"><table class="data-table customer-table"><thead><tr><th>コード</th><th>得意先名</th><th>締め・支払条件</th><th>連絡先</th><th>状態</th><th>操作</th></tr></thead><tbody id="customer-body"></tbody></table></div>
+          <div class="master-note">商品・仕入先マスタは輸出管理の「共通マスタ」を使用します。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="busy-overlay" class="busy-overlay" role="status" aria-live="assertive"><div class="busy-box"><span class="spinner" aria-hidden="true"></span><span id="busy-message">処理しています。</span></div></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2Z2pzY3h5am9zanFxaHh1dHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMTc3ODgsImV4cCI6MjA5NDc5Mzc4OH0.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
+const DRAFT_KEY="yumirume-domestic-sale-draft-v1";
+const PAGE_SIZE=1000;
+let supabaseClient=null;
+let currentUser=null;
+let currentRole="user";
+let products=[];
+let customers=[];
+let entryLines=[];
+let salesRows=[];
+let receivableRows=[];
+let selectedReceivable=null;
+let draftTimer=0;
+let appBusy=false;
+const expandedSales=new Set();
+
+function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
+function monthStart(){return `${today().slice(0,7)}-01`}
+function esc(value){return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]))}
+function money(value){return Math.round(Number(value)||0).toLocaleString("ja-JP")}
+function numberValue(id){return Number(document.getElementById(id)?.value||0)}
+function value(id){return document.getElementById(id)?.value||""}
+function normalize(value){return String(value||"").normalize("NFKC").trim().toLowerCase().replace(/\s+/g,"")}
+function newId(){return globalThis.crypto?.randomUUID?.()||`row-${Date.now()}-${Math.random().toString(36).slice(2)}`}
+function blankLine(){return{id:newId(),productCode:"",productName:"",quantity:"",unit:"Kg",unitPrice:"",taxRate:8,memo:"",resolvedCode:""}}
+function isAdmin(){return currentRole==="admin"}
+
+function setLoginState(message,type=""){
+  const node=document.getElementById("login-state");
+  node.textContent=message;
+  node.className=`auth-message${type?` ${type}`:""}`;
+}
+function setStatus(message,type="ok"){
+  const pill=document.getElementById("db-pill");
+  const detail=document.getElementById("status-message");
+  pill.textContent=type==="ok"?"DB接続済":type==="danger"?"DBエラー":"確認中";
+  pill.className=`pill ${type}`;
+  detail.textContent=message;
+}
+function showToast(message,isError=false){
+  const toast=document.getElementById("toast");
+  toast.textContent=message;
+  toast.className=`toast open${isError?" error":""}`;
+  clearTimeout(showToast.timer);
+  showToast.timer=setTimeout(()=>toast.classList.remove("open"),4500);
+}
+function setBusy(active,message="処理しています。"){
+  appBusy=!!active;
+  document.getElementById("busy-message").textContent=message;
+  document.getElementById("busy-overlay").classList.toggle("open",appBusy);
+  document.getElementById("confirm-sale-button").disabled=appBusy;
+}
+function friendlyError(error){
+  const message=String(error?.message||error||"");
+  if(error?.code==="42P01"||/relation .* does not exist/i.test(message))return "国内販売用SQLが未実行です。domestic-sales-migration.sql を実行してください。";
+  if(error?.code==="PGRST202"||/schema cache|function .* not found/i.test(message))return "国内販売用SQLの反映待ちです。domestic-sales-migration.sql を再実行してください。";
+  if(/row-level security|permission denied|Internal access/i.test(message))return "この操作を行う社内権限がありません。管理者へ確認してください。";
+  return message||"処理に失敗しました。";
+}
+
+function initSupabase(){
+  if(supabaseClient)return supabaseClient;
+  if(!window.supabase){setLoginState("認証サービスを読み込めません。ネット接続を確認してください。","error");return null}
+  supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  supabaseClient.auth.getSession().then(({data})=>applySession(data.session));
+  supabaseClient.auth.onAuthStateChange((_event,session)=>setTimeout(()=>applySession(session),0));
+  return supabaseClient;
+}
+async function applySession(session){
+  currentUser=session?.user||null;
+  if(!currentUser){
+    currentRole="user";
+    document.body.className="auth-locked";
+    document.getElementById("user-email").textContent="";
+    setLoginState("メールアドレスとパスワードを入力してください。");
+    return;
+  }
+  document.getElementById("user-email").textContent=currentUser.email||"";
+  const {data:roleData}=await supabaseClient.from("user_roles").select("role").eq("user_id",currentUser.id).maybeSingle();
+  currentRole=roleData?.role||"user";
+  document.getElementById("role-pill").textContent=isAdmin()?"管理者":"一般";
+  document.getElementById("role-pill").className=`pill ${isAdmin()?"blue":""}`;
+  document.querySelectorAll("[data-admin-only]").forEach(node=>node.classList.toggle("admin-only-hidden",!isAdmin()));
+  document.getElementById("save-customer-button").disabled=!isAdmin();
+  document.getElementById("master-admin-warning").textContent=isAdmin()?"一覧から選択して上書きできます。":"管理者のみ更新できます。";
+  document.getElementById("master-admin-warning").className=`pill ${isAdmin()?"ok":"warn"}`;
+
+  if(!isAdmin()&&await shouldRedirectPartner())return;
+  document.body.className="auth-ready";
+  setLoginState("ログインしました。","ok");
+  await loadBaseMasters();
+  const requested=location.hash.slice(1);
+  switchTab(["entry","sales","receivables","customers"].includes(requested)?requested:"entry",{skipHash:true});
+}
+async function shouldRedirectPartner(){
+  try{
+    const [internalResult,partnerResult]=await Promise.all([
+      supabaseClient.from("internal_user_access").select("active").eq("user_id",currentUser.id).maybeSingle(),
+      supabaseClient.from("partner_user_access").select("active").eq("user_id",currentUser.id).eq("active",true).limit(1)
+    ]);
+    if(!internalResult.error&&!partnerResult.error&&!internalResult.data?.active&&(partnerResult.data||[]).length){
+      location.replace("./partner-work.html");
+      return true;
+    }
+  }catch(_error){}
+  return false;
+}
+async function signIn(event){
+  event.preventDefault();
+  const email=value("login-email").trim();
+  const password=value("login-password");
+  if(!email||!password)return setLoginState("メールアドレスとパスワードを入力してください。","error");
+  setLoginState("ログインしています...");
+  const {error}=await initSupabase().auth.signInWithPassword({email,password});
+  if(error)return setLoginState(friendlyError(error),"error");
+  document.getElementById("login-password").value="";
+}
+async function signOut(){await initSupabase().auth.signOut()}
+async function sendPasswordReset(){
+  const email=value("login-email").trim();
+  if(!email)return setLoginState("先にメールアドレスを入力してください。","error");
+  const {error}=await initSupabase().auth.resetPasswordForEmail(email,{redirectTo:`${location.origin}/order-entry-beta?reset=1`});
+  setLoginState(error?friendlyError(error):"パスワード再設定メールを送信しました。",error?"error":"ok");
+}
+
+async function fetchPaged(makeQuery){
+  const result=[];
+  for(let offset=0;;offset+=PAGE_SIZE){
+    const {data,error}=await makeQuery().range(offset,offset+PAGE_SIZE-1);
+    if(error)throw error;
+    result.push(...(data||[]));
+    if(!data||data.length<PAGE_SIZE)break;
+  }
+  return result;
+}
+async function loadBaseMasters(){
+  try{
+    const [productRows,customerRows]=await Promise.all([
+      fetchPaged(()=>supabaseClient.from("product_master").select("product_id,product_name,unit_price,aliases,is_active").eq("is_active",true).order("product_id")),
+      fetchPaged(()=>supabaseClient.from("domestic_customer_master").select("*").order("customer_code"))
+    ]);
+    products=productRows;
+    customers=customerRows;
+    renderCustomerDatalist();
+    resolveEntryCustomer();
+    setStatus(`国内得意先 ${customers.length}件・商品 ${products.length}件を読込済み`,"ok");
+  }catch(error){
+    setStatus(friendlyError(error),"danger");
+    showToast(friendlyError(error),true);
+  }
+}
+async function loadCustomerMaster(){
+  try{
+    customers=await fetchPaged(()=>supabaseClient.from("domestic_customer_master").select("*").order("customer_code"));
+    renderCustomerDatalist();
+    renderCustomerList();
+    setStatus(`国内得意先 ${customers.length}件を再読込しました。`,"ok");
+  }catch(error){showToast(friendlyError(error),true)}
+}
+function renderCustomerDatalist(){
+  document.getElementById("domestic-customer-list").innerHTML=customers.filter(row=>row.active).map(row=>`<option value="${esc(row.customer_code)}">${esc(row.customer_name)}</option>`).join("");
+}
+function findCustomer(raw){
+  const key=normalize(raw);
+  if(!key)return null;
+  const byCode=customers.find(row=>normalize(row.customer_code)===key);
+  if(byCode)return byCode;
+  const byName=customers.filter(row=>normalize(row.customer_name)===key||row.aliases?.some(alias=>normalize(alias)===key));
+  return byName.length===1?byName[0]:null;
+}
+
+function switchTab(name,options={}){
+  document.querySelectorAll("[data-panel]").forEach(panel=>panel.classList.toggle("active",panel.dataset.panel===name));
+  document.querySelectorAll("[data-domestic-tab]").forEach(button=>button.classList.toggle("active",button.dataset.domesticTab===name));
+  if(!options.skipHash)history.replaceState(null,"",`#${name}`);
+  if(name==="sales"&&!salesRows.length)loadSalesReference();
+  if(name==="receivables")loadReceivables();
+  if(name==="customers")renderCustomerList();
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
+function resolveEntryCustomer(){
+  const row=findCustomer(value("entry-customer-code"));
+  document.getElementById("entry-customer-name").value=row?.active?row.customer_name:"";
+  scheduleDraftSave();
+}
+function openCustomerMasterFromEntry(){
+  const code=value("entry-customer-code").trim();
+  switchTab("customers");
+  resetCustomerForm();
+  if(code)document.getElementById("master-customer-code").value=code;
+  document.getElementById(code?"master-customer-name":"master-customer-code").focus();
+}
+function updateProductList(query){
+  const key=normalize(query);
+  const list=document.getElementById("domestic-product-list");
+  if(!key){list.innerHTML="";return}
+  const matches=products.filter(row=>normalize(row.product_id).includes(key)||normalize(row.product_name).includes(key)||(row.aliases||[]).some(alias=>normalize(alias).includes(key))).sort((a,b)=>{
+    const aStart=normalize(a.product_id).startsWith(key)||normalize(a.product_name).startsWith(key)?0:1;
+    const bStart=normalize(b.product_id).startsWith(key)||normalize(b.product_name).startsWith(key)?0:1;
+    return aStart-bStart||String(a.product_id).localeCompare(String(b.product_id),"ja");
+  }).slice(0,10);
+  list.innerHTML=matches.map(row=>`<option value="${esc(row.product_id)}">${esc(row.product_name||"")}</option>`).join("");
+}
+function resolveProduct(index,raw){
+  const line=entryLines[index];
+  if(!line)return;
+  const key=normalize(raw);
+  let product=products.find(row=>normalize(row.product_id)===key);
+  if(!product){
+    const named=products.filter(row=>normalize(row.product_name)===key||(row.aliases||[]).some(alias=>normalize(alias)===key));
+    if(named.length===1)product=named[0];
+  }
+  if(!product)return;
+  const changed=line.resolvedCode!==product.product_id;
+  line.productCode=product.product_id;
+  if(changed||!line.productName)line.productName=product.product_name||line.productName;
+  if((changed||line.unitPrice==="")&&product.unit_price!==null)line.unitPrice=String(product.unit_price);
+  line.resolvedCode=product.product_id;
+  renderEntryLines();
+  updateEntryTotals();
+  scheduleDraftSave();
+}
+function addEntryLine(focus=false,source=null){
+  entryLines.push(source?{...source,id:newId()}:blankLine());
+  renderEntryLines();
+  updateEntryTotals();
+  scheduleDraftSave();
+  if(focus)requestAnimationFrame(()=>document.querySelector(`[data-row-index="${entryLines.length-1}"][data-field="productCode"]`)?.focus());
+}
+function duplicateEntryLine(index){addEntryLine(false,entryLines[index])}
+function removeEntryLine(index){
+  if(entryLines.length===1){entryLines=[blankLine()]}else entryLines.splice(index,1);
+  renderEntryLines();updateEntryTotals();scheduleDraftSave();
+}
+function setEntryLine(index,field,newValue){
+  if(!entryLines[index])return;
+  entryLines[index][field]=newValue;
+  if(field==="productCode")updateProductList(newValue);
+  updateEntryTotals();
+  scheduleDraftSave();
+}
+function renderEntryLines(){
+  document.getElementById("entry-lines").innerHTML=entryLines.map((line,index)=>{
+    const amount=Math.round((Number(line.quantity)||0)*(Number(line.unitPrice)||0));
+    return `<tr>
+      <td class="col-no">${index+1}</td>
+      <td><input data-entry-cell data-row-index="${index}" data-field="productCode" list="domestic-product-list" autocomplete="off" value="${esc(line.productCode)}" onfocus="updateProductList(this.value)" oninput="setEntryLine(${index},'productCode',this.value)" onchange="resolveProduct(${index},this.value)" onkeydown="handleEntryKey(event,${index},'productCode')"></td>
+      <td><input data-entry-cell data-row-index="${index}" data-field="productName" class="ime-ja" autocomplete="off" value="${esc(line.productName)}" oninput="setEntryLine(${index},'productName',this.value)" onkeydown="handleEntryKey(event,${index},'productName')"></td>
+      <td><input data-entry-cell data-row-index="${index}" data-field="quantity" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(line.quantity)}" oninput="setEntryLine(${index},'quantity',this.value)" onkeydown="handleEntryKey(event,${index},'quantity')"></td>
+      <td><select data-entry-cell data-row-index="${index}" data-field="unit" onchange="setEntryLine(${index},'unit',this.value)" onkeydown="handleEntryKey(event,${index},'unit')">${["Kg","pkt","PC","CS"].map(unit=>`<option${line.unit===unit?" selected":""}>${unit}</option>`).join("")}</select></td>
+      <td><input data-entry-cell data-row-index="${index}" data-field="unitPrice" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(line.unitPrice)}" oninput="setEntryLine(${index},'unitPrice',this.value)" onkeydown="handleEntryKey(event,${index},'unitPrice')"></td>
+      <td><select data-entry-cell data-row-index="${index}" data-field="taxRate" onchange="setEntryLine(${index},'taxRate',Number(this.value))" onkeydown="handleEntryKey(event,${index},'taxRate')"><option value="8"${Number(line.taxRate)===8?" selected":""}>8%</option><option value="10"${Number(line.taxRate)===10?" selected":""}>10%</option></select></td>
+      <td class="money">${money(amount)}</td>
+      <td><input data-entry-cell data-row-index="${index}" data-field="memo" class="ime-ja" autocomplete="off" value="${esc(line.memo)}" oninput="setEntryLine(${index},'memo',this.value)" onkeydown="handleEntryKey(event,${index},'memo')"></td>
+      <td><div class="toolbar"><button class="btn small" type="button" onclick="duplicateEntryLine(${index})">複製</button><button class="btn small danger" type="button" onclick="removeEntryLine(${index})">削除</button></div></td>
+    </tr>`;
+  }).join("");
+}
+function handleEntryKey(event,index,field){
+  if(event.key!=="Enter"||event.isComposing)return;
+  event.preventDefault();
+  if(field==="productCode")resolveProduct(index,event.currentTarget.value);
+  requestAnimationFrame(()=>{
+    const controls=[...document.querySelectorAll("[data-entry-cell]")];
+    const current=controls.findIndex(node=>Number(node.dataset.rowIndex)===index&&node.dataset.field===field);
+    if(current===controls.length-1){addEntryLine(true);return}
+    controls[current+1]?.focus();
+    controls[current+1]?.select?.();
+  });
+}
+function calculateEntryTotals(){
+  let subtotal8=0,subtotal10=0;
+  entryLines.forEach(line=>{
+    const amount=Math.round((Number(line.quantity)||0)*(Number(line.unitPrice)||0));
+    if(Number(line.taxRate)===10)subtotal10+=amount;else subtotal8+=amount;
+  });
+  const shipping=Math.max(0,numberValue("entry-shipping"));
+  const tax8=Math.floor(subtotal8*.08);
+  const tax10=Math.floor((subtotal10+shipping)*.10);
+  return{subtotal8,subtotal10,shipping,net:subtotal8+subtotal10+shipping,tax:tax8+tax10,total:subtotal8+subtotal10+shipping+tax8+tax10};
+}
+function updateEntryTotals(){
+  const totals=calculateEntryTotals();
+  document.getElementById("entry-net").textContent=money(totals.net);
+  document.getElementById("entry-tax").textContent=money(totals.tax);
+  document.getElementById("entry-total").textContent=money(totals.total);
+}
+function hasEntryDraft(){return !!(value("entry-customer-code").trim()||value("entry-memo").trim()||numberValue("entry-shipping")||entryLines.some(line=>line.productCode||line.productName||line.quantity||line.unitPrice||line.memo))}
+function scheduleDraftSave(){
+  clearTimeout(draftTimer);
+  document.getElementById("draft-state").textContent="保存中";
+  draftTimer=setTimeout(saveEntryDraft,250);
+}
+function saveEntryDraft(){
+  const draft={date:value("entry-date"),customerCode:value("entry-customer-code"),shipping:value("entry-shipping"),memo:value("entry-memo"),lines:entryLines};
+  localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));
+  document.getElementById("draft-state").textContent="下書き保存済";
+}
+function restoreEntryDraft(){
+  let draft=null;
+  try{draft=JSON.parse(localStorage.getItem(DRAFT_KEY)||"null")}catch(_error){}
+  document.getElementById("entry-date").value=draft?.date||today();
+  document.getElementById("entry-customer-code").value=draft?.customerCode||"";
+  document.getElementById("entry-shipping").value=draft?.shipping||"0";
+  document.getElementById("entry-memo").value=draft?.memo||"";
+  entryLines=Array.isArray(draft?.lines)&&draft.lines.length?draft.lines.map(line=>({...blankLine(),...line,id:line.id||newId()})):[blankLine()];
+  renderEntryLines();updateEntryTotals();
+}
+function resetEntry(){
+  document.getElementById("entry-date").value=today();
+  document.getElementById("entry-customer-code").value="";
+  document.getElementById("entry-customer-name").value="";
+  document.getElementById("entry-shipping").value="0";
+  document.getElementById("entry-memo").value="";
+  entryLines=[blankLine()];
+  localStorage.removeItem(DRAFT_KEY);
+  renderEntryLines();updateEntryTotals();
+  document.getElementById("draft-state").textContent="下書き自動保存";
+}
+function clearEntryDraft(){
+  if(hasEntryDraft()&&!confirm("入力中の国内売上下書きだけを消去します。確定済みDBデータは消えません。よろしいですか？"))return;
+  resetEntry();
+}
+async function confirmDomesticSale(){
+  if(appBusy)return;
+  const customer=findCustomer(value("entry-customer-code"));
+  if(!customer?.active)return showToast("有効な国内得意先を選択してください。",true);
+  const entered=entryLines.filter(line=>line.productCode||line.productName||line.quantity||line.unitPrice||line.memo);
+  if(!entered.length)return showToast("商品明細を1件以上入力してください。",true);
+  for(let index=0;index<entered.length;index++){
+    const line=entered[index];
+    if(!line.productName.trim())return showToast(`${index+1}行目の商品名を入力してください。`,true);
+    if(!(Number(line.quantity)>0))return showToast(`${index+1}行目の数量を入力してください。`,true);
+    if(line.unitPrice===""||Number(line.unitPrice)<0)return showToast(`${index+1}行目の単価を入力してください。`,true);
+    if(line.productCode&&!products.some(product=>product.product_id===line.productCode))return showToast(`${index+1}行目の商品コードがマスタと一致しません。`,true);
+  }
+  setBusy(true,"国内売上と売掛を確定しています。画面を閉じないでください。");
+  try{
+    const payload=entered.map(line=>({product_code:line.productCode||null,product_name:line.productName,quantity:Number(line.quantity),unit:line.unit,unit_price:Number(line.unitPrice),tax_rate:Number(line.taxRate),memo:line.memo||null}));
+    const {data,error}=await supabaseClient.rpc("confirm_domestic_sale",{p_sale_date:value("entry-date"),p_customer_code:customer.customer_code,p_shipping_amount_jpy:numberValue("entry-shipping"),p_memo:value("entry-memo")||null,p_lines:payload});
+    if(error)throw error;
+    resetEntry();
+    salesRows=[];
+    showToast(`${data.sale_no} を確定しました。税込 ${money(data.total_amount_jpy)}円`);
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+
+async function loadSalesReference(){
+  if(!currentUser)return;
+  const from=value("sales-from")||monthStart();
+  const to=value("sales-to")||today();
+  const customerQuery=value("sales-customer").trim();
+  const productQuery=normalize(value("sales-product"));
+  setBusy(true,"国内売上を読み込んでいます。");
+  try{
+    let rows=await fetchPaged(()=>{
+      let query=supabaseClient.from("domestic_sales").select("*").gte("sale_date",from).lte("sale_date",to).order("sale_date",{ascending:false}).order("sale_no",{ascending:false});
+      if(customerQuery){
+        const exact=findCustomer(customerQuery);
+        if(exact)query=query.eq("customer_code",exact.customer_code);
+        else query=query.or(`customer_code.ilike.%${customerQuery.replace(/[,%]/g,"")}%,customer_name_snapshot.ilike.%${customerQuery.replace(/[,%]/g,"")}%`);
+      }
+      return query;
+    });
+    const lineMap=new Map(rows.map(row=>[row.id,[]]));
+    for(let index=0;index<rows.length;index+=100){
+      const ids=rows.slice(index,index+100).map(row=>row.id);
+      if(!ids.length)continue;
+      const {data,error}=await supabaseClient.from("domestic_sale_lines").select("*").in("sale_id",ids).order("line_no");
+      if(error)throw error;
+      (data||[]).forEach(line=>lineMap.get(line.sale_id)?.push(line));
+    }
+    rows=rows.map(row=>({...row,lines:lineMap.get(row.id)||[]}));
+    if(productQuery)rows=rows.filter(row=>row.lines.some(line=>normalize(line.product_code).includes(productQuery)||normalize(line.product_name_snapshot).includes(productQuery)));
+    salesRows=rows;
+    renderSalesReference();
+    setStatus(`国内売上 ${rows.length}伝票を表示中`,"ok");
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+function renderSalesReference(){
+  const active=salesRows.filter(row=>row.status!=="cancelled");
+  document.getElementById("sales-count").textContent=money(active.length);
+  document.getElementById("sales-net").textContent=money(active.reduce((sum,row)=>sum+Number(row.total_net_jpy||0),0));
+  document.getElementById("sales-tax").textContent=money(active.reduce((sum,row)=>sum+Number(row.tax_total_jpy||0),0));
+  document.getElementById("sales-total").textContent=money(active.reduce((sum,row)=>sum+Number(row.total_amount_jpy||0),0));
+  const body=document.getElementById("sales-body");
+  if(!salesRows.length){body.innerHTML='<tr><td colspan="10" class="empty">該当する売上はありません。</td></tr>';return}
+  body.innerHTML=salesRows.map(row=>{
+    const expanded=expandedSales.has(row.id);
+    const detail=`<tr class="sale-detail"${expanded?"":" hidden"} id="sale-detail-${row.id}"><td colspan="10"><div class="sale-detail-box"><table class="detail-table"><thead><tr><th>No.</th><th>商品コード</th><th>商品名</th><th class="money">数量</th><th>単位</th><th class="money">単価</th><th>税率</th><th class="money">金額</th><th>メモ</th></tr></thead><tbody>${row.lines.map(line=>`<tr><td>${line.line_no}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}</td><td class="money">${Number(line.quantity).toLocaleString("ja-JP")}</td><td>${esc(line.unit)}</td><td class="money">${money(line.unit_price_jpy)}</td><td>${line.tax_rate}%</td><td class="money">${money(line.net_amount_jpy)}</td><td>${esc(line.memo||"")}</td></tr>`).join("")}</tbody></table></div></td></tr>`;
+    const cancelButton=isAdmin()&&row.status==="confirmed"?`<button class="btn small danger" type="button" onclick="cancelSale('${row.id}')">取消</button>`:"";
+    return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span></td><td><div class="toolbar"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${cancelButton}</div></td></tr>${detail}`;
+  }).join("");
+}
+function toggleSaleDetail(id){expandedSales.has(id)?expandedSales.delete(id):expandedSales.add(id);renderSalesReference()}
+async function cancelSale(id){
+  const reason=prompt("売上の取消理由を3文字以上で入力してください。");
+  if(reason===null)return;
+  if(reason.trim().length<3)return showToast("取消理由を3文字以上入力してください。",true);
+  if(!confirm("売上と対応する売掛を取消します。よろしいですか？"))return;
+  setBusy(true,"国内売上を取り消しています。");
+  try{
+    const {error}=await supabaseClient.rpc("cancel_domestic_sale",{p_sale_id:id,p_reason:reason.trim()});
+    if(error)throw error;
+    showToast("売上と売掛を取り消しました。");
+    await loadSalesReference();
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+
+async function loadReceivables(){
+  if(!currentUser)return;
+  setBusy(true,"国内売掛を読み込んでいます。");
+  try{
+    const customerQuery=value("ar-customer").trim();
+    const status=value("ar-status");
+    receivableRows=await fetchPaged(()=>{
+      let query=supabaseClient.from("domestic_receivables").select("*").order("invoice_date",{ascending:false}).order("created_at",{ascending:false});
+      if(status==="open")query=query.in("status",["unpaid","partial"]);
+      else if(status)query=query.eq("status",status);
+      if(customerQuery){
+        const exact=findCustomer(customerQuery);
+        if(exact)query=query.eq("customer_code",exact.customer_code);
+        else query=query.or(`customer_code.ilike.%${customerQuery.replace(/[,%]/g,"")}%,customer_name_snapshot.ilike.%${customerQuery.replace(/[,%]/g,"")}%`);
+      }
+      return query;
+    });
+    renderReceivables();
+    setStatus(`国内売掛 ${receivableRows.length}件を表示中`,"ok");
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+function receivableStatus(row){
+  if(row.status==="unpaid"&&row.due_date&&row.due_date<today())return{key:"overdue",label:"期限超過"};
+  return{key:row.status,label:{unpaid:"未入金",partial:"一部入金",paid:"入金済",cancelled:"取消済"}[row.status]||row.status};
+}
+function renderReceivables(){
+  const active=receivableRows.filter(row=>row.status!=="cancelled");
+  document.getElementById("ar-billed").textContent=money(active.reduce((sum,row)=>sum+Number(row.amount_jpy||0),0));
+  document.getElementById("ar-paid").textContent=money(active.reduce((sum,row)=>sum+Number(row.paid_amount_jpy||0),0));
+  document.getElementById("ar-balance").textContent=money(active.reduce((sum,row)=>sum+Number(row.balance_jpy||0),0));
+  const body=document.getElementById("ar-body");
+  if(!receivableRows.length){body.innerHTML='<tr><td colspan="9" class="empty">該当する売掛はありません。</td></tr>';return}
+  body.innerHTML=receivableRows.map(row=>{
+    const status=receivableStatus(row);
+    const selected=selectedReceivable?.id===row.id?" selected":"";
+    return `<tr class="${selected}"><td>${esc(row.invoice_date)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td>${row.source_type==="opening"?"開始残高":"売上"}</td><td>${esc(row.due_date||"")}</td><td class="money">${money(row.amount_jpy)}</td><td class="money">${money(row.paid_amount_jpy)}</td><td class="money">${money(row.balance_jpy)}</td><td><span class="status-chip ${status.key}">${status.label}</span></td><td><button class="btn small" type="button"${Number(row.balance_jpy)<=0||row.status==="cancelled"?" disabled":""} onclick="selectReceivable('${row.id}')">入金</button></td></tr>`;
+  }).join("");
+}
+async function selectReceivable(id){
+  selectedReceivable=receivableRows.find(row=>row.id===id)||null;
+  renderReceivables();
+  const target=document.getElementById("payment-target");
+  if(!selectedReceivable){target.textContent="左の一覧から売掛を選択してください。";return}
+  target.innerHTML=`<b>${esc(selectedReceivable.customer_code)} ${esc(selectedReceivable.customer_name_snapshot)}</b><span>${esc(selectedReceivable.invoice_date)} / 残高 ${money(selectedReceivable.balance_jpy)}円</span>`;
+  document.getElementById("payment-date").value=today();
+  document.getElementById("payment-amount").value=String(selectedReceivable.balance_jpy);
+  document.getElementById("payment-button").disabled=false;
+  await loadPaymentHistory();
+}
+async function loadPaymentHistory(){
+  if(!selectedReceivable)return;
+  const {data,error}=await supabaseClient.from("domestic_receivable_payments").select("*").eq("receivable_id",selectedReceivable.id).order("payment_date",{ascending:false});
+  if(error){document.getElementById("payment-history").textContent=friendlyError(error);return}
+  document.getElementById("payment-history").innerHTML=(data||[]).length?`<b>入金履歴</b>${data.map(row=>`<div>${esc(row.payment_date)}　${money(row.amount_jpy)}円${row.reference_no?`　${esc(row.reference_no)}`:""}</div>`).join("")}`:"入金履歴はありません。";
+}
+async function recordPayment(){
+  if(!selectedReceivable||appBusy)return;
+  setBusy(true,"入金を登録しています。");
+  try{
+    const {error}=await supabaseClient.rpc("record_domestic_receivable_payment",{p_receivable_id:selectedReceivable.id,p_payment_date:value("payment-date"),p_amount_jpy:numberValue("payment-amount"),p_bank_fee_jpy:numberValue("payment-fee"),p_reference_no:value("payment-reference")||null,p_memo:value("payment-memo")||null});
+    if(error)throw error;
+    selectedReceivable=null;
+    document.getElementById("payment-button").disabled=true;
+    document.getElementById("payment-target").textContent="左の一覧から売掛を選択してください。";
+    document.getElementById("payment-history").textContent="入金履歴は売掛選択後に表示します。";
+    showToast("入金を登録しました。");
+    await loadReceivables();
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+async function createOpeningBalance(){
+  if(!isAdmin())return showToast("管理者のみ登録できます。",true);
+  const customer=findCustomer(value("opening-customer"));
+  if(!customer)return showToast("国内得意先を選択してください。",true);
+  if(!confirm(`${customer.customer_name} の開始残高を登録します。よろしいですか？`))return;
+  setBusy(true,"開始残高を登録しています。");
+  try{
+    const {error}=await supabaseClient.rpc("create_domestic_opening_receivable",{p_customer_code:customer.customer_code,p_invoice_date:value("opening-date"),p_due_date:value("opening-due")||null,p_amount_jpy:numberValue("opening-amount"),p_memo:value("opening-memo")||null});
+    if(error)throw error;
+    ["opening-customer","opening-amount","opening-memo"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("opening-date").value=today();
+    document.getElementById("opening-due").value="";
+    showToast("開始残高を登録しました。");
+    await loadReceivables();
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+
+function renderCustomerList(){
+  const query=normalize(value("customer-search"));
+  const rows=customers.filter(row=>!query||normalize(row.customer_code).includes(query)||normalize(row.customer_name).includes(query)||(row.aliases||[]).some(alias=>normalize(alias).includes(query)));
+  document.getElementById("customer-count").textContent=`${rows.length}件`;
+  const body=document.getElementById("customer-body");
+  if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">該当する得意先はありません。</td></tr>';return}
+  body.innerHTML=rows.map(row=>`<tr><td>${esc(row.customer_code)}</td><td>${esc(row.customer_name)}</td><td>${row.closing_day}日締 / ${Number(row.payment_month_offset)===0?"当月":Number(row.payment_month_offset)===1?"翌月":`${row.payment_month_offset}か月後`}${row.payment_day}日</td><td>${esc(row.phone||row.email||"")}</td><td><span class="status-chip ${row.active?"paid":"cancelled"}">${row.active?"有効":"停止"}</span></td><td><button class="btn small" type="button" onclick="editCustomer('${esc(row.customer_code)}')">選択</button></td></tr>`).join("");
+}
+function resetCustomerForm(){
+  document.getElementById("master-customer-code").value="";
+  document.getElementById("master-customer-name").value="";
+  document.getElementById("master-postal").value="";
+  document.getElementById("master-phone").value="";
+  document.getElementById("master-address").value="";
+  document.getElementById("master-email").value="";
+  document.getElementById("master-closing-day").value="31";
+  document.getElementById("master-payment-offset").value="1";
+  document.getElementById("master-payment-day").value="31";
+  document.getElementById("master-active").checked=true;
+  document.getElementById("master-aliases").value="";
+  document.getElementById("master-memo").value="";
+}
+function editCustomer(code){
+  const row=customers.find(customer=>customer.customer_code===code);
+  if(!row)return;
+  document.getElementById("master-customer-code").value=row.customer_code;
+  document.getElementById("master-customer-name").value=row.customer_name;
+  document.getElementById("master-postal").value=row.postal_code||"";
+  document.getElementById("master-phone").value=row.phone||"";
+  document.getElementById("master-address").value=row.address_text||"";
+  document.getElementById("master-email").value=row.email||"";
+  document.getElementById("master-closing-day").value=String(row.closing_day||31);
+  document.getElementById("master-payment-offset").value=String(row.payment_month_offset??1);
+  document.getElementById("master-payment-day").value=String(row.payment_day||31);
+  document.getElementById("master-active").checked=!!row.active;
+  document.getElementById("master-aliases").value=(row.aliases||[]).join(", ");
+  document.getElementById("master-memo").value=row.memo||"";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+async function saveCustomerMaster(){
+  if(!isAdmin())return showToast("管理者のみ更新できます。",true);
+  const code=value("master-customer-code").trim();
+  const name=value("master-customer-name").trim();
+  if(!code||!name)return showToast("得意先コードと得意先名は必須です。",true);
+  const closing=numberValue("master-closing-day"),paymentDay=numberValue("master-payment-day");
+  if(closing<1||closing>31||paymentDay<1||paymentDay>31)return showToast("締め日・支払日は1から31で入力してください。",true);
+  setBusy(true,"国内得意先を保存しています。");
+  try{
+    const payload={customer_code:code,customer_name:name,postal_code:value("master-postal").trim()||null,address_text:value("master-address").trim()||null,phone:value("master-phone").trim()||null,email:value("master-email").trim()||null,closing_day:closing,payment_month_offset:numberValue("master-payment-offset"),payment_day:paymentDay,aliases:value("master-aliases").split(/[,、]/).map(item=>item.trim()).filter(Boolean),memo:value("master-memo").trim()||null,active:document.getElementById("master-active").checked};
+    const {error}=await supabaseClient.from("domestic_customer_master").upsert(payload,{onConflict:"customer_code"});
+    if(error)throw error;
+    showToast(`${code} ${name} を保存しました。`);
+    await loadCustomerMaster();
+    editCustomer(code);
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("sales-from").value=monthStart();
+  document.getElementById("sales-to").value=today();
+  document.getElementById("payment-date").value=today();
+  document.getElementById("opening-date").value=today();
+  restoreEntryDraft();
+  document.querySelectorAll("[data-entry-header]").forEach(node=>node.addEventListener("input",scheduleDraftSave));
+  initSupabase();
+});
+window.addEventListener("hashchange",()=>{
+  const name=location.hash.slice(1);
+  if(["entry","sales","receivables","customers"].includes(name))switchTab(name,{skipHash:true});
+});
+window.addEventListener("beforeunload",event=>{
+  if(!hasEntryDraft())return;
+  event.preventDefault();
+  event.returnValue="";
+});
+</script>
+</body>
+</html>
