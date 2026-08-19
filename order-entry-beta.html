@@ -52,6 +52,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick-product-master-modal{width:min(760px,100%)}.quick-product-master-form{max-height:calc(88vh - 50px);overflow:auto}.quick-product-master-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-product-master-grid .wide{grid-column:1/-1}.quick-product-master-status{min-height:36px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#f7f9fb;color:var(--muted);font-size:12px;font-weight:800}.quick-product-master-status.existing{border-color:#d4b36a;background:#fff8e8;color:#7a5100}.quick-product-master-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:700px){.quick-product-master-grid{grid-template-columns:1fr}.quick-product-master-grid .wide{grid-column:auto}}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-tools [hidden]{display:none!important}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue,.ar-status.overpaid,.ar-status.credit{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
 .ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.ar-mode-tabs{display:flex;align-items:center;gap:4px;margin-bottom:10px;padding:4px;border:1px solid var(--line);border-radius:8px;background:#f3f5f7;overflow-x:auto}.ar-mode-tab{flex:0 0 auto;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}.ar-mode-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.13)}.ar-group-table{min-width:980px}.ar-group-table tbody tr:hover td{background:#f7f9fb}.ar-group-code{font-size:14px;font-weight:900}.ar-group-name{margin-left:5px;color:var(--muted)}.ar-group-alert{color:var(--danger);font-weight:900}.ar-summary-card.balance{border-color:#9bc9af;background:#f1faf4}.ar-summary-card.overdue{border-color:#efb9b3;background:#fff5f4}
@@ -725,6 +726,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>名称<input id="master-name" placeholder="名称"></label>
         <label class="wide">別名・検索語<input id="master-aliases" placeholder="カンマ区切り。LINE文面の推測にも使用"></label>
         <label id="product-en-wrap" class="wide">英名<input id="master-english" placeholder="商品マスタのみ"></label>
+        <label id="product-scientific-wrap" class="wide">学術名<input id="master-scientific" placeholder="商品マスタのみ"></label>
         <label id="product-supplier-wrap">既定仕入先コード<input id="master-supplier-code" placeholder="商品マスタのみ"></label>
         <label id="product-supplier-name-wrap">既定仕入先名<input id="master-supplier-name" placeholder="商品マスタのみ"></label>
         <label id="product-price-wrap">商品マスタ価格<input id="master-unit-price" inputmode="decimal" placeholder="通常単価"></label>
@@ -969,6 +971,33 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </div>
 </div>
+<div id="quick-product-master-modal" class="modal-backdrop" onclick="if(event.target===this)closeQuickProductMaster()">
+  <div class="modal quick-product-master-modal">
+    <div class="modal-head">
+      <span>商品マスタ簡易登録</span>
+      <button class="small" type="button" onclick="closeQuickProductMaster()">閉じる</button>
+    </div>
+    <form class="modal-body quick-product-master-form" onsubmit="saveQuickProductMaster(event)" onkeydown="handleQuickProductMasterKey(event)">
+      <div class="quick-product-master-grid">
+        <label>商品コード（必須）<input id="quick-product-code" class="ime-en" autocomplete="off" autocapitalize="off" spellcheck="false" onblur="loadQuickProductMasterExisting()"></label>
+        <label>日本語商品名（必須）<input id="quick-product-name" class="ime-ja" autocomplete="off"></label>
+        <label class="wide">英名<input id="quick-product-english" class="ime-en" lang="en" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="wide">学術名<input id="quick-product-scientific" class="ime-en" lang="en" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label>標準産地<input id="quick-product-origin" class="ime-en" lang="en" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label>標準仕入先コード<input id="quick-product-supplier-code" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" oninput="syncQuickProductSupplierName()"></label>
+        <label>標準仕入先名<input id="quick-product-supplier-name" autocomplete="off" readonly></label>
+        <label>商品マスタ価格<input id="quick-product-unit-price" class="ime-en" inputmode="decimal" autocomplete="off"></label>
+        <label>輸入社コード<input id="quick-product-importer-code" class="ime-en" autocomplete="off" readonly></label>
+        <label>輸入社別価格（任意）<input id="quick-product-contract-price" class="ime-en" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <div id="quick-product-master-status" class="quick-product-master-status">商品コードと日本語商品名を入力してください。</div>
+      <div class="quick-product-master-actions">
+        <button class="btn" type="button" onclick="closeQuickProductMaster()">キャンセル</button>
+        <button class="btn primary" type="submit">商品マスタへ保存して反映</button>
+      </div>
+    </form>
+  </div>
+</div>
 <div id="post-sale-adjustment-modal" class="modal-backdrop" onclick="if(event.target===this)closePostSaleAdjustmentModal()">
   <div class="modal">
     <div class="modal-head">
@@ -1135,6 +1164,7 @@ let confirmed=false;
 let lastOrderRowIndex=0;
 let productLookupRowIndex=0;
 let productLookupTarget={type:"order",index:0};
+let quickProductMasterTarget=null;
 let supabaseClient=null;
 let currentUser=null;
 let currentUserRole="user";
@@ -1547,6 +1577,7 @@ function masterItemToDb(type,item){
     product_id:item.code,
     product_name:item.name,
     english_name:dbText(item.englishName),
+    scientific_name:dbText(item.scientificName),
     origin:dbText(item.origin),
     aliases:item.aliases||[],
     default_supplier_code:dbText(item.supplierCode),
@@ -1588,6 +1619,7 @@ function dbMasterToItem(type,row,lookups={}){
     code:row.product_id||"",
     name:row.product_name||"",
     englishName:row.english_name||"",
+    scientificName:row.scientific_name||"",
     origin:row.origin||"",
     aliases:row.aliases||[],
     supplierCode,
@@ -1607,6 +1639,7 @@ function workProductMasterToItem(row,contractPrices={}){
     code:row.product_id||"",
     name:row.product_name||"",
     englishName:row.english_name||"",
+    scientificName:row.scientific_name||"",
     origin:row.origin||"",
     aliases:[],
     supplierCode:"",
@@ -1626,6 +1659,7 @@ function productMasterPayload(item,minimal=false){
     product_id:item.code,
     product_name:item.name,
     english_name:dbText(item.englishName),
+    scientific_name:dbText(item.scientificName),
     unit_price:dbNumber(item.unitPrice),
     source_filename:"order-entry-beta"
   };
@@ -1821,10 +1855,10 @@ async function loadMastersFromDb(){
   ]);
   let productRows;
   try{
-    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,guide_category,guide_spec,image_url,image_source_url,image_credit,image_license,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
+    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,scientific_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,guide_category,guide_spec,image_url,image_source_url,image_credit,image_license,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
   }catch(error){
     if(!isMissingColumnError(error))throw error;
-    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
+    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,scientific_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
   }
   const importerNames=Object.fromEntries(importerRows.map(r=>[r.importer_code,r.importer_name]));
   const supplierNames=Object.fromEntries(supplierRows.map(r=>[r.supplier_code,r.supplier_name]));
@@ -10327,8 +10361,166 @@ function openMasterForQuickAdd(type,options={}){
   requestAnimationFrame(()=>document.getElementById(code?"master-name":"master-code")?.focus());
 }
 function openProductMasterFromLookup(){
+  openQuickProductMaster({...productLookupTarget});
+}
+function quickProductMasterSource(target=quickProductMasterTarget||productLookupTarget){
+  if(target?.type==="importReview")return importReviewItems[target.index]?.row||{};
+  if(target?.type==="pending")return {productCode:val("pending-product-code"),productName:val("pending-product-name")};
+  if(target?.type==="advancePurchase")return advancePurchaseRows[target.index]||{};
+  return orders[target?.index]||{};
+}
+function quickProductMasterImporterCode(target=quickProductMasterTarget||productLookupTarget){
+  if(target?.type==="importReview")return normalizeImporterCode(importReviewItems[target.index]?.importer?.code||importReviewItems[target.index]?.importer?.name||"");
+  if(target?.type==="pending")return normalizeImporterCode(val("pending-importer-code")||val("pending-importer-name"));
+  if(target?.type==="advancePurchase")return normalizeImporterCode(val("advance-purchase-importer"));
+  return normalizeImporterCode(importer().code||importer().name);
+}
+function exactProductMasterByCode(code){
+  const key=masterCodeKey(code);
+  if(!key)return null;
+  return uniqueMasterItems(getMasters().products).find(item=>masterCodeKey(item.code)===key)||null;
+}
+function setQuickProductMasterStatus(message,existing=false){
+  const status=document.getElementById("quick-product-master-status");
+  if(!status)return;
+  status.textContent=message;
+  status.classList.toggle("existing",!!existing);
+}
+function setQuickProductMasterFields(item={}){
+  document.getElementById("quick-product-name").value=item.name||item.productName||"";
+  document.getElementById("quick-product-english").value=item.englishName||"";
+  document.getElementById("quick-product-scientific").value=item.scientificName||"";
+  document.getElementById("quick-product-origin").value=item.origin||"";
+  document.getElementById("quick-product-supplier-code").value=item.supplierCode||"";
+  document.getElementById("quick-product-supplier-name").value=item.supplierName||supplierNameFor(item.supplierCode||"","")||"";
+  document.getElementById("quick-product-unit-price").value=item.unitPrice??"";
+}
+function loadQuickProductMasterExisting(){
+  const code=val("quick-product-code").trim();
+  const existing=exactProductMasterByCode(code);
+  const importerCode=normalizeImporterCode(val("quick-product-importer-code"));
+  if(!existing){
+    document.getElementById("quick-product-master-modal").dataset.existingCode="";
+    setQuickProductMasterStatus(code?`コード ${code} を新規登録します。`:"商品コードと日本語商品名を入力してください。");
+    syncQuickProductSupplierName();
+    return null;
+  }
+  document.getElementById("quick-product-master-modal").dataset.existingCode=masterCodeKey(existing.code);
+  setQuickProductMasterFields(existing);
+  document.getElementById("quick-product-contract-price").value=importerCode?(existing.contractPrices||{})[importerCode]??"":"";
+  setQuickProductMasterStatus(`コード ${existing.code} は登録済みです。保存時に更新確認を行います。`,true);
+  return existing;
+}
+function syncQuickProductSupplierName(){
+  const code=val("quick-product-supplier-code").trim();
+  const supplier=lookupSupplierByCode(code);
+  document.getElementById("quick-product-supplier-name").value=supplier?.name||"";
+}
+function openQuickProductMaster(target={...productLookupTarget}){
+  if(!currentUserIsAdmin()){alert("商品マスタの登録・更新は管理者のみ可能です。");return}
+  quickProductMasterTarget={...target};
+  const source=quickProductMasterSource(target);
   const query=val("product-lookup-search").trim();
-  openMasterForQuickAdd("products",{name:query,productTarget:{...productLookupTarget},label:"商品入力"});
+  const sourceCode=String(source.productCode||"").trim();
+  const sourceName=String(source.productName||"").trim();
+  const sourceCodeLooksValid=/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/.test(sourceCode);
+  const queryLooksLikeCode=/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/.test(query);
+  const code=sourceCodeLooksValid?sourceCode:(!sourceCode&&queryLooksLikeCode?query:"");
+  const name=sourceName||(!sourceCodeLooksValid?sourceCode:"")||(!queryLooksLikeCode?query:"");
+  const importerCode=quickProductMasterImporterCode(target);
+  document.getElementById("product-lookup-modal")?.classList.remove("open");
+  document.getElementById("quick-product-code").value=code;
+  document.getElementById("quick-product-importer-code").value=importerCode;
+  document.getElementById("quick-product-contract-price").value="";
+  setQuickProductMasterFields({name});
+  document.getElementById("quick-product-master-modal").dataset.existingCode="";
+  document.getElementById("quick-product-master-modal").classList.add("open");
+  const existing=code?loadQuickProductMasterExisting():null;
+  if(!existing)setQuickProductMasterStatus(code?`コード ${code} を新規登録します。`:"商品コードと日本語商品名を入力してください。");
+  requestAnimationFrame(()=>document.getElementById(code?"quick-product-name":"quick-product-code")?.focus());
+}
+function closeQuickProductMaster(restoreLookup=true){
+  document.getElementById("quick-product-master-modal")?.classList.remove("open");
+  if(restoreLookup){
+    document.getElementById("product-lookup-modal")?.classList.add("open");
+    requestAnimationFrame(()=>document.getElementById("product-lookup-search")?.focus());
+  }
+}
+function handleQuickProductMasterKey(event){
+  if(event.key!=="Escape")return;
+  event.preventDefault();
+  event.stopPropagation();
+  closeQuickProductMaster();
+}
+function applyQuickProductMasterTarget(item,target=quickProductMasterTarget){
+  if(target?.type==="importReview"){
+    applyProductToImportReviewRow(target.index,item);
+    requestAnimationFrame(()=>document.querySelector(`#import-review-body tr[data-review-index="${target.index}"] [data-review-field="qty"]`)?.focus());
+  }else if(target?.type==="pending"){
+    applyPendingProduct(item);
+    requestAnimationFrame(()=>document.getElementById("pending-qty")?.focus());
+  }else if(target?.type==="advancePurchase"){
+    applyAdvancePurchaseProduct(target.index,item);
+    requestAnimationFrame(()=>focusAdvancePurchaseCell(target.index,"actualQty"));
+  }else{
+    applyProductToRow(target?.index??productLookupRowIndex,item);
+    requestAnimationFrame(()=>focusOrderCell(target?.index??productLookupRowIndex,"qty"));
+  }
+}
+async function saveQuickProductMaster(event){
+  event?.preventDefault?.();
+  if(!currentUserIsAdmin()){alert("商品マスタの登録・更新は管理者のみ可能です。");return}
+  if(!dbReady||!supabaseClient){alert("DBへログインしてから商品マスタを保存してください。");return}
+  const code=val("quick-product-code").trim();
+  const name=val("quick-product-name").trim();
+  if(!code||!name){alert("商品コードと日本語商品名は必須です。");return}
+  const existing=exactProductMasterByCode(code);
+  const loadedExistingCode=document.getElementById("quick-product-master-modal")?.dataset.existingCode||"";
+  if(existing&&loadedExistingCode!==masterCodeKey(code)){
+    loadQuickProductMasterExisting();
+    alert(`商品コード ${existing.code} は登録済みです。既存内容を読み込みました。内容を確認して、もう一度保存してください。`);
+    return;
+  }
+  if(existing&&!confirm(`商品コード ${existing.code} は登録済みです。既存の商品マスタを更新しますか？`))return;
+  const supplierCode=val("quick-product-supplier-code").trim();
+  const supplier=supplierCode?lookupSupplierByCode(supplierCode):null;
+  if(supplierCode&&!supplier){alert(`仕入先コード ${supplierCode} は仕入先マスタにありません。先に仕入先マスタへ登録してください。`);return}
+  const unitPrice=val("quick-product-unit-price").replace(/,/g,"").trim();
+  const contractPrice=val("quick-product-contract-price").replace(/,/g,"").trim();
+  if(unitPrice!==""&&!Number.isFinite(Number(unitPrice))){alert("商品マスタ価格を数字で入力してください。");return}
+  if(contractPrice!==""&&!Number.isFinite(Number(contractPrice))){alert("輸入社別価格を数字で入力してください。");return}
+  const importerCode=normalizeImporterCode(val("quick-product-importer-code"));
+  const item={
+    ...(existing||{}),
+    code,
+    name,
+    aliases:existing?.aliases||[],
+    englishName:val("quick-product-english").trim(),
+    scientificName:val("quick-product-scientific").trim(),
+    origin:val("quick-product-origin").trim(),
+    supplierCode,
+    supplierName:supplier?.name||"",
+    unitPrice,
+    contractPrices:{...(existing?.contractPrices||{})}
+  };
+  if(importerCode&&contractPrice!=="")item.contractPrices[importerCode]=contractPrice;
+  setAppBusy(true,"商品マスタを保存しています。画面を閉じないでください。");
+  try{
+    await saveMasterItemToDb("products",item);
+    const result=upsertCustomMaster("products",item);
+    refreshProductLists();
+    renderMasters();
+    document.getElementById("product-lookup-modal")?.classList.remove("open");
+    closeQuickProductMaster(false);
+    applyQuickProductMasterTarget(item);
+    setDbStatus("DB接続中","ok");
+    alert(result==="updated"?`商品コード ${code} を更新し、現在の明細へ反映しました。`:`商品コード ${code} を登録し、現在の明細へ反映しました。`);
+  }catch(error){
+    setDbStatus("DB保存失敗");
+    alert(dbErrorMessage(error));
+  }finally{
+    setAppBusy(false);
+  }
 }
 function openOrderSupplierMaster(index){
   const row=orders[index]||{};
@@ -10390,7 +10582,7 @@ function completeMasterQuickAdd(item){
   return true;
 }
 function clearMasterForm(){
-  ["master-code","master-name","master-aliases","master-english","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix"].forEach(id=>document.getElementById(id).value="");
+  ["master-code","master-name","master-aliases","master-english","master-scientific","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("master-site-code").value="OSA";
   document.getElementById("master-supplier-site-code").value="OSA";
   document.getElementById("master-external-enabled").checked=false;
@@ -10402,6 +10594,7 @@ function editMasterItem(index){
   document.getElementById("master-name").value=item.name||"";
   document.getElementById("master-aliases").value=(item.aliases||[]).join(", ");
   document.getElementById("master-english").value=item.englishName||item.english_name||"";
+  document.getElementById("master-scientific").value=item.scientificName||item.scientific_name||"";
   document.getElementById("master-supplier-code").value=item.supplierCode||item.supplier_code||"";
   document.getElementById("master-supplier-name").value=item.supplierName||item.supplier_name||"";
   document.getElementById("master-unit-price").value=item.unitPrice||item.unit_price||"";
@@ -10435,6 +10628,7 @@ async function addMasterItem(){
   if(masterType==="products"){
     const existing=findMasterProduct(code,name)||{};
     item.englishName=val("master-english").trim();
+    item.scientificName=val("master-scientific").trim();
     item.supplierCode=val("master-supplier-code").trim();
     item.supplierName=val("master-supplier-name").trim();
     item.unitPrice=val("master-unit-price").trim();
@@ -10580,7 +10774,7 @@ function renderMasters(){
   const isProduct=masterType==="products";
   const isCustomer=masterType==="customers";
   const isSupplier=masterType==="suppliers";
-  ["product-en-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap","product-origin-wrap","product-guide-category-wrap","product-guide-spec-wrap","product-image-url-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
+  ["product-en-wrap","product-scientific-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap","product-origin-wrap","product-guide-category-wrap","product-guide-spec-wrap","product-image-url-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
   ["customer-importer-code-wrap","customer-importer-name-wrap","customer-site-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
   ["supplier-external-wrap","supplier-box-prefix-wrap","supplier-default-site-wrap"].forEach(id=>document.getElementById(id).style.display=isSupplier?"flex":"none");
   const masters=getMasters()[masterType]||[];
@@ -10884,11 +11078,11 @@ function exportMasters(){
   const importerCodes=masterType==="products"
     ?[...new Set(masters.flatMap(m=>Object.keys(m.contractPrices||m.importer_prices||{})))].sort()
     :[];
-  const header=["type","code","name","english_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","aliases"];
+  const header=["type","code","name","english_name","scientific_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","aliases"];
   const rows=[header,...masters.map(m=>{
     const prices=m.contractPrices||m.importer_prices||{};
     return [
-      masterType,m.code,m.name,m.englishName||"",m.supplierCode||"",m.supplierName||"",m.unitPrice||m.unit_price||"",formatContractPrices(prices),
+      masterType,m.code,m.name,m.englishName||"",m.scientificName||"",m.supplierCode||"",m.supplierName||"",m.unitPrice||m.unit_price||"",formatContractPrices(prices),
       ...importerCodes.map(code=>prices[code]||""),
       m.origin||"",m.guideCategory||"",m.guideSpec||"",m.imageUrl||"",m.imageSourceUrl||"",m.imageCredit||"",m.imageLicense||"",
       m.importerCode||"",m.importerName||"",m.siteCode||"",m.externalWorkEnabled?"1":"",m.boxPrefix||"",(m.aliases||[]).join("|")
@@ -11022,6 +11216,7 @@ function masterItemFromCsvRow(row,headers,type){
     item.englishName=typeColumnLooksLikeCode
       ?rowValue(row,headers,["name","名称","名前","商品名","得意先名","仕入先名","輸入社名","customer_name","supplier_name","importer_name","product_name"])||rowValue(row,headers,["english_name","english","英名","英語名","商品英名"])
       :rowValue(row,headers,["english_name","english","英名","英語名","商品英名"]);
+    item.scientificName=rowValue(row,headers,["scientific_name","scientificname","scientific","学術名","学名"]);
     item.supplierCode=rowValue(row,headers,["supplier_code","仕入先コード","既定仕入先コード"]);
     item.supplierName=rowValue(row,headers,["supplier_name","仕入先名","既定仕入先名"]);
     item.unitPrice=rowValue(row,headers,["unit_price","unitprice","単価","価格","売価","通常単価","商品マスタ価格"]);
