@@ -9937,16 +9937,23 @@ function reconciliationCustomerMatches(left,right){
   const rightName=reconciliationText(right?.name);
   return !!leftName&&!!rightName&&leftName===rightName;
 }
-function reconciliationProductMatchKind(lineRow,enteredRow){
+function reconciliationProductMatchInfo(lineRow,enteredRow){
   const lineCode=reconciliationCode(lineRow?.productCode);
   const enteredCode=reconciliationCode(enteredRow?.productCode);
-  if(lineCode&&enteredCode&&lineCode===enteredCode)return "code";
+  if(lineCode&&enteredCode&&lineCode===enteredCode)return {kind:"code",rank:0,length:999};
   const lineName=reconciliationText(lineRow?.productName);
   const enteredName=reconciliationText(enteredRow?.productName);
-  if(lineName&&enteredName&&lineName===enteredName)return "name";
+  if(lineName&&enteredName&&lineName===enteredName)return {kind:"name",rank:10,length:enteredName.length};
   const expression=reconciliationText(lineRow?.sourceExpression||lineRow?.lineExpression);
-  if(expression&&enteredName&&expression===enteredName)return "name";
-  return "";
+  if(expression&&enteredName&&expression===enteredName)return {kind:"name",rank:10,length:enteredName.length};
+  const master=findMasterProduct(enteredRow?.productCode,enteredRow?.productName);
+  const rawExpression=lineRow?.sourceExpression||lineRow?.lineExpression||lineRow?.productName||"";
+  const fuzzy=master?productMatchInfo(master,normalizeMasterSearchText(rawExpression)):{score:99,length:0};
+  if(fuzzy.score<99)return {kind:"text",rank:20+fuzzy.score,length:fuzzy.length};
+  return {kind:"",rank:99,length:0};
+}
+function reconciliationProductMatchKind(lineRow,enteredRow){
+  return reconciliationProductMatchInfo(lineRow,enteredRow).kind;
 }
 function reconciliationQuantityMatches(left,right){
   const leftNumber=Number(left);
@@ -9995,13 +10002,19 @@ function rebuildLineReconciliation(){
   lineReconciliationItems.forEach(item=>{
     const customerBatchIndexes=reconciliationBatchIndexesForItem(item);
     const available=candidates.filter(candidate=>!candidate.used&&customerBatchIndexes.includes(candidate.batchIndex));
-    const matches=available.map(candidate=>({candidate,matchKind:reconciliationProductMatchKind(item.row,candidate.row)})).filter(match=>match.matchKind);
+    const matches=available.map(candidate=>({candidate,...reconciliationProductMatchInfo(item.row,candidate.row)})).filter(match=>match.kind);
+    const candidateScore=match=>(match.rank||0)+(reconciliationQuantityMatches(item.row.qty,match.candidate.row.qty)?0:2)+(item.row.unit&&normalizeLineUnit(item.row.unit)!==normalizeLineUnit(match.candidate.row.unit)?1:0);
     matches.sort((a,b)=>{
-      const aScore=(a.matchKind==="code"?0:10)+(reconciliationQuantityMatches(item.row.qty,a.candidate.row.qty)?0:2)+(item.row.unit&&normalizeLineUnit(item.row.unit)!==normalizeLineUnit(a.candidate.row.unit)?1:0);
-      const bScore=(b.matchKind==="code"?0:10)+(reconciliationQuantityMatches(item.row.qty,b.candidate.row.qty)?0:2)+(item.row.unit&&normalizeLineUnit(item.row.unit)!==normalizeLineUnit(b.candidate.row.unit)?1:0);
-      return aScore-bScore||a.candidate.batchIndex-b.candidate.batchIndex||a.candidate.lineIndex-b.candidate.lineIndex;
+      const aScore=candidateScore(a);
+      const bScore=candidateScore(b);
+      return aScore-bScore||b.length-a.length||a.candidate.batchIndex-b.candidate.batchIndex||a.candidate.lineIndex-b.candidate.lineIndex;
     });
-    const matchedResult=matches[0]||null;
+    let matchedResult=matches[0]||null;
+    if(matchedResult?.kind==="text"){
+      const topScore=candidateScore(matchedResult);
+      const tied=matches.filter(match=>match.kind==="text"&&candidateScore(match)===topScore&&match.length===matchedResult.length);
+      if(new Set(tied.map(match=>reconciliationCode(match.candidate.row.productCode)||reconciliationText(match.candidate.row.productName))).size>1)matchedResult=null;
+    }
     const matched=matchedResult?.candidate||null;
     if(!matched){
       const fallbackBatchIndex=customerBatchIndexes[0];
@@ -10021,7 +10034,9 @@ function rebuildLineReconciliation(){
     }
     matched.used=true;
     const reasons=[];
-    if(matchedResult.matchKind==="name"&&item.row.productCode&&reconciliationCode(item.row.productCode)!==reconciliationCode(matched.row.productCode)){
+    if(matchedResult.kind==="text"){
+      reasons.push(`候補一致: LINE「${item.row.sourceExpression||item.row.lineExpression||item.row.productName||""}」 / 入力「${matched.row.productCode||""} ${matched.row.productName||""}」`);
+    }else if(matchedResult.kind==="name"&&item.row.productCode&&reconciliationCode(item.row.productCode)!==reconciliationCode(matched.row.productCode)){
       reasons.push(`商品コード候補 ${item.row.productCode} / 入力 ${matched.row.productCode||"なし"}`);
     }
     if(!reconciliationQuantityMatches(item.row.qty,matched.row.qty))reasons.push(`数量 LINE ${item.row.qty||"なし"} / 入力 ${matched.row.qty||"なし"}`);
@@ -10031,7 +10046,7 @@ function rebuildLineReconciliation(){
     if(!reconciliationMemoMatches(item.row.memo,matched.row.memo))reasons.push(`備考 LINE「${item.row.memo}」 / 入力「${matched.row.memo||"なし"}」`);
     const dictionaryEligible=!!(item.row.sourceExpression||item.row.lineExpression)&&!!matched.row.productCode;
     if(dictionaryEligible&&item._dictionarySelected===undefined){
-      item._dictionarySelected=!reconciliationDictionaryAlreadyMatches(item,matched.batch,matched.row);
+      item._dictionarySelected=matchedResult.kind!=="text"&&!reconciliationDictionaryAlreadyMatches(item,matched.batch,matched.row);
     }
     result.push({
       status:reasons.length?"mismatch":"match",
