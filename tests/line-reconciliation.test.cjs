@@ -42,6 +42,7 @@ const reconciliation = new Function(
   "lineDictionaryCustomerKey",
   "lineDictionaryImporterCode",
   "normalizeLineExpression",
+  "getMasters",
   `${reconciliationSource}
    let confirmedBatches = [];
    let lineReconciliationContext = { targetBatchIndexes: [] };
@@ -57,6 +58,7 @@ const reconciliation = new Function(
      },
      rebuild() { rebuildLineReconciliation(); return lineReconciliationRows; },
      productMatch: reconciliationProductMatchKind,
+     importerMatches: reconciliationImporterMatches,
      quantityMatches: reconciliationQuantityMatches,
      memoMatches: reconciliationMemoMatches
    };`
@@ -72,7 +74,8 @@ const reconciliation = new Function(
   () => null,
   value => [value?.code || "", value?.name || ""].join("|"),
   value => String(value || "").toUpperCase(),
-  value => String(value || "").trim().toLowerCase()
+  value => String(value || "").trim().toLowerCase(),
+  () => ({ importers: [{ code: "02", name: "BKK", aliases: [] }] })
 );
 
 assert.equal(reconciliation.productMatch(
@@ -83,6 +86,7 @@ assert.equal(reconciliation.productMatch(
   { productCode: "", productName: "真鯛" },
   { productCode: "101", productName: "真鯛" }
 ), "name");
+assert.equal(reconciliation.importerMatches({ code: "02", name: "" }, { code: "BKK", name: "" }), true);
 assert.equal(reconciliation.quantityMatches("2", "2.0"), true);
 assert.equal(reconciliation.quantityMatches("2", "3"), false);
 assert.equal(reconciliation.memoMatches("内臓抜き", "鱗取って内臓抜き"), true);

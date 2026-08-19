@@ -9805,7 +9805,7 @@ function lineCustomerFromHeading(value,currentImporter={}){
 }
 function lineImporterSnapshot(value){
   const source=value||{};
-  const master=findMasterImporter(source.code,source.name,"");
+  const master=reconciliationCanonicalImporter(source);
   return {
     code:master?.code||source.code||"",
     name:master?.name||source.name||source.code||""
@@ -9908,15 +9908,26 @@ function reconciliationCode(value){
 function reconciliationText(value){
   return String(value||"").normalize("NFKC").replace(/[\s　]+/g,"").replace(/[()（）【】\[\]「」『』・,，.。／\/\-ー:：]/g,"").toLowerCase();
 }
+function reconciliationImporterTokens(value){
+  const source=value||{};
+  const raw=[source.code,source.name,source.importerCode,source.importerName].map(reconciliationCode).filter(Boolean);
+  const master=getMasters().importers.find(item=>{
+    const values=[item.code,item.name,...(item.aliases||[])].map(reconciliationCode).filter(Boolean);
+    return raw.some(token=>values.includes(token));
+  });
+  return new Set([...raw,...(master?[master.code,master.name,...(master.aliases||[])].map(reconciliationCode).filter(Boolean):[])]);
+}
+function reconciliationCanonicalImporter(value){
+  const source=value||{};
+  const tokens=reconciliationImporterTokens(source);
+  const master=getMasters().importers.find(item=>[item.code,item.name,...(item.aliases||[])].map(reconciliationCode).some(token=>tokens.has(token)));
+  if(master)return {code:master.code||source.code||"",name:master.name||source.name||master.code||""};
+  return resolveImporter(source);
+}
 function reconciliationImporterMatches(left,right){
-  const leftResolved=resolveImporter(left||{});
-  const rightResolved=resolveImporter(right||{});
-  const leftCode=reconciliationCode(leftResolved.code);
-  const rightCode=reconciliationCode(rightResolved.code);
-  if(leftCode&&rightCode)return leftCode===rightCode;
-  const leftName=reconciliationText(leftResolved.name||left?.name);
-  const rightName=reconciliationText(rightResolved.name||right?.name);
-  return !!leftName&&!!rightName&&leftName===rightName;
+  const leftTokens=reconciliationImporterTokens(left);
+  const rightTokens=reconciliationImporterTokens(right);
+  return [...leftTokens].some(token=>rightTokens.has(token));
 }
 function reconciliationCustomerMatches(left,right){
   const leftCode=reconciliationCode(left?.code);
@@ -10059,7 +10070,8 @@ function renderLineReconciliation(){
   const importerLabel=[lineReconciliationContext.importer?.code,lineReconciliationContext.importer?.name].filter(Boolean).join(" ")||"複数輸入社";
   document.getElementById("line-reconciliation-context").textContent=`${lineReconciliationContext.date} / ${importerLabel}`;
   const issueCount=lineReconciliationRows.filter(row=>row.status!=="match").length;
-  document.getElementById("line-reconciliation-message").textContent=issueCount?`相違 ${issueCount}件です。確定済み受注は自動変更しません。必要な得意先だけ「受注を修正」から直してください。`:`全 ${counts.match||0}明細が一致しました。選択済みの表現を共有辞書へ登録できます。`;
+  const resultMessage=issueCount?`相違 ${issueCount}件です。確定済み受注は自動変更しません。必要な得意先だけ「受注を修正」から直してください。`:`全 ${counts.match||0}明細が一致しました。選択済みの表現を共有辞書へ登録できます。`;
+  document.getElementById("line-reconciliation-message").textContent=[lineReconciliationContext.filterNotice,resultMessage].filter(Boolean).join(" ");
   const selectedCount=lineReconciliationRows.filter(row=>row.dictionaryEligible&&row.lineItem?._dictionarySelected).length;
   const dictionaryState=document.getElementById("line-reconciliation-dictionary-state");
   dictionaryState.textContent=sharedLineDictionarySchemaReady?`共有辞書候補 ${selectedCount}件`:`共有辞書SQL未実行です。選択内容は端末内辞書へ保存できます。`;
@@ -10109,24 +10121,36 @@ async function openLineReconciliation(){
   }
   const items=parseLineBulkItems(text);
   if(!items.length){document.getElementById("line-preview").textContent="LINE文面から受注明細を判定できませんでした。得意先名と商品行を改行して貼り付けてください。";return}
-  const headerImporter=resolveImporter(importer());
-  const parsedImporterCodes=[...new Set(items.map(item=>resolveImporter(item.importer||{}).code).filter(Boolean).map(reconciliationCode))];
-  const contextImporter=(headerImporter.code||headerImporter.name)?headerImporter:(parsedImporterCodes.length===1?resolveImporter(items.find(item=>item.importer?.code)?.importer||{}):{});
-  const targetBatchIndexes=[];
+  const headerImporter=reconciliationCanonicalImporter(importer());
+  const parsedImporters=items.map(item=>reconciliationCanonicalImporter(item.importer||{})).filter(item=>item.code||item.name);
+  const parsedImporterCodes=[...new Set(parsedImporters.map(item=>reconciliationCode(item.code||item.name)).filter(Boolean))];
+  const contextImporter=(headerImporter.code||headerImporter.name)?headerImporter:(parsedImporterCodes.length===1?parsedImporters[0]:{});
+  const dateBatchIndexes=[];
   confirmedBatches.forEach((batch,index)=>{
     if(batch.orderDate!==orderDate)return;
+    dateBatchIndexes.push(index);
+  });
+  let targetBatchIndexes=dateBatchIndexes.filter(index=>{
+    const batch=confirmedBatches[index];
     if(contextImporter.code||contextImporter.name){
       if(!reconciliationImporterMatches(batch.importer,contextImporter))return;
-    }else if(parsedImporterCodes.length&&batch.importer?.code&&!parsedImporterCodes.includes(reconciliationCode(resolveImporter(batch.importer).code)))return;
-    targetBatchIndexes.push(index);
+    }else if(parsedImporters.length&&!parsedImporters.some(parsedImporter=>reconciliationImporterMatches(batch.importer,parsedImporter)))return;
+    return true;
   });
+  let filterNotice="";
+  if(!targetBatchIndexes.length&&dateBatchIndexes.length){
+    targetBatchIndexes=[...dateBatchIndexes];
+    filterNotice="指定した輸入社では見つからなかったため、同日すべての輸入社から照合しました。";
+  }
   if(!targetBatchIndexes.length){
-    alert(`${orderDate} の入力済み受注が見つかりません。日付と輸入社を確認してください。`);
+    const customerDates=[...new Set(confirmedBatches.filter(batch=>items.some(item=>reconciliationCustomerMatches(batch.customer,item.customer))).map(batch=>batch.orderDate).filter(Boolean))].sort().reverse().slice(0,5);
+    const dateHint=customerDates.length?`\n同じ得意先の登録日: ${customerDates.join(", ")}`:"";
+    alert(`${orderDate} の確定済み受注が見つかりません。入力途中・下書きは照合対象外です。日付を確認してください。${dateHint}`);
     return;
   }
   lineReconciliationItems=items.map((item,index)=>({...item,_reconId:`line-${Date.now()}-${index}`,_dictionarySelected:undefined}));
   lineReconciliationShowAll=false;
-  lineReconciliationContext={date:orderDate,importer:contextImporter,targetBatchIndexes};
+  lineReconciliationContext={date:orderDate,importer:contextImporter,targetBatchIndexes,filterNotice};
   rebuildLineReconciliation();
   document.getElementById("line-reconciliation-modal").classList.add("open");
   document.getElementById("line-preview").textContent=`LINE ${items.length}明細を、${orderDate} の確定済み受注と照合しました。`;
