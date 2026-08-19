@@ -19,6 +19,9 @@
 - `product-master-migration.sql`  
   既存のSupabase環境へ商品マスタ保存機能を追加するSQLです。
 
+- `invoice-export-settings-migration.sql`
+  輸入社別のInvoiceヘッダー、仕向け地別の商品表記、Excel出力履歴を追加するSQLです。
+
 - `sales-correction-all-sources-migration.sql`
   売上参照から赤伝・調整・過去取込データを管理者修正するためのSQLです。
 
@@ -97,6 +100,19 @@ https://hankan-tablet-app.vercel.app
 5. 商品マスタに変更があった時だけ、新しいCSVを読み込む
 
 CSV更新時は商品コード単位で上書きされます。CSVに含まれない既存商品は削除されません。
+
+## Invoice出力設定
+
+1. Supabase SQL Editorで `invoice-export-settings-migration.sql` を1回実行する
+2. `scheduled-business-snapshot-migration.sql` を再実行し、新しい3テーブルを定期スナップショット対象へ加える
+3. 販売管理の `マスタ` → `Invoice出力` を開く
+4. 輸入社コードを選び、Shipper、Consignee、輸送条件、Invoice番号の3桁を保存する
+5. 商品ごとに通関申告用の商品名・英名・産地・PACKING・HSコードを登録する
+6. 現場作業のExcel出力画面で必須確認が0件になっていることを確認して出力する
+
+商品表記は輸入社と商品コードを基本に適用します。産地や作業用商品名を条件にした登録がある場合は、その条件を優先します。作業画面の商品名は変更されません。
+
+商品コードが商品マスタにない場合でも、日本語商品名が既存の商品マスタまたは同じ輸入社の過去の確定表記と完全一致し、英名・学術名が1種類に決まる場合は自動補完します。同名で候補が複数ある場合は自動確定しません。商品コードを `*` にした表記ルールは、日本語名の完全一致で使う名称辞書として再利用できます。
 
 ## Supabase SQLの使い方
 

@@ -26,9 +26,13 @@ $tables = @(
   "purchase_receipts", "purchase_receipt_lines", "inventory_lots", "inventory_allocations",
   "accounts_payable_supplier_profiles", "accounts_payable", "accounts_payable_payments",
   "importer_master", "supplier_master", "product_master", "product_price_contracts", "customer_master",
+  "invoice_profiles", "invoice_product_rules", "invoice_export_logs",
   "product_guide_templates", "product_guide_variants", "product_guide_template_rows",
   "site_master", "internal_user_access", "partner_user_access", "user_roles",
   "audit_events", "audit_snapshots", "external_backup_runs"
+)
+$optionalTables = @(
+  "invoice_profiles", "invoice_product_rules", "invoice_export_logs"
 )
 $tableOrder = @{
   work_sessions = "id"; order_lines = "id"; boxes = "id"; sales_records = "id"
@@ -40,6 +44,7 @@ $tableOrder = @{
   accounts_payable_supplier_profiles = "supplier_code"; accounts_payable = "id"; accounts_payable_payments = "id"
   importer_master = "importer_code"; supplier_master = "supplier_code"; product_master = "product_id"
   product_price_contracts = "product_id,importer_code"; customer_master = "id"
+  invoice_profiles = "importer_code"; invoice_product_rules = "id"; invoice_export_logs = "id"
   product_guide_templates = "id"; product_guide_variants = "id"; product_guide_template_rows = "id"
   site_master = "site_code"; internal_user_access = "user_id"; partner_user_access = "user_id,supplier_code"
   user_roles = "user_id"; audit_events = "id"; audit_snapshots = "id"; external_backup_runs = "id"
@@ -63,6 +68,7 @@ try {
     $pageChunks = New-Object System.Collections.Generic.List[string]
     $rowCount = 0
     $offset = 0
+    $skipTable = $false
 
     while ($true) {
       $headers = @{
@@ -72,7 +78,18 @@ try {
       }
       $order = (($tableOrder[$table] -split ",") | ForEach-Object { "$_.asc" }) -join ","
       $uri = "$ProjectUrl/rest/v1/$table`?select=*&order=$([uri]::EscapeDataString($order))&limit=$PageSize&offset=$offset"
-      $response = Invoke-WebRequest -Method Get -Uri $uri -Headers $headers -UserAgent $backupUserAgent -UseBasicParsing
+      try {
+        $response = Invoke-WebRequest -Method Get -Uri $uri -Headers $headers -UserAgent $backupUserAgent -UseBasicParsing
+      } catch {
+        $errorText = "$($_.Exception.Message) $($_.ErrorDetails.Message)"
+        $isMissingOptionalTable = $offset -eq 0 -and
+          $optionalTables -contains $table -and
+          $errorText -match "404|PGRST205|Could not find the table|relation.+does not exist"
+        if (-not $isMissingOptionalTable) { throw }
+        Write-Warning "Skipping optional table $table because its migration has not been applied yet."
+        $skipTable = $true
+        break
+      }
       $rawPage = [string]$response.Content
       $page = @($rawPage | ConvertFrom-Json)
       if ($page.Count) {
@@ -87,6 +104,8 @@ try {
       if ($page.Count -lt $PageSize) { break }
       $offset += $PageSize
     }
+
+    if ($skipTable) { continue }
 
     $jsonPath = Join-Path $tempRoot "$table.json"
     $json = "[" + ($pageChunks -join ",") + "]"

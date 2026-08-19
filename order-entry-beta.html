@@ -714,6 +714,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn" data-master-tab="customers" onclick="setMasterType('customers')">得意先</button>
         <button class="btn" data-master-tab="suppliers" onclick="setMasterType('suppliers')">仕入先</button>
         <button class="btn" data-master-tab="importers" onclick="setMasterType('importers')">輸入社</button>
+        <button class="btn" data-master-tab="invoice" onclick="showInvoiceExportMaster()">Invoice出力</button>
         <button class="btn" data-master-tab="billing" onclick="showStatementProfileMaster()">請求条件</button>
         <button class="btn" data-master-tab="payment" onclick="showPayableProfileMaster()">支払条件</button>
         <button class="btn" data-master-tab="audit" onclick="showAuditAdmin()">監査・復元</button>
@@ -795,6 +796,69 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         </div>
         <div class="hint" id="ap-profile-state">締め日・支払日は1～31で登録します。31は月末として扱います。</div>
       </div>
+      <div id="invoice-export-master" class="master-view-hidden">
+        <div class="hint" style="margin-bottom:10px">作業用の商品名は変更せず、Excel出力時だけ仕向け地別の正確な通関申告表記へ置き換えます。</div>
+        <details open>
+          <summary style="font-weight:900;cursor:pointer;padding:7px 0">Invoiceヘッダー設定</summary>
+          <div class="ar-form" style="margin-top:8px">
+            <label>輸入社コード<input id="invoice-profile-importer" list="importer-code-list" class="ime-en" autocomplete="off"></label>
+            <label class="wide">設定名<input id="invoice-profile-name" class="ime-ja" autocomplete="off" placeholder="例 DIM Singapore"></label>
+            <label class="wide">Shipper名<input id="invoice-shipper-name" class="ime-en" autocomplete="off"></label>
+            <label class="full">Shipper住所<textarea id="invoice-shipper-address" class="ime-en" autocomplete="off"></textarea></label>
+            <label>Shipper電話<input id="invoice-shipper-phone" class="ime-en" autocomplete="off"></label>
+            <label class="wide">Notify Party名<input id="invoice-notify-name" class="ime-en" autocomplete="off"></label>
+            <label class="full">Notify Party住所<textarea id="invoice-notify-address" class="ime-en" autocomplete="off"></textarea></label>
+            <label>Notify Party電話<input id="invoice-notify-phone" class="ime-en" autocomplete="off"></label>
+            <label class="wide">Consignee名<input id="invoice-consignee-name" class="ime-en" autocomplete="off"></label>
+            <label class="full">Consignee住所<textarea id="invoice-consignee-address" class="ime-en" autocomplete="off"></textarea></label>
+            <label>Consignee電話<input id="invoice-consignee-phone" class="ime-en" autocomplete="off"></label>
+            <label>SHIP FROM<input id="invoice-departure-port" class="ime-en" autocomplete="off" placeholder="OSAKA, JAPAN"></label>
+            <label>ARRIVE / TO<input id="invoice-destination-port" class="ime-en" autocomplete="off"></label>
+            <label class="wide">Transport Details<input id="invoice-transport-details" class="ime-en" autocomplete="off"></label>
+            <label>Carrier<input id="invoice-carrier" class="ime-en" autocomplete="off"></label>
+            <label>VIA<input id="invoice-via" class="ime-en" autocomplete="off"></label>
+            <label class="wide">TERM<input id="invoice-trade-terms" class="ime-en" autocomplete="off" placeholder="CFR BY JPN YEN, TT REMITTANCE"></label>
+            <label>通貨<input id="invoice-currency" class="ime-en" value="JPY" autocomplete="off"></label>
+            <label>日付後の3桁番号<input id="invoice-sequence" class="ime-en" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="001"></label>
+            <label class="full">Payment Details<textarea id="invoice-payment-details" class="ime-en" autocomplete="off"></textarea></label>
+            <label class="wide">Remarks<input id="invoice-remarks" class="ime-en" value="Commercial value" autocomplete="off"></label>
+            <label class="wide">Marks and Numbers<input id="invoice-marks" class="ime-en" value="Listed in the table" autocomplete="off"></label>
+            <label style="flex-direction:row;align-items:center;gap:7px"><input id="invoice-include-shipping" type="checkbox" checked style="width:18px;min-height:18px">送料をInvoice合計へ含める</label>
+          </div>
+          <div class="actions" style="margin-top:8px">
+            <button class="btn" type="button" onclick="loadInvoiceExportMaster()">選択輸入社を読込</button>
+            <button class="btn primary" type="button" onclick="saveInvoiceProfileMaster()">ヘッダー設定を保存</button>
+          </div>
+          <div class="hint" id="invoice-profile-state">輸入社ごとに初回だけ登録します。日付・Invoice No.・金額は出力時に自動入力します。</div>
+        </details>
+        <details open style="margin-top:12px">
+          <summary style="font-weight:900;cursor:pointer;padding:7px 0">仕向け地別の商品表記</summary>
+          <div class="ar-form" style="margin-top:8px">
+            <label>商品コード<input id="invoice-rule-product" list="product-code-list" class="ime-en" autocomplete="off" onchange="fillInvoiceRuleProductDefaults()" placeholder="名称辞書は *"></label>
+            <label>一致させる産地<input id="invoice-rule-match-origin" class="ime-en" autocomplete="off" placeholder="空欄なら全産地"></label>
+            <label class="wide">一致させる作業用商品名<input id="invoice-rule-match-name" class="ime-ja" autocomplete="off" placeholder="空欄なら同コードすべて"></label>
+            <label class="wide">Invoice日本語名<input id="invoice-rule-japanese" class="ime-ja" autocomplete="off"></label>
+            <label class="full">Invoice英名・学術名<input id="invoice-rule-english" class="ime-en" autocomplete="off"></label>
+            <label>Invoice産地<input id="invoice-rule-origin" class="ime-en" autocomplete="off"></label>
+            <label>PACKING<input id="invoice-rule-packing" class="ime-en" autocomplete="off"></label>
+            <label>HS CODE<input id="invoice-rule-hs" class="ime-en" inputmode="decimal" autocomplete="off"></label>
+            <label>優先順位<input id="invoice-rule-priority" type="number" inputmode="numeric" value="100"></label>
+            <label class="full">社内メモ<input id="invoice-rule-notes" class="ime-ja" autocomplete="off"></label>
+          </div>
+          <div class="actions" style="margin-top:8px">
+            <button class="btn" type="button" onclick="fillInvoiceRuleProductDefaults(true)">商品マスタから初期値</button>
+            <button class="btn" type="button" onclick="prepareInvoiceNameDictionary()">日本語名辞書にする</button>
+            <button class="btn primary" type="button" onclick="saveInvoiceProductRule()">商品表記を保存</button>
+            <button class="btn" type="button" onclick="clearInvoiceProductRuleForm()">入力をクリア</button>
+          </div>
+          <div class="status-line">
+            <label style="min-width:260px">登録済み表記を検索<input id="invoice-rule-filter" autocomplete="off" placeholder="商品コード・名称・産地" oninput="renderInvoiceProductRules()"></label>
+            <span class="sub" id="invoice-rule-count"></span>
+          </div>
+          <div class="master-list" id="invoice-rule-list" style="margin-top:8px;max-height:320px"></div>
+          <div class="hint">商品コードを * にすると、日本語商品名の完全一致で使う名称辞書になります。必ず実物と一致する正確な申告名称・産地・HSコードを登録してください。</div>
+        </details>
+      </div>
       <div id="audit-admin-view" class="master-view-hidden">
         <div id="audit-admin-denied" class="audit-admin-denied" style="display:none">変更履歴を参照・復元できるのは管理者のみです。</div>
         <div id="audit-admin-content">
@@ -820,6 +884,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
                 <option value="customer_master">得意先マスタ</option>
                 <option value="supplier_master">仕入先マスタ</option>
                 <option value="importer_master">輸入社マスタ</option>
+                <option value="invoice_profiles">Invoiceヘッダー</option>
+                <option value="invoice_product_rules">Invoice商品表記</option>
+                <option value="invoice_export_logs">Invoice出力履歴</option>
               </select>
             </label>
             <label>操作
@@ -9917,7 +9984,9 @@ function openPrintDoc(title,html,targetWindow=null){
 function updateMasterTabState(){
   document.querySelectorAll("[data-master-tab]").forEach(button=>{
     if(button.dataset.masterTab==="audit")button.style.display=currentUserIsAdmin()?"":"none";
-    const active=masterView==="billing"
+    const active=masterView==="invoice"
+      ?button.dataset.masterTab==="invoice"
+      :masterView==="billing"
       ?button.dataset.masterTab==="billing"
       :masterView==="payment"
         ?button.dataset.masterTab==="payment"
@@ -9930,6 +9999,7 @@ function updateMasterTabState(){
 function showCoreMasterEditor(){
   masterView="core";
   document.getElementById("master-core-editor")?.classList.remove("master-view-hidden");
+  document.getElementById("invoice-export-master")?.classList.add("master-view-hidden");
   document.getElementById("statement-profile-master")?.classList.add("master-view-hidden");
   document.getElementById("payable-profile-master")?.classList.add("master-view-hidden");
   document.getElementById("audit-admin-view")?.classList.add("master-view-hidden");
@@ -9943,6 +10013,7 @@ function setMasterType(type){
 function showStatementProfileMaster(importerCode=""){
   masterView="billing";
   document.getElementById("master-core-editor")?.classList.add("master-view-hidden");
+  document.getElementById("invoice-export-master")?.classList.add("master-view-hidden");
   document.getElementById("statement-profile-master")?.classList.remove("master-view-hidden");
   document.getElementById("payable-profile-master")?.classList.add("master-view-hidden");
   document.getElementById("audit-admin-view")?.classList.add("master-view-hidden");
@@ -9958,6 +10029,7 @@ function showStatementProfileMaster(importerCode=""){
 function showPayableProfileMaster(supplierCode=""){
   masterView="payment";
   document.getElementById("master-core-editor")?.classList.add("master-view-hidden");
+  document.getElementById("invoice-export-master")?.classList.add("master-view-hidden");
   document.getElementById("statement-profile-master")?.classList.add("master-view-hidden");
   document.getElementById("payable-profile-master")?.classList.remove("master-view-hidden");
   document.getElementById("audit-admin-view")?.classList.add("master-view-hidden");
@@ -9971,9 +10043,252 @@ function showPayableProfileMaster(supplierCode=""){
   }
   requestAnimationFrame(()=>document.getElementById("ap-profile-supplier-code")?.focus());
 }
+let invoiceProductRules=[];
+let editingInvoiceRuleId="";
+const INVOICE_PROFILE_FIELD_MAP={
+  profile_name:"invoice-profile-name",
+  shipper_name:"invoice-shipper-name",
+  shipper_address:"invoice-shipper-address",
+  shipper_phone:"invoice-shipper-phone",
+  notify_party_name:"invoice-notify-name",
+  notify_party_address:"invoice-notify-address",
+  notify_party_phone:"invoice-notify-phone",
+  consignee_name:"invoice-consignee-name",
+  consignee_address:"invoice-consignee-address",
+  consignee_phone:"invoice-consignee-phone",
+  departure_port:"invoice-departure-port",
+  destination_port:"invoice-destination-port",
+  transport_details:"invoice-transport-details",
+  carrier:"invoice-carrier",
+  via:"invoice-via",
+  trade_terms:"invoice-trade-terms",
+  currency:"invoice-currency",
+  payment_details:"invoice-payment-details",
+  remarks:"invoice-remarks",
+  marks_and_numbers:"invoice-marks",
+  invoice_sequence:"invoice-sequence"
+};
+function invoiceMasterSchemaError(error){
+  const message=String(error?.message||"");
+  if(error?.code==="42P01"||/invoice_profiles|invoice_product_rules/i.test(message))return "Invoice出力設定用SQLが未実行です。invoice-export-settings-migration.sql をSupabase SQL Editorで実行してください。";
+  return dbErrorMessage(error);
+}
+function invoiceMasterImporterCode(value=""){
+  const raw=String(value||val("invoice-profile-importer")||"").trim();
+  return arCanonicalImporterCode(raw)||raw;
+}
+function setInvoiceProfileState(message,isError=false){
+  const el=document.getElementById("invoice-profile-state");
+  if(!el)return;
+  el.textContent=message;
+  el.style.color=isError?"var(--danger)":"";
+}
+function clearInvoiceProfileForm(keepImporter=true){
+  const importer=keepImporter?val("invoice-profile-importer"):"";
+  Object.values(INVOICE_PROFILE_FIELD_MAP).forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
+  document.getElementById("invoice-profile-importer").value=importer;
+  document.getElementById("invoice-currency").value="JPY";
+  document.getElementById("invoice-departure-port").value="OSAKA, JAPAN";
+  document.getElementById("invoice-trade-terms").value="CFR BY JPN YEN, TT REMITTANCE";
+  document.getElementById("invoice-remarks").value="Commercial value";
+  document.getElementById("invoice-marks").value="Listed in the table";
+  document.getElementById("invoice-include-shipping").checked=true;
+}
+function applyInvoiceProfileForm(profile){
+  clearInvoiceProfileForm(true);
+  Object.entries(INVOICE_PROFILE_FIELD_MAP).forEach(([field,id])=>{
+    const el=document.getElementById(id);
+    if(el&&profile?.[field]!=null)el.value=profile[field];
+  });
+  document.getElementById("invoice-include-shipping").checked=profile?.include_shipping_fee!==false;
+}
+function showInvoiceExportMaster(importerCode=""){
+  masterView="invoice";
+  document.getElementById("master-core-editor")?.classList.add("master-view-hidden");
+  document.getElementById("statement-profile-master")?.classList.add("master-view-hidden");
+  document.getElementById("payable-profile-master")?.classList.add("master-view-hidden");
+  document.getElementById("audit-admin-view")?.classList.add("master-view-hidden");
+  document.getElementById("invoice-export-master")?.classList.remove("master-view-hidden");
+  updateMasterTabState();
+  const code=invoiceMasterImporterCode(importerCode||val("invoice-profile-importer")||val("batch-importer-code"));
+  if(code){
+    document.getElementById("invoice-profile-importer").value=code;
+    loadInvoiceExportMaster({silent:true});
+  }else{
+    clearInvoiceProfileForm(false);
+    invoiceProductRules=[];
+    renderInvoiceProductRules();
+  }
+  requestAnimationFrame(()=>document.getElementById("invoice-profile-importer")?.focus());
+}
+async function loadInvoiceExportMaster(options={}){
+  const code=invoiceMasterImporterCode();
+  if(!code){if(!options.silent)alert("輸入社コードを入力してください。");return}
+  document.getElementById("invoice-profile-importer").value=code;
+  if(!dbReady||!supabaseClient||!currentUser){setInvoiceProfileState("ログイン後にInvoice設定を読み込めます。",true);return}
+  setInvoiceProfileState("Invoice設定を読み込んでいます...");
+  try{
+    const {data,error}=await supabaseClient.from("invoice_profiles").select("*").eq("importer_code",code).maybeSingle();
+    if(error)throw error;
+    applyInvoiceProfileForm(data||null);
+    const importer=(getMasters().importers||[]).find(item=>masterCodeKey(item.code)===masterCodeKey(code));
+    if(!data&&importer)document.getElementById("invoice-profile-name").value=[importer.code,importer.name].filter(Boolean).join(" ");
+    await loadInvoiceProductRules(code);
+    setInvoiceProfileState(data?`輸入社 ${code} の設定を読み込みました。`:`輸入社 ${code} は未登録です。ヘッダーを入力して保存してください。`);
+  }catch(error){
+    setInvoiceProfileState(invoiceMasterSchemaError(error),true);
+    if(!options.silent)alert(invoiceMasterSchemaError(error));
+  }
+}
+async function saveInvoiceProfileMaster(){
+  if(!currentUserIsAdmin()){alert("Invoice出力設定の更新は管理者のみ可能です。");return}
+  const code=invoiceMasterImporterCode();
+  if(!code){alert("輸入社コードを入力してください。");return}
+  const payload={importer_code:code,updated_by:currentUser.id,is_active:true};
+  Object.entries(INVOICE_PROFILE_FIELD_MAP).forEach(([field,id])=>payload[field]=val(id).trim()||null);
+  payload.currency=payload.currency||"JPY";
+  const invoiceSequence=String(payload.invoice_sequence||"").replace(/\D/g,"").slice(-3);
+  payload.invoice_sequence=invoiceSequence?invoiceSequence.padStart(3,"0"):null;
+  payload.include_shipping_fee=!!document.getElementById("invoice-include-shipping").checked;
+  try{
+    setAppBusy(true,"Invoiceヘッダーを保存しています...");
+    const {error}=await supabaseClient.from("invoice_profiles").upsert(payload,{onConflict:"importer_code"});
+    if(error)throw error;
+    document.getElementById("invoice-sequence").value=payload.invoice_sequence;
+    setInvoiceProfileState(`輸入社 ${code} のヘッダー設定を保存しました。`);
+  }catch(error){alert(invoiceMasterSchemaError(error));setInvoiceProfileState(invoiceMasterSchemaError(error),true)}
+  finally{setAppBusy(false)}
+}
+async function loadInvoiceProductRules(code=invoiceMasterImporterCode()){
+  invoiceProductRules=[];
+  editingInvoiceRuleId="";
+  if(!code||!dbReady||!supabaseClient||!currentUser){renderInvoiceProductRules();return}
+  const pageSize=1000;
+  for(let from=0;;from+=pageSize){
+    const {data,error}=await supabaseClient.from("invoice_product_rules")
+      .select("*").eq("importer_code",code).eq("is_active",true)
+      .order("product_id",{ascending:true}).order("priority",{ascending:true})
+      .range(from,from+pageSize-1);
+    if(error)throw error;
+    invoiceProductRules.push(...(data||[]));
+    if(!data||data.length<pageSize)break;
+  }
+  renderInvoiceProductRules();
+}
+function clearInvoiceProductRuleForm(){
+  editingInvoiceRuleId="";
+  ["invoice-rule-product","invoice-rule-match-origin","invoice-rule-match-name","invoice-rule-japanese","invoice-rule-english","invoice-rule-origin","invoice-rule-packing","invoice-rule-hs","invoice-rule-notes"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("invoice-rule-priority").value="100";
+}
+function fillInvoiceRuleProductDefaults(force=false){
+  const code=val("invoice-rule-product").trim();
+  if(!code||code==="*")return;
+  const product=findMasterProduct(code,"");
+  if(!product)return;
+  const fields={
+    "invoice-rule-japanese":product.name||product.productName||"",
+    "invoice-rule-english":product.englishName||product.english_name||"",
+    "invoice-rule-origin":product.origin||""
+  };
+  Object.entries(fields).forEach(([id,value])=>{const el=document.getElementById(id);if(el&&(force||!el.value))el.value=value});
+}
+function prepareInvoiceNameDictionary(){
+  const name=val("invoice-rule-match-name").trim()||val("invoice-rule-japanese").trim();
+  document.getElementById("invoice-rule-product").value="*";
+  if(name){
+    document.getElementById("invoice-rule-match-name").value=name;
+    if(!val("invoice-rule-japanese").trim())document.getElementById("invoice-rule-japanese").value=name;
+  }
+  setInvoiceProfileState("日本語名の完全一致で使う辞書として登録します。");
+  document.getElementById(name?"invoice-rule-english":"invoice-rule-match-name").focus();
+}
+function applyInvoiceRuleDraft(draft){
+  if(!draft||!String(draft.productName||"").trim())return;
+  editingInvoiceRuleId="";
+  document.getElementById("invoice-rule-product").value="*";
+  document.getElementById("invoice-rule-match-name").value=String(draft.productName||"").trim();
+  document.getElementById("invoice-rule-match-origin").value=String(draft.origin||"").trim();
+  document.getElementById("invoice-rule-japanese").value=String(draft.productName||"").trim();
+  document.getElementById("invoice-rule-english").value=String(draft.english||"").trim();
+  setInvoiceProfileState("作業アプリから名称辞書の候補を開きました。英名・学術名を確認して保存してください。");
+  requestAnimationFrame(()=>document.getElementById("invoice-rule-english")?.focus());
+}
+function editInvoiceProductRule(index){
+  const rule=invoiceProductRules[index];
+  if(!rule)return;
+  editingInvoiceRuleId=rule.id||"";
+  document.getElementById("invoice-rule-product").value=rule.product_id||"";
+  document.getElementById("invoice-rule-match-origin").value=rule.match_origin||"";
+  document.getElementById("invoice-rule-match-name").value=rule.match_product_name||"";
+  document.getElementById("invoice-rule-japanese").value=rule.invoice_japanese_name||"";
+  document.getElementById("invoice-rule-english").value=rule.invoice_english_name||"";
+  document.getElementById("invoice-rule-origin").value=rule.invoice_origin||"";
+  document.getElementById("invoice-rule-packing").value=rule.packing||"";
+  document.getElementById("invoice-rule-hs").value=rule.hs_code||"";
+  document.getElementById("invoice-rule-priority").value=rule.priority??100;
+  document.getElementById("invoice-rule-notes").value=rule.notes||"";
+  document.getElementById("invoice-rule-product").focus();
+  setInvoiceProfileState(`${rule.product_id} のInvoice表記を編集中です。`);
+}
+async function saveInvoiceProductRule(){
+  if(!currentUserIsAdmin()){alert("Invoice商品表記の更新は管理者のみ可能です。");return}
+  const importer=invoiceMasterImporterCode(),product=val("invoice-rule-product").trim();
+  if(!importer||!product){alert("輸入社コードと商品コードを入力してください。");return}
+  if(product==="*"&&!val("invoice-rule-match-name").trim()){alert("日本語名辞書には、一致させる作業用商品名が必要です。");return}
+  const payload={
+    importer_code:importer,
+    product_id:product,
+    match_origin:val("invoice-rule-match-origin").trim(),
+    match_product_name:val("invoice-rule-match-name").trim(),
+    invoice_japanese_name:val("invoice-rule-japanese").trim()||null,
+    invoice_english_name:val("invoice-rule-english").trim()||null,
+    invoice_origin:val("invoice-rule-origin").trim()||null,
+    packing:val("invoice-rule-packing").trim()||null,
+    hs_code:val("invoice-rule-hs").trim()||null,
+    notes:val("invoice-rule-notes").trim()||null,
+    priority:Number(val("invoice-rule-priority"))||100,
+    is_active:true,
+    updated_by:currentUser.id
+  };
+  try{
+    setAppBusy(true,"Invoice商品表記を保存しています...");
+    let error;
+    if(editingInvoiceRuleId){
+      ({error}=await supabaseClient.from("invoice_product_rules").update(payload).eq("id",editingInvoiceRuleId));
+    }else{
+      ({error}=await supabaseClient.from("invoice_product_rules").upsert(payload,{onConflict:"importer_code,product_id,match_origin,match_product_name"}));
+    }
+    if(error)throw error;
+    await loadInvoiceProductRules(importer);
+    clearInvoiceProductRuleForm();
+    setInvoiceProfileState(`${product} の仕向け地別表記を保存しました。`);
+  }catch(error){alert(invoiceMasterSchemaError(error))}
+  finally{setAppBusy(false)}
+}
+async function deactivateInvoiceProductRule(index){
+  if(!currentUserIsAdmin()){alert("Invoice商品表記の更新は管理者のみ可能です。");return}
+  const rule=invoiceProductRules[index];
+  if(!rule||!confirm(`${rule.product_id} のInvoice表記を無効化しますか？`))return;
+  const {error}=await supabaseClient.from("invoice_product_rules").update({is_active:false,updated_by:currentUser.id}).eq("id",rule.id);
+  if(error){alert(invoiceMasterSchemaError(error));return}
+  await loadInvoiceProductRules(invoiceMasterImporterCode());
+}
+function renderInvoiceProductRules(){
+  const list=document.getElementById("invoice-rule-list"),count=document.getElementById("invoice-rule-count");
+  if(!list)return;
+  const query=normalizeMasterSearchText(val("invoice-rule-filter"));
+  const filtered=invoiceProductRules.map((rule,index)=>({rule,index})).filter(({rule})=>!query||normalizeMasterSearchText([rule.product_id,rule.match_origin,rule.match_product_name,rule.invoice_japanese_name,rule.invoice_english_name,rule.invoice_origin,rule.hs_code].join(" ")).includes(query));
+  if(count)count.textContent=`${filtered.length} / ${invoiceProductRules.length}件`;
+  list.innerHTML=filtered.length?filtered.map(({rule,index})=>{
+    const match=[rule.product_id==="*"?"日本語名辞書":"",rule.match_origin?`産地=${rule.match_origin}`:"",rule.match_product_name?`作業名=${rule.match_product_name}`:""].filter(Boolean).join(" / ")||"同コードすべて";
+    const output=[rule.invoice_japanese_name,rule.invoice_english_name,rule.invoice_origin?`産地 ${rule.invoice_origin}`:"",rule.packing?`PACKING ${rule.packing}`:"",rule.hs_code?`HS ${rule.hs_code}`:""].filter(Boolean).join(" / ");
+    return `<div class="master-item" style="grid-template-columns:100px minmax(0,1fr) auto;cursor:pointer" onclick="editInvoiceProductRule(${index})"><b>${esc(rule.product_id)}</b><div><strong>${esc(match)}</strong><br><span class="sub">${esc(output||"出力値未設定")}</span></div>${currentUserIsAdmin()?`<button class="small danger" type="button" onclick="event.stopPropagation();deactivateInvoiceProductRule(${index})">無効化</button>`:""}</div>`;
+  }).join(""):`<div class="sales-empty">${invoiceProductRules.length?"検索に一致する表記はありません。":"この輸入社の仕向け地別表記はまだありません。"}</div>`;
+}
 function showAuditAdmin(){
   masterView="audit";
   document.getElementById("master-core-editor")?.classList.add("master-view-hidden");
+  document.getElementById("invoice-export-master")?.classList.add("master-view-hidden");
   document.getElementById("statement-profile-master")?.classList.add("master-view-hidden");
   document.getElementById("payable-profile-master")?.classList.add("master-view-hidden");
   document.getElementById("audit-admin-view")?.classList.remove("master-view-hidden");
@@ -12203,6 +12518,18 @@ window.addEventListener("beforeunload",e=>{
 document.addEventListener("scroll",hideAllProductSuggestions,true);
 window.addEventListener("resize",hideAllProductSuggestions);
 init();
+setTimeout(()=>{
+  let code="";
+  let draft=null;
+  try{code=localStorage.getItem("hankan-invoice-master-importer")||""}catch(_error){}
+  try{draft=JSON.parse(localStorage.getItem("hankan-invoice-rule-draft")||"null")}catch(_error){}
+  if(!code)return;
+  try{localStorage.removeItem("hankan-invoice-master-importer")}catch(_error){}
+  try{localStorage.removeItem("hankan-invoice-rule-draft")}catch(_error){}
+  switchWorkspaceTab("masters",{skipConfirm:true});
+  showInvoiceExportMaster(code);
+  if(draft)setTimeout(()=>applyInvoiceRuleDraft(draft),250);
+},700);
 </script>
 </body>
 </html>

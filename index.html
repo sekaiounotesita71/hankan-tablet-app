@@ -757,6 +757,316 @@ async function exportExcel(){
   renderExportPreview(null);
   document.getElementById("export-bg").classList.add("open");
 }
+function customsInvoiceTextKey(value){
+  return String(value??"").normalize("NFKC").trim().toLowerCase().replace(/[\s　_\-\/]+/g,"");
+}
+function customsInvoiceNumber(value){
+  const text=String(value??"").replace(/,/g,"").trim();
+  if(!text)return null;
+  const number=Number(text);
+  return Number.isFinite(number)?number:null;
+}
+function customsInvoiceDbError(error){
+  const message=String(error?.message||"");
+  if(error?.code==="42P01"||/invoice_profiles|invoice_product_rules/i.test(message))return "Invoice出力設定用SQLが未実行です。invoice-export-settings-migration.sql をSupabase SQL Editorで実行してください。";
+  return message||"Invoice出力設定を読み込めませんでした。";
+}
+async function loadCustomsInvoiceSettings(targetRows){
+  const importerCodes=[...new Set((targetRows||[]).map(row=>importerCode(row.importer_id||row.country)).filter(Boolean))];
+  const result={schemaReady:true,profiles:new Map(),rules:[],session:null,error:null,importerCodes};
+  if(!supabaseClient||!currentUser||!importerCodes.length)return result;
+  try{
+    const {data:profiles,error:profileError}=await supabaseClient.from("invoice_profiles").select("*").in("importer_code",importerCodes).eq("is_active",true);
+    if(profileError)throw profileError;
+    (profiles||[]).forEach(profile=>result.profiles.set(String(profile.importer_code),profile));
+    let from=0;
+    const pageSize=500;
+    while(true){
+      const {data,error}=await supabaseClient.from("invoice_product_rules").select("*").in("importer_code",importerCodes).eq("is_active",true).order("priority",{ascending:true}).range(from,from+pageSize-1);
+      if(error)throw error;
+      result.rules.push(...(data||[]));
+      if(!data||data.length<pageSize)break;
+      from+=pageSize;
+    }
+    if(currentSessionId){
+      const {data,error}=await supabaseClient.from("work_sessions").select("id,work_date,shipping_fee,shipping_fees").eq("id",currentSessionId).maybeSingle();
+      if(!error)result.session=data||null;
+    }
+  }catch(error){
+    result.schemaReady=false;
+    result.error=error;
+  }
+  return result;
+}
+function customsInvoiceShipping(settings,code){
+  const session=settings?.session;
+  const fees=session?.shipping_fees;
+  if(fees&&typeof fees==="object"){
+    const key=Object.keys(fees).find(item=>workImporterKey(item)===workImporterKey(code)||invoiceImporterCode(item)===invoiceImporterCode(code));
+    if(key)return Number(fees[key])||0;
+  }
+  return settings?.importerCodes?.length===1?(Number(session?.shipping_fee)||0):0;
+}
+function customsInvoiceRuleFor(row,code,rules){
+  const productKey=normalizeProductId(row?.product_id||row?.["商品コード"]);
+  const originKey=customsInvoiceTextKey(row?.origin||row?.["産地"]);
+  const nameKey=customsInvoiceTextKey(row?.product_name||row?.["商品名"]);
+  return (rules||[]).map(rule=>{
+    const ruleProductKey=normalizeProductId(rule.product_id);
+    const nameDictionary=ruleProductKey==="*";
+    if(String(rule.importer_code)!==String(code)||(!nameDictionary&&ruleProductKey!==productKey))return null;
+    const matchOrigin=customsInvoiceTextKey(rule.match_origin);
+    const matchName=customsInvoiceTextKey(rule.match_product_name);
+    if(matchOrigin&&matchOrigin!==originKey)return null;
+    if(nameDictionary&&(!matchName||matchName!==nameKey))return null;
+    if(!nameDictionary&&matchName&&!nameKey.includes(matchName))return null;
+    return {rule,specificity:(nameDictionary?0:100)+(matchOrigin?20:0)+(matchName?10:0)};
+  }).filter(Boolean).sort((a,b)=>b.specificity-a.specificity||(Number(a.rule.priority)||100)-(Number(b.rule.priority)||100)||String(b.rule.updated_at||"").localeCompare(String(a.rule.updated_at||"")))[0]?.rule||null;
+}
+function customsInvoiceNameFallback(row,code,rules){
+  const nameKey=customsInvoiceTextKey(row?.product_name||row?.["商品名"]);
+  const originKey=customsInvoiceTextKey(row?.origin||row?.["産地"]);
+  if(!nameKey)return {english:"",source:"",ambiguous:false};
+  const candidates=[];
+  (rules||[]).forEach(rule=>{
+    if(String(rule.importer_code)!==String(code))return;
+    const ruleName=customsInvoiceTextKey(rule.match_product_name||rule.invoice_japanese_name);
+    const matchOrigin=customsInvoiceTextKey(rule.match_origin);
+    const english=String(rule.invoice_english_name||"").trim();
+    if(ruleName===nameKey&&english&&(!matchOrigin||matchOrigin===originKey))candidates.push({english,source:normalizeProductId(rule.product_id)==="*"?"日本語名辞書":"過去の仕向け地別表記",specificity:matchOrigin?2:1});
+  });
+  const maxSpecificity=candidates.reduce((max,item)=>Math.max(max,item.specificity||0),0);
+  const destinationCandidates=candidates.filter(item=>(item.specificity||0)===maxSpecificity);
+  const destinationValues=[...new Map(destinationCandidates.map(item=>[customsInvoiceTextKey(item.english),item])).values()];
+  if(destinationValues.length===1)return {...destinationValues[0],ambiguous:false};
+  if(destinationValues.length>1)return {english:"",source:"",ambiguous:true};
+  const masterCandidates=[];
+  const products=typeof masterMap==="object"&&masterMap?Object.values(masterMap):[];
+  products.forEach(product=>{
+    if(customsInvoiceTextKey(product?.product_name)!==nameKey)return;
+    const english=[product?.en_name,product?.sci_name].map(value=>String(value||"").trim()).filter(Boolean).join(" / ");
+    if(english)masterCandidates.push({english,source:"商品マスタの日本語名一致"});
+  });
+  const masterValues=[...new Map(masterCandidates.map(item=>[customsInvoiceTextKey(item.english),item])).values()];
+  if(masterValues.length===1)return {...masterValues[0],ambiguous:false};
+  return {english:"",source:"",ambiguous:masterValues.length>1};
+}
+function customsInvoiceRowImporter(record,fallback=""){
+  if(record?.__sourceRow)return importerCode(record.__sourceRow.importer_id||record.__sourceRow.country)||fallback;
+  const pendingCode=record?.__pendingEntry?.importer_code||record?.__pendingEntry?.importer_id||"";
+  return importerCode(pendingCode)||invoiceImporterCode(pendingCode)||fallback;
+}
+function customsInvoiceCf(row,code){
+  const source=[row?.product_name,row?.en_name,row?._priceSourceText,importerDisplayName(code)].filter(Boolean).join(" ");
+  return /冷凍|\bFZ\b|FROZEN/i.test(source)?"F":"C";
+}
+function customsInvoiceLine(record,code,settings){
+  const source=record.__sourceRow||{};
+  const rule=record.__isPending?null:customsInvoiceRuleFor(source,code,settings.rules);
+  const recordEnglish=String(record["英名・学術名"]||"").trim();
+  const nameFallback=!record.__isPending&&!rule?.invoice_english_name&&!recordEnglish?customsInvoiceNameFallback(source,code,settings.rules):{english:"",source:"",ambiguous:false};
+  const japanese=String(rule?.invoice_japanese_name||record["商品名"]||"").trim();
+  const english=String(rule?.invoice_english_name||recordEnglish||nameFallback.english||"").trim();
+  const origin=String(rule?.invoice_origin||record["産地"]||"").trim();
+  const price=customsInvoiceNumber(record["単価"]);
+  const qty=customsInvoiceNumber(record["現場入力数量"]);
+  const amount=customsInvoiceNumber(record["金額"]);
+  const warnings=[];
+  if(!record.__isPending&&!rule)warnings.push("仕向け地別表記なし");
+  if(nameFallback.english)warnings.push("日本語名一致で自動補完");
+  if(nameFallback.ambiguous)warnings.push("同名の英名候補が複数");
+  if(!english&&!record.__isPending)warnings.push("英名なし");
+  if(!origin&&!record.__isPending)warnings.push("産地なし");
+  if((price===null||price===0)&&!record["欠品"])warnings.push("単価なし");
+  if(!rule?.hs_code&&!record.__isPending)warnings.push("HSコード未設定");
+  return {
+    record,source,rule,code,
+    productId:record["商品コード"]||"",
+    customer:record["エンドユーザー店名"]||"",
+    boxNo:record["ケース番号"]||"",
+    cf:record.__isPending?"":customsInvoiceCf(source,code),
+    japanese,english,
+    packing:String(rule?.packing||record.packing||"").trim(),
+    sourceOrigin:String(record["産地"]||"").trim(),origin,
+    qty:qty===null?"":qty,
+    unit:record["現場入力単位"]||"",
+    net:customsInvoiceNumber(record["NET重量"])??"",
+    gross:customsInvoiceNumber(record["グロス重量"])??"",
+    price:price===null?"":price,
+    amount:amount===null?"":amount,
+    hsCode:String(rule?.hs_code||"").trim(),
+    priceSource:source?._priceSource||source?._priceOriginSource||"作業入力",
+    nameSource:rule?.invoice_english_name?(normalizeProductId(rule.product_id)==="*"?"日本語名辞書":"仕向け地別マスタ"):(recordEnglish?"作業データ":nameFallback.source||(rule?"仕向け地別マスタ":"未設定")),
+    warnings
+  };
+}
+function customsInvoiceNo(profile,code,workDate){
+  const datePart=String(workDate||"").replace(/\D/g,"").slice(0,8);
+  const sequence=String(profile?.invoice_sequence||"").replace(/\D/g,"").slice(-3);
+  if(/^\d{8}$/.test(datePart)&&sequence)return `${datePart}${sequence.padStart(3,"0")}`;
+  return pendingInvoiceReference(code,workDate);
+}
+function buildCustomsInvoiceContexts(payload,settings){
+  const codes=settings.importerCodes.length?settings.importerCodes:[...new Set(payload.p1data.map(row=>customsInvoiceRowImporter(row)).filter(Boolean))];
+  const fallbackCode=codes.length===1?codes[0]:"";
+  return codes.map(code=>{
+    const profile=settings.profiles.get(String(code))||{importer_code:code,currency:"JPY",include_shipping_fee:true};
+    const records=payload.p1data.filter(record=>customsInvoiceRowImporter(record,fallbackCode)===code&&!record["欠品"]);
+    const lines=records.map(record=>customsInvoiceLine(record,code,settings));
+    const seenBoxes=new Set();
+    lines.forEach(line=>{
+      line.noOfBox=line.boxNo&&!seenBoxes.has(String(line.boxNo))?1:"";
+      if(line.boxNo)seenBoxes.add(String(line.boxNo));
+    });
+    const subtotal=lines.reduce((sum,line)=>sum+(Number(line.amount)||0),0);
+    const shipping=profile.include_shipping_fee===false?0:customsInvoiceShipping(settings,code);
+    const workDate=normalizeWorkDate(currentSessionWorkDate)||normalizeWorkDate(settings.session?.work_date)||currentWorkDateValue();
+    const required={shipper_name:"Shipper名",shipper_address:"Shipper住所",consignee_name:"Consignee名",consignee_address:"Consignee住所",destination_port:"ARRIVE / TO"};
+    const profileMissing=Object.entries(required).filter(([field])=>!String(profile[field]||"").trim()).map(([,label])=>label);
+    const criticalLineCount=lines.filter(line=>line.warnings.some(w=>w==="英名なし"||w==="産地なし"||w==="単価なし")).length;
+    return {
+      code,profile,lines,workDate,
+      invoiceNo:customsInvoiceNo(profile,code,workDate),
+      subtotal,shipping,total:subtotal+shipping,
+      profileMissing,criticalLineCount,
+      ruleAppliedCount:lines.filter(line=>!!line.rule).length,
+      nameFilledCount:lines.filter(line=>line.nameSource==="商品マスタの日本語名一致"||line.nameSource==="過去の仕向け地別表記").length,
+      fallbackCount:lines.filter(line=>!line.rule&&!line.record.__isPending).length
+    };
+  });
+}
+function customsInvoiceSheetName(base,used){
+  let name=String(base||"Invoice").replace(/[\\\/?*\[\]:]/g," ").trim().slice(0,31)||"Invoice";
+  let suffix=2;
+  const initial=name;
+  while(used.has(name)){const tail=` ${suffix++}`;name=(initial.slice(0,31-tail.length)+tail)}
+  used.add(name);
+  return name;
+}
+function customsInvoiceSetCellStyle(ws,address,style){
+  if(ws[address])ws[address].s={...(ws[address].s||{}),...style};
+}
+function buildCommercialInvoiceSheet(context){
+  const p=context.profile||{},columnCount=17,rowsData=[];
+  const set=(row,col,value)=>{while(rowsData.length<=row)rowsData.push(Array(columnCount).fill(""));rowsData[row][col]=value??""};
+  set(0,0,"COMMERCIAL INVOICE");
+  set(1,0,"Shipper");set(1,5,"Notify Party");set(1,10,"Payment Details");
+  set(2,0,p.shipper_name||"");set(2,5,p.notify_party_name||"");set(2,10,p.payment_details||"");set(2,13,`DATE: ${context.workDate||""}`);
+  set(3,0,p.shipper_address||"");set(3,5,p.notify_party_address||"");set(3,13,`PLACE: ${p.departure_port||""}`);
+  set(4,0,p.shipper_phone||"");set(4,5,p.notify_party_phone||"");set(4,13,`INVOICE NO: ${context.invoiceNo||""}`);
+  set(6,0,"Consignee");set(6,5,"Transport Details");
+  set(7,0,p.consignee_name||"");set(7,5,p.transport_details||"");
+  set(8,0,p.consignee_address||"");set(8,5,p.carrier||"");
+  set(9,0,p.consignee_phone||"");set(9,5,`Remarks: ${p.remarks||""}`);set(9,13,"TOTAL AMOUNT:");set(9,15,context.total);
+  set(10,5,`Marks and Numbers: ${p.marks_and_numbers||""}`);
+  set(13,0,"SHIP DATE");set(13,4,"SHIP FROM");set(13,7,"ARRIVE / TO");set(13,10,"VIA");set(13,12,"TERM");
+  set(14,0,context.workDate||"");set(14,4,p.departure_port||"");set(14,7,p.destination_port||"");set(14,10,p.via||"");set(14,12,p.trade_terms||"");
+  const headers=["CODE","BUYER CODE","C/S NO.","","C/F","NAME OF GOODS / IN JAPANESE","NAME OF GOODS","PACKING","ORIGIN","NO. OF BOX","Q'NTY","UNIT","N/WT TOTAL KG","GRW WT/UNIT","U/PRICE","AMOUNT","HS CODE"];
+  headers.forEach((value,col)=>set(16,col,value));
+  context.lines.forEach((line,index)=>{
+    const row=17+index;
+    [line.productId,line.customer,line.boxNo,"",line.cf,line.japanese,line.english,line.packing,line.origin,line.noOfBox,line.qty,line.unit,line.net,line.gross,line.price,line.amount,line.hsCode].forEach((value,col)=>set(row,col,value));
+  });
+  const subtotalRow=17+context.lines.length;
+  set(subtotalRow,13,"SUBTOTAL");set(subtotalRow,15,context.subtotal);
+  set(subtotalRow+2,5,"FREIGHT & SHIPPING CHARGE");set(subtotalRow+2,15,context.shipping);
+  set(subtotalRow+4,5,`TOTAL : ${p.currency||"JPY"}`);set(subtotalRow+4,9,context.lines.reduce((sum,line)=>sum+(Number(line.noOfBox)||0),0));set(subtotalRow+4,11,"PKG");set(subtotalRow+4,12,context.lines.reduce((sum,line)=>sum+(Number(line.net)||0),0));set(subtotalRow+4,13,context.lines.reduce((sum,line)=>sum+(Number(line.gross)||0),0));set(subtotalRow+4,15,context.total);
+  const ws=XLSX.utils.aoa_to_sheet(rowsData);
+  ws["!merges"]=[
+    {s:{r:0,c:0},e:{r:0,c:16}},
+    {s:{r:1,c:0},e:{r:1,c:4}},{s:{r:1,c:5},e:{r:1,c:9}},{s:{r:1,c:10},e:{r:1,c:12}},{s:{r:1,c:13},e:{r:1,c:16}},
+    {s:{r:2,c:0},e:{r:2,c:4}},{s:{r:3,c:0},e:{r:3,c:4}},{s:{r:4,c:0},e:{r:4,c:4}},
+    {s:{r:2,c:5},e:{r:2,c:9}},{s:{r:3,c:5},e:{r:3,c:9}},{s:{r:4,c:5},e:{r:4,c:9}},
+    {s:{r:2,c:10},e:{r:4,c:12}},{s:{r:2,c:13},e:{r:2,c:16}},{s:{r:3,c:13},e:{r:3,c:16}},{s:{r:4,c:13},e:{r:4,c:16}},
+    {s:{r:6,c:0},e:{r:6,c:4}},{s:{r:6,c:5},e:{r:6,c:9}},
+    {s:{r:7,c:0},e:{r:7,c:4}},{s:{r:8,c:0},e:{r:8,c:4}},{s:{r:9,c:0},e:{r:9,c:4}},
+    {s:{r:7,c:5},e:{r:7,c:9}},{s:{r:8,c:5},e:{r:8,c:9}},{s:{r:9,c:5},e:{r:9,c:9}},{s:{r:10,c:5},e:{r:10,c:9}},
+    {s:{r:9,c:13},e:{r:9,c:14}},{s:{r:9,c:15},e:{r:9,c:16}},
+    {s:{r:13,c:0},e:{r:13,c:3}},{s:{r:13,c:4},e:{r:13,c:6}},{s:{r:13,c:7},e:{r:13,c:9}},{s:{r:13,c:10},e:{r:13,c:11}},{s:{r:13,c:12},e:{r:13,c:16}},
+    {s:{r:14,c:0},e:{r:14,c:3}},{s:{r:14,c:4},e:{r:14,c:6}},{s:{r:14,c:7},e:{r:14,c:9}},{s:{r:14,c:10},e:{r:14,c:11}},{s:{r:14,c:12},e:{r:14,c:16}}
+  ];
+  ws["!cols"]=[{wch:11},{wch:24},{wch:11},{wch:2},{wch:5},{wch:24},{wch:38},{wch:12},{wch:12},{wch:10},{wch:10},{wch:9},{wch:13},{wch:13},{wch:13},{wch:15},{wch:13}];
+  ws["!rows"]=[{hpt:24},{hpt:18},{hpt:32},{hpt:46},{hpt:28},{hpt:8},{hpt:18},{hpt:30},{hpt:46},{hpt:30},{hpt:28},{hpt:8},{hpt:8},{hpt:20},{hpt:28},{hpt:8},{hpt:34}];
+  ws["!margins"]={left:.25,right:.25,top:.35,bottom:.35,header:.15,footer:.15};
+  ws["!pageSetup"]={orientation:"landscape",fitToWidth:1,fitToHeight:0,paperSize:9};
+  ws["!autofilter"]={ref:`A17:Q${Math.max(17,subtotalRow)}`};
+  customsInvoiceSetCellStyle(ws,"A1",{font:{bold:true,sz:16},alignment:{horizontal:"center",vertical:"center"}});
+  ["A2","F2","K2","A7","F7","A14","E14","H14","K14","M14"].forEach(address=>customsInvoiceSetCellStyle(ws,address,{font:{bold:true},fill:{fgColor:{rgb:"D9E2F3"}},alignment:{vertical:"center",wrapText:true}}));
+  for(let col=0;col<columnCount;col++)customsInvoiceSetCellStyle(ws,`${XLSX.utils.encode_col(col)}17`,{font:{bold:true},fill:{fgColor:{rgb:"D9E2F3"}},alignment:{horizontal:"center",vertical:"center",wrapText:true},border:{top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}}});
+  context.lines.forEach((line,index)=>{
+    const row=18+index;
+    ws[`P${row}`]={f:`K${row}*O${row}`,v:Number(line.amount)||0,t:"n",z:"#,##0.00"};
+    ["K","M","N","O","P"].forEach(col=>{if(ws[`${col}${row}`])ws[`${col}${row}`].z="#,##0.00"});
+  });
+  if(ws[`P${subtotalRow+1}`])ws[`P${subtotalRow+1}`].z="#,##0.00";
+  if(ws[`P${subtotalRow+3}`])ws[`P${subtotalRow+3}`].z="#,##0.00";
+  if(ws[`P${subtotalRow+5}`])ws[`P${subtotalRow+5}`].z="#,##0.00";
+  return ws;
+}
+function buildInvoiceCheckSheet(contexts,settings){
+  const summary=[["Invoice出力チェック"],["作成日時",new Date().toLocaleString("ja-JP")],["設定DB",settings.schemaReady?"接続済み":customsInvoiceDbError(settings.error)],[]];
+  contexts.forEach(context=>summary.push([`${importerDisplayName(context.code)} (${context.code})`,context.invoiceNo||"Invoice No.未設定",`明細 ${context.lines.length}件`, `小計 ${context.subtotal}`,`送料 ${context.shipping}`,`合計 ${context.total}`,context.profileMissing.length?`ヘッダー不足: ${context.profileMissing.join(" / ")}`:"ヘッダーOK"]));
+  summary.push([]);
+  const rows=[];
+  contexts.forEach(context=>context.lines.forEach(line=>rows.push({
+    "輸入社":`${importerDisplayName(context.code)} (${context.code})`,"Invoice No.":context.invoiceNo,"状態":line.warnings.length?"要確認":"OK","商品コード":line.productId,"得意先":line.customer,"作業用商品名":line.source.product_name||line.record["商品名"]||"","Invoice商品名":line.japanese,"Invoice英名":line.english,"作業産地":line.sourceOrigin,"Invoice産地":line.origin,"数量":line.qty,"単位":line.unit,"NET":line.net,"単価":line.price,"金額":line.amount,"価格取得元":line.priceSource,"表記ルール":line.nameSource,"警告":line.warnings.join(" / ")
+  })));
+  const ws=XLSX.utils.aoa_to_sheet(summary);
+  XLSX.utils.sheet_add_json(ws,rows,{origin:`A${summary.length+1}`,header:["輸入社","Invoice No.","状態","商品コード","得意先","作業用商品名","Invoice商品名","Invoice英名","作業産地","Invoice産地","数量","単位","NET","単価","金額","価格取得元","表記ルール","警告"]});
+  ws["!cols"]=[{wch:18},{wch:16},{wch:10},{wch:12},{wch:22},{wch:24},{wch:24},{wch:38},{wch:13},{wch:13},{wch:10},{wch:9},{wch:10},{wch:12},{wch:14},{wch:16},{wch:16},{wch:30}];
+  customsInvoiceSetCellStyle(ws,"A1",{font:{bold:true,sz:16}});
+  return ws;
+}
+function adjustedInvoiceRawRows(payload,contexts){
+  const lineByRecord=new Map();
+  contexts.forEach(context=>context.lines.forEach(line=>lineByRecord.set(line.record,line)));
+  return payload.p1data.map(record=>{
+    const line=lineByRecord.get(record),result={};
+    payload.headers.forEach(header=>result[header]=record[header]);
+    if(line){result["商品名"]=line.japanese;result["英名・学術名"]=line.english;result.packing=line.packing;result["産地"]=line.origin}
+    result.__isPending=record.__isPending;
+    return result;
+  });
+}
+async function saveCustomsInvoiceExportLogs(contexts){
+  if(!supabaseClient||!currentUser||!currentSessionId)return;
+  const rowsToSave=contexts.map(context=>({
+    session_id:currentSessionId,importer_code:context.code,invoice_no:context.invoiceNo||null,work_date:context.workDate||null,row_count:context.lines.length,subtotal:context.subtotal,shipping_amount:context.shipping,total_amount:context.total,
+    validation_summary:{profile_missing:context.profileMissing,critical_lines:context.criticalLineCount,rule_applied:context.ruleAppliedCount,fallback:context.fallbackCount},created_by:currentUser.id
+  }));
+  const {error}=await supabaseClient.from("invoice_export_logs").insert(rowsToSave);
+  if(error&&error.code!=="42P01")console.warn("Invoice export log failed",error);
+}
+function openInvoiceMasterFromWork(code){
+  try{localStorage.setItem("hankan-invoice-master-importer",String(code||""))}catch(_error){}
+  window.open("./order-entry-beta.html#masters","_blank");
+}
+function customsInvoiceDraftToken(value){
+  return encodeURIComponent(JSON.stringify(value||{})).replace(/'/g,"%27");
+}
+function openInvoiceNameDictionaryFromWork(token){
+  try{
+    const draft=JSON.parse(decodeURIComponent(String(token||"")));
+    localStorage.setItem("hankan-invoice-master-importer",String(draft.importerCode||""));
+    localStorage.setItem("hankan-invoice-rule-draft",JSON.stringify(draft));
+  }catch(_error){toast("名称辞書の入力情報を準備できませんでした");return}
+  window.open("./order-entry-beta.html#masters","_blank");
+}
+renderExportPreview=async function(country){
+  ensureExportPreviewUI();
+  window.__exportPreviewCountry=country||null;
+  const body=document.getElementById("export-preview-body");
+  body.innerHTML='<div class="export-preview-note">Invoice設定と出力内容を確認しています...</div>';
+  const payload=buildExportPayload(country);
+  const targetRows=country?rows.filter(row=>row.country===country):rows;
+  const settings=await loadCustomsInvoiceSettings(targetRows);
+  const contexts=buildCustomsInvoiceContexts(payload,settings);
+  const critical=contexts.reduce((sum,context)=>sum+context.profileMissing.length+context.criticalLineCount,0);
+  const warning=contexts.reduce((sum,context)=>sum+context.lines.filter(line=>line.warnings.length).length,0);
+  const previewRows=contexts.flatMap(context=>context.lines.map(line=>({context,line}))).slice(0,20);
+  const importerButtons=contexts.map(context=>`<button class="btn" type="button" style="min-height:34px;padding:0 10px" onclick="openInvoiceMasterFromWork('${esc(context.code)}')">${esc(importerDisplayName(context.code))}の設定</button>`).join("");
+  body.innerHTML=`<div class="export-preview-summary"><span class="export-preview-pill">Invoice ${contexts.length}件</span><span class="export-preview-pill">明細 ${contexts.reduce((sum,c)=>sum+c.lines.length,0)}行</span><span class="export-preview-pill">合計 ${contexts.reduce((sum,c)=>sum+c.total,0).toLocaleString("ja-JP")}</span><span class="export-preview-pill" style="${critical?'border-color:#c62828;color:#c62828':'border-color:#2e7d32;color:#2e7d32'}">必須確認 ${critical}</span><span class="export-preview-pill">警告行 ${warning}</span></div>${settings.schemaReady?"":`<div class="p2-warning">${esc(customsInvoiceDbError(settings.error))}</div>`}${contexts.map(context=>`<div class="export-preview-note"><strong>${esc(importerDisplayName(context.code))}</strong> / Invoice No. ${esc(context.invoiceNo||"未設定")} / 小計 ${context.subtotal.toLocaleString("ja-JP")} / 送料 ${context.shipping.toLocaleString("ja-JP")} / 合計 ${context.total.toLocaleString("ja-JP")}<br>${context.profileMissing.length?`ヘッダー不足: ${esc(context.profileMissing.join(" / "))}`:"ヘッダーOK"} / 仕向け地別表記 ${context.ruleAppliedCount}件 / 日本語名補完 ${context.nameFilledCount}件 / 未登録 ${context.fallbackCount}件</div>`).join("")}<div style="display:flex;gap:6px;flex-wrap:wrap;margin:9px 0">${importerButtons}</div><table class="export-preview-table"><thead><tr><th>状態</th><th>商品コード</th><th>作業用商品名</th><th>Invoice英名</th><th>取得元</th><th>産地</th><th>単価</th><th>金額</th><th>確認</th><th>辞書</th></tr></thead><tbody>${previewRows.map(({context,line})=>{const productName=line.source.product_name||line.record["商品名"]||"";const token=customsInvoiceDraftToken({importerCode:context.code,productName,origin:line.sourceOrigin,english:line.english});return `<tr><td>${line.warnings.some(w=>w==="英名なし"||w==="産地なし"||w==="単価なし")?"要修正":(line.warnings.length?"確認":"OK")}</td><td>${esc(line.productId)}</td><td>${esc(productName)}</td><td>${esc(line.english)}</td><td>${esc(line.nameSource)}</td><td>${esc(line.origin)}</td><td>${line.price===""?"":Number(line.price).toLocaleString("ja-JP")}</td><td>${line.amount===""?"":Number(line.amount).toLocaleString("ja-JP")}</td><td>${esc(line.warnings.join(" / "))}</td><td><button class="btn" type="button" style="min-height:30px;padding:0 8px" onclick="openInvoiceNameDictionaryFromWork('${token}')">登録</button></td></tr>`}).join("")||'<tr><td colspan="10">出力対象データがありません</td></tr>'}</tbody></table><div class="export-preview-note">Excelには「Commercial Invoice」「出力チェック」「Invoice Data」「箱一覧」を作成します。通関申告名称は実物と一致する正確な表記のみ登録してください。</div><button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="doExport(window.__exportPreviewCountry)">確認してExcel出力</button>`;
+};
 async function doExport(country){
   closeExportPicker();
   if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}
@@ -2711,9 +3021,9 @@ function buildExportPayload(country,pendingEntries=[]){
     const price=r.unit_price===""?"":Number(String(r.unit_price).replace(/,/g,""));
     const amount=qty===""||price===""?"":qty*price;
     const enSci=[r.en_name,r.sci_name].filter(Boolean).join(" / ");
-    return{"商品コード":r.product_id,"エンドユーザー店名":r.customer,"ケース番号":r._stockout?"":boxNo,"温度帯":"","商品名":r.product_name,"英名・学術名":enSci,"packing":"","産地":r.origin||"","No of BOX":"","現場入力数量":qty,"現場入力単位":r._stockout?"":r._unit,"NET重量":r._stockout||r._net===""?"":Number(r._net),"グロス重量":r._stockout?"":(gross===""?"":Number(gross)),"単価":price,"金額":amount,"メモ":r._memo,"欠品":r._stockout?"欠品":""};
+    return{"商品コード":r.product_id,"エンドユーザー店名":r.customer,"ケース番号":r._stockout?"":boxNo,"温度帯":"","商品名":r.product_name,"英名・学術名":enSci,"packing":"","産地":r.origin||"","No of BOX":"","現場入力数量":qty,"現場入力単位":r._stockout?"":r._unit,"NET重量":r._stockout||r._net===""?"":Number(r._net),"グロス重量":r._stockout?"":(gross===""?"":Number(gross)),"単価":price,"金額":amount,"メモ":r._memo,"欠品":r._stockout?"欠品":"",__sourceRow:r,__isPending:false};
   });
-  const combinedP1data=[...baseP1data,...pendingEntries.map(pendingInvoiceExportRow)];
+  const combinedP1data=[...baseP1data,...pendingEntries.map(entry=>({...pendingInvoiceExportRow(entry),__pendingEntry:entry,__isPending:true}))];
   const exportCustomerOrder=new Map();
   combinedP1data.forEach(row=>{
     const customer=String(row["エンドユーザー店名"]||"");
@@ -2778,35 +3088,63 @@ async function doExport(country){
   if(selected===null){setSaveState("Excel出力を中止しました");return}
   let claimed=[];
   try{
+    const targetRows=country?rows.filter(row=>row.country===country):rows;
+    setSaveState("Supabase: Invoice設定と金額を確認中...");
+    const settings=await loadCustomsInvoiceSettings(targetRows);
+    const previewPayload=buildExportPayload(country,selected);
+    const previewContexts=buildCustomsInvoiceContexts(previewPayload,settings);
+    if(!settings.schemaReady){
+      const proceed=confirm(`${customsInvoiceDbError(settings.error)}\n\n設定なしの状態でExcel出力を続けますか？`);
+      if(!proceed){setSaveState("Invoice設定を確認してください",true);return}
+    }
+    const critical=previewContexts.reduce((sum,context)=>sum+context.profileMissing.length+context.criticalLineCount,0);
+    if(critical){
+      const detail=previewContexts.map(context=>{
+        const parts=[];
+        if(context.profileMissing.length)parts.push(`ヘッダー不足 ${context.profileMissing.join("・")}`);
+        if(context.criticalLineCount)parts.push(`明細要修正 ${context.criticalLineCount}件`);
+        return parts.length?`${importerDisplayName(context.code)}: ${parts.join(" / ")}`:"";
+      }).filter(Boolean).join("\n");
+      if(!confirm(`Invoice出力前の必須確認が ${critical}件あります。\n${detail}\n\nこのまま出力しますか？`)){setSaveState("Invoice出力を中止しました");return}
+    }
     if(selected.length){
       setSaveState("Supabase: 反映対象を確保中...");
       claimed=await claimPendingInvoiceEntries(selected,targetDate);
       if(!claimed.length){alert("選択した未処理伝票は、別の端末ですでに反映されました。最新状態を確認してから再度出力してください。");setSaveState("未処理伝票は他端末で反映済み",true);return}
       if(claimed.length!==selected.length)alert(`${selected.length-claimed.length}件は別の端末で先に反映されたため、今回のExcelから除外しました。`);
     }
-    const payload=buildExportPayload(country,claimed),wb=XLSX.utils.book_new();
-    const ws1=XLSX.utils.json_to_sheet(payload.p1data,{header:payload.headers});
-    forceTextColumn(ws1,2,payload.p1data.length);
-    payload.p1data.forEach((row,i)=>{
+    const payload=buildExportPayload(country,claimed),contexts=buildCustomsInvoiceContexts(payload,settings),wb=XLSX.utils.book_new(),usedSheetNames=new Set();
+    contexts.forEach(context=>{
+      const sheetName=customsInvoiceSheetName(`INV_${importerDisplayName(context.code)}`,usedSheetNames);
+      XLSX.utils.book_append_sheet(wb,buildCommercialInvoiceSheet(context),sheetName);
+    });
+    XLSX.utils.book_append_sheet(wb,buildInvoiceCheckSheet(contexts,settings),customsInvoiceSheetName("出力チェック",usedSheetNames));
+    const rawRows=adjustedInvoiceRawRows(payload,contexts);
+    const ws1=XLSX.utils.json_to_sheet(rawRows,{header:payload.headers});
+    forceTextColumn(ws1,2,rawRows.length);
+    rawRows.forEach((row,i)=>{
       const v=row["金額"],address=`O${i+2}`;
-      if(i<payload.sourceRowCount)ws1[address]={f:`J${i+2}*N${i+2}`,v:v===""?undefined:v,t:v===""?"z":"n"};
+      if(!row.__isPending)ws1[address]={f:`J${i+2}*N${i+2}`,v:v===""?undefined:v,t:v===""?"z":"n"};
       else ws1[address]={v:Number(v)||0,t:"n"};
     });
     ws1["!cols"]=[{wch:12},{wch:22},{wch:12},{wch:8},{wch:20},{wch:30},{wch:10},{wch:12},{wch:10},{wch:13},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:24},{wch:8}];
-    XLSX.utils.book_append_sheet(wb,ws1,"Invoice Data");
+    XLSX.utils.book_append_sheet(wb,ws1,customsInvoiceSheetName("Invoice Data",usedSheetNames));
     payload.p2Sheets.forEach(sheet=>{
       const ws2=XLSX.utils.json_to_sheet(sheet.data,{header:["箱番号","NET重量合計(kg)","グロス重量(kg)","ドライアイス重量(kg)","箱サイズ"]});
       forceTextColumn(ws2,0,sheet.data.length);
       ws2["!cols"]=[{wch:12},{wch:18},{wch:16},{wch:20},{wch:10}];
-      XLSX.utils.book_append_sheet(wb,ws2,sheet.name);
+      XLSX.utils.book_append_sheet(wb,ws2,customsInvoiceSheetName(sheet.name,usedSheetNames));
     });
     const ws3=XLSX.utils.json_to_sheet(payload.boxNumberList,{header:["箱番号","グロス重量","ドライアイス","箱サイズ"]});
     forceTextColumn(ws3,0,payload.boxNumberList.length);
     ws3["!cols"]=[{wch:12},{wch:14},{wch:14},{wch:10}];
-    XLSX.utils.book_append_sheet(wb,ws3,"箱番号一覧");
-    XLSX.writeFile(wb,payload.filename);
+    XLSX.utils.book_append_sheet(wb,ws3,customsInvoiceSheetName("箱番号一覧",usedSheetNames));
+    const datePart=String(contexts[0]?.workDate||new Date().toISOString().slice(0,10)).replace(/\D/g,"");
+    const importerPart=contexts.length===1?`_${String(importerDisplayName(contexts[0].code)).replace(/[\\\/?*\[\]:]/g,"_")}`:"_ALL";
+    XLSX.writeFile(wb,`invoice${importerPart}_${datePart}.xlsx`,{cellStyles:true});
+    await saveCustomsInvoiceExportLogs(contexts);
     setSaveState(`Supabase: Excel出力済み${claimed.length?` / 未処理伝票 ${claimed.length}件反映`:""}`);
-    toast(claimed.length?`Excelを出力し、未処理伝票 ${claimed.length}件を反映済みにしました`:"Excelを出力しました");
+    toast(claimed.length?`Commercial Invoiceを出力し、未処理伝票 ${claimed.length}件を反映済みにしました`:"Commercial Invoiceを出力しました");
   }catch(error){
     let rollbackError=null;
     if(claimed.length){
@@ -2993,6 +3331,7 @@ async function loadProductMasterFromSupabase(options={}){
     while(true){
       const {data,error}=await supabaseClient.from("product_master")
         .select("product_id,product_name,english_name,scientific_name,origin,unit_price,source_filename,updated_at")
+        .eq("is_active",true)
         .order("product_id",{ascending:true}).range(from,from+pageSize-1);
       if(error){
         const hint=productMasterTableMissing(error)?"SQL Editorで product-master-migration.sql を実行してください":"商品マスタを取得できません: "+error.message;
