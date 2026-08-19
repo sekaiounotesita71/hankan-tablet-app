@@ -52,7 +52,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .search-grid{display:grid;grid-template-columns:160px minmax(220px,1fr) auto;gap:8px;align-items:end}
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.quick-product-master-modal{width:min(760px,100%)}.quick-product-master-form{max-height:calc(88vh - 50px);overflow:auto}.quick-product-master-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-product-master-grid .wide{grid-column:1/-1}.quick-product-master-status{min-height:36px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#f7f9fb;color:var(--muted);font-size:12px;font-weight:800}.quick-product-master-status.existing{border-color:#d4b36a;background:#fff8e8;color:#7a5100}.quick-product-master-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:700px){.quick-product-master-grid{grid-template-columns:1fr}.quick-product-master-grid .wide{grid-column:auto}}
+.quick-product-master-modal{width:min(760px,100%)}.quick-product-master-form{max-height:calc(88vh - 50px);overflow:auto}.quick-product-master-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-product-master-grid .wide{grid-column:1/-1}.quick-product-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}.quick-product-code-button{min-width:72px;white-space:nowrap}.quick-product-code-candidates{display:none;padding:9px 10px;border:1px solid #9fb4c7;border-radius:7px;background:#f7fbff}.quick-product-code-candidates.open{display:grid;gap:8px}.quick-product-code-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#25445f;font-size:12px;font-weight:900}.quick-product-code-groups{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quick-product-code-group{display:grid;gap:6px}.quick-product-code-label{color:var(--muted);font-size:11px;font-weight:900}.quick-product-code-list{display:flex;gap:5px;flex-wrap:wrap}.quick-product-code-option{min-width:52px;min-height:32px;padding:0 8px;border:1px solid #8da7bd;border-radius:6px;background:#fff;color:#173a57;font-family:Consolas,monospace;font-weight:900;cursor:pointer}.quick-product-code-option:hover,.quick-product-code-option:focus-visible{border-color:var(--blue);background:var(--blue-bg);outline:none}.quick-product-code-note{color:var(--muted);font-size:11px;font-weight:800}.quick-product-master-status{min-height:36px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#f7f9fb;color:var(--muted);font-size:12px;font-weight:800}.quick-product-master-status.existing{border-color:#d4b36a;background:#fff8e8;color:#7a5100}.quick-product-master-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:700px){.quick-product-master-grid{grid-template-columns:1fr}.quick-product-master-grid .wide{grid-column:auto}.quick-product-code-groups{grid-template-columns:1fr}}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-tools [hidden]{display:none!important}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue,.ar-status.overpaid,.ar-status.credit{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
 .ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.ar-mode-tabs{display:flex;align-items:center;gap:4px;margin-bottom:10px;padding:4px;border:1px solid var(--line);border-radius:8px;background:#f3f5f7;overflow-x:auto}.ar-mode-tab{flex:0 0 auto;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}.ar-mode-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.13)}.ar-group-table{min-width:980px}.ar-group-table tbody tr:hover td{background:#f7f9fb}.ar-group-code{font-size:14px;font-weight:900}.ar-group-name{margin-left:5px;color:var(--muted)}.ar-group-alert{color:var(--danger);font-weight:900}.ar-summary-card.balance{border-color:#9bc9af;background:#f1faf4}.ar-summary-card.overdue{border-color:#efb9b3;background:#fff5f4}
@@ -979,8 +979,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
     <form class="modal-body quick-product-master-form" onsubmit="saveQuickProductMaster(event)" onkeydown="handleQuickProductMasterKey(event)">
       <div class="quick-product-master-grid">
-        <label>商品コード（必須）<input id="quick-product-code" class="ime-en" autocomplete="off" autocapitalize="off" spellcheck="false" onblur="loadQuickProductMasterExisting()"></label>
+        <label>商品コード（必須）<div class="quick-product-code-row"><input id="quick-product-code" class="ime-en" autocomplete="off" autocapitalize="off" spellcheck="false" oninput="handleQuickProductCodeInput()" onblur="loadQuickProductMasterExisting()"><button class="small quick-product-code-button" type="button" onclick="toggleQuickProductCodeCandidates()">空き番</button></div></label>
         <label>日本語商品名（必須）<input id="quick-product-name" class="ime-ja" autocomplete="off"></label>
+        <div id="quick-product-code-candidates" class="quick-product-code-candidates wide" aria-live="polite"></div>
         <label class="wide">英名<input id="quick-product-english" class="ime-en" lang="en" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
         <label class="wide">学術名<input id="quick-product-scientific" class="ime-en" lang="en" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
         <label>標準産地<input id="quick-product-origin" class="ime-en" lang="en" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
@@ -1165,6 +1166,8 @@ let lastOrderRowIndex=0;
 let productLookupRowIndex=0;
 let productLookupTarget={type:"order",index:0};
 let quickProductMasterTarget=null;
+let quickProductCodeCatalog=null;
+let quickProductCodeCandidatesOpen=false;
 let supabaseClient=null;
 let currentUser=null;
 let currentUserRole="user";
@@ -10375,6 +10378,83 @@ function quickProductMasterImporterCode(target=quickProductMasterTarget||product
   if(target?.type==="advancePurchase")return normalizeImporterCode(val("advance-purchase-importer"));
   return normalizeImporterCode(importer().code||importer().name);
 }
+function quickProductFallbackCodeCatalog(){
+  return new Set(uniqueMasterItems(getMasters().products).map(item=>masterCodeKey(item.code)).filter(Boolean));
+}
+async function refreshQuickProductCodeCatalog(){
+  if(!dbReady||!supabaseClient){
+    quickProductCodeCatalog=quickProductFallbackCodeCatalog();
+    return quickProductCodeCatalog;
+  }
+  const productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id").order("product_id").range(from,to));
+  quickProductCodeCatalog=new Set(productRows.map(row=>masterCodeKey(row.product_id)).filter(Boolean));
+  return quickProductCodeCatalog;
+}
+function quickProductVacantCodes(used,width,start,count=12){
+  const min=width===3?1:1000,max=width===3?999:9999;
+  const first=Math.max(min,Math.min(max,Number(start)||min));
+  const candidates=[];
+  const collect=(from,to)=>{
+    for(let number=from;number<=to&&candidates.length<count;number++){
+      const code=String(number).padStart(width,"0");
+      if(!used.has(masterCodeKey(code)))candidates.push(code);
+    }
+  };
+  collect(first,max);
+  if(candidates.length<count&&first>min)collect(min,first-1);
+  return candidates;
+}
+function quickProductCodeCandidateSeed(width){
+  const raw=val("quick-product-code").trim();
+  if(!/^\d+$/.test(raw))return width===3?1:1000;
+  const number=Number(raw);
+  if(width===3&&number<=999)return Math.max(1,number);
+  if(width===4&&number>=1000&&number<=9999)return number;
+  return width===3?1:1000;
+}
+function renderQuickProductCodeCandidates(note=""){
+  const panel=document.getElementById("quick-product-code-candidates");
+  if(!panel)return;
+  if(!quickProductCodeCandidatesOpen){panel.classList.remove("open");panel.innerHTML="";return}
+  const used=quickProductCodeCatalog||quickProductFallbackCodeCatalog();
+  const groups=[
+    {label:"3桁コード",codes:quickProductVacantCodes(used,3,quickProductCodeCandidateSeed(3))},
+    {label:"4桁コード",codes:quickProductVacantCodes(used,4,quickProductCodeCandidateSeed(4))}
+  ];
+  panel.classList.add("open");
+  panel.innerHTML=`<div class="quick-product-code-head"><span>未使用の商品コード</span><button class="small" type="button" aria-label="空き番号候補を閉じる" onclick="closeQuickProductCodeCandidates()">閉じる</button></div><div class="quick-product-code-groups">${groups.map(group=>`<div class="quick-product-code-group"><div class="quick-product-code-label">${group.label}</div><div class="quick-product-code-list">${group.codes.map(code=>`<button class="quick-product-code-option" type="button" onclick="selectQuickProductCodeCandidate('${esc(code)}')">${esc(code)}</button>`).join("")||"空き番号なし"}</div></div>`).join("")}</div><div class="quick-product-code-note">${esc(note||`DB全件と照合済み ${used.size.toLocaleString("ja-JP")}件`)}</div>`;
+}
+async function toggleQuickProductCodeCandidates(forceOpen=false){
+  const panel=document.getElementById("quick-product-code-candidates");
+  if(!panel)return;
+  const shouldOpen=forceOpen||!quickProductCodeCandidatesOpen;
+  quickProductCodeCandidatesOpen=shouldOpen;
+  if(!shouldOpen){renderQuickProductCodeCandidates();return}
+  panel.classList.add("open");
+  panel.innerHTML='<div class="quick-product-code-note">商品マスタ全件から空き番号を確認しています...</div>';
+  try{
+    await refreshQuickProductCodeCatalog();
+    if(quickProductCodeCandidatesOpen)renderQuickProductCodeCandidates();
+  }catch(error){
+    quickProductCodeCatalog=quickProductFallbackCodeCatalog();
+    if(quickProductCodeCandidatesOpen)renderQuickProductCodeCandidates("DB確認に失敗したため、現在読込済みのマスタだけで表示しています: "+String(error?.message||error));
+  }
+}
+function closeQuickProductCodeCandidates(){
+  quickProductCodeCandidatesOpen=false;
+  renderQuickProductCodeCandidates();
+}
+function handleQuickProductCodeInput(){
+  if(quickProductCodeCandidatesOpen)renderQuickProductCodeCandidates();
+}
+function selectQuickProductCodeCandidate(code){
+  const input=document.getElementById("quick-product-code");
+  if(!input)return;
+  input.value=code;
+  closeQuickProductCodeCandidates();
+  loadQuickProductMasterExisting();
+  requestAnimationFrame(()=>{const name=document.getElementById("quick-product-name");name?.focus();name?.select()});
+}
 function exactProductMasterByCode(code){
   const key=masterCodeKey(code);
   if(!key)return null;
@@ -10435,11 +10515,14 @@ function openQuickProductMaster(target={...productLookupTarget}){
   setQuickProductMasterFields({name});
   document.getElementById("quick-product-master-modal").dataset.existingCode="";
   document.getElementById("quick-product-master-modal").classList.add("open");
+  closeQuickProductCodeCandidates();
   const existing=code?loadQuickProductMasterExisting():null;
   if(!existing)setQuickProductMasterStatus(code?`コード ${code} を新規登録します。`:"商品コードと日本語商品名を入力してください。");
+  if(!code)toggleQuickProductCodeCandidates(true);
   requestAnimationFrame(()=>document.getElementById(code?"quick-product-name":"quick-product-code")?.focus());
 }
 function closeQuickProductMaster(restoreLookup=true){
+  closeQuickProductCodeCandidates();
   document.getElementById("quick-product-master-modal")?.classList.remove("open");
   if(restoreLookup){
     document.getElementById("product-lookup-modal")?.classList.add("open");
@@ -10475,6 +10558,17 @@ async function saveQuickProductMaster(event){
   const name=val("quick-product-name").trim();
   if(!code||!name){alert("商品コードと日本語商品名は必須です。");return}
   const existing=exactProductMasterByCode(code);
+  if(!existing){
+    const codeVariants=[...new Set([code,code.toUpperCase(),code.toLowerCase()])];
+    const {data:dbCodeRows,error:dbCodeError}=await supabaseClient.from("product_master").select("product_id").in("product_id",codeVariants).limit(1);
+    if(dbCodeError){alert("商品コードの重複確認に失敗しました: "+dbCodeError.message);return}
+    if(dbCodeRows?.length){
+      quickProductCodeCatalog?.add(masterCodeKey(dbCodeRows[0].product_id));
+      alert(`商品コード ${dbCodeRows[0].product_id} はDBに登録済みです。別の空き番号を選択してください。`);
+      toggleQuickProductCodeCandidates(true);
+      return;
+    }
+  }
   const loadedExistingCode=document.getElementById("quick-product-master-modal")?.dataset.existingCode||"";
   if(existing&&loadedExistingCode!==masterCodeKey(code)){
     loadQuickProductMasterExisting();
@@ -10508,6 +10602,7 @@ async function saveQuickProductMaster(event){
   try{
     await saveMasterItemToDb("products",item);
     const result=upsertCustomMaster("products",item);
+    quickProductCodeCatalog?.add(masterCodeKey(code));
     refreshProductLists();
     renderMasters();
     document.getElementById("product-lookup-modal")?.classList.remove("open");
