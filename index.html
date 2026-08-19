@@ -3725,15 +3725,15 @@ finalizeSalesTrial=async function(){
     try{
       const receivableCount=await syncFinalizedSessionToReceivables(workDate,shippingFees);
       if(receivableCount){
-        setSaveState("Supabase: 売上確定・売掛反映済み");
-        toast("売上確定し、売掛へ反映しました");
+        setSaveState("Supabase: 売上確定・請求締め候補反映済み");
+        toast("売上確定し、請求締め候補へ反映しました");
       }else{
         setSaveState("Supabase: 売上確定済み / 売掛対象なし");
         toast("売上確定しました（売掛対象なし）");
       }
     }catch(receivableError){
-      setSaveState("Supabase: 売上確定済み / 売掛反映待ち",true);
-      alert(`売上確定は完了しましたが、売掛への自動反映に失敗しました。\n売掛管理の「売上確定を反映」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
+      setSaveState("Supabase: 売上確定済み / 請求締め候補反映待ち",true);
+      alert(`売上確定は完了しましたが、請求締め候補への自動反映に失敗しました。\n売掛管理の「対象期間を再同期」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
     }
   }catch(error){
     let cleanupMessage="";

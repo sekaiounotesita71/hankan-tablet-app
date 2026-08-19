@@ -5861,15 +5861,23 @@ function arIsOperationRow(row){
   const invoiceDate=String(row?.invoice_date||"").slice(0,10);
   return !receivableOperationStartDate||invoiceDate>=receivableOperationStartDate;
 }
+function arIsPostedReceivable(row){
+  if(row?.source_type==="opening")return true;
+  if(!row?.closing_id)return false;
+  const closing=receivableClosings.find(item=>item.id===row.closing_id);
+  return !closing||closing.status==="closed";
+}
 function arFilteredRows(){
-  const range=salesRefDateRangeFromText(val("ar-date-range"));
+  const isDetail=receivableView==="detail";
+  const range=isDetail?salesRefDateRangeFromText(val("ar-date-range")):{from:"",to:"",raw:""};
   const importerText=val("ar-importer").trim();
   const importer=importerText?arImporterIdentity(importerText):null;
-  const status=val("ar-status");
-  const search=val("ar-search").trim().toLowerCase();
+  const status=isDetail?val("ar-status"):"open";
+  const search=isDetail?val("ar-search").trim().toLowerCase():"";
   if(range.raw&&(!range.from||!range.to))return {rows:[],range,error:"日付は 20250701-20250731 の形式で入力してください。"};
   const rows=receivableRows.filter(row=>{
     if(!arIsOperationRow(row))return false;
+    if(!arIsPostedReceivable(row))return false;
     const invoiceDate=String(row.invoice_date||"").slice(0,10);
     if(range.from&&invoiceDate<range.from)return false;
     if(range.to&&invoiceDate>range.to)return false;
@@ -5916,10 +5924,10 @@ function setReceivableView(view,options={}){
   if(payment)payment.hidden=receivableView!=="detail";
   if(closing)closing.hidden=receivableView!=="closing";
   const visibility={
-    "ar-date-filter":showResults,
+    "ar-date-filter":receivableView==="detail",
     "ar-importer-filter":receivableView!=="setup",
-    "ar-status-filter":showResults,
-    "ar-search-filter":showResults,
+    "ar-status-filter":receivableView==="detail",
+    "ar-search-filter":receivableView==="detail",
     "ar-reload-button":true,
     "ar-sync-button":receivableView==="detail",
     "ar-soa-button":receivableView==="closing"
@@ -5940,23 +5948,9 @@ function openReceivableImporterDetail(button){
   setReceivableView("detail",{importerCode});
 }
 function arSummaryCards(enriched){
-  const operating=enriched
-    .filter(row=>row.source_type!=="opening")
-    .reduce((sum,row)=>sum+row._state.amount,0);
-  const opening=enriched
-    .filter(row=>row.source_type==="opening")
-    .reduce((sum,row)=>sum+row._state.amount,0);
-  const settled=enriched.reduce((sum,row)=>sum+row._state.settled,0);
   const balance=enriched.reduce((sum,row)=>sum+row._state.balance,0);
-  const overdue=enriched
-    .filter(row=>row._state.key==="overdue")
-    .reduce((sum,row)=>sum+row._state.balance,0);
   return [
-    ["売上・調整",operating,""],
-    ["初期残高",opening,""],
-    ["入金消込",settled,""],
-    ["現在の売掛残",balance,"balance"],
-    ["期限超過",overdue,"overdue"]
+    ["現在の売掛残高",balance,"balance"]
   ].map(([label,value,className])=>`<div class="ar-summary-card ${className}"><div class="ar-summary-label">${esc(label)}</div><div class="ar-summary-value">¥${esc(salesRefMoney(value)||"0")}</div></div>`).join("");
 }
 function arRenderGroupedTable(enriched){
@@ -5969,25 +5963,21 @@ function arRenderGroupedTable(enriched){
     groups.set(key,group);
   });
   const items=[...groups.values()].map(group=>{
-    const opening=group.rows.filter(row=>row.source_type==="opening").reduce((sum,row)=>sum+row._state.amount,0);
-    const operating=group.rows.filter(row=>row.source_type!=="opening").reduce((sum,row)=>sum+row._state.amount,0);
-    const settled=group.rows.reduce((sum,row)=>sum+row._state.settled,0);
     const balance=group.rows.reduce((sum,row)=>sum+row._state.balance,0);
-    const overdue=group.rows.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0);
-    const latest=group.rows.filter(row=>row.source_type!=="opening").map(row=>String(row.invoice_date||"")).sort().at(-1)||"-";
-    return {...group,opening,operating,settled,balance,overdue,latest};
+    const latestClosing=receivableClosings
+      .filter(row=>row.status==="closed"&&arSameImporter(row.importer_code,group.importer))
+      .map(row=>String(row.period_to||""))
+      .sort()
+      .at(-1)||"移行残高";
+    return {...group,balance,latestClosing};
   }).sort((left,right)=>right.balance-left.balance||left.importer.code.localeCompare(right.importer.code,"ja"));
   if(!items.length)return `<div class="sales-empty">条件に合う売掛はありません。</div>`;
   return `<table class="ar-table ar-group-table">
-    <thead><tr><th>輸入社</th><th>売上・調整</th><th>初期残高</th><th>入金消込</th><th>売掛残</th><th>期限超過</th><th>最終売上日</th><th>明細数</th><th>操作</th></tr></thead>
+    <thead><tr><th>輸入社</th><th>現在の売掛残高</th><th>最終請求締め</th><th>未回収明細</th><th>操作</th></tr></thead>
     <tbody>${items.map(item=>`<tr>
       <td><span class="ar-group-code">${esc(item.importer.code||"未設定")}</span><span class="ar-group-name">${esc(item.importer.name||"")}</span></td>
-      <td class="ar-money">${esc(salesRefMoney(item.operating)||"0")}</td>
-      <td class="ar-money">${esc(salesRefMoney(item.opening)||"0")}</td>
-      <td class="ar-money">${esc(salesRefMoney(item.settled)||"0")}</td>
       <td class="ar-money">${esc(salesRefMoney(item.balance)||"0")}</td>
-      <td class="ar-money ${item.overdue>.005?"ar-group-alert":""}">${esc(salesRefMoney(item.overdue)||"0")}</td>
-      <td>${esc(item.latest)}</td>
+      <td>${esc(item.latestClosing)}</td>
       <td class="ar-money">${item.rows.length}</td>
       <td><button class="small primary" type="button" data-importer="${esc(item.importer.code)}" onclick="openReceivableImporterDetail(this)">明細</button></td>
     </tr>`).join("")}</tbody>
@@ -5996,7 +5986,7 @@ function arRenderGroupedTable(enriched){
 function arRenderDetailTable(enriched){
   const selectedId=val("ar-payment-receivable-id");
   return `<table class="ar-table">
-    <thead><tr><th>売上日</th><th>Invoice</th><th>輸入社</th><th>得意先</th><th>請求額</th><th>消込額</th><th>売掛残</th><th>支払期限</th><th>状態</th><th>締め</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
+    <thead><tr><th>請求日</th><th>Invoice</th><th>輸入社</th><th>得意先</th><th>請求額</th><th>消込額</th><th>売掛残</th><th>支払期限</th><th>状態</th><th>締め</th><th>freee</th><th>操作</th></tr></thead>
     <tbody>${enriched.slice(0,2000).map(row=>{
       const customers=arCustomerNames(row).join(" / ")||row.customer_name||"";
       const freee=row.freee_excluded?"計上済":(row.freee_exported_at?"出力済":"未出力");
@@ -6013,8 +6003,7 @@ function arRenderDetailTable(enriched){
         <td class="ar-money">${esc(salesRefMoney(row._state.balance)||"0")}</td>
         <td>${esc(row.due_date||"-")}</td>
         <td><span class="ar-status ${esc(row._state.key)}">${esc(row._state.label)}</span></td>
-        <td>${row.closing_id?'<span class="ar-lock">締め済</span>':"-"}</td>
-        <td>${esc(arSourceLabel(row.source_type))}</td>
+        <td>${row.source_type==="opening"?'<span class="ar-lock">移行済</span>':'<span class="ar-lock">締め済</span>'}</td>
         <td>${esc(freee)}</td>
         <td><button class="small primary" type="button" onclick="selectReceivableForPayment('${esc(row.id)}')">入金</button>${canDelete?` <button class="small danger" type="button" onclick="deleteReceivable('${esc(row.id)}')">削除</button>`:""}</td>
       </tr>`;
@@ -6218,7 +6207,7 @@ async function syncSalesToReceivables(options={}){
     alert("再同期する売上日を 20250701-20250731 の形式で指定してください。初期残高との二重計上を防ぐため、期間未指定では実行できません。");
     return false;
   }
-  setAppBusy(true,"売上確定データを売掛へ反映しています。");
+  setAppBusy(true,"売上確定データを請求締め候補へ同期しています。");
   if(state)state.textContent="売上確定データを確認中...";
   try{
     const [salesRows,sessionRows]=await Promise.all([
@@ -6252,10 +6241,10 @@ async function syncSalesToReceivables(options={}){
       const {data,error}=await client.from("accounts_receivable").upsert(chunk,{onConflict:"source_key"}).select("source_key");
       if(error)throw error;
       if((data||[]).length!==chunk.length)throw new Error(`売掛の反映件数が一致しません（入力 ${chunk.length}件 / DB ${(data||[]).length}件）`);
-      if(state)state.textContent=`売掛へ反映中... ${Math.min(index+100,payloads.length)} / ${payloads.length}件`;
+      if(state)state.textContent=`請求締め候補へ同期中... ${Math.min(index+100,payloads.length)} / ${payloads.length}件`;
     }
     await loadReceivables();
-    if(state)state.textContent=`${receivableOperationStartDate}以降の売上確定から ${payloads.length}件の売掛を反映しました。開始日前の売上は売上参照だけに残ります。`;
+    if(state)state.textContent=`${receivableOperationStartDate}以降の売上確定から ${payloads.length}件を請求締め候補へ同期しました。請求締め後に売掛残高へ反映されます。`;
     return true;
   }catch(error){
     if(state)state.textContent=arDbErrorMessage(error);
