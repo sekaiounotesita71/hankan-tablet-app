@@ -399,9 +399,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="ar-mode-tab" type="button" data-ar-view="setup" onclick="setReceivableView('setup')">初期残高</button>
       </div>
       <div class="ar-tools">
-        <label id="ar-date-filter">売上日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderReceivables()"></label>
+        <label id="ar-date-filter" hidden>請求日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderReceivables()"></label>
         <label id="ar-importer-filter">輸入社<input id="ar-importer" list="importer-code-list" placeholder="空欄=ALL" oninput="renderReceivables();scheduleClosingPreview()"></label>
-        <label id="ar-status-filter">状態
+        <label id="ar-status-filter" hidden>状態
           <select id="ar-status" onchange="renderReceivables()">
             <option value="open" selected>未回収すべて</option>
             <option value="">全件</option>
@@ -413,7 +413,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             <option value="overpaid">過入金</option>
           </select>
         </label>
-        <label id="ar-search-filter">検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
+        <label id="ar-search-filter" hidden>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
         <button class="btn" id="ar-reload-button" type="button" onclick="loadReceivables()">再読込</button>
         <button class="btn primary" id="ar-sync-button" type="button" onclick="syncSalesToReceivables()">対象期間を再同期</button>
         <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">SOA出力</button>
