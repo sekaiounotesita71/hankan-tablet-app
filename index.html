@@ -135,6 +135,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .p15-input:focus{outline:2px solid rgba(163,109,0,.22);border-color:var(--warn)}
 .p15-source{font-size:12px;color:var(--muted);white-space:nowrap}
 .p15-price-cell{min-width:210px}.p15-price-line{display:flex;align-items:center;gap:7px}.p15-history-toggle{min-height:36px;padding:0 9px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--muted);font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}.p15-history-suggestion{display:flex;align-items:center;gap:6px;min-height:26px;margin-top:4px;font-size:11px;font-weight:800;color:var(--muted)}.p15-history-apply{border:0;background:transparent;color:#805400;padding:2px 0;font-weight:900;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.p15-history-empty{color:var(--muted)}.p15-history-detail-row{display:none}.p15-history-detail-row.open{display:table-row}.p15-history-detail-row td{padding:0;border-bottom:1px solid var(--border);background:#fffaf0}.p15-history-band{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:9px 12px}.p15-history-head{position:sticky;left:0;z-index:1;display:flex;align-items:center;gap:7px;align-self:stretch;flex:0 0 auto;background:#fffaf0}.p15-history-label{flex:0 0 auto;color:#805400;font-size:12px;font-weight:900}.p15-history-close{display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;border:1px solid #d8bd70;border-radius:7px;background:#fff;color:#6d4a00;font-size:20px;line-height:1;cursor:pointer}.p15-history-close:hover,.p15-history-close:focus-visible{border-color:#805400;background:#fff5d8;outline:none}.p15-history-item{flex:0 0 auto;display:grid;grid-template-columns:auto auto;gap:2px 8px;min-width:175px;padding:7px 9px;border:1px solid #efd58a;border-radius:7px;background:#fff;text-align:left;cursor:pointer}.p15-history-price{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px;font-weight:900;color:var(--text)}.p15-history-date{font-size:11px;color:var(--muted);text-align:right}.p15-history-meta{grid-column:1/-1;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:800}.p15-history-match{color:var(--success)}
+.p15-master-tools{display:flex;align-items:end;gap:8px;flex-wrap:wrap;padding:9px 12px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#fffaf0}.p15-master-tools label{display:grid;gap:4px;color:var(--muted);font-size:11px;font-weight:900}.p15-master-scope{min-height:38px;border:1px solid #d8bd70;border-radius:7px;background:#fff;color:var(--text);padding:0 10px;font-weight:900}.p15-master-save{min-height:38px;border:1px solid #805400;border-radius:7px;background:#805400;color:#fff;padding:0 13px;font-weight:900;cursor:pointer}.p15-master-save:disabled{cursor:wait;opacity:.62}.p15-master-count{min-height:38px;display:flex;align-items:center;color:#805400;font-size:12px;font-weight:900}.p15-master-check{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--muted);font-size:11px;font-weight:900;cursor:pointer}.p15-master-check input{width:18px;height:18px;min-height:18px;accent-color:#805400}.p15-master-selected>td{background:#fff6d8}.p15-master-selected>td:first-child{box-shadow:inset 4px 0 0 #c58a00}@media(max-width:700px){.p15-master-tools{align-items:stretch}.p15-master-tools label,.p15-master-save{flex:1 1 180px}.p15-master-count{flex:1 1 100%;min-height:24px}}
 .modal-bg.open{align-items:center;padding:12px}
 .np-panel{max-height:calc(100dvh - 24px)}
 .np-grid{position:sticky;bottom:68px;background:var(--surface);padding-top:8px;z-index:3}
@@ -2245,6 +2246,8 @@ function resetLocalStateForSession(){
   orderRows=[];
   masterMap={};
   rows=[];
+  p15MasterPriceSelections.clear();
+  p15MasterPriceScopeByImporter.clear();
   boxMap={};
   activeCountry=null;
   activeCustomer={};
@@ -2981,6 +2984,8 @@ function renderP1Cell(country,customer){
 const p15PriceHistoryCache=new Map();
 const p15PriceHistoryLoading=new Map();
 let p15HistoryOpenRowIdx=null;
+const p15MasterPriceSelections=new Set();
+const p15MasterPriceScopeByImporter=new Map();
 function p15HistoryKey(importer,productId){return `${normalizeImporterCode(importer)}|${normalizeProductId(productId)}`}
 function p15HistoryText(value){return String(value??"").trim().toLowerCase()}
 function p15HistoryUnit(value){return p15HistoryText(value).replace(/\s+/g,"")}
@@ -3111,9 +3116,141 @@ async function applyP15HistoryPrice(rowIdx,price){
   if(input){input.focus();input.select()}
   showP15History(rowIdx);
 }
+function p15MasterPriceScope(importer){
+  return p15MasterPriceScopeByImporter.get(normalizeImporterCode(importer))||"contract";
+}
+function setP15MasterPriceScope(importer,value){
+  p15MasterPriceScopeByImporter.set(normalizeImporterCode(importer),value==="base"?"base":"contract");
+}
+function p15MasterSelectedRows(importer){
+  const normalized=normalizeImporterCode(importer);
+  return rows.filter(row=>p15MasterPriceSelections.has(row._idx)&&normalizeImporterCode(importerCode(row.importer_id))===normalized);
+}
+function updateP15MasterSelectionCount(importer){
+  const normalized=normalizeImporterCode(importer);
+  const count=p15MasterSelectedRows(normalized).length;
+  const countEl=document.getElementById(`p15-master-count-${cid(normalized)}`);
+  if(countEl)countEl.textContent=`${count}件選択`;
+}
+function toggleP15MasterPriceSelection(rowIdx,checked){
+  const row=rows.find(item=>item._idx===rowIdx);
+  if(!row)return;
+  if(checked)p15MasterPriceSelections.add(rowIdx);
+  else p15MasterPriceSelections.delete(rowIdx);
+  document.getElementById(`p15-master-row-${rowIdx}`)?.classList.toggle("p15-master-selected",!!checked);
+  updateP15MasterSelectionCount(importerCode(row.importer_id));
+}
+function p15MasterPriceEntryRows(importer){
+  const selected=p15MasterSelectedRows(importer);
+  const invalid=selected.filter(row=>!String(row.product_id||"").trim()||numberOrNull(row.unit_price)===null||Number(numberOrNull(row.unit_price))<=0);
+  if(invalid.length){
+    alert(`商品コードまたは売価が未入力の選択行があります。\n\n${invalid.slice(0,12).map(row=>`${row.product_id||"コード未入力"} ${row.product_name||""}`).join("\n")}`);
+    return null;
+  }
+  const unique=new Map(),conflicts=[];
+  selected.forEach(row=>{
+    const key=normalizeProductId(row.product_id);
+    const price=Number(numberOrNull(row.unit_price));
+    const existing=unique.get(key);
+    if(existing&&existing.price!==price){
+      conflicts.push(`${row.product_id} ${row.product_name}: ${p15HistoryMoney(existing.price)} / ${p15HistoryMoney(price)}`);
+      return;
+    }
+    if(!existing)unique.set(key,{row,productId:masterMap[key]?.product_id||String(row.product_id).trim(),price});
+  });
+  if(conflicts.length){
+    alert(`同じ商品コードで異なる単価が選択されています。登録する価格を1つに絞ってください。\n\n${[...new Set(conflicts)].slice(0,12).join("\n")}`);
+    return null;
+  }
+  return [...unique.values()];
+}
+async function saveSelectedP15MasterPrices(importer){
+  importer=normalizeImporterCode(importer);
+  const entries=p15MasterPriceEntryRows(importer);
+  if(!entries?.length){if(entries)toast("マスタ登録する行を選択してください");return}
+  if(!(await requireSupabaseLogin()))return;
+  await loadCurrentUserRoleTrial();
+  if(!currentUserIsAdmin()){alert("単価マスタの登録は管理者のみ可能です。");return}
+  const scope=p15MasterPriceScope(importer);
+  const productIds=entries.map(entry=>entry.productId);
+  const {data:productRows,error:productError}=await supabaseClient.from("product_master")
+    .select("product_id,product_name,english_name,scientific_name,origin,unit_price")
+    .in("product_id",productIds);
+  if(productError){alert("商品マスタを確認できません: "+productError.message);return}
+  const productMap=new Map((productRows||[]).map(item=>[normalizeProductId(item.product_id),item]));
+  let contractMap=new Map();
+  if(scope==="contract"){
+    const {data,error}=await supabaseClient.from("product_price_contracts")
+      .select("product_id,unit_price")
+      .eq("importer_code",importer)
+      .in("product_id",productIds);
+    if(error){alert("輸入社別価格を確認できません: "+error.message);return}
+    contractMap=new Map((data||[]).map(item=>[normalizeProductId(item.product_id),item.unit_price]));
+  }
+  const preview=entries.map(entry=>{
+    const current=scope==="contract"?contractMap.get(normalizeProductId(entry.productId)):productMap.get(normalizeProductId(entry.productId))?.unit_price;
+    return `${entry.productId} ${entry.row.product_name||""}: ${current===null||current===undefined||current===""?"未設定":p15HistoryMoney(current)} → ${p15HistoryMoney(entry.price)}`;
+  });
+  const targetLabel=scope==="contract"?`輸入社別価格（${importer}）`:"商品マスタ価格";
+  const more=preview.length>15?`\n...ほか ${preview.length-15}件`:"";
+  if(!confirm(`${targetLabel}へ ${entries.length}件を登録します。\n\n${preview.slice(0,15).join("\n")}${more}`))return;
+  const button=document.getElementById(`p15-master-save-${cid(importer)}`);
+  const originalText=button?.textContent||"選択単価をマスタ登録";
+  if(button){button.disabled=true;button.textContent="登録中..."}
+  try{
+    const missing=entries.filter(entry=>!productMap.has(normalizeProductId(entry.productId)));
+    if(missing.length){
+      const payloads=missing.map(entry=>({
+        product_id:entry.productId,
+        product_name:entry.row.product_name||entry.productId,
+        english_name:entry.row.en_name||null,
+        scientific_name:entry.row.sci_name||null,
+        origin:entry.row.origin||null,
+        is_active:true,
+        source_filename:"work-app-selected-price"
+      }));
+      const {data,error}=await supabaseClient.from("product_master").upsert(payloads,{onConflict:"product_id"}).select("product_id");
+      if(error)throw error;
+      if((data||[]).length!==payloads.length)throw new Error(`商品マスタの保存件数が一致しません（${payloads.length}件）`);
+    }
+    if(scope==="contract"){
+      const payloads=entries.map(entry=>({product_id:entry.productId,importer_code:importer,unit_price:entry.price,source_filename:"work-app-selected-price"}));
+      const {data,error}=await supabaseClient.from("product_price_contracts").upsert(payloads,{onConflict:"product_id,importer_code"}).select("product_id,importer_code,unit_price");
+      if(error)throw error;
+      if((data||[]).length!==payloads.length)throw new Error(`輸入社別価格の保存件数が一致しません（${payloads.length}件）`);
+    }else{
+      const payloads=entries.map(entry=>{
+        const current=productMap.get(normalizeProductId(entry.productId));
+        return {product_id:entry.productId,product_name:current?.product_name||entry.row.product_name||entry.productId,unit_price:entry.price,is_active:true,source_filename:"work-app-selected-price"};
+      });
+      const {data,error}=await supabaseClient.from("product_master").upsert(payloads,{onConflict:"product_id"}).select("product_id,unit_price");
+      if(error)throw error;
+      if((data||[]).length!==payloads.length)throw new Error(`商品マスタ価格の保存件数が一致しません（${payloads.length}件）`);
+    }
+    entries.forEach(entry=>{
+      const key=normalizeProductId(entry.productId);
+      const master=masterMap[key]||{product_id:entry.productId,product_name:entry.row.product_name||entry.productId,en_name:entry.row.en_name||"",sci_name:entry.row.sci_name||"",origin:entry.row.origin||"",unit_price:""};
+      if(scope==="contract"){
+        master.importer_prices=master.importer_prices||{};
+        master.importer_prices[importer]=entry.price;
+      }else master.unit_price=entry.price;
+      masterMap[key]=master;
+      p15MasterPriceSelections.delete(entry.row._idx);
+    });
+    renderP15Importer(importer);
+    setMasterStatus(`${targetLabel}へ ${entries.length}件登録済み`);
+    toast(`${targetLabel}へ ${entries.length}件登録しました`);
+  }catch(error){
+    alert("単価マスタへ登録できませんでした: "+String(error?.message||error));
+  }finally{
+    if(button){button.disabled=false;button.textContent=originalText}
+  }
+}
 function buildP15(){
   const wrap=document.getElementById("p15-tabs-wrap");
   const empty=document.getElementById("p15-empty");
+  const availableRowIds=new Set(rows.map(row=>row._idx));
+  [...p15MasterPriceSelections].forEach(rowIdx=>{if(!availableRowIds.has(rowIdx))p15MasterPriceSelections.delete(rowIdx)});
   if(!rows.length){
     if(wrap)wrap.style.display="none";
     if(empty)empty.style.display="";
@@ -3143,10 +3280,11 @@ function p15SwitchImporter(imp){
 function renderP15Importer(imp){
   const impRows=rows.filter(r=>importerCode(r.importer_id)===imp);
   const done=impRows.filter(r=>r.origin&&r.unit_price!=="").length,total=impRows.length,pct=total?Math.round(done/total*100):0;
-  const body=impRows.map((r,i)=>`<tr><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td class="p15-price-cell"><div class="p15-price-line"><input class="p15-input p15-price" data-row-idx="${r._idx}" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation();showP15History(${r._idx},this)" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"><button class="p15-history-toggle" type="button" onclick="event.stopPropagation();toggleP15History(${r._idx})">履歴</button></div><div class="p15-history-suggestion" id="p15history-suggestion-${r._idx}">${p15HistorySuggestionHtml(r)}</div></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td></tr><tr class="p15-history-detail-row${p15HistoryOpenRowIdx===r._idx?" open":""}" id="p15history-row-${r._idx}"><td colspan="7" id="p15history-detail-${r._idx}">${p15HistoryDetailHtml(r)}</td></tr>`).join("");
+  const body=impRows.map((r,i)=>`<tr id="p15-master-row-${r._idx}" class="${p15MasterPriceSelections.has(r._idx)?"p15-master-selected":""}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td class="p15-price-cell"><div class="p15-price-line"><input class="p15-input p15-price" data-row-idx="${r._idx}" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価" onclick="event.stopPropagation();showP15History(${r._idx},this)" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"><button class="p15-history-toggle" type="button" onclick="event.stopPropagation();toggleP15History(${r._idx})">履歴</button></div><div class="p15-history-suggestion" id="p15history-suggestion-${r._idx}">${p15HistorySuggestionHtml(r)}</div></td><td class="p15-source">${r.origin||r.unit_price!==""?"入力済":"未入力"}</td><td><label class="p15-master-check"><input type="checkbox" ${p15MasterPriceSelections.has(r._idx)?"checked":""} onchange="toggleP15MasterPriceSelection(${r._idx},this.checked)"><span>候補</span></label></td></tr><tr class="p15-history-detail-row${p15HistoryOpenRowIdx===r._idx?" open":""}" id="p15history-row-${r._idx}"><td colspan="8" id="p15history-detail-${r._idx}">${p15HistoryDetailHtml(r)}</td></tr>`).join("");
   const wrap=document.getElementById("p15content-"+cid(imp));
   if(!wrap)return;
-  wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">産地・売価入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="table-scroll"><table><thead><tr><th>#</th><th>店舗名</th><th>商品名</th><th>商品コード</th><th>産地</th><th>売価</th><th>状態</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  const scope=p15MasterPriceScope(imp),selectedCount=p15MasterSelectedRows(imp).length;
+  wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">産地・売価入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="p15-master-tools"><label>登録先<select class="p15-master-scope" onchange="setP15MasterPriceScope('${esc(imp)}',this.value)"><option value="contract" ${scope==="contract"?"selected":""}>輸入社別価格（${esc(imp)}）</option><option value="base" ${scope==="base"?"selected":""}>商品マスタ価格</option></select></label><button class="p15-master-save" id="p15-master-save-${cid(imp)}" type="button" onclick="saveSelectedP15MasterPrices('${esc(imp)}')">選択単価をマスタ登録</button><span class="p15-master-count" id="p15-master-count-${cid(imp)}">${selectedCount}件選択</span></div><div class="table-scroll"><table><thead><tr><th>#</th><th>店舗名</th><th>商品名</th><th>商品コード</th><th>産地</th><th>売価</th><th>状態</th><th>マスタ候補</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function moveP15Focus(current,step,sameCol){
   const selector=sameCol?`.p15-input[data-p15-col="${current.dataset.p15Col}"]`:".p15-input";
