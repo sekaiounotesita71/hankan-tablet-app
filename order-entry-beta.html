@@ -419,6 +419,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">SOA出力</button>
       </div>
       <div class="hint" id="ar-state">売上確定データから輸入社別の売掛を作成できます。</div>
+      <div class="hint" id="ar-cutover-state">売掛運用開始日: 2026-08-01 / 初期残高基準日: 2026-07-31</div>
       <div id="ar-results">
         <div class="ar-summary" id="ar-summary"></div>
         <div class="ar-table-wrap" id="ar-table"><div class="sales-empty">売掛データを読み込んでいます。</div></div>
@@ -1040,6 +1041,8 @@ let receivablePayments=[];
 let receivableClosings=[];
 let receivablesLoaded=false;
 let receivableView="summary";
+let receivableOperationStartDate="2026-08-01";
+let receivableOpeningBalanceAsOf="2026-07-31";
 let receivableStatementProfile=null;
 let receivableClosingSalesPreview={key:"",status:"idle",amount:0,netSales:0,shippingSales:0,groupCount:0,adjustmentCount:0,error:""};
 let productGuideRows=[];
@@ -5853,6 +5856,11 @@ function arRecordState(row){
   if(settled>.005)return {key:"partial",label:"一部入金",amount,settled,balance};
   return {key:"unpaid",label:"未入金",amount,settled,balance};
 }
+function arIsOperationRow(row){
+  if(row?.source_type==="opening")return true;
+  const invoiceDate=String(row?.invoice_date||"").slice(0,10);
+  return !receivableOperationStartDate||invoiceDate>=receivableOperationStartDate;
+}
 function arFilteredRows(){
   const range=salesRefDateRangeFromText(val("ar-date-range"));
   const importerText=val("ar-importer").trim();
@@ -5861,6 +5869,7 @@ function arFilteredRows(){
   const search=val("ar-search").trim().toLowerCase();
   if(range.raw&&(!range.from||!range.to))return {rows:[],range,error:"日付は 20250701-20250731 の形式で入力してください。"};
   const rows=receivableRows.filter(row=>{
+    if(!arIsOperationRow(row))return false;
     const invoiceDate=String(row.invoice_date||"").slice(0,10);
     if(range.from&&invoiceDate<range.from)return false;
     if(range.to&&invoiceDate>range.to)return false;
@@ -6051,6 +6060,22 @@ async function arReadAll(table,orderColumn){
   }
   return rows;
 }
+async function loadReceivableSettings(){
+  const client=initSupabase();
+  let {data,error}=await client.from("accounts_receivable_settings")
+    .select("operation_start_date,opening_balance_as_of")
+    .eq("singleton",true)
+    .maybeSingle();
+  if(error){
+    if(error.code!=="42P01"&&!/accounts_receivable_settings/i.test(String(error.message||"")))throw error;
+    data=null;
+  }
+  receivableOperationStartDate=String(data?.operation_start_date||"2026-08-01").slice(0,10);
+  receivableOpeningBalanceAsOf=String(data?.opening_balance_as_of||"2026-07-31").slice(0,10);
+  const label=document.getElementById("ar-cutover-state");
+  if(label)label.textContent=`売掛運用開始日: ${receivableOperationStartDate} / 初期残高基準日: ${receivableOpeningBalanceAsOf}（開始日前の売上は売上参照のみ）`;
+  return data;
+}
 async function loadReceivables(){
   const client=initSupabase();
   const state=document.getElementById("ar-state");
@@ -6070,7 +6095,8 @@ async function loadReceivables(){
     const [rows,payments,closings]=await Promise.all([
       arReadAll("accounts_receivable","invoice_date"),
       arReadAll("accounts_receivable_payments","payment_date"),
-      arReadAll("accounts_receivable_closings","period_to")
+      arReadAll("accounts_receivable_closings","period_to"),
+      loadReceivableSettings()
     ]);
     receivableRows=rows;
     receivablePayments=payments;
@@ -6165,9 +6191,13 @@ async function arReadSalesRows(options={}){
     ?{from:options.from||"",to:options.to||"",raw:`${options.from||""}-${options.to||""}`}
     :salesRefDateRangeFromText(val("ar-date-range"));
   if(range.raw&&(!range.from||!range.to))throw new Error("日付は 20250701-20250731 の形式で入力してください。");
+  const effectiveFrom=!range.from||range.from<receivableOperationStartDate
+    ?receivableOperationStartDate
+    :range.from;
+  if(range.to&&range.to<receivableOperationStartDate)return [];
   for(let offset=0;;offset+=pageSize){
     let query=client.from("sales_records").select("*").order("work_date",{ascending:false,nullsFirst:false}).order("finalized_at",{ascending:false}).order("id",{ascending:false});
-    if(range.from)query=query.gte("work_date",range.from);
+    if(effectiveFrom)query=query.gte("work_date",effectiveFrom);
     if(range.to)query=query.lte("work_date",range.to);
     const {data,error}=await query.range(offset,offset+pageSize-1);
     if(error)throw error;
@@ -6183,6 +6213,7 @@ async function syncSalesToReceivables(options={}){
   if(!client){alert("Supabaseを読み込めません。");return}
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
+  await loadReceivableSettings();
   if(!options.from&&!options.to&&!val("ar-date-range").trim()){
     alert("再同期する売上日を 20250701-20250731 の形式で指定してください。初期残高との二重計上を防ぐため、期間未指定では実行できません。");
     return false;
@@ -6194,7 +6225,8 @@ async function syncSalesToReceivables(options={}){
       arReadSalesRows(options),
       arReadAll("work_sessions","updated_at")
     ]);
-    const groups=arBuildSalesGroups(salesRows,sessionRows);
+    const groups=arBuildSalesGroups(salesRows,sessionRows)
+      .filter(group=>!group.invoiceDate||group.invoiceDate>=receivableOperationStartDate);
     const payloads=groups.map(group=>{
       const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
       const invoiceDate=group.invoiceDate||today();
@@ -6223,7 +6255,7 @@ async function syncSalesToReceivables(options={}){
       if(state)state.textContent=`売掛へ反映中... ${Math.min(index+100,payloads.length)} / ${payloads.length}件`;
     }
     await loadReceivables();
-    if(state)state.textContent=`売上確定から ${payloads.length}件の売掛を反映しました。同じ作業は重複登録されません。`;
+    if(state)state.textContent=`${receivableOperationStartDate}以降の売上確定から ${payloads.length}件の売掛を反映しました。開始日前の売上は売上参照だけに残ります。`;
     return true;
   }catch(error){
     if(state)state.textContent=arDbErrorMessage(error);
@@ -6931,7 +6963,7 @@ function arStatementMoney(value){
 }
 function arStatementRecords(importerCode){
   const code=arCanonicalImporterCode(importerCode);
-  return receivableRows.filter(row=>arSameImporter(row,code));
+  return receivableRows.filter(row=>arIsOperationRow(row)&&arSameImporter(row,code));
 }
 async function arAssignInvoiceNumbers(rows){
   const salesRows=rows.filter(row=>row.source_type==="sales");

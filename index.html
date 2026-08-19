@@ -3646,7 +3646,21 @@ function finalizedReceivablePayloads(workDate,shippingFees){
     };
   }).filter(row=>Math.abs(row.amount_jpy)>.005);
 }
+async function receivableOperationStartDateTrial(){
+  const fallback="2026-08-01";
+  const {data,error}=await supabaseClient.from("accounts_receivable_settings")
+    .select("operation_start_date")
+    .eq("singleton",true)
+    .maybeSingle();
+  if(error){
+    if(error.code==="42P01"||/accounts_receivable_settings/i.test(String(error.message||"")))return fallback;
+    throw error;
+  }
+  return String(data?.operation_start_date||fallback).slice(0,10);
+}
 async function syncFinalizedSessionToReceivables(workDate,shippingFees){
+  const operationStartDate=await receivableOperationStartDateTrial();
+  if(workDate<operationStartDate)return 0;
   const payloads=finalizedReceivablePayloads(workDate,shippingFees);
   if(!payloads.length)return 0;
   const {data,error}=await supabaseClient.from("accounts_receivable").upsert(payloads,{onConflict:"source_key"}).select("source_key");
@@ -3709,9 +3723,14 @@ finalizeSalesTrial=async function(){
     if(!data)throw new Error("別の端末で先に売上確定された可能性があります。最新状態を再読込してください。");
     setSessionLockStateTrial(data);
     try{
-      await syncFinalizedSessionToReceivables(workDate,shippingFees);
-      setSaveState("Supabase: 売上確定・売掛反映済み");
-      toast("売上確定し、売掛へ反映しました");
+      const receivableCount=await syncFinalizedSessionToReceivables(workDate,shippingFees);
+      if(receivableCount){
+        setSaveState("Supabase: 売上確定・売掛反映済み");
+        toast("売上確定し、売掛へ反映しました");
+      }else{
+        setSaveState("Supabase: 売上確定済み / 売掛対象なし");
+        toast("売上確定しました（売掛対象なし）");
+      }
     }catch(receivableError){
       setSaveState("Supabase: 売上確定済み / 売掛反映待ち",true);
       alert(`売上確定は完了しましたが、売掛への自動反映に失敗しました。\n売掛管理の「売上確定を反映」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
