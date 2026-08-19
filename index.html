@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="./i18n.js"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <style>
@@ -1016,6 +1017,226 @@ function buildInvoiceCheckSheet(contexts,settings){
   ws["!cols"]=[{wch:18},{wch:16},{wch:10},{wch:12},{wch:22},{wch:24},{wch:24},{wch:38},{wch:13},{wch:13},{wch:10},{wch:9},{wch:10},{wch:12},{wch:14},{wch:16},{wch:16},{wch:30}];
   customsInvoiceSetCellStyle(ws,"A1",{font:{bold:true,sz:16}});
   return ws;
+}
+function invoiceExcelDate(value){
+  const digits=String(value||"").replace(/\D/g,"").slice(0,8);
+  return /^\d{8}$/.test(digits)?`${digits.slice(0,4)}/${digits.slice(4,6)}/${digits.slice(6,8)}`:String(value||"");
+}
+function invoiceExcelLines(...values){
+  return values.flatMap(value=>String(value||"").split(/\r?\n/)).map(value=>value.trim()).filter(Boolean);
+}
+function invoiceExcelCurrencyLabel(currency){
+  const code=String(currency||"JPY").trim().toUpperCase();
+  return code==="JPY"?"BY JPN YEN":`BY ${code}`;
+}
+function invoiceExcelNumberFormat(currency){
+  return String(currency||"JPY").toUpperCase()==="JPY"?'#,##0':'#,##0.00';
+}
+function invoiceExcelEachCell(ws,startRow,startCol,endRow,endCol,callback){
+  for(let row=startRow;row<=endRow;row++)for(let col=startCol;col<=endCol;col++)callback(ws.getCell(row,col),row,col);
+}
+function invoiceExcelOutline(ws,startRow,startCol,endRow,endCol,style="thin"){
+  const side={style,color:{argb:"FF000000"}};
+  invoiceExcelEachCell(ws,startRow,startCol,endRow,endCol,(cell,row,col)=>{
+    cell.border={
+      ...(cell.border||{}),
+      ...(row===startRow?{top:side}:{}),
+      ...(row===endRow?{bottom:side}:{}),
+      ...(col===startCol?{left:side}:{}),
+      ...(col===endCol?{right:side}:{})
+    };
+  });
+}
+function invoiceExcelMergeRows(ws,startRow,endRow,startCol,endCol){
+  for(let row=startRow;row<=endRow;row++)ws.mergeCells(row,startCol,row,endCol);
+}
+function invoiceExcelWriteLines(ws,startRow,endRow,col,lines){
+  lines.slice(0,endRow-startRow+1).forEach((value,index)=>ws.getCell(startRow+index,col).value=value);
+}
+function invoiceExcelApplyBase(ws,startRow,endRow){
+  invoiceExcelEachCell(ws,startRow,2,endRow,17,cell=>{
+    cell.font={name:"Arial",size:10,color:{argb:"FF000000"}};
+    cell.alignment={vertical:"middle",wrapText:true};
+  });
+}
+function invoiceExcelTradeTotalLabel(profile){
+  const term=String(profile?.trade_terms||"").split(/[\r\n,]/)[0].trim();
+  return `TOTAL${term?` : ${term}`:" :"}`;
+}
+function buildCommercialInvoiceExcelJs(workbook,context,sheetName){
+  const p=context.profile||{},ws=workbook.addWorksheet(sheetName,{views:[{showGridLines:false}]});
+  const widths=[2,10,22,10,3,6,24,48,18,16,9,11,8,12,11,14,16];
+  widths.forEach((width,index)=>ws.getColumn(index+1).width=width);
+  ws.properties.defaultRowHeight=17;
+  ws.pageSetup={
+    paperSize:9,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,
+    margins:{left:.25,right:.25,top:.35,bottom:.35,header:.15,footer:.15}
+  };
+  ws.getRow(1).height=8;
+  for(let row=2;row<=12;row++)ws.getRow(row).height=18;
+  ws.getRow(13).height=8;
+  ws.getRow(14).height=18;
+  ws.getRow(15).height=20;
+  ws.getRow(16).height=8;
+  ws.getRow(17).height=36;
+
+  invoiceExcelMergeRows(ws,2,6,2,6);
+  invoiceExcelMergeRows(ws,2,6,8,10);
+  invoiceExcelMergeRows(ws,2,12,11,14);
+  invoiceExcelMergeRows(ws,2,9,15,17);
+  invoiceExcelMergeRows(ws,11,12,15,17);
+  invoiceExcelMergeRows(ws,7,12,2,6);
+  invoiceExcelMergeRows(ws,7,12,8,10);
+  ws.mergeCells("O10:P10");
+
+  ws.getCell("B2").value="Shipper";
+  invoiceExcelWriteLines(ws,3,6,2,invoiceExcelLines(p.shipper_name,p.shipper_address,p.shipper_phone));
+  ws.getCell("H2").value="Notify Party";
+  invoiceExcelWriteLines(ws,3,6,8,invoiceExcelLines(p.notify_party_name,p.notify_party_address,p.notify_party_phone));
+  ws.getCell("K2").value="Payment Details";
+  invoiceExcelWriteLines(ws,3,12,11,invoiceExcelLines(p.payment_details));
+  ws.getCell("O3").value=`DATE:${invoiceExcelDate(context.workDate)}`;
+  ws.getCell("O4").value=`Place:${p.departure_port||""}`;
+  ws.getCell("O5").value=`INVOICE NO:${context.invoiceNo||""}`;
+  ws.getCell("B7").value="Consignee";
+  invoiceExcelWriteLines(ws,8,12,2,invoiceExcelLines(p.consignee_name,p.consignee_address,p.consignee_phone));
+  ws.getCell("H7").value="Transport Details";
+  invoiceExcelWriteLines(ws,8,12,8,invoiceExcelLines(p.transport_details,p.carrier,p.remarks?`Remarks:${p.remarks}`:"",p.marks_and_numbers?`Marks and Numbers:${p.marks_and_numbers}`:""));
+  ws.getCell("O10").value="TOTAL AMOUNT :";
+  ws.getCell("Q10").value=context.total;
+  ws.getCell("Q10").numFmt=invoiceExcelNumberFormat(p.currency);
+  ws.getCell("O10").alignment={horizontal:"right",vertical:"middle"};
+  ws.getCell("Q10").alignment={horizontal:"right",vertical:"middle"};
+
+  [[2,2,6,6],[2,8,6,10],[2,11,12,14],[2,15,12,17],[7,2,12,6],[7,8,12,10]].forEach(range=>invoiceExcelOutline(ws,...range));
+
+  const shipmentRanges=[[2,4],[5,8],[9,10],[11,12],[13,17]];
+  const shipmentLabels=["SHIP DATE","SHIP FROM","ARRIVE","VIA","TERM"];
+  const shipmentValues=[invoiceExcelDate(context.workDate),p.departure_port||"",p.destination_port||"",p.via||"",p.trade_terms||""];
+  shipmentRanges.forEach(([startCol,endCol],index)=>{
+    ws.mergeCells(14,startCol,14,endCol);
+    ws.mergeCells(15,startCol,15,endCol);
+    ws.getCell(14,startCol).value=shipmentLabels[index];
+    ws.getCell(15,startCol).value=shipmentValues[index];
+    ws.getCell(15,startCol).alignment={horizontal:index===0||index===2?"center":"left",vertical:"middle",wrapText:true};
+    invoiceExcelOutline(ws,14,startCol,15,endCol);
+  });
+
+  const headers=["CODE","BUYER CODE","C/S NO.","","C/F","NAME OF GOODS\nIN JAPANESE","NAME OF GOODS","PACKING","origin","NO. OF\nBOX","Q'NTY","UNIT","N/WT TOTAL\nKG","GRW WT/UNIT","U/PRICE by JPN\nYEN","AMOUNT by JPN YEN"];
+  headers.forEach((value,index)=>ws.getCell(17,index+2).value=value===""?null:value);
+  invoiceExcelApplyBase(ws,2,17);
+  invoiceExcelEachCell(ws,17,2,17,17,cell=>{
+    cell.font={name:"Arial",size:9,color:{argb:"FF000000"}};
+    cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+    cell.border={top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}};
+  });
+
+  const customerColors=["FFE2F0D9","FFD9EAF7","FFFCE4D6","FFFFF2CC","FFE4DFEC","FFD9E1F2","FFEDEDED"];
+  const customerColorMap=new Map();
+  context.lines.forEach((line,index)=>{
+    const row=18+index,customer=String(line.customer||"");
+    if(!customerColorMap.has(customer))customerColorMap.set(customer,customerColors[customerColorMap.size%customerColors.length]);
+    const values=[line.productId,line.customer,line.boxNo,"",line.cf,line.japanese,line.english,line.packing,line.origin,line.noOfBox,line.qty,line.unit,line.net,line.gross,line.price,line.amount];
+    values.forEach((value,colIndex)=>ws.getCell(row,colIndex+2).value=value===""?null:value);
+    ws.getRow(row).height=22;
+    invoiceExcelEachCell(ws,row,2,row,17,cell=>{
+      cell.font={name:"Arial",size:9,color:{argb:"FF000000"}};
+      cell.alignment={vertical:"middle",wrapText:true};
+      cell.border={top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}};
+    });
+    ws.getCell(row,3).fill={type:"pattern",pattern:"solid",fgColor:{argb:customerColorMap.get(customer)}};
+    ws.getCell(row,7).font={name:"Yu Gothic",size:9,color:{argb:"FF000000"}};
+    ws.getCell(row,11).fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF4CCCC"}};
+    [2,4,6,11,12,13,14,15,16,17].forEach(col=>ws.getCell(row,col).alignment={...ws.getCell(row,col).alignment,horizontal:col===17||col===16?"right":"center"});
+    [12,14,15,16,17].forEach(col=>ws.getCell(row,col).numFmt=col>=16?invoiceExcelNumberFormat(p.currency):"#,##0.00");
+  });
+
+  const summaryRow=18+context.lines.length;
+  const totalBoxes=context.lines.reduce((sum,line)=>sum+(Number(line.noOfBox)||0),0);
+  const totalNet=context.lines.reduce((sum,line)=>sum+(Number(line.net)||0),0);
+  const totalGross=context.lines.reduce((sum,line)=>sum+(Number(line.gross)||0),0);
+  invoiceExcelApplyBase(ws,summaryRow,summaryRow+6);
+  invoiceExcelEachCell(ws,summaryRow,2,summaryRow,17,cell=>{
+    cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFCC"}};
+    cell.border={top:{style:"thin"},bottom:{style:"thin"},left:{style:"thin"},right:{style:"thin"}};
+  });
+  ws.getCell(summaryRow,11).value=totalBoxes;
+  ws.getCell(summaryRow,14).value=totalNet;
+  ws.getCell(summaryRow,15).value=totalGross;
+  ws.getCell(summaryRow,17).value=context.subtotal;
+  [14,15].forEach(col=>ws.getCell(summaryRow,col).numFmt="#,##0.00");
+  ws.getCell(summaryRow,17).numFmt=invoiceExcelNumberFormat(p.currency);
+
+  const freightRow=summaryRow+3;
+  ws.mergeCells(freightRow,4,freightRow,15);
+  ws.getCell(freightRow,4).value="FREIGHT & SHIPPING CHARGE";
+  ws.getCell(freightRow,17).value=context.shipping;
+  ws.getCell(freightRow,17).numFmt=invoiceExcelNumberFormat(p.currency);
+  invoiceExcelOutline(ws,freightRow,2,freightRow,17);
+
+  const unitRow=summaryRow+5,finalRow=summaryRow+6;
+  ws.getCell(unitRow,14).value="KG";
+  ws.getCell(unitRow,15).value="KG";
+  ws.getCell(unitRow,16).value=invoiceExcelCurrencyLabel(p.currency);
+  ws.getCell(finalRow,7).value=invoiceExcelTradeTotalLabel(p);
+  ws.getCell(finalRow,7).font={name:"Arial",size:10,bold:true,color:{argb:"FFFF0000"}};
+  ws.getCell(finalRow,11).value=totalBoxes;
+  ws.getCell(finalRow,12).value="PKG";
+  ws.getCell(finalRow,14).value=totalNet;
+  ws.getCell(finalRow,15).value=totalGross;
+  ws.getCell(finalRow,17).value=context.total;
+  [14,15].forEach(col=>ws.getCell(finalRow,col).numFmt="#,##0.00");
+  ws.getCell(finalRow,17).numFmt=invoiceExcelNumberFormat(p.currency);
+  invoiceExcelEachCell(ws,unitRow,2,finalRow,17,cell=>cell.alignment={vertical:"middle",wrapText:true,horizontal:cell.col>=11?"center":"left"});
+  invoiceExcelOutline(ws,unitRow,2,finalRow,17,"medium");
+  ws.pageSetup.printArea=`B1:Q${finalRow}`;
+  ws.pageSetup.printTitlesRow="17:17";
+  return ws;
+}
+function addExcelJsJsonSheet(workbook,name,rows,headers,widths){
+  const ws=workbook.addWorksheet(name,{views:[{state:"frozen",ySplit:1,showGridLines:false}]});
+  const headerRow=ws.addRow(headers);
+  rows.forEach(item=>ws.addRow(headers.map(header=>item?.[header]??"")));
+  headerRow.height=28;
+  headerRow.eachCell(cell=>{
+    cell.font={name:"Arial",size:10,bold:true,color:{argb:"FFFFFFFF"}};
+    cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF333333"}};
+    cell.alignment={vertical:"middle",horizontal:"center",wrapText:true};
+  });
+  ws.eachRow((row,rowNumber)=>{
+    if(rowNumber===1)return;
+    row.eachCell(cell=>{cell.font={name:"Arial",size:10};cell.alignment={vertical:"middle",wrapText:true}});
+  });
+  headers.forEach((header,index)=>ws.getColumn(index+1).width=widths?.[index]||Math.max(10,String(header).length+4));
+  if(rows.length)ws.autoFilter={from:{row:1,column:1},to:{row:1,column:headers.length}};
+  return ws;
+}
+function addInvoiceCheckExcelJs(workbook,name,contexts,settings){
+  const ws=workbook.addWorksheet(name,{views:[{showGridLines:false}]});
+  ws.addRow(["Invoice出力チェック"]);
+  ws.addRow(["作成日時",new Date().toLocaleString("ja-JP")]);
+  ws.addRow(["設定DB",settings.schemaReady?"接続済み":customsInvoiceDbError(settings.error)]);
+  ws.addRow([]);
+  contexts.forEach(context=>ws.addRow([`${importerDisplayName(context.code)} (${context.code})`,context.invoiceNo||"Invoice No.未設定",`明細 ${context.lines.length}件`,`小計 ${context.subtotal}`,`送料 ${context.shipping}`,`合計 ${context.total}`,context.profileMissing.length?`ヘッダー不足: ${context.profileMissing.join(" / ")}`:"ヘッダーOK"]));
+  ws.addRow([]);
+  const headers=["輸入社","Invoice No.","状態","商品コード","得意先","作業用商品名","Invoice商品名","Invoice英名","作業産地","Invoice産地","数量","単位","NET","単価","金額","価格取得元","表記ルール","警告"];
+  const headerRow=ws.addRow(headers);
+  contexts.forEach(context=>context.lines.forEach(line=>ws.addRow([
+    `${importerDisplayName(context.code)} (${context.code})`,context.invoiceNo,line.warnings.length?"要確認":"OK",line.productId,line.customer,line.source.product_name||line.record["商品名"]||"",line.japanese,line.english,line.sourceOrigin,line.origin,line.qty,line.unit,line.net,line.price,line.amount,line.priceSource,line.nameSource,line.warnings.join(" / ")
+  ])));
+  ws.getCell("A1").font={name:"Arial",size:16,bold:true};
+  headerRow.eachCell(cell=>{cell.font={name:"Arial",size:10,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF333333"}};cell.alignment={wrapText:true,vertical:"middle"}});
+  [18,16,10,12,22,24,24,38,13,13,10,9,10,12,14,16,16,30].forEach((width,index)=>ws.getColumn(index+1).width=width);
+  ws.views=[{state:"frozen",ySplit:headerRow.number,showGridLines:false}];
+  return ws;
+}
+async function saveExcelJsWorkbook(workbook,filename){
+  const buffer=await workbook.xlsx.writeBuffer();
+  const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download=filename;link.style.display="none";
+  document.body.appendChild(link);link.click();
+  setTimeout(()=>{link.remove();URL.revokeObjectURL(url)},1000);
 }
 function adjustedInvoiceRawRows(payload,contexts){
   const lineByRecord=new Map();
@@ -3072,7 +3293,7 @@ async function exportExcel(){
 }
 async function doExport(country){
   closeExportPicker();
-  if(typeof XLSX==="undefined"){toast("Excel出力ライブラリを読み込めませんでした");return}
+  if(typeof ExcelJS==="undefined"){toast("帳票用Excelライブラリを読み込めませんでした");return}
   if(!(await requireSupabaseLogin()))return;
   let candidates=[];
   try{
@@ -3113,35 +3334,24 @@ async function doExport(country){
       if(!claimed.length){alert("選択した未処理伝票は、別の端末ですでに反映されました。最新状態を確認してから再度出力してください。");setSaveState("未処理伝票は他端末で反映済み",true);return}
       if(claimed.length!==selected.length)alert(`${selected.length-claimed.length}件は別の端末で先に反映されたため、今回のExcelから除外しました。`);
     }
-    const payload=buildExportPayload(country,claimed),contexts=buildCustomsInvoiceContexts(payload,settings),wb=XLSX.utils.book_new(),usedSheetNames=new Set();
+    const payload=buildExportPayload(country,claimed),contexts=buildCustomsInvoiceContexts(payload,settings),wb=new ExcelJS.Workbook(),usedSheetNames=new Set();
+    wb.creator="YUMIRUME INC.";
+    wb.created=new Date();
+    wb.modified=new Date();
     contexts.forEach(context=>{
       const sheetName=customsInvoiceSheetName(`INV_${importerDisplayName(context.code)}`,usedSheetNames);
-      XLSX.utils.book_append_sheet(wb,buildCommercialInvoiceSheet(context),sheetName);
+      buildCommercialInvoiceExcelJs(wb,context,sheetName);
     });
-    XLSX.utils.book_append_sheet(wb,buildInvoiceCheckSheet(contexts,settings),customsInvoiceSheetName("出力チェック",usedSheetNames));
+    addInvoiceCheckExcelJs(wb,customsInvoiceSheetName("出力チェック",usedSheetNames),contexts,settings);
     const rawRows=adjustedInvoiceRawRows(payload,contexts);
-    const ws1=XLSX.utils.json_to_sheet(rawRows,{header:payload.headers});
-    forceTextColumn(ws1,2,rawRows.length);
-    rawRows.forEach((row,i)=>{
-      const v=row["金額"],address=`O${i+2}`;
-      if(!row.__isPending)ws1[address]={f:`J${i+2}*N${i+2}`,v:v===""?undefined:v,t:v===""?"z":"n"};
-      else ws1[address]={v:Number(v)||0,t:"n"};
-    });
-    ws1["!cols"]=[{wch:12},{wch:22},{wch:12},{wch:8},{wch:20},{wch:30},{wch:10},{wch:12},{wch:10},{wch:13},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:24},{wch:8}];
-    XLSX.utils.book_append_sheet(wb,ws1,customsInvoiceSheetName("Invoice Data",usedSheetNames));
+    addExcelJsJsonSheet(wb,customsInvoiceSheetName("Invoice Data",usedSheetNames),rawRows,payload.headers,[12,22,12,8,20,30,10,12,10,13,12,12,12,10,12,24,8]);
     payload.p2Sheets.forEach(sheet=>{
-      const ws2=XLSX.utils.json_to_sheet(sheet.data,{header:["箱番号","NET重量合計(kg)","グロス重量(kg)","ドライアイス重量(kg)","箱サイズ"]});
-      forceTextColumn(ws2,0,sheet.data.length);
-      ws2["!cols"]=[{wch:12},{wch:18},{wch:16},{wch:20},{wch:10}];
-      XLSX.utils.book_append_sheet(wb,ws2,customsInvoiceSheetName(sheet.name,usedSheetNames));
+      addExcelJsJsonSheet(wb,customsInvoiceSheetName(sheet.name,usedSheetNames),sheet.data,["箱番号","NET重量合計(kg)","グロス重量(kg)","ドライアイス重量(kg)","箱サイズ"],[12,18,16,20,10]);
     });
-    const ws3=XLSX.utils.json_to_sheet(payload.boxNumberList,{header:["箱番号","グロス重量","ドライアイス","箱サイズ"]});
-    forceTextColumn(ws3,0,payload.boxNumberList.length);
-    ws3["!cols"]=[{wch:12},{wch:14},{wch:14},{wch:10}];
-    XLSX.utils.book_append_sheet(wb,ws3,customsInvoiceSheetName("箱番号一覧",usedSheetNames));
+    addExcelJsJsonSheet(wb,customsInvoiceSheetName("箱番号一覧",usedSheetNames),payload.boxNumberList,["箱番号","グロス重量","ドライアイス","箱サイズ"],[12,14,14,10]);
     const datePart=String(contexts[0]?.workDate||new Date().toISOString().slice(0,10)).replace(/\D/g,"");
     const importerPart=contexts.length===1?`_${String(importerDisplayName(contexts[0].code)).replace(/[\\\/?*\[\]:]/g,"_")}`:"_ALL";
-    XLSX.writeFile(wb,`invoice${importerPart}_${datePart}.xlsx`,{cellStyles:true});
+    await saveExcelJsWorkbook(wb,`invoice${importerPart}_${datePart}.xlsx`);
     await saveCustomsInvoiceExportLogs(contexts);
     setSaveState(`Supabase: Excel出力済み${claimed.length?` / 未処理伝票 ${claimed.length}件反映`:""}`);
     toast(claimed.length?`Commercial Invoiceを出力し、未処理伝票 ${claimed.length}件を反映済みにしました`:"Commercial Invoiceを出力しました");
