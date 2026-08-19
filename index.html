@@ -505,7 +505,7 @@ function ensureExportPreviewUI(){
   if(document.getElementById("export-preview"))return;
   const panel=document.querySelector(".export-panel");
   const style=document.createElement("style");
-  style.textContent=`.export-preview{border-top:1px solid var(--border);margin-top:14px;padding-top:14px}.export-preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.export-preview-title{font-size:13px;font-weight:900;color:var(--muted)}.export-preview-body{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:260px;overflow:auto}.export-preview-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.export-preview-pill{background:#fff;border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800}.export-preview-table{width:100%;min-width:620px;border-collapse:collapse;font-size:12px}.export-preview-table th,.export-preview-table td{padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap}.export-preview-table th{background:#fff;color:var(--muted);font-weight:900}.export-preview-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}`;
+  style.textContent=`.export-preview{border-top:1px solid var(--border);margin-top:14px;padding-top:14px}.export-preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.export-preview-title{font-size:13px;font-weight:900;color:var(--muted)}.export-preview-body{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:min(68vh,720px);overflow:auto}.export-preview-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.export-preview-pill{background:#fff;border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800}.export-preview-table{width:100%;min-width:760px;border-collapse:collapse;font-size:12px}.export-preview-table th,.export-preview-table td{padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap}.export-preview-table th{position:sticky;top:0;z-index:1;background:#fff;color:var(--muted);font-weight:900}.export-preview-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}.invoice-correction-bg{position:fixed;inset:0;z-index:120;background:rgba(20,18,16,.58);display:none;align-items:center;justify-content:center;padding:18px}.invoice-correction-bg.open{display:flex}.invoice-correction-panel{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.24);padding:18px}.invoice-correction-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.invoice-correction-title{font-size:18px;font-weight:900}.invoice-correction-meta{font-size:12px;color:var(--muted);line-height:1.5;margin-top:3px}.invoice-correction-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.invoice-correction-field{display:grid;gap:5px}.invoice-correction-field.wide{grid-column:1/-1}.invoice-correction-field label{font-size:12px;font-weight:800;color:var(--muted)}.invoice-correction-field input{width:100%;min-height:44px;border:1px solid var(--border);border-radius:6px;padding:8px 10px;background:#fff;color:var(--text)}.invoice-correction-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.invoice-correction-help{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px}@media(max-width:700px){.invoice-correction-grid{grid-template-columns:1fr}.invoice-correction-field.wide{grid-column:auto}.invoice-correction-bg{padding:8px}.invoice-correction-panel{padding:14px}}`;
   document.head.appendChild(style);
   const preview=document.createElement("div");
   preview.className="export-preview";
@@ -873,13 +873,10 @@ function customsInvoiceLine(record,code,settings){
   const qty=customsInvoiceNumber(record["現場入力数量"]);
   const amount=customsInvoiceNumber(record["金額"]);
   const warnings=[];
-  if(!record.__isPending&&!rule)warnings.push("仕向け地別表記なし");
-  if(nameFallback.english)warnings.push("日本語名一致で自動補完");
   if(nameFallback.ambiguous)warnings.push("同名の英名候補が複数");
   if(!english&&!record.__isPending)warnings.push("英名なし");
   if(!origin&&!record.__isPending)warnings.push("産地なし");
   if((price===null||price===0)&&!record["欠品"])warnings.push("単価なし");
-  if(!rule?.hs_code&&!record.__isPending)warnings.push("HSコード未設定");
   return {
     record,source,rule,code,
     productId:record["商品コード"]||"",
@@ -1273,6 +1270,117 @@ function openInvoiceNameDictionaryFromWork(token){
   }catch(_error){toast("名称辞書の入力情報を準備できませんでした");return}
   window.open("./order-entry-beta.html#masters","_blank");
 }
+let invoicePreviewState=null;
+let invoiceCorrectionSelection=null;
+function ensureInvoiceCorrectionUI(){
+  if(document.getElementById("invoice-correction-bg"))return;
+  const bg=document.createElement("div");
+  bg.id="invoice-correction-bg";
+  bg.className="invoice-correction-bg";
+  bg.onclick=event=>{if(event.target===bg)closeInvoiceLineCorrection()};
+  bg.innerHTML=`<div class="invoice-correction-panel" onclick="event.stopPropagation()">
+    <div class="invoice-correction-head"><div><div class="invoice-correction-title">Invoice明細を修正</div><div class="invoice-correction-meta" id="invoice-correction-meta"></div></div><button class="btn" type="button" onclick="closeInvoiceLineCorrection()">閉じる</button></div>
+    <div class="invoice-correction-grid">
+      <div class="invoice-correction-field wide"><label for="invoice-correction-japanese">Invoice商品名（日本語）</label><input id="invoice-correction-japanese" autocomplete="off"></div>
+      <div class="invoice-correction-field wide"><label for="invoice-correction-english">Invoice英名・学術名</label><input id="invoice-correction-english" autocomplete="off"></div>
+      <div class="invoice-correction-field"><label for="invoice-correction-origin">Invoice産地</label><input id="invoice-correction-origin" autocomplete="off"></div>
+      <div class="invoice-correction-field"><label for="invoice-correction-packing">PACKING</label><input id="invoice-correction-packing" autocomplete="off"></div>
+      <div class="invoice-correction-field"><label for="invoice-correction-hs">HSコード（任意）</label><input id="invoice-correction-hs" inputmode="decimal" autocomplete="off"></div>
+      <div class="invoice-correction-field"><label for="invoice-correction-price">単価</label><input id="invoice-correction-price" inputmode="decimal" autocomplete="off"></div>
+    </div>
+    <div class="invoice-correction-help">商品表記は輸入社・商品コード・現在の産地に紐づけて保存し、次回以降も使用します。単価はこの作業明細へ保存します。</div>
+    <div class="invoice-correction-actions"><button class="btn" type="button" onclick="openSelectedInvoiceRuleInMaster()">詳細設定</button><button class="btn btn-primary" id="invoice-correction-save" type="button" onclick="saveInvoiceLineCorrection()">保存して再確認</button></div>
+  </div>`;
+  document.body.appendChild(bg);
+}
+function invoiceCorrectionInput(id){return document.getElementById(id)}
+function openInvoiceLineCorrection(contextIndex,lineIndex){
+  const context=invoicePreviewState?.contexts?.[contextIndex],line=context?.lines?.[lineIndex];
+  if(!context||!line){toast("修正する明細を読み直してください");return}
+  ensureInvoiceCorrectionUI();
+  invoiceCorrectionSelection={contextIndex,lineIndex};
+  const productName=line.source.product_name||line.record["商品名"]||"";
+  document.getElementById("invoice-correction-meta").textContent=`${importerDisplayName(context.code)} / ${line.productId||"商品コードなし"} / ${line.customer||"得意先なし"} / 作業名: ${productName}`;
+  invoiceCorrectionInput("invoice-correction-japanese").value=line.japanese||productName;
+  invoiceCorrectionInput("invoice-correction-english").value=line.english||"";
+  invoiceCorrectionInput("invoice-correction-origin").value=line.origin||line.sourceOrigin||"";
+  invoiceCorrectionInput("invoice-correction-packing").value=line.packing||"";
+  invoiceCorrectionInput("invoice-correction-hs").value=line.hsCode||"";
+  invoiceCorrectionInput("invoice-correction-price").value=line.price===""?"":line.price;
+  document.getElementById("invoice-correction-bg").classList.add("open");
+  requestAnimationFrame(()=>invoiceCorrectionInput(line.english?"invoice-correction-origin":"invoice-correction-english")?.focus());
+}
+function closeInvoiceLineCorrection(){document.getElementById("invoice-correction-bg")?.classList.remove("open")}
+function selectedInvoiceCorrection(){
+  const selection=invoiceCorrectionSelection;
+  const context=selection?invoicePreviewState?.contexts?.[selection.contextIndex]:null;
+  const line=context&&selection?context.lines?.[selection.lineIndex]:null;
+  return {selection,context,line};
+}
+function openSelectedInvoiceRuleInMaster(){
+  const {context,line}=selectedInvoiceCorrection();
+  if(!context||!line)return;
+  const productName=line.source.product_name||line.record["商品名"]||"";
+  const token=customsInvoiceDraftToken({importerCode:context.code,productName,origin:line.sourceOrigin,english:invoiceCorrectionInput("invoice-correction-english").value});
+  openInvoiceNameDictionaryFromWork(token);
+}
+async function saveInvoiceLineCorrection(){
+  const {context,line}=selectedInvoiceCorrection();
+  if(!context||!line){toast("修正する明細を読み直してください");return}
+  if(!currentUserIsAdmin()){alert("Invoice明細の表記修正は管理者のみ可能です。");return}
+  const japanese=invoiceCorrectionInput("invoice-correction-japanese").value.trim();
+  const english=invoiceCorrectionInput("invoice-correction-english").value.trim();
+  const origin=invoiceCorrectionInput("invoice-correction-origin").value.trim();
+  const packing=invoiceCorrectionInput("invoice-correction-packing").value.trim();
+  const hsCode=invoiceCorrectionInput("invoice-correction-hs").value.trim();
+  const priceText=invoiceCorrectionInput("invoice-correction-price").value.trim();
+  const price=customsInvoiceNumber(priceText);
+  if(!japanese){alert("Invoice商品名を入力してください。");return}
+  if(!english){alert("Invoice英名・学術名を入力してください。");return}
+  if(!origin){alert("Invoice産地を入力してください。");return}
+  if(!line.record["欠品"]&&(price===null||price<=0)){alert("単価は0より大きい数値で入力してください。");return}
+  const productName=String(line.source.product_name||line.record["商品名"]||"").trim();
+  const productId=String(line.rule?.product_id||line.productId||"*").trim()||"*";
+  const payload={
+    importer_code:context.code,
+    product_id:productId,
+    match_origin:line.rule?String(line.rule.match_origin||""):String(line.sourceOrigin||""),
+    match_product_name:line.rule?String(line.rule.match_product_name||""):(productId==="*"?productName:""),
+    invoice_japanese_name:japanese,
+    invoice_english_name:english,
+    invoice_origin:origin,
+    packing:packing||null,
+    hs_code:hsCode||null,
+    notes:line.rule?.notes||"作業アプリの出力前確認で登録",
+    priority:Number(line.rule?.priority)||100,
+    is_active:true,
+    updated_by:currentUser.id
+  };
+  const saveButton=document.getElementById("invoice-correction-save");
+  saveButton.disabled=true;
+  saveButton.textContent="保存中...";
+  try{
+    if(line.source?._idx!==undefined&&Number(line.source.unit_price)!==Number(price)){
+      const saved=await updateOrderLineFieldsToSupabase(line.source,{unit_price:price});
+      if(!saved)throw new Error("単価を作業明細へ保存できませんでした。");
+      line.source.unit_price=price;
+    }
+    let error;
+    if(line.rule?.id)({error}=await supabaseClient.from("invoice_product_rules").update(payload).eq("id",line.rule.id));
+    else ({error}=await supabaseClient.from("invoice_product_rules").upsert(payload,{onConflict:"importer_code,product_id,match_origin,match_product_name"}));
+    if(error)throw error;
+    line.record["単価"]=price;
+    line.record["金額"]=(Number(line.qty)||0)*price;
+    closeInvoiceLineCorrection();
+    toast("Invoice表記と単価を保存しました");
+    await renderExportPreview(invoicePreviewState?.country||null);
+  }catch(error){
+    alert(`Invoice明細を保存できませんでした。\n${customsInvoiceDbError(error)}`);
+  }finally{
+    saveButton.disabled=false;
+    saveButton.textContent="保存して再確認";
+  }
+}
 renderExportPreview=async function(country){
   ensureExportPreviewUI();
   window.__exportPreviewCountry=country||null;
@@ -1284,9 +1392,17 @@ renderExportPreview=async function(country){
   const contexts=buildCustomsInvoiceContexts(payload,settings);
   const critical=contexts.reduce((sum,context)=>sum+context.profileMissing.length+context.criticalLineCount,0);
   const warning=contexts.reduce((sum,context)=>sum+context.lines.filter(line=>line.warnings.length).length,0);
-  const previewRows=contexts.flatMap(context=>context.lines.map(line=>({context,line}))).slice(0,20);
-  const importerButtons=contexts.map(context=>`<button class="btn" type="button" style="min-height:34px;padding:0 10px" onclick="openInvoiceMasterFromWork('${esc(context.code)}')">${esc(importerDisplayName(context.code))}の設定</button>`).join("");
-  body.innerHTML=`<div class="export-preview-summary"><span class="export-preview-pill">Invoice ${contexts.length}件</span><span class="export-preview-pill">明細 ${contexts.reduce((sum,c)=>sum+c.lines.length,0)}行</span><span class="export-preview-pill">合計 ${contexts.reduce((sum,c)=>sum+c.total,0).toLocaleString("ja-JP")}</span><span class="export-preview-pill" style="${critical?'border-color:#c62828;color:#c62828':'border-color:#2e7d32;color:#2e7d32'}">必須確認 ${critical}</span><span class="export-preview-pill">警告行 ${warning}</span></div>${settings.schemaReady?"":`<div class="p2-warning">${esc(customsInvoiceDbError(settings.error))}</div>`}${contexts.map(context=>`<div class="export-preview-note"><strong>${esc(importerDisplayName(context.code))}</strong> / Invoice No. ${esc(context.invoiceNo||"未設定")} / 小計 ${context.subtotal.toLocaleString("ja-JP")} / 送料 ${context.shipping.toLocaleString("ja-JP")} / 合計 ${context.total.toLocaleString("ja-JP")}<br>${context.profileMissing.length?`ヘッダー不足: ${esc(context.profileMissing.join(" / "))}`:"ヘッダーOK"} / 仕向け地別表記 ${context.ruleAppliedCount}件 / 日本語名補完 ${context.nameFilledCount}件 / 未登録 ${context.fallbackCount}件</div>`).join("")}<div style="display:flex;gap:6px;flex-wrap:wrap;margin:9px 0">${importerButtons}</div><table class="export-preview-table"><thead><tr><th>状態</th><th>商品コード</th><th>作業用商品名</th><th>Invoice英名</th><th>取得元</th><th>産地</th><th>単価</th><th>金額</th><th>確認</th><th>辞書</th></tr></thead><tbody>${previewRows.map(({context,line})=>{const productName=line.source.product_name||line.record["商品名"]||"";const token=customsInvoiceDraftToken({importerCode:context.code,productName,origin:line.sourceOrigin,english:line.english});return `<tr><td>${line.warnings.some(w=>w==="英名なし"||w==="産地なし"||w==="単価なし")?"要修正":(line.warnings.length?"確認":"OK")}</td><td>${esc(line.productId)}</td><td>${esc(productName)}</td><td>${esc(line.english)}</td><td>${esc(line.nameSource)}</td><td>${esc(line.origin)}</td><td>${line.price===""?"":Number(line.price).toLocaleString("ja-JP")}</td><td>${line.amount===""?"":Number(line.amount).toLocaleString("ja-JP")}</td><td>${esc(line.warnings.join(" / "))}</td><td><button class="btn" type="button" style="min-height:30px;padding:0 8px" onclick="openInvoiceNameDictionaryFromWork('${token}')">登録</button></td></tr>`}).join("")||'<tr><td colspan="10">出力対象データがありません</td></tr>'}</tbody></table><div class="export-preview-note">Excelには「Commercial Invoice」「出力チェック」「Invoice Data」「箱一覧」を作成します。通関申告名称は実物と一致する正確な表記のみ登録してください。</div><button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="doExport(window.__exportPreviewCountry)">確認してExcel出力</button>`;
+  invoicePreviewState={country:country||null,payload,settings,contexts};
+  const allPreviewRows=contexts.flatMap((context,contextIndex)=>context.lines.map((line,lineIndex)=>({context,line,contextIndex,lineIndex})));
+  const issueRows=allPreviewRows.filter(item=>item.line.warnings.length);
+  const okRows=allPreviewRows.filter(item=>!item.line.warnings.length).slice(0,Math.max(0,30-issueRows.length));
+  const previewRows=[...issueRows,...okRows];
+  const importerButtons=contexts.map(context=>`<button class="btn" type="button" style="min-height:34px;padding:0 10px" onclick="openInvoiceMasterFromWork('${esc(context.code)}')">${esc(importerDisplayName(context.code))}のヘッダー設定</button>`).join("");
+  const rowHtml=previewRows.map(({context,line,contextIndex,lineIndex})=>{
+    const productName=line.source.product_name||line.record["商品名"]||"";
+    return `<tr><td style="font-weight:800;color:${line.warnings.length?'var(--danger)':'var(--success)'}">${line.warnings.length?"要修正":"OK"}</td><td>${esc(line.productId)}</td><td>${esc(productName)}</td><td>${esc(line.english)}</td><td>${esc(line.nameSource)}</td><td>${esc(line.origin)}</td><td>${line.price===""?"":Number(line.price).toLocaleString("ja-JP")}</td><td>${line.amount===""?"":Number(line.amount).toLocaleString("ja-JP")}</td><td>${esc(line.warnings.join(" / "))}</td><td><button class="btn" type="button" style="min-height:30px;padding:0 10px" onclick="openInvoiceLineCorrection(${contextIndex},${lineIndex})">修正</button></td></tr>`;
+  }).join("");
+  body.innerHTML=`<div class="export-preview-summary"><span class="export-preview-pill">Invoice ${contexts.length}件</span><span class="export-preview-pill">明細 ${contexts.reduce((sum,c)=>sum+c.lines.length,0)}行</span><span class="export-preview-pill">合計 ${contexts.reduce((sum,c)=>sum+c.total,0).toLocaleString("ja-JP")}</span><span class="export-preview-pill" style="${critical?'border-color:#c62828;color:#c62828':'border-color:#2e7d32;color:#2e7d32'}">要修正 ${critical}</span><span class="export-preview-pill">対象行 ${warning}</span></div>${settings.schemaReady?"":`<div class="p2-warning">${esc(customsInvoiceDbError(settings.error))}</div>`}${contexts.map(context=>`<div class="export-preview-note"><strong>${esc(importerDisplayName(context.code))}</strong> / Invoice No. ${esc(context.invoiceNo||"未設定")} / 小計 ${context.subtotal.toLocaleString("ja-JP")} / 送料 ${context.shipping.toLocaleString("ja-JP")} / 合計 ${context.total.toLocaleString("ja-JP")}<br>${context.profileMissing.length?`ヘッダー不足: ${esc(context.profileMissing.join(" / "))}`:"ヘッダーOK"} / 仕向け地別表記 ${context.ruleAppliedCount}件 / 日本語名補完 ${context.nameFilledCount}件</div>`).join("")}<div style="display:flex;gap:6px;flex-wrap:wrap;margin:9px 0">${importerButtons}<button class="btn" type="button" style="min-height:34px;padding:0 10px" onclick="renderExportPreview(window.__exportPreviewCountry)">最新状態で再確認</button></div><table class="export-preview-table"><thead><tr><th>状態</th><th>商品コード</th><th>作業用商品名</th><th>Invoice英名</th><th>取得元</th><th>産地</th><th>単価</th><th>金額</th><th>不足内容</th><th>操作</th></tr></thead><tbody>${rowHtml||'<tr><td colspan="10">出力対象データがありません</td></tr>'}</tbody></table><div class="export-preview-note">要修正行を先頭にすべて表示します。表記修正は次回以降にも使用され、単価は現在の作業明細へ保存されます。</div><button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="doExport(window.__exportPreviewCountry)">確認してExcel出力</button>`;
 };
 async function doExport(country){
   closeExportPicker();
