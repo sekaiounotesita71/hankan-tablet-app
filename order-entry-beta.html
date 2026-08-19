@@ -36,6 +36,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
 .report-tools{display:grid;grid-template-columns:180px 220px 220px minmax(180px,1fr) auto auto;gap:8px;align-items:end}.report-count{align-self:end;display:flex;align-items:center;min-height:40px}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-parser #line-text{min-height:220px}.line-preview{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
+.line-reconciliation-modal{width:min(1400px,100%)}.line-reconciliation-body{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;max-height:calc(92vh - 54px);overflow:hidden}.line-reconciliation-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.line-reconciliation-context{margin-left:auto;color:var(--muted);font-size:12px;font-weight:900}.line-reconciliation-table-wrap{min-height:180px;max-height:64vh;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fff}.line-reconciliation-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.line-reconciliation-table th,.line-reconciliation-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12px}.line-reconciliation-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900;white-space:nowrap}.line-reconciliation-table tr.recon-match td{background:#f1faf4}.line-reconciliation-table tr.recon-mismatch td{background:#fff8e8}.line-reconciliation-table tr.recon-line-only td,.line-reconciliation-table tr.recon-unresolved td{background:#fff0ef}.line-reconciliation-table tr.recon-entered-only td{background:#eef6ff}.line-reconciliation-status{display:inline-flex;align-items:center;min-height:25px;padding:0 8px;border-radius:6px;font-weight:900;white-space:nowrap}.line-reconciliation-status.match{background:#dff3e7;color:#0f6b42}.line-reconciliation-status.mismatch{background:#ffedbd;color:#865700}.line-reconciliation-status.line-only,.line-reconciliation-status.unresolved{background:#ffdcd8;color:#a5271c}.line-reconciliation-status.entered-only{background:#dceaff;color:#174ea6}.line-reconciliation-line{font-weight:900;white-space:pre-wrap}.line-reconciliation-detail{margin-top:3px;color:var(--muted);font-size:11px;line-height:1.45}.line-reconciliation-check{display:flex;align-items:center;justify-content:center;gap:5px;color:var(--text);white-space:nowrap}.line-reconciliation-check input{width:17px;height:17px;min-height:17px}.line-reconciliation-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.line-reconciliation-empty{padding:28px 16px;text-align:center;color:var(--muted);font-weight:900}.line-dictionary-origin{display:inline-flex;margin-left:5px;padding:2px 5px;border-radius:5px;background:#eaf2ff;color:#174ea6;font-size:10px;font-weight:900}
 .workspace-panel.import-review-hidden{display:none!important}.import-review-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.import-review-search{height:38px;min-width:240px;flex:1;border:1px solid var(--line2);border-radius:7px;padding:0 9px;font-weight:700}.import-review-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:900}.import-review-check input{width:auto;min-height:auto}.import-review-table-wrap{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}.import-review-table{width:100%;min-width:1860px;border-collapse:separate;border-spacing:0}.import-review-table th,.import-review-table td{padding:6px 7px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.import-review-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.import-review-table tbody tr.review-error td{background:#fff0ef}.import-review-table tbody tr.review-warning td{background:#fff8e8}.import-review-table tbody tr.review-ready td{background:#f2faf5}.import-review-table input{height:34px;min-height:34px;border-radius:6px}.import-review-importer{width:110px;font-family:Consolas,monospace}.import-review-code{width:105px;font-family:Consolas,monospace;text-transform:uppercase}.import-review-customer-code{width:120px;font-family:Consolas,monospace}.import-review-customer{width:210px}.import-review-product{width:240px}.import-review-qty{width:82px;text-align:right}.import-review-unit{width:76px}.import-review-price{width:96px;text-align:right;font-family:Consolas,monospace}.import-review-supplier-code{width:110px;font-family:Consolas,monospace}.import-review-supplier{width:170px}.import-review-memo{width:220px}.import-review-status{font-weight:900}.import-review-status.error{color:#b42318}.import-review-status.warning{color:#a16207}.import-review-status.ready{color:#0f7a3b}.import-review-meta{color:var(--muted);font-weight:800;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .import-review-table tbody tr.review-ready td{background:#eef6ff}.import-review-status.ready{color:var(--blue)}.small.primary{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}.small:disabled{opacity:.45;cursor:not-allowed;background:#f3f5f7;color:var(--muted);border-color:var(--line)}
 .master-tabs{display:flex;gap:6px;margin-bottom:8px;overflow-x:auto}.master-tabs button{flex:1 0 auto}.master-list{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd}.master-item{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.master-item:last-child{border-bottom:0}.master-item b{font-family:Consolas,monospace}.status-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
@@ -187,7 +188,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="panel-head">LINE文面貼り付け</div>
       <div class="panel-body line-parser">
         <textarea id="line-text" class="ime-ja" autocomplete="off" placeholder="LINE文面を貼り付け"></textarea>
-        <div class="actions"><button class="btn primary" onclick="openLineBulkReview()">一括確認へ</button><button class="btn" onclick="parseLineDraft()">現在の得意先で下書き</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
+        <div class="actions"><button class="btn primary" onclick="openLineReconciliation()">入力済みと照合</button><button class="btn" onclick="openLineBulkReview()">LINEから受注候補</button><button class="btn" onclick="parseLineDraft()">現在の得意先で下書き</button><button class="btn" onclick="addDraftRows()">下書きを商品追加</button><button class="btn" onclick="renderLineDictionaryPreview()">辞書確認</button></div>
         <div class="line-preview" id="line-preview">LINE文面を貼り付けてください。</div>
       </div>
     </section>
@@ -952,6 +953,37 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     </div>
   </section>
 </main>
+<div id="line-reconciliation-modal" class="modal-backdrop" onclick="if(event.target===this)closeLineReconciliation()">
+  <div class="modal line-reconciliation-modal">
+    <div class="modal-head">
+      <span>LINEと入力済み受注の照合</span>
+      <button class="small" type="button" onclick="closeLineReconciliation()">閉じる</button>
+    </div>
+    <div class="modal-body line-reconciliation-body">
+      <div>
+        <div class="line-reconciliation-tools">
+          <span id="line-reconciliation-match-count" class="pill">一致 0</span>
+          <span id="line-reconciliation-warning-count" class="pill warn">要確認 0</span>
+          <span id="line-reconciliation-missing-count" class="pill" style="background:#fff0ef;color:#b42318">不足 0</span>
+          <span id="line-reconciliation-extra-count" class="pill blue">入力のみ 0</span>
+          <button id="line-reconciliation-view-button" class="small" type="button" onclick="toggleLineReconciliationView()">全件を表示</button>
+          <span id="line-reconciliation-context" class="line-reconciliation-context"></span>
+        </div>
+        <div id="line-reconciliation-message" class="hint"></div>
+      </div>
+      <div class="line-reconciliation-table-wrap">
+        <table class="line-reconciliation-table">
+          <thead><tr><th>状態</th><th>得意先</th><th>LINE文面</th><th>入力済み受注</th><th>差異</th><th>辞書</th><th>操作</th></tr></thead>
+          <tbody id="line-reconciliation-body"></tbody>
+        </table>
+      </div>
+      <div class="line-reconciliation-footer">
+        <span id="line-reconciliation-dictionary-state" class="hint" style="margin:0"></span>
+        <div class="actions"><button class="btn" type="button" onclick="closeLineReconciliation()">閉じる</button><button class="btn primary" type="button" onclick="saveSelectedLineReconciliationDictionary()">選択した対応を辞書登録</button></div>
+      </div>
+    </div>
+  </div>
+</div>
 <div id="product-lookup-modal" class="modal-backdrop" onclick="if(event.target===this)closeProductLookup()">
   <div class="modal">
     <div class="modal-head">
@@ -1165,6 +1197,14 @@ let confirmed=false;
 let lastOrderRowIndex=0;
 let productLookupRowIndex=0;
 let productLookupTarget={type:"order",index:0};
+let sharedLineDictionary=[];
+let sharedLineDictionaryReady=false;
+let sharedLineDictionarySchemaReady=false;
+let lineDictionaryPreviewRows=[];
+let lineReconciliationItems=[];
+let lineReconciliationRows=[];
+let lineReconciliationShowAll=false;
+let lineReconciliationContext={date:"",importer:{},targetBatchIndexes:[]};
 let quickProductMasterTarget=null;
 let quickProductCodeCatalog=null;
 let quickProductCodeCandidatesOpen=false;
@@ -2054,6 +2094,12 @@ async function loadDbData(){
   setDbStatus("DB読込中");
   try{
     await loadMastersFromDb();
+    try{
+      await loadSharedLineDictionaryFromDb();
+    }catch(dictionaryError){
+      sharedLineDictionaryReady=false;
+      console.warn("LINE共有辞書を読み込めませんでした。端末内辞書を使用します。",dictionaryError);
+    }
     await loadConfirmedBatchesFromDb();
     try{
       await loadPendingEntriesFromDb();
@@ -8456,13 +8502,13 @@ function normalizeLineExpression(value){
     .trim()
     .toLowerCase();
 }
-function loadLineDictionary(){
+function loadLocalLineDictionary(){
   try{
     const data=JSON.parse(localStorage.getItem(LINE_DICT_KEY)||"[]");
     return Array.isArray(data)?data:[];
   }catch(e){return []}
 }
-function saveLineDictionary(list){
+function saveLocalLineDictionary(list){
   localStorage.setItem(LINE_DICT_KEY,JSON.stringify(list));
 }
 function lineDictionaryCustomerKey(customerInfo){
@@ -8480,69 +8526,164 @@ function lineDictionaryCustomerLabel(customerInfo){
 function lineDictionaryScopeLabel(item){
   return item?.customerKey?"得意先辞書":"共通辞書";
 }
+function lineDictionaryImporterCode(value){
+  return String(value||"").normalize("NFKC").trim().toUpperCase();
+}
+function lineDictionaryIdentity(item){
+  return [item?.customerKey||"*",lineDictionaryImporterCode(item?.importerCode),item?.key||""].join("\u001f");
+}
+function lineDictionaryDbMissing(error){
+  const message=String(error?.message||error||"");
+  return error?.code==="42P01"||error?.code==="PGRST205"||error?.code==="42883"||/line_order_dictionary|upsert_line_order_dictionary/i.test(message)&&/does not exist|schema cache|not found|could not find/i.test(message);
+}
+function dbLineDictionaryToItem(row){
+  return {
+    id:row.id||"",
+    key:row.expression_key||"",
+    expression:row.source_expression||row.expression_key||"",
+    productCode:row.product_code||"",
+    productName:row.product_name_snapshot||"",
+    customerKey:row.scope_type==="common"||row.scope_key==="*"?"":row.scope_key||"",
+    customerCode:row.customer_code||"",
+    customerName:row.customer_name_snapshot||"",
+    customerLabel:[row.customer_code,row.customer_name_snapshot].filter(Boolean).join(" "),
+    importerCode:row.importer_code||"",
+    scope:row.scope_type||"customer",
+    count:Number(row.usage_count)||0,
+    lastUsedAt:row.updated_at||row.created_at||"",
+    active:row.active!==false,
+    _storage:"db"
+  };
+}
+async function loadSharedLineDictionaryFromDb(){
+  if(!supabaseClient||!currentUser)return;
+  const rows=await readAllSupabaseRows((from,to)=>supabaseClient.from("line_order_dictionary").select("*").eq("active",true).order("usage_count",{ascending:false}).range(from,to),1000);
+  sharedLineDictionary=(rows||[]).map(dbLineDictionaryToItem);
+  sharedLineDictionaryReady=true;
+  sharedLineDictionarySchemaReady=true;
+}
+function loadLineDictionary(){
+  const merged=new Map();
+  sharedLineDictionary.filter(item=>item.active!==false).forEach(item=>merged.set(lineDictionaryIdentity(item),item));
+  loadLocalLineDictionary().filter(item=>item.active!==false).forEach((item,index)=>{
+    const local={...item,importerCode:item.importerCode||"",_storage:"local",_localIndex:index};
+    const identity=lineDictionaryIdentity(local);
+    if(!merged.has(identity))merged.set(identity,local);
+  });
+  return [...merged.values()];
+}
 function lookupLineDictionary(expression,customerInfo={}){
   const key=normalizeLineExpression(expression);
   if(!key)return null;
   const customerKey=lineDictionaryCustomerKey(customerInfo);
+  const importerCode=lineDictionaryImporterCode(customerInfo?.importerCode||customerInfo?.importer?.code);
   const found=loadLineDictionary()
     .filter(x=>x.active!==false&&x.key===key&&x.productCode)
     .map(item=>{
       const entryCustomerKey=String(item.customerKey||"");
       const scopeScore=entryCustomerKey?(customerKey&&entryCustomerKey===customerKey?2:0):1;
-      return {...item,_scopeScore:scopeScore};
+      const entryImporter=lineDictionaryImporterCode(item.importerCode);
+      const importerScore=entryImporter?(importerCode&&entryImporter===importerCode?1:-100):0;
+      return {...item,_scopeScore:scopeScore+importerScore};
     })
     .filter(item=>item._scopeScore>0)
     .sort((a,b)=>(b._scopeScore||0)-(a._scopeScore||0)||(b.count||0)-(a.count||0)||(String(b.lastUsedAt||"").localeCompare(String(a.lastUsedAt||""))))[0]||null;
   return found?{...found,scopeLabel:lineDictionaryScopeLabel(found)}:null;
 }
-function learnLineDictionaryFromOrders(rows,customerInfo={}){
-  const list=loadLineDictionary();
+async function upsertSharedLineDictionaryEntry(entry){
+  if(!supabaseClient||!sharedLineDictionarySchemaReady)return null;
+  const {data,error}=await supabaseClient.rpc("upsert_line_order_dictionary",{
+    p_scope_type:entry.customerKey?"customer":"common",
+    p_scope_key:entry.customerKey||"*",
+    p_importer_code:entry.importerCode||"",
+    p_customer_code:entry.customerCode||null,
+    p_customer_name:entry.customerName||null,
+    p_expression_key:entry.key,
+    p_source_expression:entry.expression,
+    p_product_code:entry.productCode,
+    p_product_name:entry.productName||null
+  });
+  if(error){
+    if(lineDictionaryDbMissing(error))sharedLineDictionarySchemaReady=false;
+    throw error;
+  }
+  const saved=Array.isArray(data)?data[0]:data;
+  if(!saved)return null;
+  const mapped=dbLineDictionaryToItem(saved);
+  const identity=lineDictionaryIdentity(mapped);
+  const index=sharedLineDictionary.findIndex(item=>lineDictionaryIdentity(item)===identity);
+  if(index>=0)sharedLineDictionary[index]=mapped;
+  else sharedLineDictionary.push(mapped);
+  sharedLineDictionaryReady=true;
+  return mapped;
+}
+async function learnLineDictionaryFromOrders(rows,customerInfo={},options={}){
+  const list=loadLocalLineDictionary();
   const now=new Date().toISOString();
   const customerKey=lineDictionaryCustomerKey(customerInfo);
   const customerLabel=lineDictionaryCustomerLabel(customerInfo);
   const customerCode=String(customerInfo?.code||customerInfo?.customerCode||"").normalize("NFKC").trim();
   const customerName=String(customerInfo?.name||customerInfo?.customerName||"").normalize("NFKC").trim();
+  const importerCode=lineDictionaryImporterCode(customerInfo?.importerCode||customerInfo?.importer?.code);
   let changed=0;
-  rows.forEach(row=>{
+  const entries=[];
+  (rows||[]).forEach(row=>{
     const expression=row.sourceExpression||row.lineExpression||"";
     const key=normalizeLineExpression(expression);
     const productCode=String(row.productCode||"").trim();
     if(!key||!productCode)return;
     const productName=String(row.productName||"").trim();
-    const idx=list.findIndex(x=>x.key===key&&String(x.productCode||"").trim().toLowerCase()===productCode.toLowerCase()&&String(x.customerKey||"")===customerKey);
+    const idx=list.findIndex(x=>x.key===key&&String(x.customerKey||"")===customerKey&&lineDictionaryImporterCode(x.importerCode)===importerCode);
     if(idx>=0){
-      list[idx]={...list[idx],expression:expression.trim(),productCode,productName,customerKey,customerCode,customerName,customerLabel,scope:customerKey?"customer":"common",count:(Number(list[idx].count)||0)+1,lastUsedAt:now,active:true};
+      const sameProduct=String(list[idx].productCode||"").trim().toLowerCase()===productCode.toLowerCase();
+      list[idx]={...list[idx],expression:expression.trim(),productCode,productName,customerKey,customerCode,customerName,customerLabel,importerCode,scope:customerKey?"customer":"common",count:sameProduct?(Number(list[idx].count)||0)+1:1,lastUsedAt:now,active:true};
     }else{
-      list.push({key,expression:expression.trim(),productCode,productName,customerKey,customerCode,customerName,customerLabel,scope:customerKey?"customer":"common",count:1,lastUsedAt:now,active:true});
+      list.push({key,expression:expression.trim(),productCode,productName,customerKey,customerCode,customerName,customerLabel,importerCode,scope:customerKey?"customer":"common",count:1,lastUsedAt:now,active:true});
     }
+    entries.push({key,expression:expression.trim(),productCode,productName,customerKey,customerCode,customerName,importerCode});
     changed++;
   });
-  if(changed)saveLineDictionary(list);
+  if(changed)saveLocalLineDictionary(list);
+  if(sharedLineDictionarySchemaReady){
+    for(const entry of entries){
+      try{await upsertSharedLineDictionaryEntry(entry)}catch(error){
+        console.warn("LINE共有辞書の更新に失敗しました。端末内辞書には保存済みです。",error);
+        if(options.throwOnSharedError)throw error;
+        break;
+      }
+    }
+  }
   return changed;
 }
-function deleteLineDictionaryEntry(index){
-  const list=loadLineDictionary();
-  if(index<0||index>=list.length)return;
-  list.splice(index,1);
-  saveLineDictionary(list);
+async function deleteLineDictionaryEntry(index){
+  const item=lineDictionaryPreviewRows[index];
+  if(!item)return;
+  if(!confirm(`「${item.expression||item.key}」の辞書登録を削除しますか？`))return;
+  if(item._storage==="db"&&item.id&&supabaseClient){
+    const {error}=await supabaseClient.from("line_order_dictionary").update({active:false,updated_at:new Date().toISOString()}).eq("id",item.id);
+    if(error){alert(dbErrorMessage(error));return}
+    sharedLineDictionary=sharedLineDictionary.filter(entry=>entry.id!==item.id);
+  }
+  const identity=lineDictionaryIdentity(item);
+  const local=loadLocalLineDictionary().filter(entry=>lineDictionaryIdentity(entry)!==identity);
+  saveLocalLineDictionary(local);
   renderLineDictionaryPreview();
 }
 function renderLineDictionaryPreview(){
   const preview=document.getElementById("line-preview");
-  const list=loadLineDictionary()
-    .map((item,index)=>({...item,index}))
+  lineDictionaryPreviewRows=loadLineDictionary()
     .sort((a,b)=>(b.count||0)-(a.count||0)||String(b.lastUsedAt||"").localeCompare(String(a.lastUsedAt||"")));
-  if(!list.length){
-    preview.textContent="読み替え辞書はまだありません。LINE下書きを商品追加し、修正して受注確定すると自動で登録されます。";
+  if(!lineDictionaryPreviewRows.length){
+    preview.textContent="読み替え辞書はまだありません。LINE照合で正しい対応を確認すると登録されます。";
     return;
   }
-  preview.innerHTML=list.slice(0,80).map(item=>`
+  preview.innerHTML=lineDictionaryPreviewRows.slice(0,80).map((item,index)=>`
     <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1fr) 70px 46px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:5px 0">
       <span>${esc(item.expression||item.key)}</span>
       <span>${esc(item.customerLabel||lineDictionaryScopeLabel(item))}</span>
-      <span><b>${esc(item.productCode)}</b> ${esc(item.productName||"")}</span>
+      <span><b>${esc(item.productCode)}</b> ${esc(item.productName||"")}<span class="line-dictionary-origin">${item._storage==="db"?"共有":"端末"}</span></span>
       <span>${Number(item.count)||0}回</span>
-      <button class="small" type="button" onclick="deleteLineDictionaryEntry(${item.index})">削除</button>
+      <button class="small" type="button" onclick="deleteLineDictionaryEntry(${index})">削除</button>
     </div>
   `).join("");
 }
@@ -9578,6 +9719,8 @@ function closeProductLookup(){
     target?.select?.();
   }else if(productLookupTarget.type==="advancePurchase"){
     focusAdvancePurchaseCell(productLookupTarget.index,"productCode");
+  }else if(productLookupTarget.type==="reconciliation"){
+    document.getElementById("line-reconciliation-modal")?.focus?.();
   }else{
     focusOrderCell(productLookupRowIndex,"productCode");
   }
@@ -9610,6 +9753,8 @@ function chooseProductLookup(index){
     applyPendingProduct(item);
   }else if(productLookupTarget.type==="advancePurchase"){
     applyAdvancePurchaseProduct(productLookupTarget.index,item);
+  }else if(productLookupTarget.type==="reconciliation"){
+    applyProductToReconciliationItem(productLookupTarget.itemId,item);
   }else{
     applyProductToRow(productLookupRowIndex,item);
   }
@@ -9628,6 +9773,8 @@ function chooseProductLookup(index){
     });
   }else if(productLookupTarget.type==="advancePurchase"){
     requestAnimationFrame(()=>focusAdvancePurchaseCell(productLookupTarget.index,"actualQty"));
+  }else if(productLookupTarget.type==="reconciliation"){
+    requestAnimationFrame(()=>document.getElementById("line-reconciliation-modal")?.focus?.());
   }else{
     focusOrderCell(productLookupRowIndex,"qty");
   }
@@ -9666,14 +9813,15 @@ function lineImporterSnapshot(value){
 }
 function lineReviewItem(productText,parsed,currentCustomer,currentImporter,lineNo){
   const resolvedCustomer=resolveCustomerWithImporter(currentCustomer||{},{importer:currentImporter||{}});
-  const learned=lookupLineDictionary(productText,resolvedCustomer.customer);
-  const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
-  const inferredProduct=inferProduct(productText);
-  const product=learnedProduct||inferredProduct||{};
   const importer=lineImporterSnapshot({
     code:resolvedCustomer.importer.code||currentImporter?.code||"",
     name:resolvedCustomer.importer.name||currentImporter?.name||""
   });
+  const dictionaryCustomer={...resolvedCustomer.customer,importerCode:importer.code};
+  const learned=lookupLineDictionary(productText,dictionaryCustomer);
+  const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
+  const inferredProduct=inferProduct(productText);
+  const product=learnedProduct||inferredProduct||{};
   const supplierCode=product.supplierCode||"";
   return {
     orderDate:val("order-date")||today(),
@@ -9754,6 +9902,322 @@ function openLineBulkReview(){
   document.getElementById("line-preview").textContent=`LINEから ${items.length}明細を抽出しました。下の一括確認画面で赤・黄の行を修正してください。`;
   showImportReview(items,["LINE貼り付け"],"LINE");
 }
+function reconciliationCode(value){
+  return String(value||"").normalize("NFKC").trim().toLowerCase();
+}
+function reconciliationText(value){
+  return String(value||"").normalize("NFKC").replace(/[\s　]+/g,"").replace(/[()（）【】\[\]「」『』・,，.。／\/\-ー:：]/g,"").toLowerCase();
+}
+function reconciliationImporterMatches(left,right){
+  const leftResolved=resolveImporter(left||{});
+  const rightResolved=resolveImporter(right||{});
+  const leftCode=reconciliationCode(leftResolved.code);
+  const rightCode=reconciliationCode(rightResolved.code);
+  if(leftCode&&rightCode)return leftCode===rightCode;
+  const leftName=reconciliationText(leftResolved.name||left?.name);
+  const rightName=reconciliationText(rightResolved.name||right?.name);
+  return !!leftName&&!!rightName&&leftName===rightName;
+}
+function reconciliationCustomerMatches(left,right){
+  const leftCode=reconciliationCode(left?.code);
+  const rightCode=reconciliationCode(right?.code);
+  if(leftCode&&rightCode)return leftCode===rightCode;
+  const leftName=reconciliationText(left?.name);
+  const rightName=reconciliationText(right?.name);
+  return !!leftName&&!!rightName&&leftName===rightName;
+}
+function reconciliationProductMatchKind(lineRow,enteredRow){
+  const lineCode=reconciliationCode(lineRow?.productCode);
+  const enteredCode=reconciliationCode(enteredRow?.productCode);
+  if(lineCode&&enteredCode&&lineCode===enteredCode)return "code";
+  const lineName=reconciliationText(lineRow?.productName);
+  const enteredName=reconciliationText(enteredRow?.productName);
+  if(lineName&&enteredName&&lineName===enteredName)return "name";
+  const expression=reconciliationText(lineRow?.sourceExpression||lineRow?.lineExpression);
+  if(expression&&enteredName&&expression===enteredName)return "name";
+  return "";
+}
+function reconciliationQuantityMatches(left,right){
+  const leftNumber=Number(left);
+  const rightNumber=Number(right);
+  if(String(left??"").trim()===""||String(right??"").trim()==="")return String(left??"").trim()===String(right??"").trim();
+  if(Number.isFinite(leftNumber)&&Number.isFinite(rightNumber))return Math.abs(leftNumber-rightNumber)<0.000001;
+  return reconciliationText(left)===reconciliationText(right);
+}
+function reconciliationMemoMatches(lineMemo,enteredMemo){
+  const expected=reconciliationText(lineMemo);
+  if(!expected)return true;
+  const actual=reconciliationText(enteredMemo);
+  return !!actual&&(actual.includes(expected)||expected.includes(actual));
+}
+function reconciliationLineDisplay(item){
+  const row=item?.row||{};
+  const quantity=[row.qty,row.unit].filter(value=>String(value??"").trim()).join(" ");
+  return [row.sourceExpression||row.lineExpression||row.productName,quantity,row.memo?`(${row.memo})`:""].filter(Boolean).join(" ");
+}
+function reconciliationEnteredDisplay(row){
+  if(!row)return "入力なし";
+  const quantity=[row.qty,row.unit].filter(value=>String(value??"").trim()).join(" ");
+  return [`${row.productCode||"コードなし"} ${row.productName||"商品名なし"}`.trim(),quantity,row.memo?`/ ${row.memo}`:""].filter(Boolean).join(" ");
+}
+function reconciliationBatchIndexesForItem(item){
+  return lineReconciliationContext.targetBatchIndexes.filter(batchIndex=>{
+    const batch=confirmedBatches[batchIndex];
+    if(!batch)return false;
+    if((item.importer?.code||item.importer?.name)&&!reconciliationImporterMatches(batch.importer,item.importer))return false;
+    return reconciliationCustomerMatches(batch.customer,item.customer);
+  });
+}
+function reconciliationDictionaryAlreadyMatches(item,batch,row){
+  const source=item?.row?.sourceExpression||item?.row?.lineExpression||"";
+  if(!source||!row?.productCode)return false;
+  const found=lookupLineDictionary(source,{...(item.customer||{}),importerCode:item.importer?.code||batch?.importer?.code||""});
+  return !!found&&reconciliationCode(found.productCode)===reconciliationCode(row.productCode);
+}
+function rebuildLineReconciliation(){
+  const candidates=[];
+  lineReconciliationContext.targetBatchIndexes.forEach(batchIndex=>{
+    const batch=confirmedBatches[batchIndex];
+    (batch?.rows||[]).forEach((row,lineIndex)=>candidates.push({batchIndex,lineIndex,batch,row,used:false}));
+  });
+  const result=[];
+  lineReconciliationItems.forEach(item=>{
+    const customerBatchIndexes=reconciliationBatchIndexesForItem(item);
+    const available=candidates.filter(candidate=>!candidate.used&&customerBatchIndexes.includes(candidate.batchIndex));
+    const matches=available.map(candidate=>({candidate,matchKind:reconciliationProductMatchKind(item.row,candidate.row)})).filter(match=>match.matchKind);
+    matches.sort((a,b)=>{
+      const aScore=(a.matchKind==="code"?0:10)+(reconciliationQuantityMatches(item.row.qty,a.candidate.row.qty)?0:2)+(item.row.unit&&normalizeLineUnit(item.row.unit)!==normalizeLineUnit(a.candidate.row.unit)?1:0);
+      const bScore=(b.matchKind==="code"?0:10)+(reconciliationQuantityMatches(item.row.qty,b.candidate.row.qty)?0:2)+(item.row.unit&&normalizeLineUnit(item.row.unit)!==normalizeLineUnit(b.candidate.row.unit)?1:0);
+      return aScore-bScore||a.candidate.batchIndex-b.candidate.batchIndex||a.candidate.lineIndex-b.candidate.lineIndex;
+    });
+    const matchedResult=matches[0]||null;
+    const matched=matchedResult?.candidate||null;
+    if(!matched){
+      const fallbackBatchIndex=customerBatchIndexes[0];
+      const unresolved=!item.row.productCode;
+      result.push({
+        status:unresolved?"unresolved":"line-only",
+        statusLabel:unresolved?"商品未判定":"LINEのみ",
+        lineItem:item,
+        batchIndex:Number.isInteger(fallbackBatchIndex)?fallbackBatchIndex:-1,
+        lineIndex:-1,
+        batch:Number.isInteger(fallbackBatchIndex)?confirmedBatches[fallbackBatchIndex]:null,
+        enteredRow:null,
+        reasons:[customerBatchIndexes.length?"入力済み受注に同じ商品がありません":"入力済み受注にこの得意先がありません"],
+        dictionaryEligible:false
+      });
+      return;
+    }
+    matched.used=true;
+    const reasons=[];
+    if(matchedResult.matchKind==="name"&&item.row.productCode&&reconciliationCode(item.row.productCode)!==reconciliationCode(matched.row.productCode)){
+      reasons.push(`商品コード候補 ${item.row.productCode} / 入力 ${matched.row.productCode||"なし"}`);
+    }
+    if(!reconciliationQuantityMatches(item.row.qty,matched.row.qty))reasons.push(`数量 LINE ${item.row.qty||"なし"} / 入力 ${matched.row.qty||"なし"}`);
+    const lineUnit=normalizeLineUnit(item.row.unit);
+    const enteredUnit=normalizeLineUnit(matched.row.unit);
+    if(lineUnit&&lineUnit!==enteredUnit)reasons.push(`単位 LINE ${lineUnit} / 入力 ${enteredUnit||"なし"}`);
+    if(!reconciliationMemoMatches(item.row.memo,matched.row.memo))reasons.push(`備考 LINE「${item.row.memo}」 / 入力「${matched.row.memo||"なし"}」`);
+    const dictionaryEligible=!!(item.row.sourceExpression||item.row.lineExpression)&&!!matched.row.productCode;
+    if(dictionaryEligible&&item._dictionarySelected===undefined){
+      item._dictionarySelected=!reconciliationDictionaryAlreadyMatches(item,matched.batch,matched.row);
+    }
+    result.push({
+      status:reasons.length?"mismatch":"match",
+      statusLabel:reasons.length?"要確認":"一致",
+      lineItem:item,
+      batchIndex:matched.batchIndex,
+      lineIndex:matched.lineIndex,
+      batch:matched.batch,
+      enteredRow:matched.row,
+      reasons,
+      dictionaryEligible
+    });
+  });
+  candidates.filter(candidate=>!candidate.used).forEach(candidate=>result.push({
+    status:"entered-only",
+    statusLabel:"入力のみ",
+    lineItem:null,
+    batchIndex:candidate.batchIndex,
+    lineIndex:candidate.lineIndex,
+    batch:candidate.batch,
+    enteredRow:candidate.row,
+    reasons:["LINE文面に対応する明細がありません"],
+    dictionaryEligible:false
+  }));
+  lineReconciliationRows=result;
+  renderLineReconciliation();
+}
+function renderLineReconciliation(){
+  const counts={match:0,mismatch:0,"line-only":0,unresolved:0,"entered-only":0};
+  lineReconciliationRows.forEach(row=>{counts[row.status]=(counts[row.status]||0)+1});
+  document.getElementById("line-reconciliation-match-count").textContent=`一致 ${counts.match||0}`;
+  document.getElementById("line-reconciliation-warning-count").textContent=`要確認 ${counts.mismatch||0}`;
+  document.getElementById("line-reconciliation-missing-count").textContent=`不足 ${(counts["line-only"]||0)+(counts.unresolved||0)}`;
+  document.getElementById("line-reconciliation-extra-count").textContent=`入力のみ ${counts["entered-only"]||0}`;
+  document.getElementById("line-reconciliation-view-button").textContent=lineReconciliationShowAll?"相違のみ表示":"全件を表示";
+  const importerLabel=[lineReconciliationContext.importer?.code,lineReconciliationContext.importer?.name].filter(Boolean).join(" ")||"複数輸入社";
+  document.getElementById("line-reconciliation-context").textContent=`${lineReconciliationContext.date} / ${importerLabel}`;
+  const issueCount=lineReconciliationRows.filter(row=>row.status!=="match").length;
+  document.getElementById("line-reconciliation-message").textContent=issueCount?`相違 ${issueCount}件です。確定済み受注は自動変更しません。必要な得意先だけ「受注を修正」から直してください。`:`全 ${counts.match||0}明細が一致しました。選択済みの表現を共有辞書へ登録できます。`;
+  const selectedCount=lineReconciliationRows.filter(row=>row.dictionaryEligible&&row.lineItem?._dictionarySelected).length;
+  const dictionaryState=document.getElementById("line-reconciliation-dictionary-state");
+  dictionaryState.textContent=sharedLineDictionarySchemaReady?`共有辞書候補 ${selectedCount}件`:`共有辞書SQL未実行です。選択内容は端末内辞書へ保存できます。`;
+  const visible=lineReconciliationRows.map((row,index)=>({row,index})).filter(entry=>lineReconciliationShowAll||entry.row.status!=="match");
+  const body=document.getElementById("line-reconciliation-body");
+  if(!visible.length){
+    body.innerHTML=`<tr><td colspan="7"><div class="line-reconciliation-empty">相違はありません。「全件を表示」で一致明細を確認できます。</div></td></tr>`;
+    return;
+  }
+  body.innerHTML=visible.map(({row,index})=>{
+    const batch=row.batch||{};
+    const item=row.lineItem||{};
+    const importerInfo=item.importer||batch.importer||{};
+    const customerInfo=item.customer||batch.customer||{};
+    const customerLabel=`${[customerInfo.code,customerInfo.name].filter(Boolean).join(" ")||"得意先未判定"}`;
+    const importerText=[importerInfo.code,importerInfo.name].filter(Boolean).join(" ");
+    const lineText=item.row?reconciliationLineDisplay(item):"LINEに記載なし";
+    const enteredText=reconciliationEnteredDisplay(row.enteredRow);
+    const dictionary=row.dictionaryEligible?`<label class="line-reconciliation-check"><input type="checkbox" ${item._dictionarySelected?"checked":""} onchange="toggleLineReconciliationDictionary(${index},this.checked)">登録</label>`:"-";
+    const productButton=item.row?`<button class="small" type="button" onclick="openReconciliationProductLookup(${index})">商品選択</button>`:"";
+    const correctionButton=row.batchIndex>=0?`<button class="small primary" type="button" onclick="openLineReconciliationCorrection(${index})">受注を修正</button>`:(item.row?`<button class="small primary" type="button" onclick="openLineReconciliationCorrection(${index})">受注画面へ</button>`:"");
+    return `<tr class="recon-${row.status}">
+      <td><span class="line-reconciliation-status ${row.status}">${esc(row.statusLabel)}</span></td>
+      <td><b>${esc(customerLabel)}</b><div class="line-reconciliation-detail">${esc(importerText)}</div></td>
+      <td><div class="line-reconciliation-line">${esc(lineText)}</div><div class="line-reconciliation-detail">${esc(item.sourceFilename||"")}</div></td>
+      <td><div class="line-reconciliation-line">${esc(enteredText)}</div><div class="line-reconciliation-detail">${esc(row.batch?.note||"")}</div></td>
+      <td>${row.reasons.length?row.reasons.map(reason=>`<div>${esc(reason)}</div>`).join(""):"-"}</td>
+      <td>${dictionary}</td>
+      <td><div class="actions">${productButton}${correctionButton}</div></td>
+    </tr>`;
+  }).join("");
+}
+async function openLineReconciliation(){
+  const text=val("line-text").trim();
+  const orderDate=val("order-date");
+  if(!text){document.getElementById("line-preview").textContent="照合するLINE文面を貼り付けてください。";return}
+  if(!orderDate){alert("照合する日付を入力してください。");return}
+  if(!dbReady||!supabaseClient){alert("DBへ接続してから照合してください。");return}
+  setAppBusy(true,"最新の入力済み受注を読み込んでいます。");
+  try{
+    await loadConfirmedBatchesFromDb();
+  }catch(error){
+    alert(`入力済み受注を更新できないため照合を中止しました。\n${dbErrorMessage(error)}`);
+    return;
+  }finally{
+    setAppBusy(false);
+  }
+  const items=parseLineBulkItems(text);
+  if(!items.length){document.getElementById("line-preview").textContent="LINE文面から受注明細を判定できませんでした。得意先名と商品行を改行して貼り付けてください。";return}
+  const headerImporter=resolveImporter(importer());
+  const parsedImporterCodes=[...new Set(items.map(item=>resolveImporter(item.importer||{}).code).filter(Boolean).map(reconciliationCode))];
+  const contextImporter=(headerImporter.code||headerImporter.name)?headerImporter:(parsedImporterCodes.length===1?resolveImporter(items.find(item=>item.importer?.code)?.importer||{}):{});
+  const targetBatchIndexes=[];
+  confirmedBatches.forEach((batch,index)=>{
+    if(batch.orderDate!==orderDate)return;
+    if(contextImporter.code||contextImporter.name){
+      if(!reconciliationImporterMatches(batch.importer,contextImporter))return;
+    }else if(parsedImporterCodes.length&&batch.importer?.code&&!parsedImporterCodes.includes(reconciliationCode(resolveImporter(batch.importer).code)))return;
+    targetBatchIndexes.push(index);
+  });
+  if(!targetBatchIndexes.length){
+    alert(`${orderDate} の入力済み受注が見つかりません。日付と輸入社を確認してください。`);
+    return;
+  }
+  lineReconciliationItems=items.map((item,index)=>({...item,_reconId:`line-${Date.now()}-${index}`,_dictionarySelected:undefined}));
+  lineReconciliationShowAll=false;
+  lineReconciliationContext={date:orderDate,importer:contextImporter,targetBatchIndexes};
+  rebuildLineReconciliation();
+  document.getElementById("line-reconciliation-modal").classList.add("open");
+  document.getElementById("line-preview").textContent=`LINE ${items.length}明細を、${orderDate} の確定済み受注と照合しました。`;
+}
+function closeLineReconciliation(){
+  document.getElementById("line-reconciliation-modal")?.classList.remove("open");
+}
+function toggleLineReconciliationView(){
+  lineReconciliationShowAll=!lineReconciliationShowAll;
+  renderLineReconciliation();
+}
+function toggleLineReconciliationDictionary(index,checked){
+  const row=lineReconciliationRows[index];
+  if(!row?.lineItem||!row.dictionaryEligible)return;
+  row.lineItem._dictionarySelected=!!checked;
+  renderLineReconciliation();
+}
+function openReconciliationProductLookup(index){
+  const row=lineReconciliationRows[index];
+  const item=row?.lineItem;
+  if(!item)return;
+  productLookupTarget={type:"reconciliation",index,itemId:item._reconId};
+  productLookupRowIndex=index;
+  document.getElementById("product-lookup-search").value=item.row?.sourceExpression||item.row?.productName||item.row?.productCode||"";
+  document.getElementById("product-lookup-modal").classList.add("open");
+  renderProductLookup();
+  requestAnimationFrame(()=>{
+    const input=document.getElementById("product-lookup-search");
+    input.focus();
+    input.select();
+  });
+}
+function applyProductToReconciliationItem(itemId,product){
+  const item=lineReconciliationItems.find(entry=>entry._reconId===itemId);
+  if(!item)return;
+  item.row={
+    ...item.row,
+    productCode:product.code||"",
+    productName:product.name||item.row.productName||"",
+    englishName:product.englishName||"",
+    supplierCode:product.supplierCode||item.row.supplierCode||"",
+    supplierName:supplierNameFor(product.supplierCode||item.row.supplierCode,product.supplierName||item.row.supplierName||""),
+    unitPrice:productPriceForImporter(product,item.importer||{})
+  };
+  item._dictionarySelected=undefined;
+  rebuildLineReconciliation();
+}
+async function openLineReconciliationCorrection(index){
+  const row=lineReconciliationRows[index];
+  if(!row)return;
+  closeLineReconciliation();
+  if(row.batchIndex>=0){
+    await restoreConfirmedBatch(row.batchIndex);
+    return;
+  }
+  const item=row.lineItem;
+  if(!item)return;
+  if(activeOrderRows().length&&!confirm("入力中の明細があります。LINEの不足明細を受注画面へ開くと、入力中の内容は上書きされます。続けますか？"))return;
+  document.getElementById("order-date").value=lineReconciliationContext.date||today();
+  setHeaderCustomer(item.customer||{}, {skipImporter:true});
+  setHeaderImporter(item.importer||{});
+  orders=[{...blankOrder(),...(item.row||{})}];
+  confirmed=false;
+  currentOrderAttemptId=newAppUuid();
+  saveLocal();
+  render();
+  requestAnimationFrame(()=>document.querySelector('[data-row="0"][data-field="productCode"]')?.focus());
+}
+async function saveSelectedLineReconciliationDictionary(){
+  const selected=lineReconciliationRows.filter(row=>row.dictionaryEligible&&row.lineItem?._dictionarySelected&&row.enteredRow?.productCode);
+  const unique=new Map();
+  selected.forEach(row=>{
+    const customerInfo={...(row.lineItem.customer||row.batch?.customer||{}),importerCode:row.lineItem.importer?.code||row.batch?.importer?.code||""};
+    const sourceExpression=row.lineItem.row?.sourceExpression||row.lineItem.row?.lineExpression||"";
+    const key=[lineDictionaryCustomerKey(customerInfo),lineDictionaryImporterCode(customerInfo.importerCode),normalizeLineExpression(sourceExpression)].join("\u001f");
+    unique.set(key,{customerInfo,row:{sourceExpression,productCode:row.enteredRow.productCode,productName:row.enteredRow.productName}});
+  });
+  if(!unique.size){alert("辞書登録する対応を選択してください。");return}
+  setAppBusy(true,"LINE辞書へ登録しています。画面を閉じないでください。");
+  try{
+    let saved=0;
+    for(const entry of unique.values())saved+=await learnLineDictionaryFromOrders([entry.row],entry.customerInfo,{throwOnSharedError:true});
+    lineReconciliationRows.forEach(row=>{if(row.lineItem)row.lineItem._dictionarySelected=false});
+    renderLineReconciliation();
+    alert(sharedLineDictionarySchemaReady?`${saved}件を共有辞書へ登録しました。`:`${saved}件を端末内辞書へ保存しました。共有するには line-reconciliation-dictionary-migration.sql をSupabase SQL Editorで実行してください。`);
+  }catch(error){
+    alert(`端末内辞書には保存しましたが、共有辞書の更新に失敗しました。\n${dbErrorMessage(error)}`);
+  }finally{
+    setAppBusy(false);
+  }
+}
 function parseLineDraft(){
   const text=val("line-text").trim();
   if(!text){document.getElementById("line-preview").textContent="文面を貼り付けてください。";return}
@@ -9780,7 +10244,8 @@ function parseLineDraft(){
     const parsed=parseLineOrderPart(part);
     if(!parsed?.productText)return;
     const currentCustomer=customer();
-    const learned=lookupLineDictionary(parsed.productText,currentCustomer)||lookupLineDictionary(part,currentCustomer);
+    const dictionaryCustomer={...currentCustomer,importerCode:importer().code};
+    const learned=lookupLineDictionary(parsed.productText,dictionaryCustomer)||lookupLineDictionary(part,dictionaryCustomer);
     const learnedProduct=learned?findMasterProduct(learned.productCode,learned.productName):null;
     const inferredProduct=inferProduct(parsed.productText);
     const p=learnedProduct||((inferredProduct.code||inferredProduct.name)?inferredProduct:inferProduct(part));
@@ -9826,7 +10291,7 @@ async function confirmCustomerOrder(options={}){
     alert("DBへ接続できていないため受注確定を中止しました。入力内容は端末に残っています。接続後にもう一度確定してください。");
     return false;
   }
-  const learnedCount=learnLineDictionaryFromOrders(activeOrderRows(),c);
+  const learnedCount=await learnLineDictionaryFromOrders(activeOrderRows(),{...c,importerCode:im.code});
   const batch=currentBatch();
   saveLocal();
   if(dbReady&&supabaseClient){
@@ -10370,12 +10835,14 @@ function quickProductMasterSource(target=quickProductMasterTarget||productLookup
   if(target?.type==="importReview")return importReviewItems[target.index]?.row||{};
   if(target?.type==="pending")return {productCode:val("pending-product-code"),productName:val("pending-product-name")};
   if(target?.type==="advancePurchase")return advancePurchaseRows[target.index]||{};
+  if(target?.type==="reconciliation")return lineReconciliationItems.find(item=>item._reconId===target.itemId)?.row||{};
   return orders[target?.index]||{};
 }
 function quickProductMasterImporterCode(target=quickProductMasterTarget||productLookupTarget){
   if(target?.type==="importReview")return normalizeImporterCode(importReviewItems[target.index]?.importer?.code||importReviewItems[target.index]?.importer?.name||"");
   if(target?.type==="pending")return normalizeImporterCode(val("pending-importer-code")||val("pending-importer-name"));
   if(target?.type==="advancePurchase")return normalizeImporterCode(val("advance-purchase-importer"));
+  if(target?.type==="reconciliation")return normalizeImporterCode(lineReconciliationItems.find(item=>item._reconId===target.itemId)?.importer?.code||"");
   return normalizeImporterCode(importer().code||importer().name);
 }
 function quickProductFallbackCodeCatalog(){
@@ -10545,6 +11012,8 @@ function applyQuickProductMasterTarget(item,target=quickProductMasterTarget){
   }else if(target?.type==="advancePurchase"){
     applyAdvancePurchaseProduct(target.index,item);
     requestAnimationFrame(()=>focusAdvancePurchaseCell(target.index,"actualQty"));
+  }else if(target?.type==="reconciliation"){
+    applyProductToReconciliationItem(target.itemId,item);
   }else{
     applyProductToRow(target?.index??productLookupRowIndex,item);
     requestAnimationFrame(()=>focusOrderCell(target?.index??productLookupRowIndex,"qty"));
@@ -12287,7 +12756,10 @@ async function confirmImportReviewGroupList(groups,successLabel){
   setAppBusy(true);
   try{
     await persistImportedConfirmedBatches(batches);
-    const learned=grouped.reduce((sum,group)=>sum+learnLineDictionaryFromOrders(group.rows,group.customer),0);
+    let learned=0;
+    for(const group of grouped){
+      learned+=await learnLineDictionaryFromOrders(group.rows,{...group.customer,importerCode:group.importer?.code||""});
+    }
     removeImportReviewRowsByIndexes(indexes);
     if(importReviewItems.length)renderImportReview();
     else clearImportReviewState();
