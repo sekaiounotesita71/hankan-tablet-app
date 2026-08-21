@@ -256,13 +256,13 @@ on conflict (supplier_code) do update set
 
 do $$
 begin
-  if public.accounts_payable_due_date(date '2026-08-15',15,1,15) <> date '2026-09-15' then
+  if public.accounts_payable_due_date(date '2026-08-15',15::smallint,1::smallint,15::smallint) <> date '2026-09-15' then
     raise exception '15-day closing due date check failed for the closing date.';
   end if;
-  if public.accounts_payable_due_date(date '2026-08-16',15,1,15) <> date '2026-10-15' then
+  if public.accounts_payable_due_date(date '2026-08-16',15::smallint,1::smallint,15::smallint) <> date '2026-10-15' then
     raise exception '15-day closing due date check failed after the closing date.';
   end if;
-  if public.accounts_payable_due_date(date '2026-08-31',31,1,31) <> date '2026-09-30' then
+  if public.accounts_payable_due_date(date '2026-08-31',31::smallint,1::smallint,31::smallint) <> date '2026-09-30' then
     raise exception 'Month-end due date check failed.';
   end if;
 end;
