@@ -36,7 +36,7 @@ assert.match(sql,/when p_invoice_date <= effective_closing_date then invoice_mon
 assert.match(sql,/create unique index if not exists uq_accounts_payable_payment_source/);
 assert.match(sql,/automatic_payment_key := 'cash-purchase:' \|\| cash_payable\.id::text/);
 assert.match(sql,/on conflict \(source_key\) do update set/);
-assert.match(sql,/where regexp_replace\(btrim\(supplier\.supplier_code\),'\^0\+',''\) = '1'/);
+assert.match(sql,/where closing_day = 1/);
 assert.match(sql,/profile\.payment_mode = 'cash_on_entry'/);
 
 console.log("Accounts payable terms tests passed");

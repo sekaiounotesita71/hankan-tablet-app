@@ -243,16 +243,12 @@ begin
 end;
 $$;
 
-insert into public.accounts_payable_supplier_profiles (
-  supplier_code,payment_mode,closing_day,payment_month_offset,payment_day,memo
-)
-select supplier.supplier_code,'cash_on_entry',31,0,31,'都度現金払い'
-from public.supplier_master supplier
-where regexp_replace(btrim(supplier.supplier_code),'^0+','') = '1'
-on conflict (supplier_code) do update set
-  payment_mode = 'cash_on_entry',
-  payment_month_offset = 0,
-  updated_at = now();
+-- In the existing master, closing day 1 is the operational marker for
+-- suppliers paid at the time of purchase.
+update public.accounts_payable_supplier_profiles
+set payment_mode = 'cash_on_entry',
+    updated_at = now()
+where closing_day = 1;
 
 do $$
 begin
