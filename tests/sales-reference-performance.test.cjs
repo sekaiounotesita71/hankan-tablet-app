@@ -41,7 +41,7 @@ test("連続再読込では古い結果を画面へ反映しない",()=>{
   assert.ok((source.match(/loadSequence!==salesReferenceLoadSequence/g)||[]).length>=3);
 });
 
-test("全件COUNTを使わず2ページ目以降を並列で取得する",async()=>{
+test("2ページ目以降の売上を並列で取得する",async()=>{
   const source=sourceBetween("async function salesRefReadPaged","async function salesRefReadCurrentRows");
   const readPaged=new Function(`${source}; return salesRefReadPaged;`)();
   let active=0,maxActive=0;
@@ -54,11 +54,24 @@ test("全件COUNTを使わず2ページ目以降を並列で取得する",async(
       await new Promise(resolve=>setTimeout(resolve,5));
       active--;
       const count=Math.min(1000,2501-from);
-      return {data:Array.from({length:count},(_,index)=>from+index),error:null,count:null};
+      return {data:Array.from({length:count},(_,index)=>from+index),error:null,count:includeCount?2501:null};
     }
   }));
   assert.equal(rows.length,2501);
   assert.deepEqual(calls.map(call=>call.from),[0,1000,2000]);
-  assert.ok(calls.every(call=>call.includeCount===false));
+  assert.equal(calls[0].includeCount,true);
+  assert.ok(calls.slice(1).every(call=>call.includeCount===false));
   assert.ok(maxActive>=2,"2ページ目以降が直列取得です");
+});
+
+test("年次範囲は月ごとのDB問い合わせへ分割する",()=>{
+  const source=sourceBetween("function salesRefSplitQueryRangeByMonth","async function salesRefReadPaged");
+  const split=new Function("salesRefEndOfMonth",`${source}; return salesRefSplitQueryRangeByMonth;`)(month=>{
+    const [year,value]=month.split("-").map(Number);
+    return `${year}-${String(value).padStart(2,"0")}-${String(new Date(year,value,0).getDate()).padStart(2,"0")}`;
+  });
+  const ranges=split({from:"2026-01-01",to:"2026-12-31"});
+  assert.equal(ranges.length,12);
+  assert.deepEqual(ranges[0],{from:"2026-01-01",to:"2026-01-31"});
+  assert.deepEqual(ranges[11],{from:"2026-12-01",to:"2026-12-31"});
 });
