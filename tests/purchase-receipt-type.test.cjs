@@ -45,7 +45,7 @@ const saveSource = sourceBetween(
   "async function saveAdvancePurchaseBatch",
   "function initialWorkspaceTab"
 );
-assert.match(saveSource, /hasSalesLinks\?"create_advance_purchase_batch_v2":"create_advance_purchase_batch"/);
+assert.match(saveSource, /rpc\("create_purchase_batch_v3"/);
 assert.match(saveSource, /hasSalesLinks\?"売上連動仕入":"事前仕入"/);
 
 console.log("Purchase receipt type tests passed");
