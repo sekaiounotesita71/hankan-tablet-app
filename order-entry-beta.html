@@ -3670,7 +3670,7 @@ function salesRefCostInfo(row){
   if(row.is_stockout||row.pending_entry_id||row.source_type==="未処理伝票")return {priced:true,amount:0,source:"adjustment"};
   const actual=Number(row._purchaseCostActual);
   if(Number.isFinite(actual)&&row._purchaseCostActual!==null&&row._purchaseCostActual!==undefined){
-    return {priced:true,amount:actual,source:"actual"};
+    return {priced:true,amount:actual,source:row._purchaseCostSource||"actual"};
   }
   const product=findMasterProduct(row.product_id,row.product_name);
   const supplierCode=row._purchaseSupplierCode||product?.supplierCode||"";
@@ -3694,9 +3694,96 @@ async function salesRefReadChunks(items,chunkSize,readChunk,concurrency=6){
   await Promise.all(workers);
   return results.flat();
 }
+function salesRefPurchaseCodeKeys(value){
+  const raw=String(value||"").normalize("NFKC").trim().toUpperCase().replace(/^OLD[\s_-]*/,"").replace(/[^0-9A-Z]/g,"");
+  if(!raw||raw==="0")return [];
+  const keys=[{value:raw,prefix:false}];
+  const legacy=raw.match(/^4(\d{3}[A-Z]*)$/);
+  if(legacy)keys.push({value:legacy[1],prefix:true});
+  return keys;
+}
+function salesRefPurchaseNameKey(value){
+  return normalizeMasterSearchText(value)
+    .replace(/雲丹|海胆/g,"ウニ")
+    .replace(/鯛/g,"タイ")
+    .replace(/鰤/g,"ブリ")
+    .replace(/鯵/g,"アジ")
+    .replace(/鮃/g,"ヒラメ")
+    .replace(/縞鰺|縞鯵/g,"シマアジ");
+}
+function salesRefImportedPurchaseMatches(line,row){
+  const saleCode=salesRefPurchaseCodeKeys(row.product_id)[0]?.value||"";
+  const purchaseCodes=salesRefPurchaseCodeKeys(line.product_code);
+  if(saleCode&&purchaseCodes.some(key=>key.prefix?saleCode.startsWith(key.value):saleCode===key.value))return true;
+  const purchaseName=salesRefPurchaseNameKey(line.product_name);
+  const saleName=salesRefPurchaseNameKey(row.product_name);
+  if(!purchaseName||!saleName)return false;
+  if(purchaseName===saleName)return true;
+  const shorter=purchaseName.length<=saleName.length?purchaseName:saleName;
+  return shorter.length>=3&&(purchaseName.includes(saleName)||saleName.includes(purchaseName));
+}
+function salesRefImportedPurchaseWeight(row,line){
+  const unitQuantity=salesRefCostQuantity(row,line.price_unit||line.actual_unit);
+  if(unitQuantity>0)return unitQuantity;
+  const net=salesRefNum(row.net_weight);
+  if(net>0)return net;
+  const qty=salesRefNum(row.input_qty);
+  return qty>0?qty:1;
+}
+function salesRefAllocateImportedPurchaseCosts(salesRows,receipts,lines,linkedLineIds=new Set()){
+  const receiptById=new Map((receipts||[]).filter(receipt=>String(receipt.note||"").startsWith("PDF一括取込ID:")).map(receipt=>[receipt.id,receipt]));
+  const eligibleSales=(salesRows||[]).filter(row=>row.id&&!row.is_stockout&&row._purchaseCostSource!=="linked");
+  const matchedSalesIds=new Set();
+  let matchedLines=0,matchedCost=0,unmatchedLines=0,unmatchedCost=0;
+  (lines||[]).forEach(line=>{
+    const receipt=receiptById.get(line.receipt_id);
+    if(!receipt||linkedLineIds.has(line.id))return;
+    const lineAmount=salesRefNum(line.line_amount)||salesRefNum(line.actual_qty)*salesRefNum(line.unit_price);
+    if(lineAmount<=0)return;
+    const month=String(receipt.purchase_date||"").slice(0,7);
+    const matches=eligibleSales.filter(row=>salesRefMonth(salesRefRowDate(row))===month&&salesRefImportedPurchaseMatches(line,row));
+    if(!matches.length){unmatchedLines++;unmatchedCost+=lineAmount;return}
+    const weights=matches.map(row=>salesRefImportedPurchaseWeight(row,line));
+    const totalWeight=weights.reduce((sum,value)=>sum+value,0);
+    matches.forEach((row,index)=>{
+      const share=totalWeight>0?weights[index]/totalWeight:1/matches.length;
+      row._purchaseCostActual=salesRefNum(row._purchaseCostActual)+lineAmount*share;
+      row._purchaseCostSource="monthly_pdf";
+      matchedSalesIds.add(row.id);
+    });
+    matchedLines++;
+    matchedCost+=lineAmount;
+  });
+  return {matchedLines,matchedSales:matchedSalesIds.size,matchedCost,unmatchedLines,unmatchedCost};
+}
+async function salesRefReadImportedPurchaseCosts(client,salesRows){
+  const months=new Set((salesRows||[]).map(row=>salesRefMonth(salesRefRowDate(row))).filter(month=>/^\d{4}-\d{2}$/.test(month)));
+  if(!months.size)return {receipts:[],lines:[],linkedLineIds:new Set()};
+  const allReceipts=await salesRefReadPaged(includeCount=>client.from("purchase_receipts")
+    .select("id,purchase_date,note,status",includeCount?{count:"exact"}:undefined)
+    .eq("status","confirmed")
+    .ilike("note","PDF一括取込ID:%")
+    .order("purchase_date",{ascending:true})
+    .order("id",{ascending:true}));
+  const receipts=allReceipts.filter(receipt=>months.has(String(receipt.purchase_date||"").slice(0,7)));
+  const receiptIds=receipts.map(receipt=>receipt.id);
+  const lines=await salesRefReadChunks(receiptIds,200,async ids=>{
+    const {data,error}=await client.from("purchase_receipt_lines")
+      .select("id,receipt_id,product_code,product_name,actual_qty,actual_unit,unit_price,price_unit,line_amount")
+      .in("receipt_id",ids);
+    if(error)throw error;
+    return data||[];
+  });
+  const linkedRows=await salesRefReadChunks(lines.map(line=>line.id),200,async ids=>{
+    const {data,error}=await client.from("purchase_sales_links").select("purchase_line_id").in("purchase_line_id",ids);
+    if(error)throw error;
+    return data||[];
+  });
+  return {receipts,lines,linkedLineIds:new Set(linkedRows.map(row=>row.purchase_line_id).filter(Boolean))};
+}
 async function salesRefAttachPurchaseCosts(client,rows){
   const activeRows=(rows||[]).filter(row=>row.id&&!row.is_stockout);
-  if(!activeRows.length)return {actual:0,supplierMapped:0};
+  if(!activeRows.length)return {actual:0,supplierMapped:0,monthlyMatchedLines:0,monthlyMatchedSales:0,monthlyUnmatchedLines:0};
   let supplierBySale=new Map();
   try{supplierBySale=await readOrderSuppliersForAdvancePurchase(activeRows)}catch(error){console.warn("仕入先の紐づけを読み込めませんでした",error)}
   activeRows.forEach(row=>{row._purchaseSupplierCode=supplierBySale.get(advancePurchaseSaleSourceKey(row))||""});
@@ -3729,9 +3816,24 @@ async function salesRefAttachPurchaseCosts(client,rows){
     linkedRows.forEach((row,index)=>{
       const share=totalWeight>0?weights[index]/totalWeight:1/Math.max(1,linkedRows.length);
       row._purchaseCostActual=salesRefNum(row._purchaseCostActual)+lineAmount*share;
+      row._purchaseCostSource="linked";
     });
   });
-  return {actual:links.length,supplierMapped:supplierBySale.size};
+  let imported={matchedLines:0,matchedSales:0,matchedCost:0,unmatchedLines:0,unmatchedCost:0},monthlyWarning="";
+  try{
+    const source=await salesRefReadImportedPurchaseCosts(client,activeRows);
+    imported=salesRefAllocateImportedPurchaseCosts(activeRows,source.receipts,source.lines,source.linkedLineIds);
+  }catch(error){monthlyWarning="PDF仕入の月次照合を取得できません";console.warn(monthlyWarning,error)}
+  return {
+    actual:links.length,
+    supplierMapped:supplierBySale.size,
+    monthlyMatchedLines:imported.matchedLines,
+    monthlyMatchedSales:imported.matchedSales,
+    monthlyMatchedCost:imported.matchedCost,
+    monthlyUnmatchedLines:imported.unmatchedLines,
+    monthlyUnmatchedCost:imported.unmatchedCost,
+    monthlyWarning
+  };
 }
 function salesRefMetrics(rows){
   const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
@@ -3741,14 +3843,16 @@ function salesRefMetrics(rows){
   const totalGross=salesRefGrossTotal(rows);
   const customers=new Set(rows.map(row=>row.store_name||row.customer_code).filter(Boolean));
   const products=new Set(rows.map(row=>row.product_id||row.product_name).filter(Boolean));
-  let purchaseCost=0,costedSales=0,pricedCount=0,unpricedCount=0,actualCostCount=0,estimatedCostCount=0;
+  let purchaseCost=0,costedSales=0,pricedCount=0,unpricedCount=0,actualCostCount=0,linkedCostCount=0,monthlyPdfCostCount=0,estimatedCostCount=0;
   rows.forEach(row=>{
     const cost=salesRefCostInfo(row);
     if(!cost.priced){unpricedCount++;return}
     purchaseCost+=cost.amount;
     costedSales+=salesRefNum(row.amount);
     pricedCount++;
-    if(cost.source==="actual")actualCostCount++;
+    if(["actual","linked","monthly_pdf"].includes(cost.source))actualCostCount++;
+    if(cost.source==="linked")linkedCostCount++;
+    else if(cost.source==="monthly_pdf")monthlyPdfCostCount++;
     else if(["supplier","product"].includes(cost.source))estimatedCostCount++;
   });
   const grossProfit=costedSales-purchaseCost;
@@ -3765,7 +3869,7 @@ function salesRefMetrics(rows){
     avgCustomer:customers.size?totalSales/customers.size:0,
     avgNetUnit:totalNet?netSales/totalNet:0,
     purchaseCost,costedSales,grossProfit,grossMargin:costedSales?grossProfit/costedSales*100:0,
-    pricedCount,unpricedCount,actualCostCount,estimatedCostCount
+    pricedCount,unpricedCount,actualCostCount,linkedCostCount,monthlyPdfCostCount,estimatedCostCount
   };
 }
 function salesRefProfitGroups(rows,keyFn){
@@ -3794,9 +3898,9 @@ function salesRefProfitAnalysisHtml(rows){
   const productRows=salesRefProfitGroups(rows,row=>`${row.product_id||""} ${row.product_name||""}`.trim());
   const customerRows=salesRefProfitGroups(rows,row=>`${row.customer_code||""} ${row.store_name||""}`.trim());
   const importerRows=salesRefProfitGroups(rows,row=>salesRefRowImporter(row).label);
-  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">実仕入原価を優先。未登録分は仕入先別単価、次に標準仕入単価で補完します。原価未設定は粗利計算から除外します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">原価反映 ${metrics.pricedCount}/${metrics.count}件</span></div>
+  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">明細リンクを最優先。PDF直接取込は月＋商品コードで配分し、未登録分はマスタ単価で補完します。PDF配分には一部国内分が含まれる可能性があります。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">原価反映 ${metrics.pricedCount}/${metrics.count}件</span></div>
     <div class="sales-analysis-grid">
-      <div class="sales-compare-card"><div class="sales-card-label">原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">実仕入 ${metrics.actualCostCount}件 / マスタ補完 ${metrics.estimatedCostCount}件</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">明細リンク ${metrics.linkedCostCount}件 / 月次PDF ${metrics.monthlyPdfCostCount}件 / マスタ ${metrics.estimatedCostCount}件</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">仕入原価</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.purchaseCost))}</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">粗利</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.grossProfit))}</div><div class="sales-compare-sub">粗利率 ${esc(metrics.grossMargin.toFixed(1))}%</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">原価未設定</div><div class="sales-compare-main">${esc(metrics.unpricedCount)}件</div><div class="sales-compare-sub">設定後に自動再計算</div></div>
@@ -4089,7 +4193,10 @@ async function loadSalesReferenceBoard(){
     renderSalesReferenceBoard();
     void salesRefAttachPurchaseCosts(client,currentRows).then(result=>{
       if(loadSequence!==salesReferenceLoadSequence)return;
-      if(state)state.textContent=`${baseMessage} / 仕入原価・粗利まで更新済み（実績紐づけ ${result.actual}件）`;
+      const monthlyText=result.monthlyWarning
+        ?result.monthlyWarning
+        :`月次PDF ${result.monthlyMatchedLines}仕入明細→${result.monthlyMatchedSales}売上 / 未照合 ${result.monthlyUnmatchedLines}明細`;
+      if(state)state.textContent=`${baseMessage} / 仕入原価・粗利まで更新済み（明細リンク ${result.actual}件 / ${monthlyText}）`;
       renderSalesReferenceSummary();
       renderSalesReferenceAnalysis();
     }).catch(error=>{
