@@ -6,6 +6,7 @@ const vm = require("node:vm");
 const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "order-entry-beta.html"), "utf8");
 const sql = fs.readFileSync(path.join(root, "accounts-payable-closing-migration.sql"), "utf8");
+const groupSql = fs.readFileSync(path.join(root, "accounts-payable-group-closing-migration.sql"), "utf8");
 
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map((match) => match[1])
@@ -14,10 +15,18 @@ scripts.forEach((script, index) => new vm.Script(script, { filename: `order-entr
 
 assert.match(html, /<summary>買掛締め<\/summary>/);
 assert.match(html, /id="ap-closing-month"/);
+assert.match(html, /id="ap-closing-day"/);
 assert.match(html, /id="ap-closing-supplier"/);
-assert.match(html, /onclick="closeAccountsPayablePeriod\(\)"/);
+assert.match(html, /id="ap-closing-group-list"/);
+assert.match(html, /onclick="closeSelectedAccountsPayablePeriods\(\)"/);
 assert.match(html, /function apClosingSnapshot\(supplierCode,range\)/);
 assert.match(html, /const openingBalance=arRound\(beforeCharges-beforePayments\)/);
+assert.match(html, /function apClosingGroupCalculations\(\)/);
+assert.match(html, /apClosingDay\(profile\)===context\.closingDay/);
+assert.match(html, /function toggleAllPayableClosingSuppliers\(checked\)/);
+assert.match(html, /rpc\("close_accounts_payable_group",\{p_items:items\}\)/);
+assert.match(html, /全社成功または全社失敗/);
+assert.match(html, /保存件数が一致しません/);
 assert.match(html, /function renderPayableClosingHistory\(\)/);
 assert.match(html, /function reopenAccountsPayablePeriod\(closingId\)/);
 assert.match(html, /if\(apClosingIsActive\(payment\?\.closing_id\)\)/);
@@ -34,5 +43,12 @@ assert.match(sql, /and payment\.payment_date <= p_period_to/);
 assert.match(sql, /create or replace function public\.reopen_accounts_payable_period\(/);
 assert.match(sql, /if not public\.is_master_admin\(\)/);
 assert.match(sql, /notify pgrst, 'reload schema'/);
+
+assert.match(groupSql, /create or replace function public\.close_accounts_payable_group\(/);
+assert.match(groupSql, /jsonb_typeof\(p_items\) <> 'array'/);
+assert.match(groupSql, /item_count > 200/);
+assert.match(groupSql, /from public\.close_accounts_payable_period\(/);
+assert.match(groupSql, /return next closing_row/);
+assert.match(groupSql, /grant execute on function public\.close_accounts_payable_group\(jsonb\)/);
 
 console.log("Accounts payable closing tests passed");

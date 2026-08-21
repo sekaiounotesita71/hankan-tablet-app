@@ -698,20 +698,21 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <summary>買掛締め</summary>
           <div class="ar-entry-body">
             <div class="ar-closing-grid">
-              <label>対象月<input id="ap-closing-month" type="month" onchange="refreshPayableClosingPreview()"></label>
-              <label>仕入先コード<input id="ap-closing-supplier" list="supplier-code-list" class="ime-en" autocomplete="off" placeholder="締める仕入先" oninput="schedulePayableClosingPreview()"></label>
-              <div class="hint">支払条件マスタの締め日から期間を計算します。締め後は対象期間の買掛と支払がロックされます。</div>
-              <button class="btn primary" type="button" onclick="closeAccountsPayablePeriod()">買掛締めを実行</button>
+              <label>対象月<input id="ap-closing-month" type="month" onchange="refreshPayableClosingGroup()"></label>
+              <label>締め日グループ<select id="ap-closing-day" onchange="refreshPayableClosingGroup()"><option value="">締め日を選択</option></select></label>
+              <label>仕入先絞り込み<input id="ap-closing-supplier" class="ime-en" autocomplete="off" placeholder="空欄=グループ全社" oninput="refreshPayableClosingGroup()"></label>
+              <button class="btn primary" id="ap-closing-execute" type="button" onclick="closeSelectedAccountsPayablePeriods()" disabled>選択仕入先を一括締め</button>
               <div class="ar-closing-preview" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
-                <div class="ar-summary-card"><div class="ar-summary-label">締め期間</div><div class="ar-summary-value" id="ap-closing-period" style="font-size:15px">-</div></div>
-                <div class="ar-summary-card"><div class="ar-summary-label">支払期限</div><div class="ar-summary-value" id="ap-closing-due-date" style="font-size:15px">-</div></div>
+                <div class="ar-summary-card"><div class="ar-summary-label">対象仕入先</div><div class="ar-summary-value" id="ap-closing-target-count">0社</div></div>
+                <div class="ar-summary-card"><div class="ar-summary-label">選択中</div><div class="ar-summary-value" id="ap-closing-selected-count">0社</div></div>
                 <div class="ar-summary-card"><div class="ar-summary-label">前回繰越</div><div class="ar-summary-value" id="ap-closing-opening">¥0</div></div>
                 <div class="ar-summary-card"><div class="ar-summary-label">今回仕入</div><div class="ar-summary-value" id="ap-closing-purchase">¥0</div></div>
                 <div class="ar-summary-card"><div class="ar-summary-label">期間内支払</div><div class="ar-summary-value" id="ap-closing-payment">¥0</div></div>
                 <div class="ar-summary-card balance"><div class="ar-summary-label">締め後買掛残高</div><div class="ar-summary-value" id="ap-closing-balance">¥0</div></div>
               </div>
             </div>
-            <div class="hint" id="ap-closing-state">対象月と仕入先を選択してください。</div>
+            <div class="hint" id="ap-closing-state">対象月と締め日グループを選択してください。</div>
+            <div class="ar-table-wrap" id="ap-closing-group-list" style="max-height:320px"><div class="sales-empty">締め日を選択すると対象仕入先を表示します。</div></div>
             <div class="ar-closing-history" id="ap-closing-history"><div class="sales-empty">買掛締め履歴は買掛読込後に表示されます。</div></div>
           </div>
         </details>
@@ -1290,7 +1291,9 @@ let payableClosings=[];
 let payablesLoaded=false;
 let payableClosingDbReady=true;
 let payableSupplierProfile=null;
-let payableClosingProfile=null;
+let payableSupplierProfiles=[];
+const payableClosingSelections=new Set();
+let payableClosingSelectionContext="";
 let auditEvents=[];
 let selectedAuditEvent=null;
 let auditSnapshots=[];
@@ -8343,6 +8346,9 @@ async function reviewExternalAssignment(id,action){
 }
 function apDbErrorMessage(error){
   const message=String(error?.message||error||"");
+  if(/close_accounts_payable_group/i.test(message)){
+    return "買掛グループ締め用SQLが未実行です。accounts-payable-group-closing-migration.sql をSupabase SQL Editorで実行してください。";
+  }
   if(error?.code==="PGRST202"||/accounts_payable_closings|close_accounts_payable_period|reopen_accounts_payable_period/i.test(message)){
     return "買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql をSupabase SQL Editorで実行してください。";
   }
@@ -8457,9 +8463,10 @@ async function loadPayables(){
   }
   state.textContent="買掛データを読込中...";
   try{
-    const [rows,payments]=await Promise.all([
+    const [rows,payments,profiles]=await Promise.all([
       arReadAll("accounts_payable","invoice_date"),
-      arReadAll("accounts_payable_payments","payment_date")
+      arReadAll("accounts_payable_payments","payment_date"),
+      arReadAll("accounts_payable_supplier_profiles","supplier_code")
     ]);
     let closings=[];
     payableClosingDbReady=true;
@@ -8474,15 +8481,17 @@ async function loadPayables(){
     payableRows=rows;
     payablePayments=payments;
     payableClosings=closings;
+    payableSupplierProfiles=profiles;
     payablesLoaded=true;
+    renderPayableClosingDayOptions();
     renderPayables();
     renderPayablePaymentHistory();
-    refreshPayableClosingPreview();
+    refreshPayableClosingGroup();
   }catch(error){
-    payableRows=[];payablePayments=[];payableClosings=[];payablesLoaded=false;
+    payableRows=[];payablePayments=[];payableClosings=[];payableSupplierProfiles=[];payablesLoaded=false;
     state.textContent=apDbErrorMessage(error);
     renderPayables();
-    renderPayableClosingPreview();
+    renderPayableClosingGroup();
   }
 }
 function apClosingSnapshot(supplierCode,range){
@@ -8517,19 +8526,18 @@ function apClosingSnapshot(supplierCode,range){
     closingBalance:arRound(openingBalance+purchaseAmount-paymentAmount)
   };
 }
-function apClosingCalculation(){
-  const inputCode=val("ap-closing-supplier").trim();
-  const supplier=lookupSupplierByCode(inputCode);
-  const supplierCode=supplier?.code||inputCode;
-  const month=val("ap-closing-month");
-  if(!supplierCode||!month)return {error:"対象月と仕入先を選択してください。"};
-  if(!supplier)return {error:"仕入先マスタに登録済みの仕入先コードを選択してください。"};
-  if(!payableClosingProfile||!apSameSupplier(payableClosingProfile.supplier_code,supplierCode)){
-    return {error:`${supplierCode} の支払条件を読み込んでください。`};
-  }
-  const closingDay=Math.min(31,Math.max(1,Math.trunc(arNumber(payableClosingProfile.closing_day))||31));
-  const paymentDay=Math.min(31,Math.max(1,Math.trunc(arNumber(payableClosingProfile.payment_day))||31));
-  const paymentMonthOffset=Math.max(0,Math.trunc(arNumber(payableClosingProfile.payment_month_offset)));
+function apClosingDay(profile){
+  return Math.min(31,Math.max(1,Math.trunc(arNumber(profile?.closing_day))||31));
+}
+function apPayableProfileFor(supplierCode){
+  return payableSupplierProfiles.find(profile=>apSameSupplier(profile.supplier_code,supplierCode))||null;
+}
+function apClosingCalculationFor(supplier,month,profile){
+  const supplierCode=supplier?.code||"";
+  if(!supplierCode||!month||!profile)return {error:"仕入先・対象月・支払条件を確認してください。",supplierCode,supplier};
+  const closingDay=apClosingDay(profile);
+  const paymentDay=Math.min(31,Math.max(1,Math.trunc(arNumber(profile.payment_day))||31));
+  const paymentMonthOffset=Math.max(0,Math.trunc(arNumber(profile.payment_month_offset)));
   const periodTo=arMonthDay(month,closingDay);
   const priorClosings=payableClosings
     .filter(row=>apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&String(row.period_to)<periodTo)
@@ -8544,79 +8552,153 @@ function apClosingCalculation(){
   );
   const range={from:periodFrom,to:periodTo,raw:`${periodFrom}-${periodTo}`};
   const snapshot=payablesLoaded?apClosingSnapshot(supplierCode,range):null;
-  return {supplierCode,supplier,month,profile:payableClosingProfile,range,dueDate,snapshot,existing};
+  return {supplierCode,supplier,month,profile,closingDay,range,dueDate,snapshot,existing};
 }
-async function loadPayableClosingProfile(code){
-  const supplier=lookupSupplierByCode(code);
-  if(!supplier){payableClosingProfile=null;renderPayableClosingPreview();return null}
-  const client=initSupabase();
-  const user=await ensureCurrentUser();
-  if(!client||!user){payableClosingProfile=null;renderPayableClosingPreview();return null}
-  const {data,error}=await client.from("accounts_payable_supplier_profiles").select("*").eq("supplier_code",supplier.code).maybeSingle();
-  if(error){payableClosingProfile=null;renderPayableClosingPreview();return null}
-  payableClosingProfile=data||null;
-  renderPayableClosingPreview();
-  return payableClosingProfile;
+function apClosingGroupContext(){
+  return {
+    month:val("ap-closing-month"),
+    closingDay:Math.trunc(arNumber(val("ap-closing-day"))),
+    filter:val("ap-closing-supplier").trim().toLowerCase()
+  };
 }
-function schedulePayableClosingPreview(){
-  clearTimeout(window.__apClosingPreviewTimer);
-  window.__apClosingPreviewTimer=setTimeout(async()=>{
-    const inputCode=val("ap-closing-supplier").trim();
-    const supplier=lookupSupplierByCode(inputCode);
-    if(!supplier){payableClosingProfile=null;renderPayableClosingPreview();return}
-    if(!apSameSupplier(payableClosingProfile?.supplier_code,supplier.code))await loadPayableClosingProfile(supplier.code);
-    else renderPayableClosingPreview();
-  },350);
+function apClosingGroupCalculations(){
+  const context=apClosingGroupContext();
+  if(!context.month||context.closingDay<1||context.closingDay>31)return [];
+  const supplierMap=new Map(getMasters().suppliers.map(supplier=>[String(supplier.code||"").trim().toLowerCase(),supplier]));
+  return payableSupplierProfiles
+    .filter(profile=>apClosingDay(profile)===context.closingDay)
+    .map(profile=>{
+      const supplier=supplierMap.get(String(profile.supplier_code||"").trim().toLowerCase());
+      return supplier?apClosingCalculationFor(supplier,context.month,profile):null;
+    })
+    .filter(Boolean)
+    .filter(calculation=>{
+      if(!context.filter)return true;
+      const haystack=[calculation.supplierCode,calculation.supplier?.name].join(" ").toLowerCase();
+      return haystack.includes(context.filter);
+    })
+    .filter(calculation=>{
+      const snapshot=calculation.snapshot;
+      return calculation.existing||!snapshot||snapshot.charges.length||snapshot.payments.length||Math.abs(snapshot.openingBalance)>.005;
+    })
+    .sort((a,b)=>String(a.supplierCode).localeCompare(String(b.supplierCode),"ja",{numeric:true}));
 }
-function refreshPayableClosingPreview(){
-  const inputCode=val("ap-closing-supplier").trim();
-  const supplier=lookupSupplierByCode(inputCode);
-  if(supplier&&!apSameSupplier(payableClosingProfile?.supplier_code,supplier.code)){
-    loadPayableClosingProfile(supplier.code);
-    return;
+function renderPayableClosingDayOptions(){
+  const select=document.getElementById("ap-closing-day");
+  if(!select)return;
+  const previous=select.value;
+  const days=[...new Set(payableSupplierProfiles.map(apClosingDay))].sort((a,b)=>a-b);
+  select.innerHTML='<option value="">締め日を選択</option>'+days.map(day=>`<option value="${day}">${day===31?"末日（31日）":`${day}日`}</option>`).join("");
+  if(days.includes(Number(previous)))select.value=previous;
+  else if(days.includes(31))select.value="31";
+  else if(days.length)select.value=String(days[0]);
+}
+function refreshPayableClosingGroup(options={}){
+  const context=apClosingGroupContext();
+  const contextKey=`${context.month}|${context.closingDay}|${context.filter}`;
+  const calculations=apClosingGroupCalculations();
+  const closableCodes=new Set(calculations.filter(row=>!row.error&&!row.existing&&row.snapshot).map(row=>row.supplierCode));
+  if(options.resetSelections||payableClosingSelectionContext!==contextKey){
+    payableClosingSelections.clear();
+    closableCodes.forEach(code=>payableClosingSelections.add(code));
+    payableClosingSelectionContext=contextKey;
+  }else{
+    [...payableClosingSelections].forEach(code=>{if(!closableCodes.has(code))payableClosingSelections.delete(code)});
   }
-  renderPayableClosingPreview();
+  renderPayableClosingGroup(calculations);
 }
-function renderPayableClosingPreview(){
-  const period=document.getElementById("ap-closing-period");
-  const dueDate=document.getElementById("ap-closing-due-date");
+function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
+  const targetCount=document.getElementById("ap-closing-target-count");
+  const selectedCount=document.getElementById("ap-closing-selected-count");
   const opening=document.getElementById("ap-closing-opening");
   const purchase=document.getElementById("ap-closing-purchase");
   const payment=document.getElementById("ap-closing-payment");
   const balance=document.getElementById("ap-closing-balance");
   const state=document.getElementById("ap-closing-state");
-  if(!period||!dueDate||!opening||!purchase||!payment||!balance||!state)return;
-  const calculation=apClosingCalculation();
-  if(calculation.error){
-    period.textContent="-";dueDate.textContent="-";opening.textContent="¥0";purchase.textContent="¥0";payment.textContent="¥0";balance.textContent="¥0";
-    state.textContent=payableClosingDbReady?calculation.error:"買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql を実行してください。";
-    renderPayableClosingHistory();
-    return;
-  }
-  const snapshot=calculation.snapshot||{openingBalance:0,purchaseAmount:0,paymentAmount:0,closingBalance:0};
-  period.textContent=`${calculation.range.from} ～ ${calculation.range.to}`;
-  dueDate.textContent=calculation.dueDate;
-  opening.textContent=`¥${salesRefMoney(snapshot.openingBalance)||"0"}`;
-  purchase.textContent=`¥${salesRefMoney(snapshot.purchaseAmount)||"0"}`;
-  payment.textContent=`¥${salesRefMoney(snapshot.paymentAmount)||"0"}`;
-  balance.textContent=`¥${salesRefMoney(snapshot.closingBalance)||"0"}`;
-  if(!payableClosingDbReady){
+  const list=document.getElementById("ap-closing-group-list");
+  const execute=document.getElementById("ap-closing-execute");
+  if(!targetCount||!selectedCount||!opening||!purchase||!payment||!balance||!state||!list||!execute)return;
+  const context=apClosingGroupContext();
+  const eligible=calculations.filter(row=>!row.error&&!row.existing&&row.snapshot);
+  const selected=eligible.filter(row=>payableClosingSelections.has(row.supplierCode));
+  const totals=selected.reduce((result,row)=>{
+    result.opening+=row.snapshot.openingBalance;
+    result.purchase+=row.snapshot.purchaseAmount;
+    result.payment+=row.snapshot.paymentAmount;
+    result.balance+=row.snapshot.closingBalance;
+    return result;
+  },{opening:0,purchase:0,payment:0,balance:0});
+  targetCount.textContent=`${calculations.length}社`;
+  selectedCount.textContent=`${selected.length}社`;
+  opening.textContent=`¥${salesRefMoney(arRound(totals.opening))||"0"}`;
+  purchase.textContent=`¥${salesRefMoney(arRound(totals.purchase))||"0"}`;
+  payment.textContent=`¥${salesRefMoney(arRound(totals.payment))||"0"}`;
+  balance.textContent=`¥${salesRefMoney(arRound(totals.balance))||"0"}`;
+  execute.disabled=!payableClosingDbReady||selected.length===0;
+
+  if(!context.month||context.closingDay<1||context.closingDay>31){
+    state.textContent="対象月と締め日グループを選択してください。";
+    list.innerHTML='<div class="sales-empty">締め日を選択すると対象仕入先を表示します。</div>';
+  }else if(!payableClosingDbReady){
     state.textContent="買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql を実行してください。";
-  }else if(calculation.existing){
-    state.textContent="この期間は買掛締め済みです。";
+    list.innerHTML='<div class="sales-empty">買掛締め用SQLを実行してください。</div>';
   }else if(!payablesLoaded){
-    state.textContent="「買掛読込」を押すと締め金額を確認できます。";
+    state.textContent="「買掛読込」を押すと締め対象を確認できます。";
+    list.innerHTML='<div class="sales-empty">買掛を読み込んでください。</div>';
+  }else if(!calculations.length){
+    state.textContent=`${context.closingDay===31?"末日":`${context.closingDay}日`}締めで、今回締める買掛はありません。`;
+    list.innerHTML='<div class="sales-empty">対象となる仕入先・買掛はありません。</div>';
   }else{
-    state.textContent=`前回繰越 ¥${salesRefMoney(snapshot.openingBalance)||"0"} + 今回仕入 ¥${salesRefMoney(snapshot.purchaseAmount)||"0"} - 期間内支払 ¥${salesRefMoney(snapshot.paymentAmount)||"0"} = 締め後買掛残高 ¥${salesRefMoney(snapshot.closingBalance)||"0"}`;
+    state.textContent=`${context.closingDay===31?"末日":`${context.closingDay}日`}締め ${calculations.length}社中 ${selected.length}社を選択しています。金額は選択中の合計です。`;
+    const allSelected=eligible.length>0&&eligible.every(row=>payableClosingSelections.has(row.supplierCode));
+    list.innerHTML=`<table class="ar-table">
+      <thead><tr><th><input type="checkbox" aria-label="締め対象を全選択" ${allSelected?"checked":""} onchange="toggleAllPayableClosingSuppliers(this.checked)"></th><th>仕入先</th><th>締め期間</th><th>支払期限</th><th>前回繰越</th><th>今回仕入</th><th>期間内支払</th><th>締め後残高</th><th>状態</th></tr></thead>
+      <tbody>${calculations.map(row=>{
+        const snapshot=row.snapshot||{openingBalance:0,purchaseAmount:0,paymentAmount:0,closingBalance:0};
+        const disabled=!!row.error||!!row.existing||!row.snapshot;
+        const selectedRow=!disabled&&payableClosingSelections.has(row.supplierCode);
+        const status=row.error?row.error:(row.existing?"締め済":"締め対象");
+        return `<tr class="${[selectedRow?"selected":"",row.existing?"locked":""].filter(Boolean).join(" ")}">
+          <td><input type="checkbox" aria-label="${esc(row.supplierCode)}を締め対象にする" ${selectedRow?"checked":""} ${disabled?"disabled":""} onchange="togglePayableClosingSupplier('${esc(row.supplierCode)}',this.checked)"></td>
+          <td><b>${esc(row.supplierCode)}</b> ${esc(row.supplier?.name||"")}</td>
+          <td>${esc(row.range?.from||"-")} ～ ${esc(row.range?.to||"-")}</td>
+          <td>${esc(row.dueDate||"-")}</td>
+          <td class="ar-money">${esc(salesRefMoney(snapshot.openingBalance)||"0")}</td>
+          <td class="ar-money">${esc(salesRefMoney(snapshot.purchaseAmount)||"0")}</td>
+          <td class="ar-money">${esc(salesRefMoney(snapshot.paymentAmount)||"0")}</td>
+          <td class="ar-money">${esc(salesRefMoney(snapshot.closingBalance)||"0")}</td>
+          <td>${row.existing?'<span class="ar-lock">締め済</span>':esc(status)}</td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table>`;
   }
   renderPayableClosingHistory();
+}
+function togglePayableClosingSupplier(supplierCode,checked){
+  if(checked)payableClosingSelections.add(supplierCode);
+  else payableClosingSelections.delete(supplierCode);
+  renderPayableClosingGroup();
+}
+function toggleAllPayableClosingSuppliers(checked){
+  const calculations=apClosingGroupCalculations();
+  calculations.filter(row=>!row.error&&!row.existing&&row.snapshot)
+    .forEach(row=>checked?payableClosingSelections.add(row.supplierCode):payableClosingSelections.delete(row.supplierCode));
+  renderPayableClosingGroup(calculations);
 }
 function renderPayableClosingHistory(){
   const container=document.getElementById("ap-closing-history");
   if(!container)return;
-  const supplier=lookupSupplierByCode(val("ap-closing-supplier").trim());
+  const context=apClosingGroupContext();
   const rows=payableClosings
-    .filter(row=>!supplier||apSameSupplier(row.supplier_code,supplier.code))
+    .filter(row=>{
+      const profile=apPayableProfileFor(row.supplier_code);
+      if(context.closingDay&&apClosingDay(profile)!==context.closingDay)return false;
+      if(context.filter){
+        const supplier=lookupSupplierByCode(row.supplier_code);
+        if(![row.supplier_code,supplier?.name].join(" ").toLowerCase().includes(context.filter))return false;
+      }
+      return true;
+    })
     .sort((a,b)=>String(b.period_to||"").localeCompare(String(a.period_to||""))||String(b.closed_at||"").localeCompare(String(a.closed_at||"")))
     .slice(0,100);
   if(!rows.length){container.innerHTML='<div class="sales-empty">買掛締め履歴はありません。</div>';return}
@@ -8648,57 +8730,63 @@ function apClosingSnapshotPayload(snapshot,dueDate){
     payments:snapshot.payments.map(row=>({id:row.id,payment_date:row.payment_date,amount_jpy:row.amount_jpy,bank_fee_jpy:row.bank_fee_jpy}))
   };
 }
-async function closeAccountsPayablePeriod(){
+async function closeSelectedAccountsPayablePeriods(){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
   if(!payableClosingDbReady){alert("買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql をSupabase SQL Editorで実行してください。");return}
-  const supplier=lookupSupplierByCode(val("ap-closing-supplier").trim());
-  const closingMonth=val("ap-closing-month");
-  if(!supplier||!closingMonth){alert("対象月と仕入先コードを選択してください。");return}
-  if(!payableClosingProfile||!apSameSupplier(payableClosingProfile.supplier_code,supplier.code)){
-    const profile=await loadPayableClosingProfile(supplier.code);
-    if(!profile){alert(`${supplier.code} の支払条件を先にマスタ登録してください。`);return}
-  }
+  const context=apClosingGroupContext();
+  if(!context.month||context.closingDay<1||context.closingDay>31){alert("対象月と締め日グループを選択してください。");return}
+  const requestedCodes=new Set(payableClosingSelections);
+  if(!requestedCodes.size){alert("締める仕入先を選択してください。");return}
   setAppBusy(true,"仕入確定データを買掛へ反映しています...");
   try{
     const {error:syncError}=await initSupabase().rpc("sync_confirmed_purchases_to_payables");
     if(syncError)throw syncError;
     await loadPayables();
-    const calculation=apClosingCalculation();
-    if(calculation.error)throw new Error(calculation.error);
-    if(calculation.existing)throw new Error("この期間はすでに買掛締め済みです。");
-    const snapshot=calculation.snapshot;
-    if(!snapshot.charges.length&&!snapshot.payments.length&&Math.abs(snapshot.openingBalance)<.005){
-      throw new Error("締め対象の買掛・支払・繰越残高がありません。");
-    }
+    const selected=apClosingGroupCalculations().filter(row=>requestedCodes.has(row.supplierCode)&&!row.error&&!row.existing&&row.snapshot);
+    if(!selected.length)throw new Error("選択した仕入先に締め対象の買掛がありません。");
+    if(selected.length!==requestedCodes.size)throw new Error("選択後に締め状態または対象金額が変わりました。内容を再確認してください。");
+    const totals=selected.reduce((result,row)=>{
+      result.opening+=row.snapshot.openingBalance;
+      result.purchase+=row.snapshot.purchaseAmount;
+      result.payment+=row.snapshot.paymentAmount;
+      result.balance+=row.snapshot.closingBalance;
+      return result;
+    },{opening:0,purchase:0,payment:0,balance:0});
+    const supplierNames=selected.slice(0,12).map(row=>`${row.supplierCode} ${row.supplier?.name||""}`);
+    if(selected.length>12)supplierNames.push(`ほか ${selected.length-12}社`);
     const message=[
-      `${supplier.code} ${supplier.name||""} を買掛締めします。`,
-      `期間: ${calculation.range.from} ～ ${calculation.range.to}`,
-      `前回繰越: ¥${salesRefMoney(snapshot.openingBalance)||"0"}`,
-      `今回仕入: ¥${salesRefMoney(snapshot.purchaseAmount)||"0"}`,
-      `期間内支払: ¥${salesRefMoney(snapshot.paymentAmount)||"0"}`,
-      `締め後買掛残高: ¥${salesRefMoney(snapshot.closingBalance)||"0"}`,
-      `支払期限: ${calculation.dueDate}`,
+      `${context.closingDay===31?"末日":`${context.closingDay}日`}締め ${selected.length}社を一括処理します。`,
+      ...supplierNames,
       "",
-      "締め後は対象期間の明細がロックされます。実行しますか？"
+      `前回繰越合計: ¥${salesRefMoney(arRound(totals.opening))||"0"}`,
+      `今回仕入合計: ¥${salesRefMoney(arRound(totals.purchase))||"0"}`,
+      `期間内支払合計: ¥${salesRefMoney(arRound(totals.payment))||"0"}`,
+      `締め後買掛残高合計: ¥${salesRefMoney(arRound(totals.balance))||"0"}`,
+      "",
+      "一括処理は全社成功または全社失敗で保存されます。締め後は対象期間の明細がロックされます。実行しますか？"
     ].join("\n");
     setAppBusy(false);
     if(!confirm(message))return;
-    setAppBusy(true,"買掛締めを保存して明細をロックしています...");
-    const {error}=await initSupabase().rpc("close_accounts_payable_period",{
-      p_supplier_code:supplier.code,
-      p_period_from:calculation.range.from,
-      p_period_to:calculation.range.to,
-      p_due_date:calculation.dueDate,
-      p_opening_balance_jpy:snapshot.openingBalance,
-      p_purchase_amount_jpy:snapshot.purchaseAmount,
-      p_payment_amount_jpy:snapshot.paymentAmount,
-      p_closing_balance_jpy:snapshot.closingBalance,
-      p_snapshot:apClosingSnapshotPayload(snapshot,calculation.dueDate)
-    });
+    setAppBusy(true,`${selected.length}社の買掛締めを保存しています...`);
+    const items=selected.map(row=>({
+      supplier_code:row.supplierCode,
+      period_from:row.range.from,
+      period_to:row.range.to,
+      due_date:row.dueDate,
+      opening_balance_jpy:row.snapshot.openingBalance,
+      purchase_amount_jpy:row.snapshot.purchaseAmount,
+      payment_amount_jpy:row.snapshot.paymentAmount,
+      closing_balance_jpy:row.snapshot.closingBalance,
+      snapshot:apClosingSnapshotPayload(row.snapshot,row.dueDate)
+    }));
+    const {data,error}=await initSupabase().rpc("close_accounts_payable_group",{p_items:items});
     if(error)throw error;
+    if((data||[]).length!==selected.length)throw new Error("買掛締めの保存件数が一致しません。処理結果を確認してください。");
+    payableClosingSelections.clear();
+    payableClosingSelectionContext="";
     await loadPayables();
-    alert("買掛締めが完了しました。");
+    alert(`${selected.length}社の買掛締めが完了しました。`);
   }catch(error){alert(apDbErrorMessage(error))}
   finally{setAppBusy(false)}
 }
@@ -8791,6 +8879,13 @@ async function savePayableSupplierProfile(){
   const {data,error}=await initSupabase().from("accounts_payable_supplier_profiles").upsert(payload,{onConflict:"supplier_code"}).select("*").single();
   if(error){alert(apDbErrorMessage(error));return}
   payableSupplierProfile=data;
+  const profileIndex=payableSupplierProfiles.findIndex(profile=>apSameSupplier(profile.supplier_code,code));
+  if(profileIndex>=0)payableSupplierProfiles.splice(profileIndex,1,data);
+  else payableSupplierProfiles.push(data);
+  if(payablesLoaded){
+    renderPayableClosingDayOptions();
+    refreshPayableClosingGroup({resetSelections:true});
+  }
   document.getElementById("ap-profile-state").textContent=`${code} の支払条件を保存しました。`;
   if(quickMasterContext?.type==="payment")returnFromMasterQuickAdd();
 }
