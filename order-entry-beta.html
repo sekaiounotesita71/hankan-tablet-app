@@ -10092,7 +10092,7 @@ async function saveAdvancePurchaseBatch(){
     clearAdvancePurchaseRows({confirm:false});
     const state=document.getElementById("advance-purchase-state");
     if(state){state.textContent=`登録完了 ${lines.length}件`;state.className="pill blue"}
-    document.getElementById("purchase-filter-date").value=purchaseDate;
+    document.getElementById("purchase-filter-date-range").value=purchaseDate.replaceAll("-","");
     document.getElementById("purchase-filter-site").value=siteCode;
     document.getElementById("purchase-filter-supplier").value=supplierCode;
     document.getElementById("purchase-filter-status").value="";
@@ -10198,7 +10198,8 @@ function init(){
   document.getElementById("ap-closing-month").value=today().slice(0,7);
   document.getElementById("external-work-date").value=today();
   document.getElementById("supplier-review-date").value=today();
-  document.getElementById("purchase-filter-date").value=today();
+  const purchaseDateRange=document.getElementById("purchase-filter-date-range");
+  if(purchaseDateRange)purchaseDateRange.value=today().slice(0,7).replace("-","");
   document.getElementById("advance-purchase-date").value=today();
   const guideYear=document.getElementById("product-guide-year");
   if(guideYear&&!guideYear.value)guideYear.value=new Date().getFullYear();

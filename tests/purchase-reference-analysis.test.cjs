@@ -5,6 +5,9 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "order-entry-beta.html"), "utf8");
 
+assert.doesNotMatch(html, /getElementById\("purchase-filter-date"\)/);
+assert.match(html, /getElementById\("purchase-filter-date-range"\)/);
+
 function sourceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
   const end = source.indexOf(endMarker, start + startMarker.length);
