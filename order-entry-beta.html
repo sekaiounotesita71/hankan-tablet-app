@@ -9142,6 +9142,12 @@ function purchaseRefReceiptText(receipt){
     ...(receipt.lines||[]).flatMap(line=>[line.product_code,line.product_name,line.origin,line.note])
   ].filter(Boolean).join(" ").toLowerCase();
 }
+function purchaseRefSupplierLabel(receipt){
+  const code=String(receipt?.supplier_code||"").trim();
+  const master=code?lookupSupplierByCode(code):null;
+  const name=String(master?.name||receipt?.supplier_name_snapshot||"").trim();
+  return [code,name].filter(Boolean).join(" ")||"未設定";
+}
 function purchaseRefFilteredReceipts(options={}){
   const input=purchaseRefDateRange();
   if(!options.ignoreDate&&input.raw&&(!input.from||!input.to))return [];
@@ -9268,7 +9274,7 @@ function purchaseRefAnalysisSnapshot(){
   const previousRange={from:salesRefShiftYear(range.from,-1),to:salesRefShiftYear(range.to,-1)};
   const currentRows=purchaseRefFilterByDate(baseRows,range.from,range.to);
   const previousRows=purchaseRefFilterByDate(baseRows,previousRange.from,previousRange.to);
-  const supplierCompare=purchaseRefCompareGroups(currentRows,previousRows,row=>`${row.supplier_code||""} ${row.supplier_name_snapshot||""}`.trim());
+  const supplierCompare=purchaseRefCompareGroups(currentRows,previousRows,purchaseRefSupplierLabel);
   const productCompare=purchaseRefCompareGroups(currentRows,previousRows,line=>`${line.product_code||""} ${line.product_name||""}`.trim(),"line");
   return {
     range,previousRange,currentRows,previousRows,
@@ -9404,7 +9410,7 @@ function renderPurchaseReceipts(){
     purchaseRefRankHtml("日別仕入",purchaseRefGroupReceipts(rows,row=>row.purchase_date).sort((a,b)=>String(b.key).localeCompare(String(a.key),"ja"))),
     purchaseRefRankHtml("月別仕入",purchaseRefGroupReceipts(rows,row=>String(row.purchase_date||"").slice(0,7)).sort((a,b)=>String(b.key).localeCompare(String(a.key),"ja"))),
     purchaseRefRankHtml("年別仕入",purchaseRefGroupReceipts(rows,row=>String(row.purchase_date||"").slice(0,4)).sort((a,b)=>String(b.key).localeCompare(String(a.key),"ja"))),
-    purchaseRefRankHtml("仕入先別",purchaseRefGroupReceipts(rows,row=>`${row.supplier_code||""} ${row.supplier_name_snapshot||""}`.trim())),
+    purchaseRefRankHtml("仕入先別",purchaseRefGroupReceipts(rows,purchaseRefSupplierLabel)),
     purchaseRefRankHtml("商品別",purchaseRefGroupLines(rows,line=>`${line.product_code||""} ${line.product_name||""}`.trim()),"税抜明細"),
     purchaseRefStatusHtml(rows)
   ].join("");
@@ -9435,7 +9441,7 @@ function exportPurchaseReferenceExcel(){
   groupSheet("日別仕入",purchaseRefGroupReceipts(rows,row=>row.purchase_date).sort((a,b)=>String(b.key).localeCompare(String(a.key),"ja")),"日付");
   groupSheet("月別仕入",purchaseRefGroupReceipts(rows,row=>String(row.purchase_date||"").slice(0,7)).sort((a,b)=>String(b.key).localeCompare(String(a.key),"ja")),"月");
   groupSheet("年別仕入",purchaseRefGroupReceipts(rows,row=>String(row.purchase_date||"").slice(0,4)).sort((a,b)=>String(b.key).localeCompare(String(a.key),"ja")),"年");
-  groupSheet("仕入先別",purchaseRefGroupReceipts(rows,row=>`${row.supplier_code||""} ${row.supplier_name_snapshot||""}`.trim()),"仕入先");
+  groupSheet("仕入先別",purchaseRefGroupReceipts(rows,purchaseRefSupplierLabel),"仕入先");
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(purchaseRefGroupLines(rows,line=>`${line.product_code||""} ${line.product_name||""}`.trim()).map(row=>({"商品":row.key,"税抜明細金額":row.amount,"明細件数":row.count,"数量（単位別）":Object.entries(row.quantityByUnit).map(([unit,qty])=>`${qty.toLocaleString("ja-JP")} ${unit}`).join(" / ")}))),"商品別");
   if(analysis)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(analysis.monthly.map(row=>({"月":row.month,"税込仕入":row.current,"前年同月":row.previous,"前年差":row.delta,"昨対%":row.ratio,"伝票件数":row.count,"前年伝票件数":row.previousCount}))),"月別昨対");
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.map(receipt=>({"仕入日":receipt.purchase_date,"拠点":siteNameFromCode(receipt.site_code),"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,"区分":purchaseReceiptTypeLabel(receipt),"状態":purchaseStatusLabel(receipt.status,receipt),"税抜仕入":receipt.subtotal,"送料":receipt.shipping_fee,"その他費用":receipt.other_fee,"消費税":receipt.tax_amount,"税込仕入":receipt.total_amount,"メモ":receipt.note||""}))),"仕入伝票");
