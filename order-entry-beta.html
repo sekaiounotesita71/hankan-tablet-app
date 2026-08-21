@@ -8364,6 +8364,20 @@ function apClosingIsActive(closingId){
   const closing=payableClosings.find(row=>row.id===closingId);
   return !closing||closing.status==="closed";
 }
+async function apReadSupplierProfiles(){
+  const client=initSupabase();
+  const rows=[];
+  const pageSize=1000;
+  for(let offset=0;;offset+=pageSize){
+    const {data,error}=await client.from("accounts_payable_supplier_profiles")
+      .select("*").order("supplier_code",{ascending:true}).range(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    rows.push(...page);
+    if(page.length<pageSize)break;
+  }
+  return rows;
+}
 function apRecordState(row){
   const amount=arNumber(row.amount_jpy);
   const paid=apPaymentsFor(row.id).reduce((sum,payment)=>sum+arNumber(payment.amount_jpy),0);
@@ -8466,7 +8480,7 @@ async function loadPayables(){
     const [rows,payments,profiles]=await Promise.all([
       arReadAll("accounts_payable","invoice_date"),
       arReadAll("accounts_payable_payments","payment_date"),
-      arReadAll("accounts_payable_supplier_profiles","supplier_code")
+      apReadSupplierProfiles()
     ]);
     let closings=[];
     payableClosingDbReady=true;
