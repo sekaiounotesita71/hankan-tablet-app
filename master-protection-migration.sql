@@ -72,6 +72,10 @@ begin
     master_key := coalesce(payload ->> 'product_id','') || '|' || coalesce(payload ->> 'importer_code','');
   end if;
 
+  if tg_table_name = 'product_supplier_prices' then
+    master_key := coalesce(payload ->> 'product_id','') || '|' || coalesce(payload ->> 'supplier_code','');
+  end if;
+
   insert into public.master_change_log (
     table_name, record_key, operation, old_data, new_data, changed_by
   ) values (
@@ -96,6 +100,7 @@ begin
     'supplier_master',
     'product_master',
     'product_price_contracts',
+    'product_supplier_prices',
     'customer_master'
   ]
   loop
@@ -127,6 +132,7 @@ begin
     'supplier_master',
     'product_master',
     'product_price_contracts',
+    'product_supplier_prices',
     'customer_master'
   ]
   loop
@@ -168,4 +174,3 @@ begin
 end $$;
 
 notify pgrst, 'reload schema';
-

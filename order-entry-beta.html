@@ -594,8 +594,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="advance-entry-head">
         <label>仕入日<input id="advance-purchase-date" type="date" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
         <label>拠点<select id="advance-purchase-site" data-advance-header onchange="updateAdvancePurchaseHeader()"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
-        <label>仕入先コード<div class="lookup-cell"><input id="advance-purchase-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" onchange="updateAdvancePurchaseHeader()"><button class="quick-master-button" type="button" title="仕入先マスタを追加" onclick="openMasterForQuickAdd('suppliers',{codeId:'advance-purchase-supplier'})">+</button></div></label>
-        <label>仕入先名<div id="advance-purchase-supplier-name" class="site-readonly">未設定</div></label>
+        <label>引用元発注先コード<input id="advance-purchase-order-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="受注登録時の発注先"></label>
+        <label>実仕入先コード<div class="lookup-cell"><input id="advance-purchase-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" onchange="changeAdvancePurchaseSupplier()"><button class="quick-master-button" type="button" title="仕入先マスタを追加" onclick="openMasterForQuickAdd('suppliers',{codeId:'advance-purchase-supplier'})">+</button></div></label>
+        <label>実仕入先名<div id="advance-purchase-supplier-name" class="site-readonly">未設定</div></label>
         <label>輸入社コード<input id="advance-purchase-importer" class="ime-en" list="importer-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="空欄でALL"></label>
         <label>請求書番号<input id="advance-purchase-invoice" class="ime-en" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="未着なら空欄"></label>
         <label>伝票メモ<input id="advance-purchase-note" class="ime-ja" autocomplete="off" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
@@ -732,6 +733,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="product-supplier-name-wrap">既定仕入先名<input id="master-supplier-name" placeholder="商品マスタのみ"></label>
         <label id="product-price-wrap">商品マスタ価格<input id="master-unit-price" inputmode="decimal" placeholder="通常単価"></label>
         <label id="product-contract-price-wrap" class="wide">輸入社別契約価格<input id="master-contract-prices" placeholder="輸入社コード=価格, 輸入社コード=価格"></label>
+        <label id="product-purchase-price-wrap">標準仕入単価<input id="master-purchase-unit-price" inputmode="decimal" placeholder="通常の仕入単価"></label>
+        <label id="product-purchase-unit-wrap">標準仕入単位<select id="master-purchase-price-unit"><option value="Kg">Kg</option><option value="pkt">pkt</option><option value="PC">PC</option><option value="CS">CS</option></select></label>
+        <label id="product-supplier-prices-wrap" class="wide">仕入先別単価<input id="master-supplier-prices" placeholder="仕入先コード=価格/Kg, 仕入先コード=価格/PC"></label>
         <label id="product-origin-wrap">産地<input id="master-origin" placeholder="商品案内にも使用"></label>
         <label id="product-guide-category-wrap">案内カテゴリ<input id="master-guide-category" placeholder="例 鮮魚、野菜・果物"></label>
         <label id="product-guide-spec-wrap">案内SPEC/SIZE<input id="master-guide-spec" placeholder="商品案内の規格・サイズ"></label>
@@ -1244,7 +1248,7 @@ const baseMasters={
 function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
 function blankOrder(){return{productCode:"",productName:"",englishName:"",qty:"",unit:"",unitPrice:"",unitPriceSource:"",supplierCode:"",supplierName:"",memo:""}}
-function blankAdvancePurchaseRow(){return{id:newAppUuid(),productCode:"",productName:"",origin:"",actualQty:"",actualUnit:"Kg",unitPrice:"",priceUnit:"Kg",trackInventory:true,note:"",sourceSalesIds:[],invalid:false}}
+function blankAdvancePurchaseRow(){return{id:newAppUuid(),productCode:"",productName:"",origin:"",actualQty:"",actualUnit:"Kg",unitPrice:"",priceUnit:"Kg",unitPriceSource:"",trackInventory:true,note:"",sourceSalesIds:[],invalid:false}}
 function val(id){return document.getElementById(id)?.value||""}
 function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""))}
 function newAppUuid(){
@@ -1576,6 +1580,32 @@ function productPriceForImporter(product,importerValue){
   const base=product.unitPrice??product.unit_price??"";
   return usableMasterPrice(base)?base:"";
 }
+function purchasePriceUnit(value){
+  const unit=String(value||"").trim().toLowerCase();
+  if(unit==="kg")return "Kg";
+  if(unit==="pkt")return "pkt";
+  if(unit==="pc")return "PC";
+  if(unit==="cs")return "CS";
+  return "Kg";
+}
+function normalizeSupplierPriceEntry(value,defaultUnit="Kg"){
+  if(value&&typeof value==="object"){
+    const price=dbNumber(value.price??value.unitPrice??value.unit_price);
+    return price===null?null:{price,unit:purchasePriceUnit(value.unit??value.priceUnit??value.price_unit??defaultUnit)};
+  }
+  const price=dbNumber(value);
+  return price===null?null:{price,unit:purchasePriceUnit(defaultUnit)};
+}
+function productPurchasePriceForSupplier(product,supplierValue){
+  if(!product)return {price:null,unit:"Kg",source:""};
+  const supplierCode=masterCodeKey(supplierValue?.code||supplierValue);
+  const supplierPrices=product.supplierPrices||product.supplier_prices||{};
+  const matchingKey=Object.keys(supplierPrices).find(code=>masterCodeKey(code)===supplierCode);
+  const supplierEntry=matchingKey?normalizeSupplierPriceEntry(supplierPrices[matchingKey],product.purchasePriceUnit):null;
+  if(supplierEntry)return {...supplierEntry,source:"supplier",supplierCode:matchingKey};
+  const standard=normalizeSupplierPriceEntry(product.purchaseUnitPrice??product.purchase_unit_price,product.purchasePriceUnit??product.purchase_price_unit);
+  return standard?{...standard,source:"product",supplierCode:""}:{price:null,unit:purchasePriceUnit(product.purchasePriceUnit),source:""};
+}
 function refreshOrderRowMasterPrice(row,importerValue,options={}){
   if(!row)return "";
   const canReplace=options.force||row.unitPriceSource==="master"||!usableMasterPrice(row.unitPrice);
@@ -1626,6 +1656,8 @@ function masterItemToDb(type,item){
     default_supplier_code:dbText(item.supplierCode),
     default_supplier_name:dbText(item.supplierName),
     unit_price:dbNumber(item.unitPrice),
+    purchase_unit_price:dbNumber(item.purchaseUnitPrice),
+    purchase_price_unit:purchasePriceUnit(item.purchasePriceUnit),
     guide_category:dbText(item.guideCategory),
     guide_spec:dbText(item.guideSpec),
     image_url:dbText(item.imageUrl),
@@ -1669,6 +1701,9 @@ function dbMasterToItem(type,row,lookups={}){
     supplierName:row.default_supplier_name||lookups.supplierNames?.[supplierCode]||"",
     unitPrice:row.unit_price??"",
     contractPrices:lookups.contractPrices?.[row.product_id]||{},
+    purchaseUnitPrice:row.purchase_unit_price??"",
+    purchasePriceUnit:purchasePriceUnit(row.purchase_price_unit),
+    supplierPrices:lookups.supplierPrices?.[row.product_id]||{},
     guideCategory:row.guide_category||"",
     guideSpec:row.guide_spec||"",
     imageUrl:row.image_url||"",
@@ -1689,6 +1724,9 @@ function workProductMasterToItem(row,contractPrices={}){
     supplierName:"",
     unitPrice:row.unit_price??"",
     contractPrices:contractPrices[row.product_id]||{},
+    purchaseUnitPrice:row.purchase_unit_price??"",
+    purchasePriceUnit:purchasePriceUnit(row.purchase_price_unit),
+    supplierPrices:{},
     guideCategory:row.guide_category||"",
     guideSpec:row.guide_spec||"",
     imageUrl:row.image_url||"",
@@ -1707,6 +1745,8 @@ function productMasterPayload(item,minimal=false){
     source_filename:"order-entry-beta"
   };
   if(!minimal){
+    payload.purchase_unit_price=dbNumber(item.purchaseUnitPrice);
+    payload.purchase_price_unit=purchasePriceUnit(item.purchasePriceUnit);
     payload.aliases=item.aliases||[];
     payload.default_supplier_code=dbText(item.supplierCode);
     payload.default_supplier_name=dbText(item.supplierName);
@@ -1761,12 +1801,17 @@ async function ensureLinkedMasterExists(type,item){
 }
 async function saveMasterItemToDb(type,item){
   if(!dbReady||!supabaseClient)return false;
-  if(type==="products"&&item.supplierCode){
-    await ensureLinkedMasterExists("suppliers",{code:item.supplierCode,name:item.supplierName||item.supplierCode,aliases:[]});
+  if(type==="products"){
+    const supplierCodes=[item.supplierCode,...Object.keys(item.supplierPrices||{})].filter(Boolean);
+    for(const supplierCode of [...new Set(supplierCodes)]){
+      const master=getMasters().suppliers.find(row=>masterCodeKey(row.code)===masterCodeKey(supplierCode));
+      await ensureLinkedMasterExists("suppliers",{code:supplierCode,name:master?.name||item.supplierName||supplierCode,aliases:master?.aliases||[]});
+    }
   }
   if(type==="products"){
     await saveProductsToDb([item]);
     await saveProductContractsToDb([item]);
+    await saveProductSupplierPricesToDb([item]);
     return true;
   }
   if(type==="customers"&&item.importerCode){
@@ -1832,17 +1877,51 @@ async function saveProductContractsToDb(items){
     if(error)throw error;
   }
 }
+async function saveProductSupplierPricesToDb(items){
+  if(!dbReady||!supabaseClient)return;
+  for(const item of items){
+    const productId=String(item.code||"").trim();
+    if(!productId)continue;
+    const entries=Object.entries(item.supplierPrices||{}).map(([supplierCode,value])=>{
+      const normalized=normalizeSupplierPriceEntry(value,item.purchasePriceUnit);
+      return normalized&&String(supplierCode||"").trim()?{
+        product_id:productId,
+        supplier_code:String(supplierCode).trim(),
+        unit_price:normalized.price,
+        price_unit:normalized.unit,
+        source_filename:"order-entry-beta"
+      }:null;
+    }).filter(Boolean);
+    for(let index=0;index<entries.length;index+=300){
+      const {error}=await supabaseClient.from("product_supplier_prices").upsert(entries.slice(index,index+300),{onConflict:"product_id,supplier_code"});
+      if(error)throw error;
+    }
+    const {data:existing,error:readError}=await supabaseClient.from("product_supplier_prices").select("supplier_code").eq("product_id",productId);
+    if(readError)throw readError;
+    const keep=new Set(entries.map(entry=>masterCodeKey(entry.supplier_code)));
+    const obsolete=(existing||[]).map(row=>String(row.supplier_code||"").trim()).filter(code=>code&&!keep.has(masterCodeKey(code)));
+    if(obsolete.length){
+      const deleteResult=await supabaseClient.from("product_supplier_prices").delete().eq("product_id",productId).in("supplier_code",obsolete);
+      if(deleteResult.error)throw deleteResult.error;
+    }
+  }
+}
 async function saveMastersToDb(type,items){
   if(!dbReady||!supabaseClient||!items.length)return;
   if(type==="products"){
     const suppliers=new Map();
     items.forEach(item=>{
-      const code=String(item.supplierCode||"").trim();
-      if(code&&!suppliers.has(code))suppliers.set(code,{code,name:String(item.supplierName||code).trim()||code,aliases:[]});
+      [item.supplierCode,...Object.keys(item.supplierPrices||{})].forEach(value=>{
+        const code=String(value||"").trim();
+        if(!code||suppliers.has(code))return;
+        const master=getMasters().suppliers.find(row=>masterCodeKey(row.code)===masterCodeKey(code));
+        suppliers.set(code,{code,name:master?.name||String(item.supplierName||code).trim()||code,aliases:master?.aliases||[]});
+      });
     });
     for(const item of suppliers.values())await ensureLinkedMasterExists("suppliers",item);
     await saveProductsToDb(items);
     await saveProductContractsToDb(items);
+    await saveProductSupplierPricesToDb(items);
     return;
   }
   if(type==="customers"){
@@ -1890,15 +1969,25 @@ async function loadMastersFromDb(){
       return readAllSupabaseRows((from,to)=>supabaseClient.from("customer_master").select("customer_code,customer_name,importer_code,alias_name,active").eq("active",true).order("customer_code").range(from,to));
     }
   };
-  const [importerRows,supplierRows,customerRows,contractRows]=await Promise.all([
+  const loadSupplierPriceRows=async()=>{
+    try{
+      return await readAllSupabaseRows((from,to)=>supabaseClient.from("product_supplier_prices").select("product_id,supplier_code,unit_price,price_unit").order("product_id").order("supplier_code").range(from,to));
+    }catch(error){
+      const text=String(error?.message||"");
+      if(error?.code==="42P01"||error?.code==="PGRST205"||/product_supplier_prices/i.test(text))return [];
+      throw error;
+    }
+  };
+  const [importerRows,supplierRows,customerRows,contractRows,supplierPriceRows]=await Promise.all([
     readAllSupabaseRows((from,to)=>supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code").range(from,to)),
     readAllSupabaseRows((from,to)=>supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code").range(from,to)),
     loadCustomerRows(),
-    readAllSupabaseRows((from,to)=>supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price").order("product_id").order("importer_code").range(from,to))
+    readAllSupabaseRows((from,to)=>supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price").order("product_id").order("importer_code").range(from,to)),
+    loadSupplierPriceRows()
   ]);
   let productRows;
   try{
-    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,scientific_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,guide_category,guide_spec,image_url,image_source_url,image_credit,image_license,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
+    productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,scientific_name,origin,unit_price,purchase_unit_price,purchase_price_unit,aliases,default_supplier_code,default_supplier_name,guide_category,guide_spec,image_url,image_source_url,image_credit,image_license,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
   }catch(error){
     if(!isMissingColumnError(error))throw error;
     productRows=await readAllSupabaseRows((from,to)=>supabaseClient.from("product_master").select("product_id,product_name,english_name,scientific_name,origin,unit_price,aliases,default_supplier_code,default_supplier_name,is_active").eq("is_active",true).order("product_id",{ascending:true}).range(from,to));
@@ -1913,11 +2002,19 @@ async function loadMastersFromDb(){
     contractPrices[productId]=contractPrices[productId]||{};
     contractPrices[productId][importerCode]=row.unit_price??"";
   });
+  const supplierPrices={};
+  supplierPriceRows.forEach(row=>{
+    const productId=String(row.product_id||"").trim();
+    const supplierCode=String(row.supplier_code||"").trim();
+    if(!productId||!supplierCode)return;
+    supplierPrices[productId]=supplierPrices[productId]||{};
+    supplierPrices[productId][supplierCode]={price:row.unit_price,unit:purchasePriceUnit(row.price_unit)};
+  });
   saveMastersObject({
     importers:importerRows.map(r=>dbMasterToItem("importers",r)),
     suppliers:supplierRows.map(r=>dbMasterToItem("suppliers",r)),
     customers:customerRows.map(r=>dbMasterToItem("customers",r,{importerNames})),
-    products:productRows.map(r=>dbMasterToItem("products",r,{supplierNames,contractPrices}))
+    products:productRows.map(r=>dbMasterToItem("products",r,{supplierNames,contractPrices,supplierPrices}))
   });
 }
 function batchToDb(batch){
@@ -3451,6 +3548,73 @@ function salesRefAnalysisRange(baseRows){
     note:"日付未指定のため、読込データの最新月で前年同月比較"
   };
 }
+function salesRefCostQuantity(row,priceUnit){
+  const unit=purchasePriceUnit(priceUnit);
+  const inputUnit=normalizeLineUnit(row.input_unit);
+  if(unit==="Kg"){
+    const net=salesRefNum(row.net_weight);
+    if(net>0)return net;
+  }
+  if(unit===inputUnit){
+    const qty=salesRefNum(row.input_qty);
+    if(qty>0)return qty;
+  }
+  return null;
+}
+function salesRefCostInfo(row){
+  if(row.is_stockout||row.pending_entry_id||row.source_type==="未処理伝票")return {priced:true,amount:0,source:"adjustment"};
+  const actual=Number(row._purchaseCostActual);
+  if(Number.isFinite(actual)&&row._purchaseCostActual!==null&&row._purchaseCostActual!==undefined){
+    return {priced:true,amount:actual,source:"actual"};
+  }
+  const product=findMasterProduct(row.product_id,row.product_name);
+  const supplierCode=row._purchaseSupplierCode||product?.supplierCode||"";
+  const price=productPurchasePriceForSupplier(product,supplierCode);
+  const quantity=salesRefCostQuantity(row,price.unit);
+  if(price.price===null||quantity===null)return {priced:false,amount:0,source:"",supplierCode};
+  return {priced:true,amount:price.price*quantity,source:price.source,supplierCode,unitPrice:price.price,priceUnit:price.unit};
+}
+async function salesRefAttachPurchaseCosts(client,rows){
+  const activeRows=(rows||[]).filter(row=>row.id&&!row.is_stockout);
+  if(!activeRows.length)return {actual:0,supplierMapped:0};
+  let supplierBySale=new Map();
+  try{supplierBySale=await readOrderSuppliersForAdvancePurchase(activeRows)}catch(error){console.warn("仕入先の紐づけを読み込めませんでした",error)}
+  activeRows.forEach(row=>{row._purchaseSupplierCode=supplierBySale.get(advancePurchaseSaleSourceKey(row))||""});
+  const salesIds=activeRows.map(row=>row.id);
+  const links=[];
+  for(let index=0;index<salesIds.length;index+=200){
+    const {data,error}=await client.from("purchase_sales_links").select("sales_record_id,purchase_line_id").in("sales_record_id",salesIds.slice(index,index+200));
+    if(error)throw error;
+    links.push(...(data||[]));
+  }
+  const lineIds=[...new Set(links.map(link=>link.purchase_line_id).filter(Boolean))];
+  const lines=[];
+  for(let index=0;index<lineIds.length;index+=200){
+    const {data,error}=await client.from("purchase_receipt_lines").select("id,actual_qty,actual_unit,unit_price,price_unit,line_amount").in("id",lineIds.slice(index,index+200));
+    if(error)throw error;
+    lines.push(...(data||[]));
+  }
+  const salesById=new Map(activeRows.map(row=>[row.id,row]));
+  const lineById=new Map(lines.map(line=>[line.id,line]));
+  const linksByLine=new Map();
+  links.forEach(link=>{
+    if(!linksByLine.has(link.purchase_line_id))linksByLine.set(link.purchase_line_id,[]);
+    linksByLine.get(link.purchase_line_id).push(link.sales_record_id);
+  });
+  linksByLine.forEach((linkedSalesIds,lineId)=>{
+    const line=lineById.get(lineId);
+    if(!line)return;
+    const linkedRows=linkedSalesIds.map(id=>salesById.get(id)).filter(Boolean);
+    const weights=linkedRows.map(row=>salesRefCostQuantity(row,line.price_unit)||0);
+    const totalWeight=weights.reduce((sum,value)=>sum+value,0);
+    const lineAmount=salesRefNum(line.line_amount)||salesRefNum(line.actual_qty)*salesRefNum(line.unit_price);
+    linkedRows.forEach((row,index)=>{
+      const share=totalWeight>0?weights[index]/totalWeight:1/Math.max(1,linkedRows.length);
+      row._purchaseCostActual=salesRefNum(row._purchaseCostActual)+lineAmount*share;
+    });
+  });
+  return {actual:links.length,supplierMapped:supplierBySale.size};
+}
 function salesRefMetrics(rows){
   const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
   const shippingSales=salesRefShippingFeeForRows(rows);
@@ -3459,6 +3623,17 @@ function salesRefMetrics(rows){
   const totalGross=salesRefGrossTotal(rows);
   const customers=new Set(rows.map(row=>row.store_name||row.customer_code).filter(Boolean));
   const products=new Set(rows.map(row=>row.product_id||row.product_name).filter(Boolean));
+  let purchaseCost=0,costedSales=0,pricedCount=0,unpricedCount=0,actualCostCount=0,estimatedCostCount=0;
+  rows.forEach(row=>{
+    const cost=salesRefCostInfo(row);
+    if(!cost.priced){unpricedCount++;return}
+    purchaseCost+=cost.amount;
+    costedSales+=salesRefNum(row.amount);
+    pricedCount++;
+    if(cost.source==="actual")actualCostCount++;
+    else if(["supplier","product"].includes(cost.source))estimatedCostCount++;
+  });
+  const grossProfit=costedSales-purchaseCost;
   return {
     rows,
     count:rows.length,
@@ -3470,8 +3645,45 @@ function salesRefMetrics(rows){
     customers:customers.size,
     products:products.size,
     avgCustomer:customers.size?totalSales/customers.size:0,
-    avgNetUnit:totalNet?netSales/totalNet:0
+    avgNetUnit:totalNet?netSales/totalNet:0,
+    purchaseCost,costedSales,grossProfit,grossMargin:costedSales?grossProfit/costedSales*100:0,
+    pricedCount,unpricedCount,actualCostCount,estimatedCostCount
   };
+}
+function salesRefProfitGroups(rows,keyFn){
+  const groups=new Map();
+  rows.forEach(row=>{
+    const key=keyFn(row)||"未設定";
+    const current=groups.get(key)||{key,sales:0,costedSales:0,cost:0,profit:0,unpriced:0,count:0};
+    const sales=salesRefNum(row.amount);
+    const cost=salesRefCostInfo(row);
+    current.sales+=sales;
+    current.count++;
+    if(cost.priced){current.costedSales+=sales;current.cost+=cost.amount}
+    else current.unpriced++;
+    current.profit=current.costedSales-current.cost;
+    current.margin=current.costedSales?current.profit/current.costedSales*100:0;
+    groups.set(key,current);
+  });
+  return [...groups.values()].sort((a,b)=>b.profit-a.profit||b.sales-a.sales||String(a.key).localeCompare(String(b.key),"ja"));
+}
+function salesRefProfitTable(title,rows){
+  const body=rows.length?rows.slice(0,50).map(row=>`<tr><td>${esc(row.key)}</td><td>${esc(salesRefMoney(row.sales))}</td><td>${esc(salesRefMoney(row.cost))}</td><td>${esc(salesRefMoney(row.profit))}</td><td>${esc(row.margin.toFixed(1))}%</td><td>${row.unpriced?`${esc(row.unpriced)}件`:"-"}</td></tr>`).join(""):`<tr><td colspan="6">データなし</td></tr>`;
+  return `<div class="sales-analysis-table"><table><caption>${esc(title)}</caption><thead><tr><th>項目</th><th>純売上</th><th>仕入原価</th><th>粗利</th><th>粗利率</th><th>原価未設定</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function salesRefProfitAnalysisHtml(rows){
+  const metrics=salesRefMetrics(rows);
+  const productRows=salesRefProfitGroups(rows,row=>`${row.product_id||""} ${row.product_name||""}`.trim());
+  const customerRows=salesRefProfitGroups(rows,row=>`${row.customer_code||""} ${row.store_name||""}`.trim());
+  const importerRows=salesRefProfitGroups(rows,row=>salesRefRowImporter(row).label);
+  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">実仕入原価を優先。未登録分は仕入先別単価、次に標準仕入単価で補完します。原価未設定は粗利計算から除外します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">原価反映 ${metrics.pricedCount}/${metrics.count}件</span></div>
+    <div class="sales-analysis-grid">
+      <div class="sales-compare-card"><div class="sales-card-label">原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">実仕入 ${metrics.actualCostCount}件 / マスタ補完 ${metrics.estimatedCostCount}件</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">仕入原価</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.purchaseCost))}</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">粗利</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.grossProfit))}</div><div class="sales-compare-sub">粗利率 ${esc(metrics.grossMargin.toFixed(1))}%</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">原価未設定</div><div class="sales-compare-main">${esc(metrics.unpricedCount)}件</div><div class="sales-compare-sub">設定後に自動再計算</div></div>
+    </div>
+    <div class="sales-analysis-tables">${salesRefProfitTable("商品別粗利",productRows)}${salesRefProfitTable("得意先別粗利",customerRows)}${salesRefProfitTable("輸入社別粗利",importerRows)}</div>`;
 }
 function salesRefRatio(current,previous){
   if(!previous)return current?null:0;
@@ -3627,7 +3839,8 @@ function renderSalesReferenceAnalysis(){
       ${salesRefAnalysisRowsHtml("伸びた商品",snapshot.productUp)}
       ${salesRefAnalysisRowsHtml("落ちた商品",snapshot.productDown)}
       ${salesRefAnalysisRowsHtml("伸びた得意先",snapshot.customerUp)}
-    </div>`;
+    </div>
+    ${salesRefProfitAnalysisHtml(snapshot.currentRows)}`;
 }
 function salesRefRankHtml(title,rows,unitLabel="金額"){
   const body=rows.length?rows.slice(0,12).map(row=>`<div class="sales-rank-row"><span class="sales-rank-name">${esc(row.key)}</span><span class="sales-rank-value">${esc(salesRefMoney(row.amount))}</span></div>`).join(""):`<div class="sales-rank-row"><span class="sales-rank-name">データなし</span><span class="sales-rank-value"></span></div>`;
@@ -3729,12 +3942,14 @@ async function loadSalesReferenceBoard(){
       const workDate=salesRefDateOnly(row.work_date)||salesRefSessionWorkDate(session);
       return salesRefNormalizeRowImporter({...row,source_type:"現場確定",work_date:workDate,finalized_at:finalizedAt},salesReferenceImporterIndex);
     });
+    let purchaseCostWarning="";
+    try{await salesRefAttachPurchaseCosts(client,currentRows)}catch(error){purchaseCostWarning="仕入原価リンクを取得できません";console.warn(purchaseCostWarning,error)}
     const pastRows=historicalResult.rows.map(row=>salesRefNormalizeRowImporter({...row,source_type:"過去データ",work_date:row.work_date||salesRefDateOnly(row.finalized_at),session_id:row.session_id||""},salesReferenceImporterIndex));
     const adjustmentRows=pendingResult.rows.map(row=>salesRefPendingToRow(row,salesReferenceImporterIndex));
     salesReferenceRows=[...currentRows,...pastRows,...adjustmentRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
     salesRefRebuildSessionIndexes();
     salesRefResetPage();
-    const warnings=[sessionResult.warning,historicalResult.warning,pendingResult.warning].filter(Boolean).join(" / ");
+    const warnings=[sessionResult.warning,historicalResult.warning,pendingResult.warning,purchaseCostWarning].filter(Boolean).join(" / ");
     if(state)state.textContent=`売上データ ${salesReferenceRows.length}件を読み込みました。${range.label}${warnings?` / ${warnings}`:""}`;
     renderSalesReferenceBoard();
   }catch(error){
@@ -3767,12 +3982,16 @@ function renderSalesReferenceBoard(){
   const totalSales=netSales+shippingSales;
   const totalNet=rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0);
   const totalGross=salesRefGrossTotal(rows);
+  const profitMetrics=salesRefMetrics(rows);
   const importers=new Set(rows.map(row=>salesRefRowImporter(row).key).filter(key=>key&&key!=="未設定"));
   const customers=new Set(rows.map(row=>row.store_name).filter(Boolean));
   summary.innerHTML=[
     ["総売上",salesRefMoney(totalSales)],
     ["純売上",salesRefMoney(netSales)],
     ["送料売上",salesRefMoney(shippingSales)],
+    ["仕入原価",salesRefMoney(profitMetrics.purchaseCost)],
+    ["粗利",`${salesRefMoney(profitMetrics.grossProfit)} (${profitMetrics.grossMargin.toFixed(1)}%)`],
+    ["原価未設定",`${profitMetrics.unpricedCount}件`],
     ["明細",`${rows.length}件`],
     ["NET",`${salesRefMoney(totalNet)} kg`],
     ["GROSS",`${salesRefMoney(totalGross)} kg`],
@@ -7996,6 +8215,7 @@ function saveAdvancePurchaseDraft(){
   const payload={
     purchaseDate:val("advance-purchase-date")||today(),
     siteCode:val("advance-purchase-site")||"OSA",
+    orderSupplierCode:val("advance-purchase-order-supplier").trim(),
     supplierCode:val("advance-purchase-supplier").trim(),
     importerCode:normalizeImporterCode(val("advance-purchase-importer")),
     importMode:advancePurchaseImportMode,
@@ -8010,6 +8230,7 @@ function loadAdvancePurchaseDraft(){
   try{saved=JSON.parse(localStorage.getItem(ADVANCE_PURCHASE_DRAFT_KEY)||"{}")||{}}catch(e){}
   if(saved.purchaseDate)document.getElementById("advance-purchase-date").value=saved.purchaseDate;
   if(saved.siteCode)document.getElementById("advance-purchase-site").value=saved.siteCode;
+  if(saved.orderSupplierCode)document.getElementById("advance-purchase-order-supplier").value=saved.orderSupplierCode;
   if(saved.supplierCode)document.getElementById("advance-purchase-supplier").value=saved.supplierCode;
   if(saved.importerCode)document.getElementById("advance-purchase-importer").value=saved.importerCode;
   setAdvancePurchaseImportMode(saved.importMode||"detail",{save:false});
@@ -8035,6 +8256,23 @@ function updateAdvancePurchaseHeader(options={}){
   const label=document.getElementById("advance-purchase-supplier-name");
   if(label)label.textContent=supplier?.name||"未設定";
   if(options.save!==false)saveAdvancePurchaseDraft();
+}
+function refreshAdvancePurchaseMasterPrices(){
+  const supplierCode=val("advance-purchase-supplier").trim();
+  advancePurchaseRows.forEach(row=>{
+    if(row.unitPriceSource!=="master"&&String(row.unitPrice??"").trim()!=="")return;
+    const product=findMasterProduct(row.productCode,row.productName);
+    const price=productPurchasePriceForSupplier(product,supplierCode);
+    row.unitPrice=price.price??"";
+    row.priceUnit=price.unit;
+    row.unitPriceSource=price.price===null?"":"master";
+  });
+}
+function changeAdvancePurchaseSupplier(){
+  updateAdvancePurchaseHeader({save:false});
+  refreshAdvancePurchaseMasterPrices();
+  renderAdvancePurchaseRows();
+  saveAdvancePurchaseDraft();
 }
 async function readSalesForAdvancePurchase(workDate){
   const result=[];
@@ -8111,10 +8349,18 @@ async function importSalesIntoAdvancePurchase(){
   if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
   const purchaseDate=val("advance-purchase-date");
   const siteCode=val("advance-purchase-site")||"OSA";
-  const supplierCode=val("advance-purchase-supplier").trim();
+  let supplierCode=val("advance-purchase-supplier").trim();
+  const orderSupplierCode=val("advance-purchase-order-supplier").trim()||supplierCode;
+  const orderSupplier=lookupSupplierByCode(orderSupplierCode);
+  if(!supplierCode&&orderSupplier){
+    supplierCode=orderSupplier.code;
+    document.getElementById("advance-purchase-supplier").value=supplierCode;
+    updateAdvancePurchaseHeader({save:false});
+  }
   const supplier=lookupSupplierByCode(supplierCode);
   const importerCode=normalizeImporterCode(val("advance-purchase-importer"));
-  if(!purchaseDate||!supplierCode||!supplier){alert("仕入日と、仕入先マスタに登録済みの仕入先コードを入力してから引用してください。");return}
+  if(!purchaseDate||!orderSupplierCode||!orderSupplier){alert("仕入日と、仕入先マスタに登録済みの引用元発注先コードを入力してから引用してください。");return}
+  if(!supplier){alert("実仕入先コードは仕入先マスタに登録済みのコードを指定してください。");return}
   setAppBusy(true,"確定売上から仕入明細を確認しています...");
   try{
     const salesRows=await readSalesForAdvancePurchase(purchaseDate);
@@ -8139,12 +8385,12 @@ async function importSalesIntoAdvancePurchase(){
       if(registeredSalesIds.has(sale.id)){registeredDuplicate++;return}
       if(draftSalesIds.has(sale.id)){draftDuplicate++;return}
       const product=findMasterProduct(sale.product_id,sale.product_name)||{};
-      const orderSupplierCode=String(orderSupplierBySale.get(advancePurchaseSaleSourceKey(sale))||"").trim();
+      const lineOrderSupplierCode=String(orderSupplierBySale.get(advancePurchaseSaleSourceKey(sale))||"").trim();
       const masterSupplierCode=String(product.supplierCode||"").trim();
-      const effectiveSupplierCode=orderSupplierCode||masterSupplierCode;
+      const effectiveSupplierCode=lineOrderSupplierCode||masterSupplierCode;
       if(!effectiveSupplierCode){unmapped++;return}
-      if(effectiveSupplierCode.toLowerCase()!==supplierCode.toLowerCase()){differentSupplier++;return}
-      if(orderSupplierCode)orderSupplierMatched++;
+      if(effectiveSupplierCode.toLowerCase()!==orderSupplierCode.toLowerCase()){differentSupplier++;return}
+      if(lineOrderSupplierCode)orderSupplierMatched++;
       else masterSupplierFallback++;
       let unit=normalizeLineUnit(sale.input_unit);
       let qty=dbNumber(sale.input_qty);
@@ -8159,7 +8405,10 @@ async function importSalesIntoAdvancePurchase(){
       const key=advancePurchaseImportMode==="product"
         ?[productCode||productName,origin,unit].map(value=>String(value).toLowerCase()).join("|")
         :`sale:${sale.id}`;
-      if(!grouped.has(key))grouped.set(key,{...blankAdvancePurchaseRow(),productCode,productName,origin,actualQty:0,actualUnit:unit,priceUnit:unit,trackInventory:false,sourceSalesIds:[]});
+      if(!grouped.has(key)){
+        const purchasePrice=productPurchasePriceForSupplier(product,supplierCode);
+        grouped.set(key,{...blankAdvancePurchaseRow(),productCode,productName,origin,actualQty:0,actualUnit:unit,unitPrice:purchasePrice.price??"",priceUnit:purchasePrice.unit,unitPriceSource:purchasePrice.price===null?"":"master",trackInventory:false,sourceSalesIds:[]});
+      }
       const row=grouped.get(key);
       row.actualQty=Math.round((Number(row.actualQty)+qty)*1000)/1000;
       row.sourceSalesIds.push(sale.id);
@@ -8179,7 +8428,7 @@ async function importSalesIntoAdvancePurchase(){
     if(state){state.textContent=`売上引用 ${importedSalesCount}件 → ${imported.length}行`;state.className="pill blue"}
     const otherSkipped=unmapped+invalidQty+draftDuplicate;
     const modeLabel=advancePurchaseImportMode==="product"?"商品コードごと":"明細ごと";
-    alert(`確定売上 ${importedSalesCount}件を、${modeLabel}で ${imported.length}行へ引用しました。\n受注明細の発注先コード: ${orderSupplierMatched}明細${masterSupplierFallback?`\n商品マスタを代替使用: ${masterSupplierFallback}明細`:""}${registeredDuplicate?`\n仕入登録済みのため除外: ${registeredDuplicate}件`:""}${otherSkipped?`\nその他の確認対象外: ${otherSkipped}件`:""}${differentSupplier?`\n他の仕入先: ${differentSupplier}件`:""}`);
+    alert(`確定売上 ${importedSalesCount}件を、${modeLabel}で ${imported.length}行へ引用しました。\n引用元発注先: ${orderSupplierCode} / 実仕入先: ${supplierCode}\n受注明細の発注先コード: ${orderSupplierMatched}明細${masterSupplierFallback?`\n商品マスタを代替使用: ${masterSupplierFallback}明細`:""}${registeredDuplicate?`\n仕入登録済みのため除外: ${registeredDuplicate}件`:""}${otherSkipped?`\nその他の確認対象外: ${otherSkipped}件`:""}${differentSupplier?`\n他の発注先: ${differentSupplier}件`:""}`);
     requestAnimationFrame(()=>focusAdvancePurchaseCell(Math.max(0,advancePurchaseRows.length-imported.length),"unitPrice"));
   }catch(error){
     const message=advancePurchaseSalesLinkSchemaMissing(error)
@@ -8221,6 +8470,7 @@ function setAdvancePurchaseRow(index,field,value){
   const row=advancePurchaseRows[index];
   if(!row)return;
   row[field]=field==="trackInventory"?!!value:value;
+  if(field==="unitPrice")row.unitPriceSource="manual";
   row.invalid=false;
   document.querySelector(`[data-advance-row="${index}"]`)?.classList.remove("invalid");
   const amount=document.querySelector(`[data-advance-amount="${index}"]`);
@@ -8234,6 +8484,12 @@ function applyAdvancePurchaseProduct(index,product){
   row.productCode=product.code||row.productCode;
   row.productName=product.name||row.productName;
   if(!row.origin)row.origin=product.origin||"";
+  if(row.unitPriceSource!=="manual"||String(row.unitPrice??"").trim()===""){
+    const price=productPurchasePriceForSupplier(product,val("advance-purchase-supplier").trim());
+    row.unitPrice=price.price??"";
+    row.priceUnit=price.unit;
+    row.unitPriceSource=price.price===null?"":"master";
+  }
   row.invalid=false;
   renderAdvancePurchaseRows();
   saveAdvancePurchaseDraft();
@@ -11190,7 +11446,8 @@ function completeMasterQuickAdd(item){
   return true;
 }
 function clearMasterForm(){
-  ["master-code","master-name","master-aliases","master-english","master-scientific","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix"].forEach(id=>document.getElementById(id).value="");
+  ["master-code","master-name","master-aliases","master-english","master-scientific","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-purchase-unit-price","master-supplier-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("master-purchase-price-unit").value="Kg";
   document.getElementById("master-site-code").value="OSA";
   document.getElementById("master-supplier-site-code").value="OSA";
   document.getElementById("master-external-enabled").checked=false;
@@ -11207,6 +11464,9 @@ function editMasterItem(index){
   document.getElementById("master-supplier-name").value=item.supplierName||item.supplier_name||"";
   document.getElementById("master-unit-price").value=item.unitPrice||item.unit_price||"";
   document.getElementById("master-contract-prices").value=formatContractPrices(item.contractPrices||item.importer_prices||{});
+  document.getElementById("master-purchase-unit-price").value=item.purchaseUnitPrice??item.purchase_unit_price??"";
+  document.getElementById("master-purchase-price-unit").value=purchasePriceUnit(item.purchasePriceUnit||item.purchase_price_unit);
+  document.getElementById("master-supplier-prices").value=formatSupplierPurchasePrices(item.supplierPrices||item.supplier_prices||{});
   document.getElementById("master-origin").value=item.origin||"";
   document.getElementById("master-guide-category").value=item.guideCategory||item.guide_category||"";
   document.getElementById("master-guide-spec").value=item.guideSpec||item.guide_spec||"";
@@ -11241,6 +11501,9 @@ async function addMasterItem(){
     item.supplierName=val("master-supplier-name").trim();
     item.unitPrice=val("master-unit-price").trim();
     item.contractPrices=parseContractPrices(val("master-contract-prices"));
+    item.purchaseUnitPrice=val("master-purchase-unit-price").trim();
+    item.purchasePriceUnit=purchasePriceUnit(val("master-purchase-price-unit"));
+    item.supplierPrices=parseSupplierPurchasePrices(val("master-supplier-prices"),item.purchasePriceUnit);
     item.origin=val("master-origin").trim();
     item.guideCategory=val("master-guide-category").trim();
     item.guideSpec=val("master-guide-spec").trim();
@@ -11382,7 +11645,7 @@ function renderMasters(){
   const isProduct=masterType==="products";
   const isCustomer=masterType==="customers";
   const isSupplier=masterType==="suppliers";
-  ["product-en-wrap","product-scientific-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap","product-origin-wrap","product-guide-category-wrap","product-guide-spec-wrap","product-image-url-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
+  ["product-en-wrap","product-scientific-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap","product-purchase-price-wrap","product-purchase-unit-wrap","product-supplier-prices-wrap","product-origin-wrap","product-guide-category-wrap","product-guide-spec-wrap","product-image-url-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
   ["customer-importer-code-wrap","customer-importer-name-wrap","customer-site-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
   ["supplier-external-wrap","supplier-box-prefix-wrap","supplier-default-site-wrap"].forEach(id=>document.getElementById(id).style.display=isSupplier?"flex":"none");
   const masters=getMasters()[masterType]||[];
@@ -11392,6 +11655,8 @@ function renderMasters(){
       m.supplierName,
       m.unitPrice||m.unit_price?`通常価格: ${m.unitPrice||m.unit_price}`:"",
       m.contractPrices||m.importer_prices?`契約価格: ${formatContractPrices(m.contractPrices||m.importer_prices)}`:"",
+      m.purchaseUnitPrice!==""&&m.purchaseUnitPrice!==undefined?`標準仕入: ${m.purchaseUnitPrice}/${purchasePriceUnit(m.purchasePriceUnit)}`:"",
+      Object.keys(m.supplierPrices||m.supplier_prices||{}).length?`仕入先別: ${formatSupplierPurchasePrices(m.supplierPrices||m.supplier_prices)}`:"",
       m.guideCategory?`案内カテゴリ: ${m.guideCategory}`:"",
       m.guideSpec?`SPEC: ${m.guideSpec}`:"",
       m.imageUrl?"画像あり":"",
@@ -11686,12 +11951,13 @@ function exportMasters(){
   const importerCodes=masterType==="products"
     ?[...new Set(masters.flatMap(m=>Object.keys(m.contractPrices||m.importer_prices||{})))].sort()
     :[];
-  const header=["type","code","name","english_name","scientific_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","aliases"];
+  const header=["type","code","name","english_name","scientific_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"purchase_unit_price","purchase_price_unit","supplier_purchase_prices","origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","aliases"];
   const rows=[header,...masters.map(m=>{
     const prices=m.contractPrices||m.importer_prices||{};
     return [
       masterType,m.code,m.name,m.englishName||"",m.scientificName||"",m.supplierCode||"",m.supplierName||"",m.unitPrice||m.unit_price||"",formatContractPrices(prices),
       ...importerCodes.map(code=>prices[code]||""),
+      m.purchaseUnitPrice??m.purchase_unit_price??"",purchasePriceUnit(m.purchasePriceUnit||m.purchase_price_unit),formatSupplierPurchasePrices(m.supplierPrices||m.supplier_prices||{}),
       m.origin||"",m.guideCategory||"",m.guideSpec||"",m.imageUrl||"",m.imageSourceUrl||"",m.imageCredit||"",m.imageLicense||"",
       m.importerCode||"",m.importerName||"",m.siteCode||"",m.externalWorkEnabled?"1":"",m.boxPrefix||"",(m.aliases||[]).join("|")
     ];
@@ -11765,6 +12031,23 @@ function parseContractPrices(value){
 function formatContractPrices(prices){
   return Object.entries(prices||{}).map(([code,price])=>`${code}=${price}`).join(", ");
 }
+function parseSupplierPurchasePrices(value,defaultUnit="Kg"){
+  const prices={};
+  String(value||"").split(/[,、\n]/).forEach(part=>{
+    const match=part.trim().match(/^(.+?)[=:：]\s*([\d,.]+)(?:\s*[/／]\s*(Kg|pkt|PC|CS))?$/i);
+    if(!match)return;
+    const code=String(match[1]||"").trim();
+    const price=dbNumber(match[2]);
+    if(code&&price!==null)prices[code]={price,unit:purchasePriceUnit(match[3]||defaultUnit)};
+  });
+  return prices;
+}
+function formatSupplierPurchasePrices(prices){
+  return Object.entries(prices||{}).map(([code,value])=>{
+    const entry=normalizeSupplierPriceEntry(value);
+    return entry?`${code}=${entry.price}/${entry.unit}`:"";
+  }).filter(Boolean).join(", ");
+}
 function contractPriceHeaderCode(header){
   const raw=String(header||"").replace(/^\uFEFF/,"").replace(/^"|"$/g,"").trim();
   const compact=raw.normalize("NFKC").replace(/[\s_\-　]+/g,"");
@@ -11832,6 +12115,9 @@ function masterItemFromCsvRow(row,headers,type){
       ...parseContractPrices(rowValue(row,headers,["contract_prices","contractprices","輸入社別契約価格","契約価格"])),
       ...readContractPricesFromCsv(row,headers)
     };
+    item.purchaseUnitPrice=rowValue(row,headers,["purchase_unit_price","purchaseunitprice","標準仕入単価","仕入単価","商品マスタ仕入価格"]);
+    item.purchasePriceUnit=purchasePriceUnit(rowValue(row,headers,["purchase_price_unit","purchasepriceunit","標準仕入単位","仕入単位"])||"Kg");
+    item.supplierPrices=parseSupplierPurchasePrices(rowValue(row,headers,["supplier_purchase_prices","supplierpurchaseprices","仕入先別単価","仕入先別価格"]),item.purchasePriceUnit);
     item.origin=rowValue(row,headers,["origin","産地","原産地"]);
     item.guideCategory=rowValue(row,headers,["guide_category","guidecategory","category","案内カテゴリ","カテゴリ"]);
     item.guideSpec=rowValue(row,headers,["guide_spec","guidespec","spec","size","案内spec","案内規格","規格","サイズ"]);
@@ -13211,7 +13497,7 @@ document.addEventListener("keydown",e=>{
   if(target instanceof HTMLElement&&target.matches("[data-advance-header]")&&e.key==="Enter"){
     e.preventDefault();
     if(target.id==="advance-purchase-supplier")updateAdvancePurchaseHeader();
-    const headerFlow=["advance-purchase-date","advance-purchase-site","advance-purchase-supplier","advance-purchase-invoice","advance-purchase-note"];
+    const headerFlow=["advance-purchase-date","advance-purchase-site","advance-purchase-order-supplier","advance-purchase-supplier","advance-purchase-invoice","advance-purchase-note"];
     const index=headerFlow.indexOf(target.id);
     if(index>=0&&index<headerFlow.length-1){
       const next=document.getElementById(headerFlow[index+1]);

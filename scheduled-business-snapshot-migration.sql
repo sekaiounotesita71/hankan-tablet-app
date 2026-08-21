@@ -35,7 +35,7 @@ begin
     'external_work_assignments','external_work_assignment_lines','external_work_inputs',
     'purchase_receipts','purchase_receipt_lines','inventory_lots','inventory_allocations',
     'accounts_payable_supplier_profiles','accounts_payable','accounts_payable_payments',
-    'importer_master','supplier_master','product_master','product_price_contracts','customer_master',
+    'importer_master','supplier_master','product_master','product_price_contracts','product_supplier_prices','customer_master',
     'invoice_profiles','invoice_product_rules','invoice_export_logs',
     'product_guide_templates','product_guide_variants','product_guide_template_rows',
     'site_master','internal_user_access','partner_user_access','user_roles'

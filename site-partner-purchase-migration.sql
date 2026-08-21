@@ -981,7 +981,7 @@ declare
   table_name text;
 begin
   foreach table_name in array array[
-    'work_sessions','order_lines','boxes','product_master','product_price_contracts',
+    'work_sessions','order_lines','boxes','product_master','product_price_contracts','product_supplier_prices',
     'customer_master','supplier_master','importer_master','order_entry_batches','order_entry_lines',
     'sales_records','historical_sales_records','pending_entries','user_roles','master_change_log',
     'accounts_receivable','accounts_receivable_payments','accounts_receivable_statement_profiles',

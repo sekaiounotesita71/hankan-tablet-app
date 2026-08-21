@@ -38,6 +38,7 @@ begin
     'supplier_master',
     'product_master',
     'product_price_contracts',
+    'product_supplier_prices',
     'customer_master'
   ]
   loop

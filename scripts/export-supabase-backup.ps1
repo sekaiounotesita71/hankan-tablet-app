@@ -25,7 +25,7 @@ $tables = @(
   "external_work_assignments", "external_work_assignment_lines", "external_work_inputs",
   "purchase_receipts", "purchase_receipt_lines", "inventory_lots", "inventory_allocations",
   "accounts_payable_supplier_profiles", "accounts_payable", "accounts_payable_payments",
-  "importer_master", "supplier_master", "product_master", "product_price_contracts", "customer_master",
+  "importer_master", "supplier_master", "product_master", "product_price_contracts", "product_supplier_prices", "customer_master",
   "invoice_profiles", "invoice_product_rules", "invoice_export_logs",
   "product_guide_templates", "product_guide_variants", "product_guide_template_rows",
   "site_master", "internal_user_access", "partner_user_access", "user_roles",
@@ -43,7 +43,7 @@ $tableOrder = @{
   purchase_receipts = "id"; purchase_receipt_lines = "id"; inventory_lots = "id"; inventory_allocations = "id"
   accounts_payable_supplier_profiles = "supplier_code"; accounts_payable = "id"; accounts_payable_payments = "id"
   importer_master = "importer_code"; supplier_master = "supplier_code"; product_master = "product_id"
-  product_price_contracts = "product_id,importer_code"; customer_master = "id"
+  product_price_contracts = "product_id,importer_code"; product_supplier_prices = "product_id,supplier_code"; customer_master = "id"
   invoice_profiles = "importer_code"; invoice_product_rules = "id"; invoice_export_logs = "id"
   product_guide_templates = "id"; product_guide_variants = "id"; product_guide_template_rows = "id"
   site_master = "site_code"; internal_user_access = "user_id"; partner_user_access = "user_id,supplier_code"

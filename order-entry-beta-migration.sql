@@ -55,6 +55,8 @@ alter table public.product_master
   add column if not exists aliases text[] not null default '{}',
   add column if not exists default_supplier_code text,
   add column if not exists default_supplier_name text,
+  add column if not exists purchase_unit_price numeric,
+  add column if not exists purchase_price_unit text not null default 'Kg',
   add column if not exists guide_category text,
   add column if not exists guide_spec text,
   add column if not exists image_url text,
@@ -71,6 +73,17 @@ create table if not exists public.product_price_contracts (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (product_id, importer_code)
+);
+
+create table if not exists public.product_supplier_prices (
+  product_id text not null references public.product_master(product_id) on delete cascade,
+  supplier_code text not null references public.supplier_master(supplier_code) on delete cascade,
+  unit_price numeric not null check (unit_price >= 0),
+  price_unit text not null default 'Kg' check (price_unit in ('Kg','pkt','PC','CS')),
+  source_filename text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (product_id, supplier_code)
 );
 
 create table if not exists public.customer_master (
@@ -201,6 +214,7 @@ create index if not exists idx_order_entry_lines_product on public.order_entry_l
 create index if not exists idx_order_entry_lines_supplier on public.order_entry_lines(supplier_code);
 create index if not exists idx_product_master_updated_at on public.product_master(updated_at desc);
 create index if not exists idx_product_price_contracts_importer on public.product_price_contracts(importer_code);
+create index if not exists idx_product_supplier_prices_supplier on public.product_supplier_prices(supplier_code, product_id);
 create index if not exists idx_customer_master_lookup on public.customer_master(importer_code, country_code, customer_name);
 
 drop trigger if exists trg_importer_master_updated_at on public.importer_master;
@@ -223,6 +237,11 @@ create trigger trg_product_price_contracts_updated_at
 before update on public.product_price_contracts
 for each row execute function public.set_updated_at();
 
+drop trigger if exists trg_product_supplier_prices_updated_at on public.product_supplier_prices;
+create trigger trg_product_supplier_prices_updated_at
+before update on public.product_supplier_prices
+for each row execute function public.set_updated_at();
+
 drop trigger if exists trg_customer_master_updated_at on public.customer_master;
 create trigger trg_customer_master_updated_at
 before update on public.customer_master
@@ -242,6 +261,7 @@ alter table public.importer_master enable row level security;
 alter table public.supplier_master enable row level security;
 alter table public.product_master enable row level security;
 alter table public.product_price_contracts enable row level security;
+alter table public.product_supplier_prices enable row level security;
 alter table public.customer_master enable row level security;
 alter table public.order_entry_batches enable row level security;
 alter table public.order_entry_lines enable row level security;
@@ -290,6 +310,7 @@ begin
     'supplier_master',
     'product_master',
     'product_price_contracts',
+    'product_supplier_prices',
     'customer_master',
     'order_entry_batches',
     'order_entry_lines'
@@ -325,6 +346,11 @@ create policy "master admins can insert product price contracts" on public.produ
 create policy "master admins can update product price contracts" on public.product_price_contracts for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
 create policy "master admins can delete product price contracts" on public.product_price_contracts for delete to authenticated using (public.is_master_admin());
 
+create policy "authenticated can read product supplier prices" on public.product_supplier_prices for select to authenticated using (true);
+create policy "master admins can insert product supplier prices" on public.product_supplier_prices for insert to authenticated with check (public.is_master_admin());
+create policy "master admins can update product supplier prices" on public.product_supplier_prices for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
+create policy "master admins can delete product supplier prices" on public.product_supplier_prices for delete to authenticated using (public.is_master_admin());
+
 create policy "authenticated can read customer master" on public.customer_master for select to authenticated using (true);
 create policy "master admins can insert customer master" on public.customer_master for insert to authenticated with check (public.is_master_admin());
 create policy "master admins can update customer master" on public.customer_master for update to authenticated using (public.is_master_admin()) with check (public.is_master_admin());
@@ -341,10 +367,10 @@ create policy "authenticated can update order entry lines" on public.order_entry
 create policy "authenticated can delete order entry lines" on public.order_entry_lines for delete to authenticated using (true);
 
 revoke all on public.importer_master, public.supplier_master, public.product_master,
-  public.product_price_contracts, public.customer_master,
+  public.product_price_contracts, public.product_supplier_prices, public.customer_master,
   public.order_entry_batches, public.order_entry_lines from anon;
 grant select, insert, update, delete on public.importer_master, public.supplier_master,
-  public.product_master, public.product_price_contracts, public.customer_master to authenticated;
+  public.product_master, public.product_price_contracts, public.product_supplier_prices, public.customer_master to authenticated;
 grant select, insert, update, delete on public.order_entry_batches, public.order_entry_lines to authenticated;
 
 notify pgrst, 'reload schema';
