@@ -66,3 +66,19 @@ test("粗利画面に月次PDF照合の内訳を表示する",()=>{
   assert.match(html,/PDF配分には一部国内分が含まれる可能性があります/);
   assert.match(html,/月次PDF \$\{result\.monthlyMatchedLines\}仕入明細/);
 });
+
+test("PDF仕入は全期間検索せず対象月だけ取得する",()=>{
+  const source=sourceBetween("async function salesRefReadImportedPurchaseCosts","async function salesRefAttachPurchaseCosts");
+  assert.doesNotMatch(source,/\.ilike\("note"/);
+  assert.match(source,/\.gte\("purchase_date",`\$\{month\}-01`\)/);
+  assert.match(source,/\.lte\("purchase_date",salesRefEndOfMonth\(month\)\)/);
+  assert.match(source,/startsWith\("PDF一括取込ID:"\)/);
+});
+
+test("売上参照の期間空欄は当月を初期値にする",()=>{
+  const source=sourceBetween("function salesRefDatabaseRange","async function salesRefReadPaged");
+  assert.match(source,/if\(!input\.raw\)/);
+  assert.match(source,/sales-ref-date-range/);
+  assert.match(source,/salesRefDateRangeFromText\(month\)/);
+  assert.doesNotMatch(source,/label:"全期間"/);
+});
