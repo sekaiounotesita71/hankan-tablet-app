@@ -3001,6 +3001,12 @@ function salesRefShippingFeeForRows(rows){
   });
   return total;
 }
+function salesRefDetailFilterActive(){
+  return ["sales-ref-customer","sales-ref-product","sales-ref-search"].some(id=>val(id).trim());
+}
+function salesRefVisibleShippingFeeForRows(rows){
+  return salesRefDetailFilterActive()?0:salesRefShippingFeeForRows(rows);
+}
 function salesRefShippingBreakdownData(rows){
   const grouped=new Map();
   rows.forEach(row=>{
@@ -3043,6 +3049,11 @@ function salesRefShippingBreakdownData(rows){
 function renderSalesRefShippingBreakdown(rows){
   const host=document.getElementById("sales-ref-shipping-breakdown");
   if(!host)return;
+  if(salesRefDetailFilterActive()){
+    salesShippingBreakdownRows=[];
+    host.innerHTML="";
+    return;
+  }
   salesShippingBreakdownRows=salesRefShippingBreakdownData(rows);
   if(!salesShippingBreakdownRows.length){
     host.innerHTML="";
@@ -3620,7 +3631,7 @@ function salesRefGroupTotalSales(rows,keyFn){
     key:group.key,
     count:group.count,
     net:group.net,
-    amount:group.amount+salesRefShippingFeeForRows(group.rows)
+    amount:group.amount+salesRefVisibleShippingFeeForRows(group.rows)
   })).sort((a,b)=>b.amount-a.amount||b.net-a.net||String(a.key).localeCompare(String(b.key),"ja"));
 }
 function salesRefDailySalesRows(rows){
@@ -3874,7 +3885,8 @@ async function salesRefAttachPurchaseCosts(client,rows){
 }
 function salesRefMetrics(rows){
   const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
-  const shippingSales=salesRefShippingFeeForRows(rows);
+  const shippingExcluded=salesRefDetailFilterActive();
+  const shippingSales=salesRefVisibleShippingFeeForRows(rows);
   const totalSales=netSales+shippingSales;
   const totalNet=rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0);
   const totalGross=salesRefGrossTotal(rows);
@@ -3898,7 +3910,7 @@ function salesRefMetrics(rows){
     count:rows.length,
     totalSales,
     netSales,
-    shippingSales,
+    shippingSales,shippingExcluded,
     totalNet,
     totalGross,
     customers:customers.size,
@@ -4274,7 +4286,7 @@ function renderSalesReferenceSummary(rows=salesRefFilteredRows()){
   summary.innerHTML=[
     ["総売上",salesRefMoney(metrics.totalSales)],
     ["純売上",salesRefMoney(metrics.netSales)],
-    ["送料売上",salesRefMoney(metrics.shippingSales)],
+    [metrics.shippingExcluded?"送料売上（除外）":"送料売上",metrics.shippingExcluded?"-":salesRefMoney(metrics.shippingSales)],
     ["仕入原価",salesRefMoney(metrics.purchaseCost)],
     ["粗利",`${salesRefMoney(metrics.grossProfit)} (${metrics.grossMargin.toFixed(1)}%)`],
     ["原価未設定",`${metrics.unpricedCount}件`],

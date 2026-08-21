@@ -30,3 +30,12 @@ test("得意先と商品を専用候補から組み合わせて絞り込める",
   assert.match(source,/\.includes\(customer\)/);
   assert.match(source,/\.includes\(product\)/);
 });
+
+test("得意先・商品などの詳細絞り込み中は輸入社単位の送料を加算しない",()=>{
+  const source=sourceBetween("function salesRefDetailFilterActive","function salesRefShippingBreakdownData");
+  assert.match(source,/sales-ref-customer/);
+  assert.match(source,/sales-ref-product/);
+  assert.match(source,/sales-ref-search/);
+  assert.match(source,/salesRefDetailFilterActive\(\)\?0:salesRefShippingFeeForRows\(rows\)/);
+  assert.match(html,/送料売上（除外）/);
+});
