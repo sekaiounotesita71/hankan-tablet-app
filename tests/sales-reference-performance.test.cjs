@@ -41,7 +41,7 @@ test("連続再読込では古い結果を画面へ反映しない",()=>{
   assert.ok((source.match(/loadSequence!==salesReferenceLoadSequence/g)||[]).length>=3);
 });
 
-test("2ページ目以降の売上を並列で取得する",async()=>{
+test("全件COUNTを使わず2ページ目以降を並列で取得する",async()=>{
   const source=sourceBetween("async function salesRefReadPaged","async function salesRefReadCurrentRows");
   const readPaged=new Function(`${source}; return salesRefReadPaged;`)();
   let active=0,maxActive=0;
@@ -54,12 +54,11 @@ test("2ページ目以降の売上を並列で取得する",async()=>{
       await new Promise(resolve=>setTimeout(resolve,5));
       active--;
       const count=Math.min(1000,2501-from);
-      return {data:Array.from({length:count},(_,index)=>from+index),error:null,count:includeCount?2501:null};
+      return {data:Array.from({length:count},(_,index)=>from+index),error:null,count:null};
     }
   }));
   assert.equal(rows.length,2501);
   assert.deepEqual(calls.map(call=>call.from),[0,1000,2000]);
-  assert.equal(calls[0].includeCount,true);
-  assert.ok(calls.slice(1).every(call=>call.includeCount===false));
+  assert.ok(calls.every(call=>call.includeCount===false));
   assert.ok(maxActive>=2,"2ページ目以降が直列取得です");
 });

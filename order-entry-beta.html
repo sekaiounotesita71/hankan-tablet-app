@@ -4143,29 +4143,24 @@ function salesRefDatabaseRange(){
   return {ranges:merged,label:`${input.from} - ${input.to}（前年比較を含む）`};
 }
 async function salesRefReadPaged(buildQuery,pageSize=1000){
-  const firstResult=await buildQuery(true).range(0,pageSize-1);
+  const firstResult=await buildQuery(false).range(0,pageSize-1);
   if(firstResult.error)throw firstResult.error;
   const rows=[...(firstResult.data||[])];
-  const total=Number(firstResult.count);
-  if(Number.isFinite(total)){
-    const pageTasks=[];
-    for(let offset=pageSize;offset<total;offset+=pageSize){
-      pageTasks.push(buildQuery(false).range(offset,Math.min(offset+pageSize-1,total-1)));
-    }
-    const pages=await Promise.all(pageTasks);
-    pages.forEach(({data,error})=>{
-      if(error)throw error;
-      rows.push(...(data||[]));
-    });
-    return rows;
-  }
   if(rows.length<pageSize)return rows;
-  for(let offset=pageSize;;offset+=pageSize){
-    const {data,error}=await buildQuery(false).range(offset,offset+pageSize-1);
-    if(error)throw error;
-    const page=data||[];
-    rows.push(...page);
-    if(page.length<pageSize)break;
+  const parallelPages=2;
+  for(let batchOffset=pageSize;;batchOffset+=pageSize*parallelPages){
+    const pages=await Promise.all(Array.from({length:parallelPages},(_,index)=>{
+      const offset=batchOffset+pageSize*index;
+      return buildQuery(false).range(offset,offset+pageSize-1);
+    }));
+    let complete=false;
+    for(const {data,error} of pages){
+      if(error)throw error;
+      const page=data||[];
+      rows.push(...page);
+      if(page.length<pageSize){complete=true;break}
+    }
+    if(complete)break;
   }
   return rows;
 }
