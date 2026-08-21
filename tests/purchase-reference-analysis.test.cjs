@@ -75,6 +75,8 @@ assert.match(html, /setPurchaseReferencePeriod\('month'\)/);
 assert.match(html, /setPurchaseReferencePeriod\('year'\)/);
 assert.match(html, /function purchaseRefMonthlyYoYRows/);
 assert.match(html, /function purchaseRefAnalysisSnapshot/);
+assert.match(html, /function purchaseRefSupplierLabel/);
+assert.match(html, /purchaseRefGroupReceipts\(rows,purchaseRefSupplierLabel\)/);
 assert.match(html, /function exportPurchaseReferenceExcel/);
 assert.match(html, /月別仕入・昨対/);
 assert.match(html, /年別仕入/);
