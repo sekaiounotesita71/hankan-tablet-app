@@ -1246,6 +1246,7 @@ let salesReferenceSessionMap=new Map();
 let salesReferenceImporterKeysBySession=new Map();
 let salesReferencePage=1;
 const SALES_REFERENCE_PAGE_SIZE=250;
+let salesReferenceLoadSequence=0;
 let salesCorrectionTarget=null;
 let shippingCorrectionTarget=null;
 let salesReferenceImporterIndex=null;
@@ -3678,6 +3679,21 @@ function salesRefCostInfo(row){
   if(price.price===null||quantity===null)return {priced:false,amount:0,source:"",supplierCode};
   return {priced:true,amount:price.price*quantity,source:price.source,supplierCode,unitPrice:price.price,priceUnit:price.unit};
 }
+async function salesRefReadChunks(items,chunkSize,readChunk,concurrency=6){
+  const chunks=[];
+  for(let index=0;index<items.length;index+=chunkSize)chunks.push(items.slice(index,index+chunkSize));
+  if(!chunks.length)return [];
+  const results=new Array(chunks.length);
+  let nextIndex=0;
+  const workers=Array.from({length:Math.min(concurrency,chunks.length)},async()=>{
+    while(nextIndex<chunks.length){
+      const index=nextIndex++;
+      results[index]=await readChunk(chunks[index],index);
+    }
+  });
+  await Promise.all(workers);
+  return results.flat();
+}
 async function salesRefAttachPurchaseCosts(client,rows){
   const activeRows=(rows||[]).filter(row=>row.id&&!row.is_stockout);
   if(!activeRows.length)return {actual:0,supplierMapped:0};
@@ -3685,19 +3701,17 @@ async function salesRefAttachPurchaseCosts(client,rows){
   try{supplierBySale=await readOrderSuppliersForAdvancePurchase(activeRows)}catch(error){console.warn("仕入先の紐づけを読み込めませんでした",error)}
   activeRows.forEach(row=>{row._purchaseSupplierCode=supplierBySale.get(advancePurchaseSaleSourceKey(row))||""});
   const salesIds=activeRows.map(row=>row.id);
-  const links=[];
-  for(let index=0;index<salesIds.length;index+=200){
-    const {data,error}=await client.from("purchase_sales_links").select("sales_record_id,purchase_line_id").in("sales_record_id",salesIds.slice(index,index+200));
+  const links=await salesRefReadChunks(salesIds,200,async ids=>{
+    const {data,error}=await client.from("purchase_sales_links").select("sales_record_id,purchase_line_id").in("sales_record_id",ids);
     if(error)throw error;
-    links.push(...(data||[]));
-  }
+    return data||[];
+  });
   const lineIds=[...new Set(links.map(link=>link.purchase_line_id).filter(Boolean))];
-  const lines=[];
-  for(let index=0;index<lineIds.length;index+=200){
-    const {data,error}=await client.from("purchase_receipt_lines").select("id,actual_qty,actual_unit,unit_price,price_unit,line_amount").in("id",lineIds.slice(index,index+200));
+  const lines=await salesRefReadChunks(lineIds,200,async ids=>{
+    const {data,error}=await client.from("purchase_receipt_lines").select("id,actual_qty,actual_unit,unit_price,price_unit,line_amount").in("id",ids);
     if(error)throw error;
-    lines.push(...(data||[]));
-  }
+    return data||[];
+  });
   const salesById=new Map(activeRows.map(row=>[row.id,row]));
   const lineById=new Map(lines.map(line=>[line.id,line]));
   const linksByLine=new Map();
@@ -4008,6 +4022,7 @@ async function salesRefReadSessions(client,range){
   return batches.flat();
 }
 async function loadSalesReferenceBoard(){
+  const loadSequence=++salesReferenceLoadSequence;
   const client=initSupabase();
   if(!client){alert("Supabaseを読み込めません。");return}
   const state=document.getElementById("sales-ref-state");
@@ -4037,6 +4052,7 @@ async function loadSalesReferenceBoard(){
       throw error;
     });
     const [sessionResult,allRows,historicalResult,pendingResult]=await Promise.all([sessionsTask,currentTask,historicalTask,pendingTask]);
+    if(loadSequence!==salesReferenceLoadSequence)return;
     salesReferenceSessions=sessionResult.rows.filter(session=>session.locked||session.status==="closed");
     salesReferenceImporterIndex=salesRefBuildImporterIndex();
     const sessionMap=new Map(salesReferenceSessions.map(session=>[session.id,session]));
@@ -4046,17 +4062,29 @@ async function loadSalesReferenceBoard(){
       const workDate=salesRefDateOnly(row.work_date)||salesRefSessionWorkDate(session);
       return salesRefNormalizeRowImporter({...row,source_type:"現場確定",work_date:workDate,finalized_at:finalizedAt},salesReferenceImporterIndex);
     });
-    let purchaseCostWarning="";
-    try{await salesRefAttachPurchaseCosts(client,currentRows)}catch(error){purchaseCostWarning="仕入原価リンクを取得できません";console.warn(purchaseCostWarning,error)}
     const pastRows=historicalResult.rows.map(row=>salesRefNormalizeRowImporter({...row,source_type:"過去データ",work_date:row.work_date||salesRefDateOnly(row.finalized_at),session_id:row.session_id||""},salesReferenceImporterIndex));
     const adjustmentRows=pendingResult.rows.map(row=>salesRefPendingToRow(row,salesReferenceImporterIndex));
     salesReferenceRows=[...currentRows,...pastRows,...adjustmentRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
     salesRefRebuildSessionIndexes();
     salesRefResetPage();
-    const warnings=[sessionResult.warning,historicalResult.warning,pendingResult.warning,purchaseCostWarning].filter(Boolean).join(" / ");
-    if(state)state.textContent=`売上データ ${salesReferenceRows.length}件を読み込みました。${range.label}${warnings?` / ${warnings}`:""}`;
+    const warnings=[sessionResult.warning,historicalResult.warning,pendingResult.warning].filter(Boolean).join(" / ");
+    const baseMessage=`売上データ ${salesReferenceRows.length}件を読み込みました。${range.label}${warnings?` / ${warnings}`:""}`;
+    if(state)state.textContent=`${baseMessage} / 仕入原価・粗利を更新中...`;
     renderSalesReferenceBoard();
+    void salesRefAttachPurchaseCosts(client,currentRows).then(result=>{
+      if(loadSequence!==salesReferenceLoadSequence)return;
+      if(state)state.textContent=`${baseMessage} / 仕入原価・粗利まで更新済み（実績紐づけ ${result.actual}件）`;
+      renderSalesReferenceSummary();
+      renderSalesReferenceAnalysis();
+    }).catch(error=>{
+      if(loadSequence!==salesReferenceLoadSequence)return;
+      console.warn("仕入原価リンクを取得できません",error);
+      if(state)state.textContent=`${baseMessage} / 仕入原価リンクを取得できません`;
+      renderSalesReferenceSummary();
+      renderSalesReferenceAnalysis();
+    });
   }catch(error){
+    if(loadSequence!==salesReferenceLoadSequence)return;
     salesReferenceRows=[];
     salesReferenceSessions=[];
     salesRefRebuildSessionIndexes();
@@ -4070,6 +4098,25 @@ function salesRefChangePage(delta){
   renderSalesReferenceBoard();
   document.getElementById("sales-ref-table")?.scrollTo({top:0,left:0,behavior:"auto"});
 }
+function renderSalesReferenceSummary(rows=salesRefFilteredRows()){
+  const summary=document.getElementById("sales-ref-summary-cards");
+  if(!summary)return;
+  const metrics=salesRefMetrics(rows);
+  const importers=new Set(rows.map(row=>salesRefRowImporter(row).key).filter(key=>key&&key!=="未設定"));
+  const customers=new Set(rows.map(row=>row.store_name).filter(Boolean));
+  summary.innerHTML=[
+    ["総売上",salesRefMoney(metrics.totalSales)],
+    ["純売上",salesRefMoney(metrics.netSales)],
+    ["送料売上",salesRefMoney(metrics.shippingSales)],
+    ["仕入原価",salesRefMoney(metrics.purchaseCost)],
+    ["粗利",`${salesRefMoney(metrics.grossProfit)} (${metrics.grossMargin.toFixed(1)}%)`],
+    ["原価未設定",`${metrics.unpricedCount}件`],
+    ["明細",`${rows.length}件`],
+    ["NET",`${salesRefMoney(metrics.totalNet)} kg`],
+    ["GROSS",`${salesRefMoney(metrics.totalGross)} kg`],
+    ["輸入社 / 得意先",`${importers.size} / ${customers.size}`]
+  ].map(([label,value])=>`<div class="sales-card"><div class="sales-card-label">${esc(label)}</div><div class="sales-card-value">${esc(value)}</div></div>`).join("");
+}
 function renderSalesReferenceBoard(){
   const table=document.getElementById("sales-ref-table");
   const summary=document.getElementById("sales-ref-summary-cards");
@@ -4081,26 +4128,7 @@ function renderSalesReferenceBoard(){
     state.textContent="期間の形式を確認してください。例: 20250701-20250731 / 202507 / 20250701";
   }
   const rows=salesRefFilteredRows();
-  const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
-  const shippingSales=salesRefShippingFeeForRows(rows);
-  const totalSales=netSales+shippingSales;
-  const totalNet=rows.reduce((sum,row)=>sum+salesRefNum(row.net_weight),0);
-  const totalGross=salesRefGrossTotal(rows);
-  const profitMetrics=salesRefMetrics(rows);
-  const importers=new Set(rows.map(row=>salesRefRowImporter(row).key).filter(key=>key&&key!=="未設定"));
-  const customers=new Set(rows.map(row=>row.store_name).filter(Boolean));
-  summary.innerHTML=[
-    ["総売上",salesRefMoney(totalSales)],
-    ["純売上",salesRefMoney(netSales)],
-    ["送料売上",salesRefMoney(shippingSales)],
-    ["仕入原価",salesRefMoney(profitMetrics.purchaseCost)],
-    ["粗利",`${salesRefMoney(profitMetrics.grossProfit)} (${profitMetrics.grossMargin.toFixed(1)}%)`],
-    ["原価未設定",`${profitMetrics.unpricedCount}件`],
-    ["明細",`${rows.length}件`],
-    ["NET",`${salesRefMoney(totalNet)} kg`],
-    ["GROSS",`${salesRefMoney(totalGross)} kg`],
-    ["輸入社 / 得意先",`${importers.size} / ${customers.size}`]
-  ].map(([label,value])=>`<div class="sales-card"><div class="sales-card-label">${esc(label)}</div><div class="sales-card-value">${esc(value)}</div></div>`).join("");
+  renderSalesReferenceSummary(rows);
   renderSalesRefShippingBreakdown(rows);
   renderSalesReferenceAnalysis();
   ranks.innerHTML=[
@@ -9731,31 +9759,29 @@ function advancePurchaseSaleSourceKey(row){
 async function readOrderSuppliersForAdvancePurchase(salesRows){
   const sessionIds=[...new Set((salesRows||[]).map(row=>row.session_id).filter(Boolean))];
   const sourceLineBySale=new Map();
-  for(let index=0;index<sessionIds.length;index+=100){
-    const ids=sessionIds.slice(index,index+100);
-    const links=await readAllSupabaseRows((from,to)=>supabaseClient
+  const linkedOrderLines=await salesRefReadChunks(sessionIds,100,ids=>readAllSupabaseRows((from,to)=>supabaseClient
       .from("order_lines")
       .select("session_id,source_row_no,source_order_line_id")
       .in("session_id",ids)
       .not("source_order_line_id","is",null)
       .order("session_id",{ascending:true})
       .order("source_row_no",{ascending:true})
-      .range(from,to));
-    links.forEach(line=>sourceLineBySale.set(advancePurchaseSaleSourceKey(line),line.source_order_line_id));
-  }
+      .range(from,to)));
+  linkedOrderLines.forEach(line=>sourceLineBySale.set(advancePurchaseSaleSourceKey(line),line.source_order_line_id));
   const sourceIds=[...new Set(sourceLineBySale.values())];
   const supplierBySourceLine=new Map();
-  for(let index=0;index<sourceIds.length;index+=200){
+  const sourceLines=await salesRefReadChunks(sourceIds,200,async ids=>{
     const {data,error}=await supabaseClient
       .from("order_entry_lines")
       .select("id,supplier_code")
-      .in("id",sourceIds.slice(index,index+200));
+      .in("id",ids);
     if(error)throw error;
-    (data||[]).forEach(line=>{
-      const supplierCode=String(line.supplier_code||"").trim();
-      if(supplierCode)supplierBySourceLine.set(line.id,supplierCode);
-    });
-  }
+    return data||[];
+  });
+  sourceLines.forEach(line=>{
+    const supplierCode=String(line.supplier_code||"").trim();
+    if(supplierCode)supplierBySourceLine.set(line.id,supplierCode);
+  });
   const supplierBySale=new Map();
   sourceLineBySale.forEach((sourceId,key)=>{
     const supplierCode=supplierBySourceLine.get(sourceId);
