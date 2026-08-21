@@ -55,7 +55,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .quick-product-master-modal{width:min(760px,100%)}.quick-product-master-form{max-height:calc(88vh - 50px);overflow:auto}.quick-product-master-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-product-master-grid .wide{grid-column:1/-1}.quick-product-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}.quick-product-code-button{min-width:72px;white-space:nowrap}.quick-product-code-candidates{display:none;padding:9px 10px;border:1px solid #9fb4c7;border-radius:7px;background:#f7fbff}.quick-product-code-candidates.open{display:grid;gap:8px}.quick-product-code-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#25445f;font-size:12px;font-weight:900}.quick-product-code-groups{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quick-product-code-group{display:grid;gap:6px}.quick-product-code-label{color:var(--muted);font-size:11px;font-weight:900}.quick-product-code-list{display:flex;gap:5px;flex-wrap:wrap}.quick-product-code-option{min-width:52px;min-height:32px;padding:0 8px;border:1px solid #8da7bd;border-radius:6px;background:#fff;color:#173a57;font-family:Consolas,monospace;font-weight:900;cursor:pointer}.quick-product-code-option:hover,.quick-product-code-option:focus-visible{border-color:var(--blue);background:var(--blue-bg);outline:none}.quick-product-code-note{color:var(--muted);font-size:11px;font-weight:800}.quick-product-master-status{min-height:36px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#f7f9fb;color:var(--muted);font-size:12px;font-weight:800}.quick-product-master-status.existing{border-color:#d4b36a;background:#fff8e8;color:#7a5100}.quick-product-master-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:700px){.quick-product-master-grid{grid-template-columns:1fr}.quick-product-master-grid .wide{grid-column:auto}.quick-product-code-groups{grid-template-columns:1fr}}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
-.ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-tools [hidden]{display:none!important}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue,.ar-status.overpaid,.ar-status.credit{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}
+.ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-tools [hidden]{display:none!important}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-table tbody tr.locked td{background:#f3f5f7}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue,.ar-status.overpaid,.ar-status.credit{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}.ap-closing-entry{grid-column:1/-1}
 .ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.ar-mode-tabs{display:flex;align-items:center;gap:4px;margin-bottom:10px;padding:4px;border:1px solid var(--line);border-radius:8px;background:#f3f5f7;overflow-x:auto}.ar-mode-tab{flex:0 0 auto;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}.ar-mode-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.13)}.ar-group-table{min-width:980px}.ar-group-table tbody tr:hover td{background:#f7f9fb}.ar-group-code{font-size:14px;font-weight:900}.ar-group-name{margin-left:5px;color:var(--muted)}.ar-group-alert{color:var(--danger);font-weight:900}.ar-summary-card.balance{border-color:#9bc9af;background:#f1faf4}.ar-summary-card.overdue{border-color:#efb9b3;background:#fff5f4}
 .ops-tools{display:grid;grid-template-columns:170px 150px minmax(190px,1fr) minmax(180px,1fr) auto auto;gap:8px;align-items:end}.ops-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.ops-table-wrap{max-height:560px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ops-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.ops-table th,.ops-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.ops-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ops-table input,.ops-table select{height:34px;min-height:34px;border-radius:6px}.ops-table tr.submitted td{background:#fff8e8}.ops-table tr.accepted td{background:#eef8f2}.ops-table tr.returned td{background:#fff0ef}.ops-actions{display:flex;gap:5px;align-items:center}.ops-money{text-align:right;font-family:Consolas,monospace;font-weight:900}.purchase-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-form .wide{grid-column:span 2}.purchase-form .full{grid-column:1/-1}.purchase-receipt{border-bottom:1px solid var(--line)}.purchase-receipt summary{display:grid;grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 120px auto;gap:8px;align-items:center;padding:9px 10px;cursor:pointer;font-weight:900;background:#fff}.purchase-receipt summary:hover{background:#f7f9fb}.purchase-detail{padding:10px;border-top:1px solid var(--line);background:#fbfcfd}.purchase-detail-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-correction-note{grid-column:1/-1;padding:8px 10px;border:1px solid #e6b86a;border-radius:7px;background:#fff8e8;color:#7a4a00;font-size:12px;font-weight:900}.purchase-detail-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0;margin-top:8px}.purchase-detail-table th,.purchase-detail-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.purchase-detail-table input{height:32px;min-height:32px}.purchase-detail-table .purchase-product-code{width:110px}.purchase-detail-table .purchase-product-name{width:190px}.purchase-detail-table .purchase-line-note{width:180px}.site-readonly{display:flex;align-items:center;min-height:38px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#f3f5f7;color:#334155;font-weight:900}.admin-box{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}
 .advance-entry-head{display:grid;grid-template-columns:150px 120px 180px minmax(180px,1fr) 180px minmax(220px,1.2fr);gap:8px;align-items:end}.advance-entry-head .wide{grid-column:span 2}.advance-entry-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}.advance-import-mode{display:inline-flex;align-items:stretch;height:38px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fff}.advance-import-mode-label{display:flex;align-items:center;padding:0 9px;background:#f3f5f7;color:var(--muted);font-size:11px;font-weight:900}.advance-import-mode button{min-width:92px;border:0;border-left:1px solid var(--line);border-radius:0;background:#fff;color:var(--text);font-weight:900;cursor:pointer}.advance-import-mode button.active{background:#174ea6;color:#fff}.advance-master-tools{display:flex;align-items:center;gap:6px;height:38px;padding-left:7px;border-left:1px solid var(--line)}.advance-master-tools label{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;font-weight:900}.advance-master-tools select{height:36px;min-height:36px;min-width:150px}.advance-master-tools .btn{height:36px;min-height:36px}.advance-master-count{min-width:52px;color:var(--muted);font-size:11px;font-weight:900}.advance-entry-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}.advance-entry-table-wrap{max-height:460px;overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:7px;background:#fff}.advance-entry-table{width:100%;min-width:1380px;border-collapse:separate;border-spacing:0}.advance-entry-table th,.advance-entry-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap;vertical-align:middle}.advance-entry-table th{position:sticky;top:0;z-index:3;background:#f7f9fb;color:var(--muted);font-weight:900}.advance-entry-table input,.advance-entry-table select{height:34px;min-height:34px;border-radius:6px}.advance-entry-table .product-code{width:118px}.advance-entry-table .product-name{width:220px}.advance-entry-table .origin{width:140px}.advance-entry-table .quantity{width:85px}.advance-entry-table .unit{width:76px}.advance-entry-table .price{width:100px}.advance-entry-table .memo{width:190px}.advance-entry-table .line-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.advance-entry-table tr.advance-master-selected td{background:#eef6ff}.advance-entry-table tr.invalid td{background:#fff0ef}.advance-stock-check,.advance-master-check{display:flex;align-items:center;justify-content:center}.advance-stock-check input,.advance-master-check input{width:18px;height:18px;min-height:18px}.advance-row-actions{display:flex;gap:4px}.advance-row-actions .small{min-width:46px}.advance-entry-hint{margin-left:auto;color:var(--muted);font-size:12px}
@@ -694,6 +694,28 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="ar-table-wrap" id="ap-table"><div class="sales-empty">「買掛読込」を押してください。</div></div>
 
       <div class="ar-entry-grid">
+        <details class="ar-entry ap-closing-entry" open>
+          <summary>買掛締め</summary>
+          <div class="ar-entry-body">
+            <div class="ar-closing-grid">
+              <label>対象月<input id="ap-closing-month" type="month" onchange="refreshPayableClosingPreview()"></label>
+              <label>仕入先コード<input id="ap-closing-supplier" list="supplier-code-list" class="ime-en" autocomplete="off" placeholder="締める仕入先" oninput="schedulePayableClosingPreview()"></label>
+              <div class="hint">支払条件マスタの締め日から期間を計算します。締め後は対象期間の買掛と支払がロックされます。</div>
+              <button class="btn primary" type="button" onclick="closeAccountsPayablePeriod()">買掛締めを実行</button>
+              <div class="ar-closing-preview" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+                <div class="ar-summary-card"><div class="ar-summary-label">締め期間</div><div class="ar-summary-value" id="ap-closing-period" style="font-size:15px">-</div></div>
+                <div class="ar-summary-card"><div class="ar-summary-label">支払期限</div><div class="ar-summary-value" id="ap-closing-due-date" style="font-size:15px">-</div></div>
+                <div class="ar-summary-card"><div class="ar-summary-label">前回繰越</div><div class="ar-summary-value" id="ap-closing-opening">¥0</div></div>
+                <div class="ar-summary-card"><div class="ar-summary-label">今回仕入</div><div class="ar-summary-value" id="ap-closing-purchase">¥0</div></div>
+                <div class="ar-summary-card"><div class="ar-summary-label">期間内支払</div><div class="ar-summary-value" id="ap-closing-payment">¥0</div></div>
+                <div class="ar-summary-card balance"><div class="ar-summary-label">締め後買掛残高</div><div class="ar-summary-value" id="ap-closing-balance">¥0</div></div>
+              </div>
+            </div>
+            <div class="hint" id="ap-closing-state">対象月と仕入先を選択してください。</div>
+            <div class="ar-closing-history" id="ap-closing-history"><div class="sales-empty">買掛締め履歴は買掛読込後に表示されます。</div></div>
+          </div>
+        </details>
+
         <details class="ar-entry">
           <summary>買掛初期残高を登録</summary>
           <div class="ar-entry-body">
@@ -916,6 +938,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
                 <option value="purchase_receipt_lines">仕入明細</option>
                 <option value="accounts_payable">買掛</option>
                 <option value="accounts_payable_payments">支払</option>
+                <option value="accounts_payable_closings">買掛締め</option>
                 <option value="product_master">商品マスタ</option>
                 <option value="customer_master">得意先マスタ</option>
                 <option value="supplier_master">仕入先マスタ</option>
@@ -1263,8 +1286,11 @@ let advancePurchaseImportMode="detail";
 const advancePurchaseMasterPriceSelections=new Set();
 let payableRows=[];
 let payablePayments=[];
+let payableClosings=[];
 let payablesLoaded=false;
+let payableClosingDbReady=true;
 let payableSupplierProfile=null;
+let payableClosingProfile=null;
 let auditEvents=[];
 let selectedAuditEvent=null;
 let auditSnapshots=[];
@@ -8317,12 +8343,21 @@ async function reviewExternalAssignment(id,action){
 }
 function apDbErrorMessage(error){
   const message=String(error?.message||error||"");
+  if(error?.code==="PGRST202"||/accounts_payable_closings|close_accounts_payable_period|reopen_accounts_payable_period/i.test(message)){
+    return "買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql をSupabase SQL Editorで実行してください。";
+  }
   if(error?.code==="42P01"||error?.code==="PGRST205"||/accounts_payable/i.test(message)&&/does not exist|schema cache|not found/i.test(message)){
     return "買掛管理用SQLが未実行です。accounts-payable-migration.sql を実行してください。";
   }
   return sitePartnerDbError(error);
 }
+function apSameSupplier(a,b){return String(a||"").trim().toLowerCase()===String(b||"").trim().toLowerCase()}
 function apPaymentsFor(payableId){return payablePayments.filter(payment=>payment.payable_id===payableId)}
+function apClosingIsActive(closingId){
+  if(!closingId)return false;
+  const closing=payableClosings.find(row=>row.id===closingId);
+  return !closing||closing.status==="closed";
+}
 function apRecordState(row){
   const amount=arNumber(row.amount_jpy);
   const paid=apPaymentsFor(row.id).reduce((sum,payment)=>sum+arNumber(payment.amount_jpy),0);
@@ -8387,12 +8422,13 @@ function renderPayables(){
   }
   const selectedId=val("ap-payment-payable-id");
   table.innerHTML=`<table class="ar-table">
-    <thead><tr><th>請求書日</th><th>管理番号</th><th>仕入先</th><th>仕入期間</th><th>請求額</th><th>支払済</th><th>買掛残</th><th>支払期限</th><th>状態</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
+    <thead><tr><th>請求書日</th><th>管理番号</th><th>仕入先</th><th>仕入期間</th><th>請求額</th><th>支払済</th><th>買掛残</th><th>支払期限</th><th>状態</th><th>締め</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
     <tbody>${enriched.slice(0,2000).map(row=>{
-      const canDelete=currentUserIsAdmin()&&["opening","manual","adjustment"].includes(row.source_type);
+      const locked=apClosingIsActive(row.closing_id);
+      const canDelete=currentUserIsAdmin()&&!locked&&["opening","manual","adjustment"].includes(row.source_type);
       const freee=row.freee_excluded?"計上済":(row.freee_exported_at?"出力済":"未出力");
       const period=[row.period_from,row.period_to].filter(Boolean).join(" ～ ")||"-";
-      return `<tr class="${selectedId===row.id?"selected":""}">
+      return `<tr class="${[selectedId===row.id?"selected":"",locked?"locked":""].filter(Boolean).join(" ")}">
         <td>${esc(row.invoice_date||"")}</td>
         <td>${esc(row.invoice_no||"-")}</td>
         <td><b>${esc(row.supplier_code||"")}</b>${row.supplier_name?` ${esc(row.supplier_name)}`:""}</td>
@@ -8402,6 +8438,7 @@ function renderPayables(){
         <td class="ar-money">${esc(salesRefMoney(row._state.balance)||"0")}</td>
         <td>${esc(row.due_date||"-")}</td>
         <td><span class="ar-status ${esc(row._state.key)}">${esc(row._state.label)}</span></td>
+        <td>${locked?'<span class="ar-lock">締め済</span>':'未締め'}</td>
         <td>${esc(apSourceLabel(row.source_type))}</td>
         <td>${esc(freee)}</td>
         <td><button class="small primary" type="button" onclick="selectPayableForPayment('${esc(row.id)}')">支払</button>${canDelete?` <button class="small danger" type="button" onclick="deletePayable('${esc(row.id)}')">削除</button>`:""}</td>
@@ -8424,16 +8461,266 @@ async function loadPayables(){
       arReadAll("accounts_payable","invoice_date"),
       arReadAll("accounts_payable_payments","payment_date")
     ]);
+    let closings=[];
+    payableClosingDbReady=true;
+    try{
+      closings=await arReadAll("accounts_payable_closings","period_to");
+    }catch(error){
+      const message=String(error?.message||error||"");
+      if(error?.code==="42P01"||error?.code==="PGRST205"||/accounts_payable_closings/i.test(message)){
+        payableClosingDbReady=false;
+      }else throw error;
+    }
     payableRows=rows;
     payablePayments=payments;
+    payableClosings=closings;
     payablesLoaded=true;
     renderPayables();
     renderPayablePaymentHistory();
+    refreshPayableClosingPreview();
   }catch(error){
-    payableRows=[];payablePayments=[];payablesLoaded=false;
+    payableRows=[];payablePayments=[];payableClosings=[];payablesLoaded=false;
     state.textContent=apDbErrorMessage(error);
     renderPayables();
+    renderPayableClosingPreview();
   }
+}
+function apClosingSnapshot(supplierCode,range){
+  const records=payableRows.filter(row=>apSameSupplier(row.supplier_code,supplierCode));
+  const recordIds=new Set(records.map(row=>row.id));
+  const beforeCharges=records
+    .filter(row=>String(row.invoice_date||"")<range.from)
+    .reduce((sum,row)=>sum+arNumber(row.amount_jpy),0);
+  const beforePayments=payablePayments
+    .filter(payment=>recordIds.has(payment.payable_id)&&String(payment.payment_date||"")<range.from)
+    .reduce((sum,payment)=>sum+arNumber(payment.amount_jpy),0);
+  const charges=records
+    .filter(row=>String(row.invoice_date||"")>=range.from&&String(row.invoice_date||"")<=range.to)
+    .sort((a,b)=>String(a.invoice_date||"").localeCompare(String(b.invoice_date||""))||String(a.invoice_no||a.id).localeCompare(String(b.invoice_no||b.id)));
+  const payments=payablePayments
+    .filter(payment=>{
+      const date=String(payment.payment_date||"");
+      return recordIds.has(payment.payable_id)&&date>=range.from&&date<=range.to;
+    })
+    .sort((a,b)=>String(a.payment_date||"").localeCompare(String(b.payment_date||""))||String(a.id).localeCompare(String(b.id)));
+  const openingBalance=arRound(beforeCharges-beforePayments);
+  const purchaseAmount=arRound(charges.reduce((sum,row)=>sum+arNumber(row.amount_jpy),0));
+  const paymentAmount=arRound(payments.reduce((sum,payment)=>sum+arNumber(payment.amount_jpy),0));
+  return {
+    supplierCode,
+    range,
+    charges,
+    payments,
+    openingBalance,
+    purchaseAmount,
+    paymentAmount,
+    closingBalance:arRound(openingBalance+purchaseAmount-paymentAmount)
+  };
+}
+function apClosingCalculation(){
+  const inputCode=val("ap-closing-supplier").trim();
+  const supplier=lookupSupplierByCode(inputCode);
+  const supplierCode=supplier?.code||inputCode;
+  const month=val("ap-closing-month");
+  if(!supplierCode||!month)return {error:"対象月と仕入先を選択してください。"};
+  if(!supplier)return {error:"仕入先マスタに登録済みの仕入先コードを選択してください。"};
+  if(!payableClosingProfile||!apSameSupplier(payableClosingProfile.supplier_code,supplierCode)){
+    return {error:`${supplierCode} の支払条件を読み込んでください。`};
+  }
+  const closingDay=Math.min(31,Math.max(1,Math.trunc(arNumber(payableClosingProfile.closing_day))||31));
+  const paymentDay=Math.min(31,Math.max(1,Math.trunc(arNumber(payableClosingProfile.payment_day))||31));
+  const paymentMonthOffset=Math.max(0,Math.trunc(arNumber(payableClosingProfile.payment_month_offset)));
+  const periodTo=arMonthDay(month,closingDay);
+  const priorClosings=payableClosings
+    .filter(row=>apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&String(row.period_to)<periodTo)
+    .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to)));
+  const previousPeriodTo=priorClosings[0]?.period_to||arMonthDay(month,closingDay,-1);
+  const periodFrom=arShiftDate(previousPeriodTo,1);
+  const dueDate=arMonthDay(month,paymentDay,paymentMonthOffset);
+  if(periodFrom>periodTo)return {error:"前回締め日が対象月より後です。対象月を確認してください。"};
+  const existing=payableClosings.find(row=>
+    apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&
+    !(String(row.period_to)<periodFrom||String(row.period_from)>periodTo)
+  );
+  const range={from:periodFrom,to:periodTo,raw:`${periodFrom}-${periodTo}`};
+  const snapshot=payablesLoaded?apClosingSnapshot(supplierCode,range):null;
+  return {supplierCode,supplier,month,profile:payableClosingProfile,range,dueDate,snapshot,existing};
+}
+async function loadPayableClosingProfile(code){
+  const supplier=lookupSupplierByCode(code);
+  if(!supplier){payableClosingProfile=null;renderPayableClosingPreview();return null}
+  const client=initSupabase();
+  const user=await ensureCurrentUser();
+  if(!client||!user){payableClosingProfile=null;renderPayableClosingPreview();return null}
+  const {data,error}=await client.from("accounts_payable_supplier_profiles").select("*").eq("supplier_code",supplier.code).maybeSingle();
+  if(error){payableClosingProfile=null;renderPayableClosingPreview();return null}
+  payableClosingProfile=data||null;
+  renderPayableClosingPreview();
+  return payableClosingProfile;
+}
+function schedulePayableClosingPreview(){
+  clearTimeout(window.__apClosingPreviewTimer);
+  window.__apClosingPreviewTimer=setTimeout(async()=>{
+    const inputCode=val("ap-closing-supplier").trim();
+    const supplier=lookupSupplierByCode(inputCode);
+    if(!supplier){payableClosingProfile=null;renderPayableClosingPreview();return}
+    if(!apSameSupplier(payableClosingProfile?.supplier_code,supplier.code))await loadPayableClosingProfile(supplier.code);
+    else renderPayableClosingPreview();
+  },350);
+}
+function refreshPayableClosingPreview(){
+  const inputCode=val("ap-closing-supplier").trim();
+  const supplier=lookupSupplierByCode(inputCode);
+  if(supplier&&!apSameSupplier(payableClosingProfile?.supplier_code,supplier.code)){
+    loadPayableClosingProfile(supplier.code);
+    return;
+  }
+  renderPayableClosingPreview();
+}
+function renderPayableClosingPreview(){
+  const period=document.getElementById("ap-closing-period");
+  const dueDate=document.getElementById("ap-closing-due-date");
+  const opening=document.getElementById("ap-closing-opening");
+  const purchase=document.getElementById("ap-closing-purchase");
+  const payment=document.getElementById("ap-closing-payment");
+  const balance=document.getElementById("ap-closing-balance");
+  const state=document.getElementById("ap-closing-state");
+  if(!period||!dueDate||!opening||!purchase||!payment||!balance||!state)return;
+  const calculation=apClosingCalculation();
+  if(calculation.error){
+    period.textContent="-";dueDate.textContent="-";opening.textContent="¥0";purchase.textContent="¥0";payment.textContent="¥0";balance.textContent="¥0";
+    state.textContent=payableClosingDbReady?calculation.error:"買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql を実行してください。";
+    renderPayableClosingHistory();
+    return;
+  }
+  const snapshot=calculation.snapshot||{openingBalance:0,purchaseAmount:0,paymentAmount:0,closingBalance:0};
+  period.textContent=`${calculation.range.from} ～ ${calculation.range.to}`;
+  dueDate.textContent=calculation.dueDate;
+  opening.textContent=`¥${salesRefMoney(snapshot.openingBalance)||"0"}`;
+  purchase.textContent=`¥${salesRefMoney(snapshot.purchaseAmount)||"0"}`;
+  payment.textContent=`¥${salesRefMoney(snapshot.paymentAmount)||"0"}`;
+  balance.textContent=`¥${salesRefMoney(snapshot.closingBalance)||"0"}`;
+  if(!payableClosingDbReady){
+    state.textContent="買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql を実行してください。";
+  }else if(calculation.existing){
+    state.textContent="この期間は買掛締め済みです。";
+  }else if(!payablesLoaded){
+    state.textContent="「買掛読込」を押すと締め金額を確認できます。";
+  }else{
+    state.textContent=`前回繰越 ¥${salesRefMoney(snapshot.openingBalance)||"0"} + 今回仕入 ¥${salesRefMoney(snapshot.purchaseAmount)||"0"} - 期間内支払 ¥${salesRefMoney(snapshot.paymentAmount)||"0"} = 締め後買掛残高 ¥${salesRefMoney(snapshot.closingBalance)||"0"}`;
+  }
+  renderPayableClosingHistory();
+}
+function renderPayableClosingHistory(){
+  const container=document.getElementById("ap-closing-history");
+  if(!container)return;
+  const supplier=lookupSupplierByCode(val("ap-closing-supplier").trim());
+  const rows=payableClosings
+    .filter(row=>!supplier||apSameSupplier(row.supplier_code,supplier.code))
+    .sort((a,b)=>String(b.period_to||"").localeCompare(String(a.period_to||""))||String(b.closed_at||"").localeCompare(String(a.closed_at||"")))
+    .slice(0,100);
+  if(!rows.length){container.innerHTML='<div class="sales-empty">買掛締め履歴はありません。</div>';return}
+  container.innerHTML=rows.map(row=>{
+    const status=row.status==="closed"?"締め済":"解除済";
+    const note=row.status==="reopened"?`解除理由: ${row.reopen_reason||"-"}`:`締め日時: ${String(row.closed_at||"").replace("T"," ").slice(0,16)}`;
+    const reopenButton=currentUserIsAdmin()&&row.status==="closed"
+      ?`<button class="small danger" type="button" onclick="reopenAccountsPayablePeriod('${esc(row.id)}')">締め解除</button>`:"";
+    return `<div class="ar-closing-row ${row.status==="reopened"?"reopened":""}">
+      <b>${esc(row.supplier_code||"")}</b>
+      <span>${esc(row.period_from||"")} ～ ${esc(row.period_to||"")}</span>
+      <span>期限 ${esc(row.due_date||"-")}</span>
+      <span class="ar-closing-amount">残高 ¥${esc(salesRefMoney(row.closing_balance_jpy)||"0")}</span>
+      <span class="ar-status ${row.status==="closed"?"paid":""}">${esc(status)}</span>
+      <span title="${esc(note)}">${esc(note)}</span>
+      ${reopenButton}
+    </div>`;
+  }).join("");
+}
+function apClosingSnapshotPayload(snapshot,dueDate){
+  return {
+    due_date:dueDate,
+    range:snapshot.range,
+    opening_balance:snapshot.openingBalance,
+    purchase_amount:snapshot.purchaseAmount,
+    payment_amount:snapshot.paymentAmount,
+    closing_balance:snapshot.closingBalance,
+    charges:snapshot.charges.map(row=>({id:row.id,invoice_date:row.invoice_date,invoice_no:row.invoice_no,amount_jpy:row.amount_jpy})),
+    payments:snapshot.payments.map(row=>({id:row.id,payment_date:row.payment_date,amount_jpy:row.amount_jpy,bank_fee_jpy:row.bank_fee_jpy}))
+  };
+}
+async function closeAccountsPayablePeriod(){
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  if(!payableClosingDbReady){alert("買掛締め用SQLが未実行です。accounts-payable-closing-migration.sql をSupabase SQL Editorで実行してください。");return}
+  const supplier=lookupSupplierByCode(val("ap-closing-supplier").trim());
+  const closingMonth=val("ap-closing-month");
+  if(!supplier||!closingMonth){alert("対象月と仕入先コードを選択してください。");return}
+  if(!payableClosingProfile||!apSameSupplier(payableClosingProfile.supplier_code,supplier.code)){
+    const profile=await loadPayableClosingProfile(supplier.code);
+    if(!profile){alert(`${supplier.code} の支払条件を先にマスタ登録してください。`);return}
+  }
+  setAppBusy(true,"仕入確定データを買掛へ反映しています...");
+  try{
+    const {error:syncError}=await initSupabase().rpc("sync_confirmed_purchases_to_payables");
+    if(syncError)throw syncError;
+    await loadPayables();
+    const calculation=apClosingCalculation();
+    if(calculation.error)throw new Error(calculation.error);
+    if(calculation.existing)throw new Error("この期間はすでに買掛締め済みです。");
+    const snapshot=calculation.snapshot;
+    if(!snapshot.charges.length&&!snapshot.payments.length&&Math.abs(snapshot.openingBalance)<.005){
+      throw new Error("締め対象の買掛・支払・繰越残高がありません。");
+    }
+    const message=[
+      `${supplier.code} ${supplier.name||""} を買掛締めします。`,
+      `期間: ${calculation.range.from} ～ ${calculation.range.to}`,
+      `前回繰越: ¥${salesRefMoney(snapshot.openingBalance)||"0"}`,
+      `今回仕入: ¥${salesRefMoney(snapshot.purchaseAmount)||"0"}`,
+      `期間内支払: ¥${salesRefMoney(snapshot.paymentAmount)||"0"}`,
+      `締め後買掛残高: ¥${salesRefMoney(snapshot.closingBalance)||"0"}`,
+      `支払期限: ${calculation.dueDate}`,
+      "",
+      "締め後は対象期間の明細がロックされます。実行しますか？"
+    ].join("\n");
+    setAppBusy(false);
+    if(!confirm(message))return;
+    setAppBusy(true,"買掛締めを保存して明細をロックしています...");
+    const {error}=await initSupabase().rpc("close_accounts_payable_period",{
+      p_supplier_code:supplier.code,
+      p_period_from:calculation.range.from,
+      p_period_to:calculation.range.to,
+      p_due_date:calculation.dueDate,
+      p_opening_balance_jpy:snapshot.openingBalance,
+      p_purchase_amount_jpy:snapshot.purchaseAmount,
+      p_payment_amount_jpy:snapshot.paymentAmount,
+      p_closing_balance_jpy:snapshot.closingBalance,
+      p_snapshot:apClosingSnapshotPayload(snapshot,calculation.dueDate)
+    });
+    if(error)throw error;
+    await loadPayables();
+    alert("買掛締めが完了しました。");
+  }catch(error){alert(apDbErrorMessage(error))}
+  finally{setAppBusy(false)}
+}
+async function reopenAccountsPayablePeriod(closingId){
+  const user=await ensureCurrentUser();
+  if(!user){alert("ログインしてください。");return}
+  await loadCurrentUserRole();
+  if(!currentUserIsAdmin()){alert("買掛締めを解除できるのは管理者のみです。");return}
+  const closing=payableClosings.find(row=>row.id===closingId);
+  if(!closing||closing.status!=="closed")return;
+  const reason=prompt(`${closing.supplier_code} ${closing.period_from}～${closing.period_to}\n締め解除の理由を入力してください。`,"");
+  if(reason===null)return;
+  if(!reason.trim()){alert("締め解除の理由は必須です。");return}
+  if(!confirm("締めを解除すると対象明細を修正できる状態に戻します。続けますか？"))return;
+  setAppBusy(true,"買掛締めを解除しています...");
+  try{
+    const {error}=await initSupabase().rpc("reopen_accounts_payable_period",{p_closing_id:closingId,p_reason:reason.trim()});
+    if(error)throw error;
+    await loadPayables();
+    alert("買掛締めを解除しました。解除理由はDBに保存されています。");
+  }catch(error){alert(apDbErrorMessage(error))}
+  finally{setAppBusy(false)}
 }
 async function syncPurchasesToPayables(){
   const client=initSupabase();
@@ -8586,10 +8873,16 @@ function renderPayablePaymentHistory(){
   if(!payableId){box.innerHTML='<div class="sales-empty">買掛を選択すると支払履歴を表示します。</div>';return}
   const rows=apPaymentsFor(payableId).sort((a,b)=>String(b.payment_date).localeCompare(String(a.payment_date))||String(b.created_at).localeCompare(String(a.created_at)));
   if(!rows.length){box.innerHTML='<div class="sales-empty">支払履歴はありません。</div>';return}
-  box.innerHTML=rows.map(payment=>`<div class="ar-payment-row"><span>${esc(payment.payment_date||"")}</span><span class="ar-money">¥${esc(salesRefMoney(payment.amount_jpy)||"0")}</span><span>手数料 ¥${esc(salesRefMoney(payment.bank_fee_jpy)||"0")}</span><span>${esc(payment.reference_no||payment.memo||"-")}</span>${currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deletePayablePayment('${esc(payment.id)}')">削除</button>`:"<span></span>"}</div>`).join("");
+  box.innerHTML=rows.map(payment=>{
+    const locked=apClosingIsActive(payment.closing_id);
+    const action=locked?'<span class="ar-lock">締め済</span>':(currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deletePayablePayment('${esc(payment.id)}')">削除</button>`:"<span></span>");
+    return `<div class="ar-payment-row"><span>${esc(payment.payment_date||"")}</span><span class="ar-money">¥${esc(salesRefMoney(payment.amount_jpy)||"0")}</span><span>手数料 ¥${esc(salesRefMoney(payment.bank_fee_jpy)||"0")}</span><span>${esc(payment.reference_no||payment.memo||"-")}</span>${action}</div>`;
+  }).join("");
 }
 async function deletePayablePayment(id){
   if(!currentUserIsAdmin()){alert("支払を削除できるのは管理者のみです。");return}
+  const payment=payablePayments.find(row=>row.id===id);
+  if(apClosingIsActive(payment?.closing_id)){alert("買掛締め済みの支払は削除できません。先に締め解除してください。");return}
   if(!confirm("この支払履歴を削除しますか？"))return;
   const {error}=await initSupabase().from("accounts_payable_payments").delete().eq("id",id);
   if(error){alert(apDbErrorMessage(error));return}
@@ -9338,6 +9631,7 @@ function init(){
   document.getElementById("ap-opening-invoice-date").value=today();
   document.getElementById("ap-payment-date").value=today();
   document.getElementById("ar-closing-month").value=today().slice(0,7);
+  document.getElementById("ap-closing-month").value=today().slice(0,7);
   document.getElementById("external-work-date").value=today();
   document.getElementById("supplier-review-date").value=today();
   document.getElementById("purchase-filter-date").value=today();
@@ -12337,7 +12631,7 @@ const AUDIT_TABLE_LABELS={
   accounts_receivable_statements:"請求書",accounts_receivable_closings:"請求締め",
   external_work_assignments:"外部作業依頼",external_work_assignment_lines:"外部作業明細",external_work_inputs:"外部入力",
   purchase_receipts:"仕入",purchase_receipt_lines:"仕入明細",inventory_lots:"在庫",inventory_allocations:"在庫引当",
-  accounts_payable_supplier_profiles:"支払条件",accounts_payable:"買掛",accounts_payable_payments:"支払",
+  accounts_payable_supplier_profiles:"支払条件",accounts_payable:"買掛",accounts_payable_payments:"支払",accounts_payable_closings:"買掛締め",
   importer_master:"輸入社マスタ",supplier_master:"仕入先マスタ",product_master:"商品マスタ",
   product_price_contracts:"契約価格",customer_master:"得意先マスタ",product_guide_templates:"商品案内テンプレート",
   product_guide_variants:"商品案内候補",product_guide_template_rows:"商品案内明細",site_master:"拠点マスタ",
