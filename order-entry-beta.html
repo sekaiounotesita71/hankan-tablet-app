@@ -4140,56 +4140,83 @@ function salesRefDatabaseRange(){
       merged.push({...range});
     }
   });
-  return {ranges:merged,label:`${input.from} - ${input.to}（前年比較を含む）`};
+  const queryRanges=merged.flatMap(range=>salesRefSplitQueryRangeByMonth(range));
+  return {ranges:queryRanges,label:`${input.from} - ${input.to}（前年比較を含む）`};
+}
+function salesRefSplitQueryRangeByMonth(range){
+  if(!range?.from||!range?.to)return [range];
+  const result=[];
+  let cursor=range.from;
+  while(cursor<=range.to){
+    const monthEnd=salesRefEndOfMonth(cursor.slice(0,7));
+    const to=monthEnd&&monthEnd<range.to?monthEnd:range.to;
+    result.push({from:cursor,to});
+    if(to>=range.to)break;
+    const next=new Date(`${to}T00:00:00Z`);
+    next.setUTCDate(next.getUTCDate()+1);
+    cursor=next.toISOString().slice(0,10);
+  }
+  return result;
 }
 async function salesRefReadPaged(buildQuery,pageSize=1000){
-  const firstResult=await buildQuery(false).range(0,pageSize-1);
+  const firstResult=await buildQuery(true).range(0,pageSize-1);
   if(firstResult.error)throw firstResult.error;
   const rows=[...(firstResult.data||[])];
-  if(rows.length<pageSize)return rows;
-  const parallelPages=2;
-  for(let batchOffset=pageSize;;batchOffset+=pageSize*parallelPages){
-    const pages=await Promise.all(Array.from({length:parallelPages},(_,index)=>{
-      const offset=batchOffset+pageSize*index;
-      return buildQuery(false).range(offset,offset+pageSize-1);
-    }));
-    let complete=false;
-    for(const {data,error} of pages){
-      if(error)throw error;
-      const page=data||[];
-      rows.push(...page);
-      if(page.length<pageSize){complete=true;break}
+  const total=Number(firstResult.count);
+  if(Number.isFinite(total)){
+    const pageTasks=[];
+    for(let offset=pageSize;offset<total;offset+=pageSize){
+      pageTasks.push(buildQuery(false).range(offset,Math.min(offset+pageSize-1,total-1)));
     }
-    if(complete)break;
+    const pages=await Promise.all(pageTasks);
+    pages.forEach(({data,error})=>{
+      if(error)throw error;
+      rows.push(...(data||[]));
+    });
+    return rows;
+  }
+  if(rows.length<pageSize)return rows;
+  for(let offset=pageSize;;offset+=pageSize){
+    const {data,error}=await buildQuery(false).range(offset,offset+pageSize-1);
+    if(error)throw error;
+    const page=data||[];
+    rows.push(...page);
+    if(page.length<pageSize)break;
   }
   return rows;
 }
 async function salesRefReadCurrentRows(client,range){
-  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(includeCount=>{
+  return salesRefReadChunks(range.ranges,1,async parts=>{
+    const part=parts[0];
+    return salesRefReadPaged(includeCount=>{
     let query=client.from("sales_records").select("*",includeCount?{count:"exact"}:undefined).order("finalized_at",{ascending:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("work_date",part.from);
     if(part.to)query=query.lte("work_date",part.to);
     return query;
-  })));
-  return batches.flat();
+    });
+  },4);
 }
 async function salesRefReadHistoricalRows(client,range){
-  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(includeCount=>{
+  return salesRefReadChunks(range.ranges,1,async parts=>{
+    const part=parts[0];
+    return salesRefReadPaged(includeCount=>{
     let query=client.from("historical_sales_records").select("*",includeCount?{count:"exact"}:undefined).order("finalized_at",{ascending:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("finalized_at",`${part.from}T00:00:00`);
     if(part.to)query=query.lte("finalized_at",`${part.to}T23:59:59.999`);
     return query;
-  })));
-  return batches.flat();
+    });
+  },4);
 }
 async function salesRefReadSessions(client,range){
-  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(includeCount=>{
+  return salesRefReadChunks(range.ranges,1,async parts=>{
+    const part=parts[0];
+    return salesRefReadPaged(includeCount=>{
     let query=client.from("work_sessions").select("id,name,work_date,shipping_fee,shipping_fees,locked,status,finalized_at,updated_at,created_at",includeCount?{count:"exact"}:undefined).order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("work_date",part.from);
     if(part.to)query=query.lte("work_date",part.to);
     return query;
-  })));
-  return batches.flat();
+    });
+  },4);
 }
 async function loadSalesReferenceBoard(){
   const loadSequence=++salesReferenceLoadSequence;
