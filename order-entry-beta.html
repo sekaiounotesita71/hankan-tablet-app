@@ -7936,6 +7936,10 @@ async function deletePayable(id){
   await loadPayables();
 }
 function purchaseStatusLabel(status){return {expected:"未照合",invoice_received:"請求書受領",confirmed:"仕入確定",cancelled:"取消"}[status]||status||""}
+function purchaseReceiptTypeLabel(receipt){
+  if(receipt?.receipt_type==="advance")return "事前仕入";
+  return receipt?.source_assignment_id?"外部作業":"売上連動仕入";
+}
 async function loadPurchaseReceipts(){
   if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
   const state=document.getElementById("purchase-state");state.textContent="読込中...";state.className="pill warn";
@@ -7958,7 +7962,7 @@ function renderPurchaseReceipts(){
   box.innerHTML=purchaseReceipts.map(receipt=>{
     const locked=receipt.status==="confirmed";const disabled=locked?"disabled":"";
     const lines=receipt.lines.map(line=>`<tr><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name)}</td><td><input value="${esc(line.origin||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','origin',this.value)"></td><td><input class="ops-money" inputmode="decimal" value="${esc(line.actual_qty??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_qty',this.value)"></td><td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_unit',this.value)">${purchaseUnitOptions(line.actual_unit)}</select></td><td><input class="ops-money" inputmode="decimal" value="${esc(line.unit_price??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','unit_price',this.value)"></td><td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','price_unit',this.value)">${purchaseUnitOptions(line.price_unit)}</select></td><td class="ops-money">${Number(line.line_amount||0).toLocaleString("ja-JP")}</td><td><input type="checkbox" style="width:18px;min-height:18px" ${line.track_inventory?"checked":""} ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','track_inventory',this.checked)"></td></tr>`).join("");
-    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(receipt.receipt_type==="advance"?"事前仕入":"外部作業")}</span><span>${esc(purchaseStatusLabel(receipt.status))}</span><span class="ops-money">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid"><label>請求書番号<input value="${esc(receipt.supplier_invoice_no||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','supplier_invoice_no',this.value)"></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','tax_amount',this.value)"></label><label>合計<div class="site-readonly">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end"><button class="btn primary" type="button" ${disabled} onclick="confirmPurchaseReceipt('${esc(receipt.id)}')">仕入確定</button></div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税抜金額</th><th>在庫</th></tr></thead><tbody>${lines||'<tr><td colspan="9">明細なし</td></tr>'}</tbody></table></div></div></details>`;
+    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(purchaseReceiptTypeLabel(receipt))}</span><span>${esc(purchaseStatusLabel(receipt.status))}</span><span class="ops-money">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid"><label>請求書番号<input value="${esc(receipt.supplier_invoice_no||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','supplier_invoice_no',this.value)"></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','tax_amount',this.value)"></label><label>合計<div class="site-readonly">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end"><button class="btn primary" type="button" ${disabled} onclick="confirmPurchaseReceipt('${esc(receipt.id)}')">仕入確定</button></div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税抜金額</th><th>在庫</th></tr></thead><tbody>${lines||'<tr><td colspan="9">明細なし</td></tr>'}</tbody></table></div></div></details>`;
   }).join("");
 }
 function purchaseUnitOptions(value){return ["Kg","pkt","PC","CS"].map(unit=>`<option value="${unit}" ${String(value||"").toLowerCase()===unit.toLowerCase()?"selected":""}>${unit}</option>`).join("")}
@@ -8261,7 +8265,7 @@ function removeAdvancePurchaseRow(index){
   saveAdvancePurchaseDraft();
 }
 function clearAdvancePurchaseRows(options={}){
-  if(options.confirm!==false&&advancePurchaseActiveRows().length&&!confirm("入力中の事前仕入明細をクリアしますか？\n登録済みの仕入データは削除されません。"))return;
+  if(options.confirm!==false&&advancePurchaseActiveRows().length&&!confirm("入力中の仕入明細をクリアしますか？\n登録済みの仕入データは削除されません。"))return;
   advancePurchaseRows=[blankAdvancePurchaseRow()];
   document.getElementById("advance-purchase-invoice").value="";
   document.getElementById("advance-purchase-note").value="";
@@ -8345,8 +8349,9 @@ async function saveAdvancePurchaseBatch(){
     source_sales_ids:[...new Set((Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[]).filter(Boolean))]
   }));
   const hasSalesLinks=lines.some(line=>line.source_sales_ids.length);
+  const purchaseKindLabel=hasSalesLinks?"売上連動仕入":"事前仕入";
   advancePurchaseSaving=true;
-  setAppBusy(true,`${lines.length}件の事前仕入を一括登録しています...`);
+  setAppBusy(true,`${lines.length}件の${purchaseKindLabel}を一括登録しています...`);
   try{
     const rpcName=hasSalesLinks?"create_advance_purchase_batch_v2":"create_advance_purchase_batch";
     const {error}=await supabaseClient.rpc(rpcName,{
@@ -8366,7 +8371,7 @@ async function saveAdvancePurchaseBatch(){
     document.getElementById("purchase-filter-supplier").value=supplierCode;
     document.getElementById("purchase-filter-status").value="";
     await loadPurchaseReceipts();
-    alert(`${lines.length}件を1枚の事前仕入伝票として登録しました。`);
+    alert(`${lines.length}件を1枚の${purchaseKindLabel}伝票として登録しました。`);
   }catch(error){
     const errorText=String(error?.message||"");
     const duplicateSales=error?.code==="23505"&&/purchase_sales_links|sales_record_id|sales record has already/i.test(errorText);

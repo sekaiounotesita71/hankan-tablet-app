@@ -1,4 +1,4 @@
--- Atomic multi-line entry for purchases without an order.
+-- Atomic multi-line entry for manual advance purchases and sales-linked purchases.
 -- Run after site-partner-purchase-migration.sql.
 
 begin;
@@ -238,7 +238,7 @@ begin
     purchase_date, supplier_invoice_no, invoice_date, subtotal, total_amount,
     note, created_by
   ) values (
-    'advance',
+    'order',
     case when coalesce(btrim(p_supplier_invoice_no),'') = '' then 'expected' else 'invoice_received' end,
     p_site_code,
     p_supplier_code,
@@ -298,5 +298,17 @@ $$;
 
 revoke all on function public.create_advance_purchase_batch_v2(date,text,text,text,text,jsonb) from public;
 grant execute on function public.create_advance_purchase_batch_v2(date,text,text,text,text,jsonb) to authenticated;
+
+-- Previous versions classified every batch as an advance purchase. A linked
+-- sales record proves that the receipt is a regular sales-linked purchase.
+update public.purchase_receipts receipt
+set receipt_type = 'order',
+    updated_at = now()
+where receipt.receipt_type = 'advance'
+  and exists (
+    select 1
+    from public.purchase_sales_links link
+    where link.purchase_receipt_id = receipt.id
+  );
 
 commit;
