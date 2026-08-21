@@ -3984,9 +3984,25 @@ function salesRefDatabaseRange(){
   return {ranges:merged,label:`${input.from} - ${input.to}（前年比較を含む）`};
 }
 async function salesRefReadPaged(buildQuery,pageSize=1000){
-  const rows=[];
-  for(let offset=0;;offset+=pageSize){
-    const {data,error}=await buildQuery().range(offset,offset+pageSize-1);
+  const firstResult=await buildQuery(true).range(0,pageSize-1);
+  if(firstResult.error)throw firstResult.error;
+  const rows=[...(firstResult.data||[])];
+  const total=Number(firstResult.count);
+  if(Number.isFinite(total)){
+    const pageTasks=[];
+    for(let offset=pageSize;offset<total;offset+=pageSize){
+      pageTasks.push(buildQuery(false).range(offset,Math.min(offset+pageSize-1,total-1)));
+    }
+    const pages=await Promise.all(pageTasks);
+    pages.forEach(({data,error})=>{
+      if(error)throw error;
+      rows.push(...(data||[]));
+    });
+    return rows;
+  }
+  if(rows.length<pageSize)return rows;
+  for(let offset=pageSize;;offset+=pageSize){
+    const {data,error}=await buildQuery(false).range(offset,offset+pageSize-1);
     if(error)throw error;
     const page=data||[];
     rows.push(...page);
@@ -3995,8 +4011,8 @@ async function salesRefReadPaged(buildQuery,pageSize=1000){
   return rows;
 }
 async function salesRefReadCurrentRows(client,range){
-  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(()=>{
-    let query=client.from("sales_records").select("*").order("finalized_at",{ascending:false}).order("id",{ascending:false});
+  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(includeCount=>{
+    let query=client.from("sales_records").select("*",includeCount?{count:"exact"}:undefined).order("finalized_at",{ascending:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("work_date",part.from);
     if(part.to)query=query.lte("work_date",part.to);
     return query;
@@ -4004,8 +4020,8 @@ async function salesRefReadCurrentRows(client,range){
   return batches.flat();
 }
 async function salesRefReadHistoricalRows(client,range){
-  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(()=>{
-    let query=client.from("historical_sales_records").select("*").order("finalized_at",{ascending:false}).order("id",{ascending:false});
+  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(includeCount=>{
+    let query=client.from("historical_sales_records").select("*",includeCount?{count:"exact"}:undefined).order("finalized_at",{ascending:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("finalized_at",`${part.from}T00:00:00`);
     if(part.to)query=query.lte("finalized_at",`${part.to}T23:59:59.999`);
     return query;
@@ -4013,8 +4029,8 @@ async function salesRefReadHistoricalRows(client,range){
   return batches.flat();
 }
 async function salesRefReadSessions(client,range){
-  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(()=>{
-    let query=client.from("work_sessions").select("id,name,work_date,shipping_fee,shipping_fees,locked,status,finalized_at,updated_at,created_at").order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
+  const batches=await Promise.all(range.ranges.map(part=>salesRefReadPaged(includeCount=>{
+    let query=client.from("work_sessions").select("id,name,work_date,shipping_fee,shipping_fees,locked,status,finalized_at,updated_at,created_at",includeCount?{count:"exact"}:undefined).order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("work_date",part.from);
     if(part.to)query=query.lte("work_date",part.to);
     return query;
