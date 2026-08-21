@@ -837,16 +837,31 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <div class="ar-form">
           <label>仕入先コード<input id="ap-profile-supplier-code" list="supplier-code-list" class="ime-en" autocomplete="off" oninput="fillPayableProfileSupplierName()"></label>
           <label class="wide">仕入先名<div id="ap-profile-supplier-name" class="site-readonly">未設定</div></label>
-          <label>締め日<input id="ap-profile-closing-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
+          <label>支払方法
+            <select id="ap-profile-payment-mode" onchange="updatePayableProfileModeState()">
+              <option value="credit">掛け払い</option>
+              <option value="cash_on_entry">都度現金払い</option>
+            </select>
+          </label>
+          <label>支払条件
+            <select id="ap-profile-term-preset" onchange="applyPayableTermPreset(this.value)">
+              <option value="custom">個別設定</option>
+              <option value="closing15-next15">15日締め・翌月15日払い</option>
+              <option value="monthend-nextmonthend">末締め・翌月末払い</option>
+              <option value="cash">都度現金払い</option>
+            </select>
+          </label>
+          <label>締め日<input id="ap-profile-closing-day" type="number" inputmode="numeric" min="1" max="31" value="31" oninput="updatePayableProfileModeState({keepPreset:false})"></label>
           <label>支払月
-            <select id="ap-profile-payment-month-offset">
+            <select id="ap-profile-payment-month-offset" onchange="updatePayableProfileModeState({keepPreset:false})">
               <option value="0">当月</option>
               <option value="1" selected>翌月</option>
               <option value="2">翌々月</option>
               <option value="3">3か月後</option>
             </select>
           </label>
-          <label>支払日<input id="ap-profile-payment-day" type="number" inputmode="numeric" min="1" max="31" value="31"></label>
+          <label>支払日<input id="ap-profile-payment-day" type="number" inputmode="numeric" min="1" max="31" value="31" oninput="updatePayableProfileModeState({keepPreset:false})"></label>
+          <label class="wide">設定内容<div id="ap-profile-term-preview" class="site-readonly">末締め・翌月末払い</div></label>
           <label class="full">メモ<input id="ap-profile-memo" class="ime-ja" autocomplete="off"></label>
         </div>
         <div class="actions" style="margin-top:8px">
@@ -8346,6 +8361,9 @@ async function reviewExternalAssignment(id,action){
 }
 function apDbErrorMessage(error){
   const message=String(error?.message||error||"");
+  if(/payment_mode|accounts_payable_due_date|accounts_payable_payment_source/i.test(message)){
+    return "買掛支払条件用SQLが未実行です。accounts-payable-terms-migration.sql をSupabase SQL Editorで実行してください。";
+  }
   if(/close_accounts_payable_group/i.test(message)){
     return "買掛グループ締め用SQLが未実行です。accounts-payable-group-closing-migration.sql をSupabase SQL Editorで実行してください。";
   }
@@ -8580,6 +8598,7 @@ function apClosingGroupCalculations(){
   if(!context.month||context.closingDay<1||context.closingDay>31)return [];
   const supplierMap=new Map(getMasters().suppliers.map(supplier=>[String(supplier.code||"").trim().toLowerCase(),supplier]));
   return payableSupplierProfiles
+    .filter(profile=>profile.payment_mode!=="cash_on_entry")
     .filter(profile=>apClosingDay(profile)===context.closingDay)
     .map(profile=>{
       const supplier=supplierMap.get(String(profile.supplier_code||"").trim().toLowerCase());
@@ -8601,7 +8620,7 @@ function renderPayableClosingDayOptions(){
   const select=document.getElementById("ap-closing-day");
   if(!select)return;
   const previous=select.value;
-  const days=[...new Set(payableSupplierProfiles.map(apClosingDay))].sort((a,b)=>a-b);
+  const days=[...new Set(payableSupplierProfiles.filter(profile=>profile.payment_mode!=="cash_on_entry").map(apClosingDay))].sort((a,b)=>a-b);
   select.innerHTML='<option value="">締め日を選択</option>'+days.map(day=>`<option value="${day}">${day===31?"末日（31日）":`${day}日`}</option>`).join("");
   if(days.includes(Number(previous)))select.value=previous;
   else if(days.includes(31))select.value="31";
@@ -8847,10 +8866,54 @@ function fillPayableProfileSupplierName(){
   const label=document.getElementById("ap-profile-supplier-name");
   if(label)label.textContent=supplier?.name||"未設定";
 }
-function apDueDate(invoiceDate,monthOffset=1,paymentDay=31){
+function apPayableTermPreset(paymentMode,closingDay,monthOffset,paymentDay){
+  if(paymentMode==="cash_on_entry")return "cash";
+  if(closingDay===15&&monthOffset===1&&paymentDay===15)return "closing15-next15";
+  if(closingDay===31&&monthOffset===1&&paymentDay===31)return "monthend-nextmonthend";
+  return "custom";
+}
+function apPayableTermLabel(paymentMode,closingDay,monthOffset,paymentDay){
+  if(paymentMode==="cash_on_entry")return "仕入確定と同時に支払済";
+  const closing=closingDay===31?"末":`${closingDay}日`;
+  const paymentMonth=monthOffset===0?"当月":monthOffset===1?"翌月":monthOffset===2?"翌々月":`${monthOffset}か月後`;
+  const payment=paymentDay===31?"末":`${paymentDay}日`;
+  return `${closing}締め・${paymentMonth}${payment}払い`;
+}
+function updatePayableProfileModeState(options={}){
+  const paymentMode=val("ap-profile-payment-mode")||"credit";
+  const closingDay=Math.trunc(arNumber(val("ap-profile-closing-day")))||31;
+  const monthOffset=Math.trunc(arNumber(val("ap-profile-payment-month-offset")));
+  const paymentDay=Math.trunc(arNumber(val("ap-profile-payment-day")))||31;
+  const cash=paymentMode==="cash_on_entry";
+  ["ap-profile-closing-day","ap-profile-payment-month-offset","ap-profile-payment-day"].forEach(id=>{
+    const element=document.getElementById(id);if(element)element.disabled=cash;
+  });
+  const preset=document.getElementById("ap-profile-term-preset");
+  if(preset)preset.value=options.keepPreset===false&&!cash?"custom":apPayableTermPreset(paymentMode,closingDay,monthOffset,paymentDay);
+  const preview=document.getElementById("ap-profile-term-preview");
+  if(preview)preview.textContent=apPayableTermLabel(paymentMode,closingDay,monthOffset,paymentDay);
+}
+function applyPayableTermPreset(preset){
+  const mode=document.getElementById("ap-profile-payment-mode");
+  const closing=document.getElementById("ap-profile-closing-day");
+  const offset=document.getElementById("ap-profile-payment-month-offset");
+  const payment=document.getElementById("ap-profile-payment-day");
+  if(preset==="cash"){mode.value="cash_on_entry"}
+  else{
+    mode.value="credit";
+    if(preset==="closing15-next15"){closing.value="15";offset.value="1";payment.value="15"}
+    if(preset==="monthend-nextmonthend"){closing.value="31";offset.value="1";payment.value="31"}
+  }
+  updatePayableProfileModeState();
+}
+function apDueDate(invoiceDate,monthOffset=1,paymentDay=31,closingDay=31){
   const match=String(invoiceDate||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(!match)return "";
-  const target=new Date(Date.UTC(Number(match[1]),Number(match[2])-1+Number(monthOffset||0),1));
+  const invoiceMonth=new Date(Date.UTC(Number(match[1]),Number(match[2])-1,1));
+  const invoiceMonthLastDay=new Date(Date.UTC(invoiceMonth.getUTCFullYear(),invoiceMonth.getUTCMonth()+1,0)).getUTCDate();
+  const effectiveClosingDay=Math.min(Math.max(1,Math.trunc(arNumber(closingDay))||31),invoiceMonthLastDay);
+  const closingMonthOffset=Number(match[3])>effectiveClosingDay?1:0;
+  const target=new Date(Date.UTC(Number(match[1]),Number(match[2])-1+closingMonthOffset+Number(monthOffset||0),1));
   const lastDay=new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate();
   const day=Math.min(Math.max(1,Number(paymentDay)||31),lastDay);
   return `${target.getUTCFullYear()}-${String(target.getUTCMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
@@ -8868,10 +8931,12 @@ async function loadPayableSupplierProfile(options={}){
   const {data,error}=await client.from("accounts_payable_supplier_profiles").select("*").eq("supplier_code",code).maybeSingle();
   if(error){if(!options.silent)alert(apDbErrorMessage(error));return null}
   payableSupplierProfile=data||null;
+  document.getElementById("ap-profile-payment-mode").value=data?.payment_mode==="cash_on_entry"?"cash_on_entry":"credit";
   document.getElementById("ap-profile-closing-day").value=String(data?.closing_day||31);
   document.getElementById("ap-profile-payment-month-offset").value=String(data?.payment_month_offset??1);
   document.getElementById("ap-profile-payment-day").value=String(data?.payment_day||31);
   document.getElementById("ap-profile-memo").value=data?.memo||"";
+  updatePayableProfileModeState();
   state.textContent=data?`${code} の支払条件を読み込みました。`:`${code} は未登録です。初期値は末締め・翌月末払いです。`;
   return data;
 }
@@ -8883,12 +8948,14 @@ async function savePayableSupplierProfile(){
   const inputCode=val("ap-profile-supplier-code").trim();
   const supplier=lookupSupplierByCode(inputCode);
   const code=supplier?.code||inputCode;
+  const paymentMode=val("ap-profile-payment-mode")==="cash_on_entry"?"cash_on_entry":"credit";
   const closingDay=Math.trunc(arNumber(val("ap-profile-closing-day")));
   const monthOffset=Math.trunc(arNumber(val("ap-profile-payment-month-offset")));
   const paymentDay=Math.trunc(arNumber(val("ap-profile-payment-day")));
   if(!code||!supplier){alert("仕入先マスタに登録済みの仕入先コードを入力してください。");return}
   if(closingDay<1||closingDay>31||paymentDay<1||paymentDay>31||monthOffset<0||monthOffset>12){alert("締め日・支払日は1～31、支払月は当月以降で設定してください。");return}
-  const payload={supplier_code:code,closing_day:closingDay,payment_month_offset:monthOffset,payment_day:paymentDay,memo:val("ap-profile-memo").trim()||null,updated_by:user.id};
+  if(paymentMode==="credit"&&monthOffset===0&&paymentDay<closingDay){alert("当月払いでは支払日を締め日以降に設定してください。");return}
+  const payload={supplier_code:code,payment_mode:paymentMode,closing_day:closingDay,payment_month_offset:monthOffset,payment_day:paymentDay,memo:val("ap-profile-memo").trim()||null,updated_by:user.id};
   if(!payableSupplierProfile||payableSupplierProfile.supplier_code!==code)payload.created_by=user.id;
   const {data,error}=await initSupabase().from("accounts_payable_supplier_profiles").upsert(payload,{onConflict:"supplier_code"}).select("*").single();
   if(error){alert(apDbErrorMessage(error));return}
