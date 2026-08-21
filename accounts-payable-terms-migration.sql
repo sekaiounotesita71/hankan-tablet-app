@@ -248,7 +248,7 @@ insert into public.accounts_payable_supplier_profiles (
 )
 select supplier.supplier_code,'cash_on_entry',31,0,31,'都度現金払い'
 from public.supplier_master supplier
-where btrim(supplier.supplier_code) = '1'
+where regexp_replace(btrim(supplier.supplier_code),'^0+','') = '1'
 on conflict (supplier_code) do update set
   payment_mode = 'cash_on_entry',
   payment_month_offset = 0,
