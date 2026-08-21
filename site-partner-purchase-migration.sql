@@ -270,6 +270,62 @@ create table if not exists public.purchase_receipts (
   updated_at timestamptz not null default now()
 );
 
+create sequence if not exists public.purchase_internal_reference_seq;
+
+create or replace function public.next_purchase_internal_reference(
+  p_purchase_date date,
+  p_supplier_code text
+)
+returns text
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  supplier_part text;
+begin
+  supplier_part := upper(regexp_replace(coalesce(p_supplier_code,''),'[^A-Za-z0-9]+','','g'));
+  if supplier_part = '' then supplier_part := 'SUP'; end if;
+  return format(
+    'PUR-%s-%s-%s',
+    to_char(coalesce(p_purchase_date,current_date),'YYYYMMDD'),
+    left(supplier_part,12),
+    to_char(nextval('public.purchase_internal_reference_seq'::regclass),'FM000000000')
+  );
+end;
+$$;
+
+create or replace function public.assign_purchase_internal_reference()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if nullif(btrim(new.supplier_invoice_no),'') is null then
+    new.supplier_invoice_no := public.next_purchase_internal_reference(new.purchase_date,new.supplier_code);
+  end if;
+  if new.invoice_date is null then new.invoice_date := new.purchase_date; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_purchase_receipts_internal_reference on public.purchase_receipts;
+create trigger trg_purchase_receipts_internal_reference
+before insert or update of supplier_invoice_no, purchase_date, supplier_code
+on public.purchase_receipts
+for each row execute function public.assign_purchase_internal_reference();
+
+revoke all on sequence public.purchase_internal_reference_seq from public, anon, authenticated;
+revoke all on function public.next_purchase_internal_reference(date,text) from public, anon, authenticated;
+revoke all on function public.assign_purchase_internal_reference() from public, anon, authenticated;
+
+update public.purchase_receipts
+set supplier_invoice_no = public.next_purchase_internal_reference(purchase_date,supplier_code),
+    invoice_date = coalesce(invoice_date,purchase_date),
+    updated_at = now()
+where nullif(btrim(supplier_invoice_no),'') is null;
+
 create table if not exists public.purchase_receipt_lines (
   id uuid primary key default gen_random_uuid(),
   receipt_id uuid not null references public.purchase_receipts(id) on delete cascade,
@@ -799,12 +855,13 @@ begin
   if not public.is_internal_user() then raise exception 'Internal access is required.'; end if;
   select * into receipt_row from public.purchase_receipts where id = p_receipt_id;
   if receipt_row.id is null then raise exception 'Purchase receipt not found.'; end if;
-  if receipt_row.supplier_invoice_no is null or btrim(receipt_row.supplier_invoice_no) = '' then
-    raise exception 'Supplier invoice number is required.';
-  end if;
-
   update public.purchase_receipts
   set status = 'confirmed',
+      supplier_invoice_no = coalesce(
+        nullif(btrim(supplier_invoice_no),''),
+        public.next_purchase_internal_reference(purchase_date,supplier_code)
+      ),
+      invoice_date = coalesce(invoice_date,purchase_date),
       subtotal = totals.subtotal,
       total_amount = totals.subtotal + shipping_fee + other_fee + tax_amount,
       confirmed_at = now(),
