@@ -3226,6 +3226,7 @@ function salesRefDisplayAmount(row){
 }
 function salesRefDbErrorMessage(error){
   const msg=String(error?.message||error||"");
+  if(error?.code==="57014"||/statement timeout|canceling statement/i.test(msg))return "読み込みがタイムアウトしました。期間を月単位で指定して、もう一度読み込んでください。";
   if(error?.code==="42703"&&/work_date/i.test(msg))return "作業日対応SQLが未実行です。work-date-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.status===401||/invalid api key|jwt/i.test(msg))return "Supabase APIキーが無効です。SupabaseのProject Settings > APIから新しい anon public key を取得して差し替えてください。";
   if(/historical_sales_records/i.test(msg))return "過去売上用SQLが未実行です。historical-sales-migration.sql をSupabase SQL Editorで実行してください。";
@@ -3759,13 +3760,19 @@ function salesRefAllocateImportedPurchaseCosts(salesRows,receipts,lines,linkedLi
 async function salesRefReadImportedPurchaseCosts(client,salesRows){
   const months=new Set((salesRows||[]).map(row=>salesRefMonth(salesRefRowDate(row))).filter(month=>/^\d{4}-\d{2}$/.test(month)));
   if(!months.size)return {receipts:[],lines:[],linkedLineIds:new Set()};
-  const allReceipts=await salesRefReadPaged(includeCount=>client.from("purchase_receipts")
-    .select("id,purchase_date,note,status",includeCount?{count:"exact"}:undefined)
-    .eq("status","confirmed")
-    .ilike("note","PDF一括取込ID:%")
-    .order("purchase_date",{ascending:true})
-    .order("id",{ascending:true}));
-  const receipts=allReceipts.filter(receipt=>months.has(String(receipt.purchase_date||"").slice(0,7)));
+  const monthlyReceipts=await salesRefReadChunks([...months],1,async monthChunk=>{
+    const month=monthChunk[0];
+    const {data,error}=await client.from("purchase_receipts")
+      .select("id,purchase_date,note,status")
+      .eq("status","confirmed")
+      .gte("purchase_date",`${month}-01`)
+      .lte("purchase_date",salesRefEndOfMonth(month))
+      .order("purchase_date",{ascending:true})
+      .order("id",{ascending:true});
+    if(error)throw error;
+    return data||[];
+  },4);
+  const receipts=monthlyReceipts.filter(receipt=>String(receipt.note||"").startsWith("PDF一括取込ID:"));
   const receiptIds=receipts.map(receipt=>receipt.id);
   const lines=await salesRefReadChunks(receiptIds,200,async ids=>{
     const {data,error}=await client.from("purchase_receipt_lines")
@@ -4069,9 +4076,15 @@ function salesRefRankHtml(title,rows,unitLabel="金額"){
   return `<div class="sales-rank"><div class="sales-rank-head"><span>${esc(title)}</span><span>${esc(unitLabel)}</span></div>${body}</div>`;
 }
 function salesRefDatabaseRange(){
-  const input=salesRefDateRangeFromInput();
+  let input=salesRefDateRangeFromInput();
+  if(!input.raw){
+    const now=new Date();
+    const month=`${now.getFullYear()}${salesRefPad2(now.getMonth()+1)}`;
+    const field=document.getElementById("sales-ref-date-range");
+    if(field)field.value=month;
+    input=salesRefDateRangeFromText(month);
+  }
   if(input.raw&&(!input.from||!input.to))return {error:"期間の形式を確認してください。例: 20250701-20250731 / 202507 / 20250701"};
-  if(!input.raw)return {ranges:[{from:"",to:""}],label:"全期間"};
   const ranges=[
     {from:salesRefShiftYear(input.from,-1),to:salesRefShiftYear(input.to,-1)},
     {from:input.from,to:input.to}
