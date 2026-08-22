@@ -26,6 +26,11 @@ assert.doesNotMatch(html, /arReadAll\("accounts_payable_supplier_profiles","supp
 assert.match(html, /const openingBalance=arRound\(beforeCharges-beforePayments\)/);
 assert.match(html, /function apClosingGroupCalculations\(\)/);
 assert.match(html, /apClosingDay\(profile\)===context\.closingDay/);
+assert.match(html, /function apEffectivePayableSupplierProfiles\(profiles=payableSupplierProfiles,rows=payableRows\)/);
+assert.match(html, /_default_profile:true/);
+assert.match(html, /支払条件未登録.*末締め初期値/);
+assert.match(html, /条件未登録・初期値適用/);
+assert.match(html, /現在の表示は未保存の初期値/);
 assert.match(html, /function toggleAllPayableClosingSuppliers\(checked\)/);
 assert.match(html, /rpc\("close_accounts_payable_group",\{p_items:items\}\)/);
 assert.match(html, /全社成功または全社失敗/);
@@ -53,5 +58,25 @@ assert.match(groupSql, /item_count > 200/);
 assert.match(groupSql, /from public\.close_accounts_payable_period\(/);
 assert.match(groupSql, /return next closing_row/);
 assert.match(groupSql, /grant execute on function public\.close_accounts_payable_group\(jsonb\)/);
+
+const effectiveProfileSource = html.slice(
+  html.indexOf("function apEffectivePayableSupplierProfiles"),
+  html.indexOf("function apSupplierMapForClosing")
+);
+const effectiveProfiles = new Function(`${effectiveProfileSource}; return apEffectivePayableSupplierProfiles;`)();
+const profiles = effectiveProfiles(
+  [{ supplier_code: "02", payment_mode: "credit", closing_day: 15 }],
+  [{ supplier_code: "02" }, { supplier_code: "16" }]
+);
+assert.equal(profiles.length, 2);
+assert.equal(profiles.find((profile) => profile.supplier_code === "02").closing_day, 15);
+assert.deepEqual(profiles.find((profile) => profile.supplier_code === "16"), {
+  supplier_code: "16",
+  payment_mode: "credit",
+  closing_day: 31,
+  payment_month_offset: 1,
+  payment_day: 31,
+  _default_profile: true
+});
 
 console.log("Accounts payable closing tests passed");

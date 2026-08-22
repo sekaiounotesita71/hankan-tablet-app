@@ -8899,6 +8899,34 @@ function apClosingSnapshot(supplierCode,range){
 function apClosingDay(profile){
   return Math.min(31,Math.max(1,Math.trunc(arNumber(profile?.closing_day))||31));
 }
+function apEffectivePayableSupplierProfiles(profiles=payableSupplierProfiles,rows=payableRows){
+  const map=new Map();
+  (profiles||[]).forEach(profile=>{
+    const code=String(profile?.supplier_code||"").trim();
+    if(code)map.set(code.toLowerCase(),profile);
+  });
+  (rows||[]).forEach(row=>{
+    const code=String(row?.supplier_code||"").trim();
+    if(!code||map.has(code.toLowerCase()))return;
+    map.set(code.toLowerCase(),{
+      supplier_code:code,
+      payment_mode:"credit",
+      closing_day:31,
+      payment_month_offset:1,
+      payment_day:31,
+      _default_profile:true
+    });
+  });
+  return [...map.values()];
+}
+function apSupplierMapForClosing(){
+  const map=new Map(getMasters().suppliers.map(supplier=>[String(supplier.code||"").trim().toLowerCase(),supplier]));
+  payableRows.forEach(row=>{
+    const code=String(row.supplier_code||"").trim();
+    if(code&&!map.has(code.toLowerCase()))map.set(code.toLowerCase(),{code,name:row.supplier_name||""});
+  });
+  return map;
+}
 function apPayableProfileFor(supplierCode){
   return payableSupplierProfiles.find(profile=>apSameSupplier(profile.supplier_code,supplierCode))||null;
 }
@@ -8922,7 +8950,7 @@ function apClosingCalculationFor(supplier,month,profile){
   );
   const range={from:periodFrom,to:periodTo,raw:`${periodFrom}-${periodTo}`};
   const snapshot=payablesLoaded?apClosingSnapshot(supplierCode,range):null;
-  return {supplierCode,supplier,month,profile,closingDay,range,dueDate,snapshot,existing};
+  return {supplierCode,supplier,month,profile,profileIsDefault:!!profile._default_profile,closingDay,range,dueDate,snapshot,existing};
 }
 function apClosingGroupContext(){
   return {
@@ -8934,8 +8962,8 @@ function apClosingGroupContext(){
 function apClosingGroupCalculations(){
   const context=apClosingGroupContext();
   if(!context.month||context.closingDay<1||context.closingDay>31)return [];
-  const supplierMap=new Map(getMasters().suppliers.map(supplier=>[String(supplier.code||"").trim().toLowerCase(),supplier]));
-  return payableSupplierProfiles
+  const supplierMap=apSupplierMapForClosing();
+  return apEffectivePayableSupplierProfiles()
     .filter(profile=>profile.payment_mode!=="cash_on_entry")
     .filter(profile=>apClosingDay(profile)===context.closingDay)
     .map(profile=>{
@@ -8958,7 +8986,7 @@ function renderPayableClosingDayOptions(){
   const select=document.getElementById("ap-closing-day");
   if(!select)return;
   const previous=select.value;
-  const days=[...new Set(payableSupplierProfiles.filter(profile=>profile.payment_mode!=="cash_on_entry").map(apClosingDay))].sort((a,b)=>a-b);
+  const days=[...new Set(apEffectivePayableSupplierProfiles().filter(profile=>profile.payment_mode!=="cash_on_entry").map(apClosingDay))].sort((a,b)=>a-b);
   select.innerHTML='<option value="">締め日を選択</option>'+days.map(day=>`<option value="${day}">${day===31?"末日（31日）":`${day}日`}</option>`).join("");
   if(days.includes(Number(previous)))select.value=previous;
   else if(days.includes(31))select.value="31";
@@ -8992,6 +9020,7 @@ function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
   const context=apClosingGroupContext();
   const eligible=calculations.filter(row=>!row.error&&!row.existing&&row.snapshot);
   const selected=eligible.filter(row=>payableClosingSelections.has(row.supplierCode));
+  const defaultProfileCount=calculations.filter(row=>row.profileIsDefault&&!row.existing).length;
   const totals=selected.reduce((result,row)=>{
     result.opening+=row.snapshot.openingBalance;
     result.purchase+=row.snapshot.purchaseAmount;
@@ -9020,7 +9049,7 @@ function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
     state.textContent=`${context.closingDay===31?"末日":`${context.closingDay}日`}締めで、今回締める買掛はありません。`;
     list.innerHTML='<div class="sales-empty">対象となる仕入先・買掛はありません。</div>';
   }else{
-    state.textContent=`${context.closingDay===31?"末日":`${context.closingDay}日`}締め ${calculations.length}社中 ${selected.length}社を選択しています。金額は選択中の合計です。`;
+    state.textContent=`${context.closingDay===31?"末日":`${context.closingDay}日`}締め ${calculations.length}社中 ${selected.length}社を選択しています。金額は選択中の合計です。${defaultProfileCount?` 支払条件未登録 ${defaultProfileCount}社は末締め初期値を適用しています。`:""}`;
     const allSelected=eligible.length>0&&eligible.every(row=>payableClosingSelections.has(row.supplierCode));
     list.innerHTML=`<table class="ar-table">
       <thead><tr><th><input type="checkbox" aria-label="締め対象を全選択" ${allSelected?"checked":""} onchange="toggleAllPayableClosingSuppliers(this.checked)"></th><th>仕入先</th><th>締め期間</th><th>支払期限</th><th>前回繰越</th><th>今回仕入</th><th>期間内支払</th><th>締め後残高</th><th>状態</th></tr></thead>
@@ -9028,7 +9057,7 @@ function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
         const snapshot=row.snapshot||{openingBalance:0,purchaseAmount:0,paymentAmount:0,closingBalance:0};
         const disabled=!!row.error||!!row.existing||!row.snapshot;
         const selectedRow=!disabled&&payableClosingSelections.has(row.supplierCode);
-        const status=row.error?row.error:(row.existing?"締め済":"締め対象");
+        const status=row.error?row.error:(row.existing?"締め済":row.profileIsDefault?"条件未登録・初期値適用":"締め対象");
         return `<tr class="${[selectedRow?"selected":"",row.existing?"locked":""].filter(Boolean).join(" ")}">
           <td><input type="checkbox" aria-label="${esc(row.supplierCode)}を締め対象にする" ${selectedRow?"checked":""} ${disabled?"disabled":""} onchange="togglePayableClosingSupplier('${esc(row.supplierCode)}',this.checked)"></td>
           <td><b>${esc(row.supplierCode)}</b> ${esc(row.supplier?.name||"")}</td>
@@ -9038,7 +9067,7 @@ function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
           <td class="ar-money">${esc(salesRefMoney(snapshot.purchaseAmount)||"0")}</td>
           <td class="ar-money">${esc(salesRefMoney(snapshot.paymentAmount)||"0")}</td>
           <td class="ar-money">${esc(salesRefMoney(snapshot.closingBalance)||"0")}</td>
-          <td>${row.existing?'<span class="ar-lock">締め済</span>':esc(status)}</td>
+          <td>${row.existing?'<span class="ar-lock">締め済</span>':row.profileIsDefault?`<span class="pill warn">${esc(status)}</span>`:esc(status)}</td>
         </tr>`;
       }).join("")}</tbody>
     </table>`;
@@ -9126,9 +9155,11 @@ async function closeSelectedAccountsPayablePeriods(){
     },{opening:0,purchase:0,payment:0,balance:0});
     const supplierNames=selected.slice(0,12).map(row=>`${row.supplierCode} ${row.supplier?.name||""}`);
     if(selected.length>12)supplierNames.push(`ほか ${selected.length-12}社`);
+    const defaultProfileCount=selected.filter(row=>row.profileIsDefault).length;
     const message=[
       `${context.closingDay===31?"末日":`${context.closingDay}日`}締め ${selected.length}社を一括処理します。`,
       ...supplierNames,
+      defaultProfileCount?`支払条件未登録 ${defaultProfileCount}社は、末締め・翌月末払いの初期値で処理します。`:"",
       "",
       `前回繰越合計: ¥${salesRefMoney(arRound(totals.opening))||"0"}`,
       `今回仕入合計: ¥${salesRefMoney(arRound(totals.purchase))||"0"}`,
@@ -9275,7 +9306,7 @@ async function loadPayableSupplierProfile(options={}){
   document.getElementById("ap-profile-payment-day").value=String(data?.payment_day||31);
   document.getElementById("ap-profile-memo").value=data?.memo||"";
   updatePayableProfileModeState();
-  state.textContent=data?`${code} の支払条件を読み込みました。`:`${code} は未登録です。初期値は末締め・翌月末払いです。`;
+  state.textContent=data?`${code} の支払条件を読み込みました。`:`${code} は支払条件が未登録です。現在の表示は未保存の初期値（末締め・翌月末払い）です。「支払条件を保存」を押すと正式登録されます。`;
   return data;
 }
 async function savePayableSupplierProfile(){
