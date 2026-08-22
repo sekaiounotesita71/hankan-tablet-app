@@ -22,13 +22,24 @@ test("年・月・日付範囲を期間として入力できる",()=>{
 });
 
 test("得意先と商品を専用候補から組み合わせて絞り込める",()=>{
-  assert.match(html,/id="sales-ref-customer" list="sales-ref-customer-list"/);
-  assert.match(html,/id="sales-ref-product" list="sales-ref-product-list"/);
+  assert.match(html,/id="sales-ref-customer" autocomplete="off"/);
+  assert.match(html,/id="sales-ref-product" autocomplete="off"/);
   const source=sourceBetween("function salesRefFilterKey","function salesRefGroup");
   assert.match(source,/row\.customer_code,row\.store_name/);
   assert.match(source,/row\.product_id,row\.product_name/);
   assert.match(source,/\.includes\(customer\)/);
   assert.match(source,/\.includes\(product\)/);
+});
+
+test("受注入力と同じ独自候補を上下キーとEnterで選択できる",()=>{
+  const source=sourceBetween("function salesRefSuggestionMatches","function clearSalesReferenceDetailFilters");
+  assert.match(source,/\.slice\(0,10\)/);
+  assert.match(source,/inline-product-suggest sales-ref-suggest/);
+  assert.match(source,/event\.key==="ArrowDown"/);
+  assert.match(source,/event\.key==="ArrowUp"/);
+  assert.match(source,/event\.key==="Enter"&&chooseSalesRefSuggestion\(\)/);
+  assert.doesNotMatch(html,/id="sales-ref-customer" list=/);
+  assert.doesNotMatch(html,/id="sales-ref-product" list=/);
 });
 
 test("得意先・商品などの詳細絞り込み中は輸入社単位の送料を加算しない",()=>{
