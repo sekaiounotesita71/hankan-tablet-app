@@ -8329,7 +8329,7 @@ function renderSupplierReviewBoard(){
         <label class="supplier-review-group-check"><input type="checkbox" data-supplier-group-check="${index}" ${allOrdered?"checked":""} onchange="setSupplierReviewGroupOrdered(${index},this.checked)">全明細 発注済み</label>
         <label>変更先コード<input class="ime-en" id="supplier-review-group-code-${index}" list="supplier-code-list" value="${esc(currentCode)}" autocomplete="off"></label>
         <button class="btn" type="button" onclick="changeSupplierReviewGroup(${index})">全明細コード変更</button>
-        <div class="supplier-review-group-actions"><button class="btn primary" type="button" onclick="confirmSupplierReviewGroup(${index})">このコードで確定</button>${confirmedCount?`<button class="btn danger" type="button" onclick="unconfirmSupplierReviewGroup(${index})">確定取消</button>`:""}</div>
+        <div class="supplier-review-group-actions"><button class="btn blue" type="button" onclick="printSupplierReviewPurchaseOrder(${index})" ${provisionalCount?`disabled title="発注先を確定すると出力できます"`:""}>発注書</button><button class="btn primary" type="button" onclick="confirmSupplierReviewGroup(${index})">このコードで確定</button>${confirmedCount?`<button class="btn danger" type="button" onclick="unconfirmSupplierReviewGroup(${index})">確定取消</button>`:""}</div>
       </div>
       <div class="supplier-review-table-wrap"><table class="supplier-review-table"><thead><tr><th>発注済み</th><th>状態</th><th>受注日</th><th>輸入社</th><th>得意先</th><th>商品コード</th><th>商品名</th><th>数量</th><th>初回仮コード</th><th>現在コード</th><th></th></tr></thead><tbody>${detailRows}</tbody></table></div>
     </section>`;
@@ -8436,6 +8436,27 @@ async function unconfirmSupplierReview(lineIds){
 }
 function unconfirmSupplierReviewLine(lineId){return unconfirmSupplierReview([lineId])}
 function unconfirmSupplierReviewGroup(index){const group=supplierReviewGroups[index];if(group)return unconfirmSupplierReview(group.rows.map(row=>row.line_id))}
+async function printSupplierReviewPurchaseOrder(index){
+  const group=supplierReviewGroups[index];if(!group)return;
+  if(group.rows.some(row=>row.supplier_decision_status!=="confirmed")){alert("先にこの発注先の全明細を確定してください。");return}
+  const orderDates=[...new Set(group.rows.map(row=>row.order_date).filter(Boolean))];
+  if(orderDates.length!==1){alert("複数の受注日が含まれています。受注日を指定して一覧更新してから発注書を出力してください。");return}
+  if(!supabaseClient||!currentUser){alert("先にログインしてください。");return}
+  const printWindow=openPrintLoadingWindow("発注書");if(!printWindow)return;
+  setAppBusy(true,"この発注先の発注書データを読み込んでいます。");
+  try{
+    const lineIds=new Set(group.rows.map(row=>row.line_id));
+    const batches=await loadConfirmedReportBatchesFromDb(orderDates[0]);
+    const rows=sortRowsByProductCode(batches.flatMap(rowsWithBatchMeta).filter(row=>lineIds.has(row.lineId)));
+    if(!rows.length){printWindow.close();alert("この発注先の発注書明細をDBから取得できませんでした。一覧更新後にもう一度お試しください。");return}
+    const first=group.rows[0]||{};
+    const supplierLabel=[first.supplier_code,first.supplier_name_snapshot||supplierNameFor(first.supplier_code,"")].filter(Boolean).join(" ");
+    openPrintDoc("発注書",purchaseOrderCss()+purchaseOrderPage(supplierLabel,rows,1),printWindow);
+  }catch(error){
+    printWindow.close();
+    alert(`発注書データを読み込めませんでした: ${dbErrorMessage(error)}`);
+  }finally{setAppBusy(false)}
+}
 async function setSupplierReviewOrdered(lineIds,ordered){
   const ids=[...new Set((lineIds||[]).filter(Boolean))];if(!ids.length)return;
   setAppBusy(true,ordered?"発注済みを記録しています...":"発注済みを解除しています...");
