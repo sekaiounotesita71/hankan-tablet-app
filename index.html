@@ -2225,14 +2225,23 @@ async function loadSessionList(){
 async function deleteSavedSession(event,sessionId,name){
   event.stopPropagation();
   if(!(await requireSupabaseLogin()))return;
+  await loadCurrentUserRoleTrial();
+  if(!currentUserIsAdmin()){alert("作業データを削除できるのは管理者のみです。");return}
   const {data:target,error:targetError}=await supabaseClient.from("work_sessions").select("id,status,locked").eq("id",sessionId).maybeSingle();
   if(targetError){toast("削除対象の確認エラー: "+targetError.message);return}
   if(!target){toast("削除対象が見つかりません。再読込してください");return}
   if(target.locked||target.status==="closed"){alert("売上確定済みの作業は削除できません。売上修正の手順を使用してください。");return}
   if(!confirm(`「${name}」を削除しますか？\n関連する明細と箱情報も削除されます。`))return;
-  const {data:deleted,error}=await supabaseClient.from("work_sessions").delete().eq("id",sessionId).select("id").maybeSingle();
-  if(error){toast("削除エラー: "+error.message);return}
-  if(!deleted){toast("削除できませんでした。権限または最新状態を確認してください");return}
+  const {data:deleted,error}=await supabaseClient.rpc("delete_unfinalized_work_session",{p_session_id:sessionId});
+  if(error){
+    const message=String(error.message||error);
+    if(error.code==="42883"||error.code==="PGRST202"||/delete_unfinalized_work_session/i.test(message)&&/schema cache|not found|does not exist|could not find/i.test(message))toast("削除用SQLが未反映です。work-session-admin-delete-migration.sql を実行してください");
+    else if(/Only administrators/i.test(message))toast("作業データを削除できるのは管理者のみです");
+    else if(/Finalized work sessions/i.test(message))alert("売上確定済みの作業は削除できません。売上修正の手順を使用してください。");
+    else toast("削除エラー: "+message);
+    return;
+  }
+  if(!deleted){toast("削除対象が見つかりません。作業一覧を再読込してください");return}
   if(currentSessionId===sessionId){
     currentSessionId=null;
     currentSessionName="";
@@ -4636,7 +4645,7 @@ function sessionListItemHtmlTrial(session,isFinalized){
   const time=esc(`${session.site_code==="TYO"?"東京":"大阪"} / ${sessionListTimeTrial(session)}`);
   const finalizedClass=isFinalized?" session-finalized":"";
   const finalizedBadge=isFinalized?`<span class="session-locked-badge">売上確定済み</span>`:`<span class="export-option-badge partial">${status}</span>`;
-  const deleteButton=isFinalized?"":`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`;
+  const deleteButton=!isFinalized&&currentUserIsAdmin()?`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`:"";
   return `<div class="export-option${finalizedClass}"><div class="export-option-left" onclick="openSavedSession('${session.id}')" style="flex:1;cursor:pointer"><span class="export-option-code">${name}</span><span class="export-option-meta">${time}</span></div>${finalizedBadge}${deleteButton}</div>`;
 }
 function sessionListEmptyHtmlTrial(text){
@@ -4705,6 +4714,7 @@ function clearSessionListDate(){
 }
 loadSessionList=async function(){
   if(!(await requireSupabaseLogin()))return;
+  await loadCurrentUserRoleTrial();
   const selectedDate=workSessionListDateFilterValue();
   let data;
   try{
