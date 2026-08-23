@@ -10,6 +10,8 @@ const sql = fs.readFileSync(path.join(root, "order-supplier-review-migration.sql
 assert.match(app, /data-workspace-tab="supplier-board"/);
 assert.match(app, /data-workspace-panel="supplier-board"/);
 assert.match(app, /function renderSupplierReviewBoard\(\)/);
+assert.match(app, /saveConfirmedBatches\(\);\s*renderConfirmedOrders\(\);/);
+assert.doesNotMatch(app, /\brenderConfirmed\(\)/);
 assert.match(app, /function setSupplierReviewLineOrdered\(lineId,ordered\)/);
 assert.match(app, /function setSupplierReviewGroupOrdered\(index,ordered\)/);
 assert.match(app, /全明細 発注済み/);
