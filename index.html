@@ -3384,14 +3384,31 @@ function switchPhase(n){
     saveAllBoxesToSupabase();
   }
 }
+const preservedScrollSelector=".country-tabs,.customer-tabs,.table-scroll,.sales-ref-table-wrap,.import-review-table-wrap";
+const preservedTabScrollPositions={windowX:0,windowY:0,elements:{}};
+let horizontalScrollInteractionUntil=0;
+function preservedScrollKey(el){
+  const parent=el.closest(".country-panel,.customer-panel,.sales-ref-main,.import-review-panel");
+  return el.id||`${parent?.id||"scroll"}:${el.className}`;
+}
+function preservedScrollHost(target){
+  if(!(target instanceof Element))return null;
+  return target.matches(preservedScrollSelector)?target:target.closest(preservedScrollSelector);
+}
+function rememberTabScrollPosition(el){
+  if(!el)return;
+  preservedTabScrollPositions.elements[preservedScrollKey(el)]={left:el.scrollLeft||0,top:el.scrollTop||0};
+}
+function markHorizontalScrollInteraction(target,duration=2200){
+  const host=preservedScrollHost(target);if(!host)return;
+  rememberTabScrollPosition(host);
+  horizontalScrollInteractionUntil=Math.max(horizontalScrollInteractionUntil,Date.now()+duration);
+}
 function captureTabScrollPositions(){
-  const positions={windowX:window.scrollX||0,windowY:window.scrollY||0,elements:{}};
-  document.querySelectorAll(".country-tabs,.customer-tabs,.table-scroll,.sales-ref-table-wrap,.import-review-table-wrap").forEach(el=>{
-    const parent=el.closest(".country-panel,.customer-panel,.sales-ref-main,.import-review-panel");
-    const key=el.id||`${parent?.id||"scroll"}:${el.className}`;
-    positions.elements[key]={left:el.scrollLeft||0,top:el.scrollTop||0};
-  });
-  return positions;
+  preservedTabScrollPositions.windowX=window.scrollX||0;
+  preservedTabScrollPositions.windowY=window.scrollY||0;
+  document.querySelectorAll(preservedScrollSelector).forEach(rememberTabScrollPosition);
+  return preservedTabScrollPositions;
 }
 function restoreTabScrollPositions(positions){
   if(!positions)return;
@@ -3413,6 +3430,32 @@ function restoreTabScrollPositions(positions){
     requestAnimationFrame(restore);
   });
 }
+document.addEventListener("pointerdown",event=>markHorizontalScrollInteraction(event.target,2600),true);
+document.addEventListener("touchstart",event=>markHorizontalScrollInteraction(event.target,2600),{capture:true,passive:true});
+document.addEventListener("wheel",event=>markHorizontalScrollInteraction(event.target,1800),{capture:true,passive:true});
+document.addEventListener("scroll",event=>markHorizontalScrollInteraction(event.target,1800),true);
+window.addEventListener("scroll",()=>{
+  preservedTabScrollPositions.windowX=window.scrollX||0;
+  preservedTabScrollPositions.windowY=window.scrollY||0;
+},{passive:true});
+const __buildP1TabsScrollBase=buildP1Tabs;
+buildP1Tabs=function(){
+  const positions=captureTabScrollPositions();
+  __buildP1TabsScrollBase();
+  restoreTabScrollPositions(positions);
+};
+const __buildP15ScrollBase=buildP15;
+buildP15=function(){
+  const positions=captureTabScrollPositions();
+  __buildP15ScrollBase();
+  restoreTabScrollPositions(positions);
+};
+const __buildP2ScrollBase=buildP2;
+buildP2=function(){
+  const positions=captureTabScrollPositions();
+  __buildP2ScrollBase();
+  restoreTabScrollPositions(positions);
+};
 const __refreshCurrentSessionFromSupabaseBase=refreshCurrentSessionFromSupabase;
 refreshCurrentSessionFromSupabase=async function(){
   const tabScrollPositions=captureTabScrollPositions();
@@ -3423,7 +3466,7 @@ refreshCurrentSessionFromSupabase=async function(){
       if(keepP15Editor)scheduleP15Refresh();
       else buildP15();
     }
-    if(!keepP15Editor)restoreTabScrollPositions(tabScrollPositions);
+    restoreTabScrollPositions(tabScrollPositions);
   }
   return ok;
 };
@@ -3447,6 +3490,7 @@ var autoRefreshInFlight=false;
 var autoRefreshIntervalMs=10000;
 function shouldSkipAutoRefresh(){
   if(!currentSessionId||!supabaseClient||autoRefreshInFlight)return true;
+  if(Date.now()<horizontalScrollInteractionUntil)return true;
   if(document.getElementById("modal-bg")?.classList.contains("open"))return true;
   if(document.getElementById("confirm-bg")?.classList.contains("open"))return true;
   const active=document.activeElement;
