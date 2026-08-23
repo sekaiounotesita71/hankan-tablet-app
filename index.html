@@ -207,23 +207,23 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 </div>
 <header class="app-shell-header">
   <nav class="app-nav" aria-label="アプリ切替">
-    <a class="app-nav-link" href="./order-entry-beta.html#home">HOME</a>
-    <a class="app-nav-link" href="./domestic-sales.html">国内販売</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#home" target="_blank" rel="noopener">HOME</a>
+    <a class="app-nav-link" href="./domestic-sales.html" target="_blank" rel="noopener">国内販売</a>
     <span class="app-nav-divider" aria-hidden="true"></span>
-    <a class="app-nav-link" href="./order-entry-beta.html#orders">発注入力</a>
-    <a class="app-nav-link" href="./order-entry-beta.html#supplier-board">発注先確認</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#orders" target="_blank" rel="noopener">発注入力</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#supplier-board" target="_blank" rel="noopener">発注先確認</a>
     <a class="app-nav-link active" href="./index.html" aria-current="page">作業アプリ</a>
-    <a class="app-nav-link" href="./order-entry-beta.html#external">外部作業</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#external" target="_blank" rel="noopener">外部作業</a>
     <span class="app-nav-divider" aria-hidden="true"></span>
-    <a class="app-nav-link" href="./order-entry-beta.html#sales">売上参照</a>
-    <a class="app-nav-link" href="./order-entry-beta.html#receivables">売掛管理</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#sales" target="_blank" rel="noopener">売上参照</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#receivables" target="_blank" rel="noopener">売掛管理</a>
     <span class="app-nav-divider" aria-hidden="true"></span>
-    <a class="app-nav-link" href="./order-entry-beta.html#purchase-entry">仕入入力</a>
-    <a class="app-nav-link" href="./order-entry-beta.html#purchases">仕入参照</a>
-    <a class="app-nav-link" href="./order-entry-beta.html#payables">買掛管理</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#purchase-entry" target="_blank" rel="noopener">仕入入力</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#purchases" target="_blank" rel="noopener">仕入参照</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#payables" target="_blank" rel="noopener">買掛管理</a>
     <span class="app-nav-divider" aria-hidden="true"></span>
-    <a class="app-nav-link" href="./order-entry-beta.html#masters">マスタ</a>
-    <a class="app-nav-link" href="./order-entry-beta.html#guide">商品案内</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#masters" target="_blank" rel="noopener">マスタ</a>
+    <a class="app-nav-link" href="./order-entry-beta.html#guide" target="_blank" rel="noopener">商品案内</a>
   </nav>
   <div class="app-header-row">
     <div class="header-title-wrap"><div class="header-title">オーダー管理</div><button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button></div>
@@ -296,8 +296,8 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
         </label>
         <button class="btn btn-primary" type="button" onclick="createWorkSessionFromConfirmedOrders()">受注から作業作成</button>
         <button class="btn btn-primary" type="button" onclick="openSessionList()">作業一覧を表示</button>
-        <button class="btn" type="button" onclick="location.href='./order-entry-beta.html#supplier-board'">発注先確認</button>
-        <button class="btn" type="button" onclick="location.href='./order-entry-beta.html'">発注入力へ</button>
+        <a class="btn" href="./order-entry-beta.html#supplier-board" target="_blank" rel="noopener">発注先確認</a>
+        <a class="btn" href="./order-entry-beta.html#orders" target="_blank" rel="noopener">発注入力へ</a>
       </div>
     </div>
     <div class="import-grid ops-entry-only">
