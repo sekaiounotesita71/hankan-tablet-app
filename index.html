@@ -4590,7 +4590,11 @@ async function syncFinalizedSessionToReceivables(workDate,shippingFees){
   if((data||[]).length!==payloads.length)throw new Error(`売掛の反映件数が一致しません（入力 ${payloads.length}件 / DB ${(data||[]).length}件）`);
   return payloads.length;
 }
+function incompleteSalesWorkRows(){
+  return rows.filter(row=>!row._stockout&&(!row._qty||!row._net||!row._box));
+}
 async function confirmOutstandingExternalWorkBeforeSales(){
+  if(!incompleteSalesWorkRows().length)return true;
   if(!sitePartnerSchemaReady)return true;
   const {data,error}=await supabaseClient
     .from("external_work_assignments")
@@ -4620,7 +4624,7 @@ finalizeSalesTrial=async function(){
   if(currentSessionLocked){toast("すでに売上確定済みです");return}
   if(!(await checkSalesLockSetupTrial()))return;
   if(!(await confirmOutstandingExternalWorkBeforeSales()))return;
-  const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
+  const incomplete=incompleteSalesWorkRows().length;
   if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
   if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
   const shippingImporters=[...new Set(rows.map(r=>importerCode(r.importer_id)).filter(Boolean))].sort();
