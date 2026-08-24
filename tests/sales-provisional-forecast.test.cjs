@@ -21,10 +21,12 @@ assert.match(html, /data-sales-status="provisional"[\s\S]*?>速報のみ</);
 const provisionalRead = sourceBetween("async function salesRefReadProvisionalRows", "async function loadSalesReferenceBoard");
 assert.match(provisionalRead, /!\(session\.locked\|\|session\.status==="closed"\)/);
 assert.match(provisionalRead, /session\.status!=="archived"/);
+assert.match(provisionalRead, /const importerIndex=salesReferenceImporterIndex\|\|salesRefBuildImporterIndex\(\)/);
 assert.match(provisionalRead, /from\("order_lines"\)/);
 assert.match(provisionalRead, /from\("boxes"\)/);
 assert.match(provisionalRead, /qty\*price:null/);
 assert.match(provisionalRead, /source_type:"未確定速報"/);
+assert.doesNotMatch(provisionalRead, /salesRefNormalizeRowImporter\([\s\S]*?,salesReferenceImporterIndex\)/);
 
 const load = sourceBetween("async function loadSalesReferenceBoard", "function salesRefResetPage");
 assert.match(load, /provisionalTask/);

@@ -4371,6 +4371,7 @@ async function salesRefReadProvisionalRows(client,sessions){
   const activeSessions=(sessions||[]).filter(session=>!(session.locked||session.status==="closed")&&session.status!=="archived");
   const sessionIds=activeSessions.map(session=>session.id).filter(Boolean);
   if(!sessionIds.length)return [];
+  const importerIndex=salesReferenceImporterIndex||salesRefBuildImporterIndex();
   const lineSelect="id,session_id,source_row_no,country_code,importer_id,importer_code,store_name,product_id,product_name,ordered_qty,ordered_unit,unit_price,english_name,scientific_name,origin,input_qty,input_unit,net_weight,box_no,memo,is_stockout,created_at,updated_at";
   const [lines,boxes]=await Promise.all([
     salesRefReadChunks(sessionIds,100,ids=>salesRefReadPaged(includeCount=>client.from("order_lines").select(lineSelect,includeCount?{count:"exact"}:undefined).in("session_id",ids).order("session_id",{ascending:true}).order("source_row_no",{ascending:true})),4),
@@ -4379,12 +4380,12 @@ async function salesRefReadProvisionalRows(client,sessions){
   const sessionMap=new Map(activeSessions.map(session=>[session.id,session]));
   const boxMap=new Map();
   boxes.forEach(box=>{
-    const importerKey=salesRefImporterIdentity(box.importer_code).key;
+    const importerKey=salesRefImporterIdentity(box.importer_code,importerIndex).key;
     boxMap.set(`${box.session_id}::${importerKey}::${salesRefText(box.box_no).trim()}`,box);
   });
   return lines.map(line=>{
     const session=sessionMap.get(line.session_id)||{};
-    const importer=salesRefImporterIdentity({importer_code:line.importer_code,importer_id:line.importer_id});
+    const importer=salesRefImporterIdentity({importer_code:line.importer_code,importer_id:line.importer_id},importerIndex);
     const box=boxMap.get(`${line.session_id}::${importer.key}::${salesRefText(line.box_no).trim()}`)||{};
     const qty=line.input_qty===null||line.input_qty===undefined||line.input_qty===""?null:Number(line.input_qty);
     const price=line.unit_price===null||line.unit_price===undefined||line.unit_price===""?null:Number(line.unit_price);
@@ -4400,7 +4401,7 @@ async function salesRefReadProvisionalRows(client,sessions){
       dry_ice_weight:box.dry_ice_weight??null,
       box_size:box.box_size||null,
       _sales_provisional:true
-    },salesReferenceImporterIndex);
+    },importerIndex);
   });
 }
 async function loadSalesReferenceBoard(){
