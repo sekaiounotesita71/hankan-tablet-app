@@ -388,7 +388,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>その他<input id="sales-ref-search" placeholder="箱番号・産地・メモ"></label>
         <div class="sales-filter-actions"><button class="btn" onclick="loadSalesReferenceBoard()">売上読込</button><button class="btn" type="button" onclick="clearSalesReferenceDetailFilters()">解除</button><button class="btn primary" onclick="exportSalesReferenceBoardExcel()">Excel出力</button></div>
       </div>
-      <div class="historical-sales-import">
+      <div class="historical-sales-import" hidden aria-hidden="true">
         <div class="historical-sales-tools">
           <button class="btn" type="button" onclick="document.getElementById('historical-sales-file').click()">過去売上CSV取込</button>
           <button class="btn primary" type="button" onclick="saveHistoricalSalesImport()">過去売上を登録</button>
