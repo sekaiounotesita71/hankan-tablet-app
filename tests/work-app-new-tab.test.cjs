@@ -10,7 +10,8 @@ const legacyWorkApp = fs.readFileSync(path.join(__dirname, "..", "hankan-p1p2-ta
 const legacyManagementLinks = [...legacyWorkApp.matchAll(/<a class="app-nav-link" href="\/order-entry-beta\.html#(?:orders|supplier-board)" target="_blank" rel="noopener">/g)];
 
 assert.equal(workLinks.length, 2);
-assert.equal(managementLinks.length, 14);
+assert.equal(managementLinks.length, 15);
+assert.match(workApp, /order-entry-beta\.html#profit[^>]*>粗利参照<\/a>/);
 assert.equal(legacyManagementLinks.length, 2);
 
 console.log("Work-app bidirectional new-tab links tests passed");
