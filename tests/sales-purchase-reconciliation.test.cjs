@@ -15,14 +15,15 @@ function sourceBetween(start,end){
 
 const allocationSource=sourceBetween("function salesRefPurchaseCodeKeys","async function salesRefReadImportedPurchaseCosts");
 const allocation=new Function(
-  "normalizeMasterSearchText","salesRefCostQuantity","salesRefNum","salesRefMonth","salesRefRowDate",
+  "normalizeMasterSearchText","salesRefCostQuantity","salesRefNum","salesRefMonth","salesRefRowDate","purchaseJpyAmount",
   `${allocationSource}; return {salesRefPurchaseCodeKeys,salesRefImportedPurchaseMatches,salesRefAllocateImportedPurchaseCosts};`
 )(
   value=>String(value||"").normalize("NFKC").toUpperCase().replace(/\s+/g,"").replace(/[蓄畜]養/g,"畜養"),
   (row,unit)=>String(unit||"").toLowerCase()==="kg"?Number(row.net_weight)||0:Number(row.input_qty)||0,
   value=>Number(value)||0,
   value=>String(value||"").slice(0,7),
-  row=>row.work_date||""
+  row=>row.work_date||"",
+  value=>Math.sign(Number(value)||0)*Math.round(Math.abs(Number(value)||0)+Number.EPSILON)
 );
 
 test("OLD商品コードを現行コードへ月次照合して数量比で配分する",()=>{

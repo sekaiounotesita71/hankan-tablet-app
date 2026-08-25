@@ -2943,6 +2943,9 @@ function salesRefJpyAmount(value){
   const number=salesRefNum(value);
   return Math.sign(number)*Math.round(Math.abs(number)+Number.EPSILON);
 }
+function purchaseJpyAmount(value){
+  return salesRefJpyAmount(value);
+}
 function salesRefGrossBoxKey(row={}){
   const boxNo=salesRefText(row.box_no).normalize("NFKC").trim();
   if(!boxNo)return "";
@@ -3917,7 +3920,7 @@ function salesRefAllocateImportedPurchaseCosts(salesRows,receipts,lines,linkedLi
   (lines||[]).forEach(line=>{
     const receipt=receiptById.get(line.receipt_id);
     if(!receipt||linkedLineIds.has(line.id))return;
-    const lineAmount=salesRefNum(line.line_amount)||salesRefNum(line.actual_qty)*salesRefNum(line.unit_price);
+    const lineAmount=purchaseJpyAmount(salesRefNum(line.line_amount)||salesRefNum(line.actual_qty)*salesRefNum(line.unit_price));
     if(lineAmount<=0)return;
     const month=String(receipt.purchase_date||"").slice(0,7);
     const matches=eligibleSales.filter(row=>salesRefMonth(salesRefRowDate(row))===month&&salesRefImportedPurchaseMatches(line,row));
@@ -3997,7 +4000,7 @@ async function salesRefAttachPurchaseCosts(client,rows){
     const linkedRows=linkedSalesIds.map(id=>salesById.get(id)).filter(Boolean);
     const weights=linkedRows.map(row=>salesRefCostQuantity(row,line.price_unit)||0);
     const totalWeight=weights.reduce((sum,value)=>sum+value,0);
-    const lineAmount=salesRefNum(line.line_amount)||salesRefNum(line.actual_qty)*salesRefNum(line.unit_price);
+    const lineAmount=purchaseJpyAmount(salesRefNum(line.line_amount)||salesRefNum(line.actual_qty)*salesRefNum(line.unit_price));
     linkedRows.forEach((row,index)=>{
       const share=totalWeight>0?weights[index]/totalWeight:1/Math.max(1,linkedRows.length);
       row._purchaseCostActual=salesRefNum(row._purchaseCostActual)+lineAmount*share;
@@ -9777,10 +9780,10 @@ function purchaseRefFilteredReceipts(options={}){
 }
 function purchaseRefMetrics(rows){
   const lines=rows.flatMap(receipt=>receipt.lines||[]);
-  const subtotal=rows.reduce((sum,row)=>sum+salesRefNum(row.subtotal),0);
-  const shipping=rows.reduce((sum,row)=>sum+salesRefNum(row.shipping_fee)+salesRefNum(row.other_fee),0);
-  const tax=rows.reduce((sum,row)=>sum+salesRefNum(row.tax_amount),0);
-  const total=rows.reduce((sum,row)=>sum+salesRefNum(row.total_amount),0);
+  const subtotal=rows.reduce((sum,row)=>sum+purchaseJpyAmount(row.subtotal),0);
+  const shipping=rows.reduce((sum,row)=>sum+purchaseJpyAmount(row.shipping_fee)+purchaseJpyAmount(row.other_fee),0);
+  const tax=rows.reduce((sum,row)=>sum+purchaseJpyAmount(row.tax_amount),0);
+  const total=rows.reduce((sum,row)=>sum+purchaseJpyAmount(row.total_amount),0);
   return {
     rows,lines,receiptCount:rows.length,lineCount:lines.length,subtotal,shipping,tax,total,
     suppliers:new Set(rows.map(row=>row.supplier_code||row.supplier_name_snapshot).filter(Boolean)).size,
@@ -9795,10 +9798,10 @@ function purchaseRefGroupReceipts(rows,keyFn){
     const current=groups.get(key)||{key,count:0,lineCount:0,subtotal:0,tax:0,fees:0,amount:0};
     current.count++;
     current.lineCount+=(receipt.lines||[]).length;
-    current.subtotal+=salesRefNum(receipt.subtotal);
-    current.tax+=salesRefNum(receipt.tax_amount);
-    current.fees+=salesRefNum(receipt.shipping_fee)+salesRefNum(receipt.other_fee);
-    current.amount+=salesRefNum(receipt.total_amount);
+    current.subtotal+=purchaseJpyAmount(receipt.subtotal);
+    current.tax+=purchaseJpyAmount(receipt.tax_amount);
+    current.fees+=purchaseJpyAmount(receipt.shipping_fee)+purchaseJpyAmount(receipt.other_fee);
+    current.amount+=purchaseJpyAmount(receipt.total_amount);
     groups.set(key,current);
   });
   return [...groups.values()].sort((a,b)=>b.amount-a.amount||String(a.key).localeCompare(String(b.key),"ja"));
@@ -9809,7 +9812,7 @@ function purchaseRefGroupLines(rows,keyFn){
     const key=keyFn(line,receipt)||"未設定";
     const current=groups.get(key)||{key,count:0,amount:0,quantityByUnit:{}};
     current.count++;
-    current.amount+=salesRefNum(line.line_amount);
+    current.amount+=purchaseJpyAmount(line.line_amount);
     const unit=line.actual_unit||"未設定";
     current.quantityByUnit[unit]=salesRefNum(current.quantityByUnit[unit])+salesRefNum(line.actual_qty);
     groups.set(key,current);
@@ -9983,7 +9986,7 @@ function purchaseReceiptCardHtml(receipt){
       <td><input class="ops-money" inputmode="decimal" value="${esc(line.unit_price??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','unit_price',this.value)"></td>
       <td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','price_unit',this.value)">${purchaseUnitOptions(line.price_unit)}</select></td>
       <td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','tax_rate',this.value)">${purchaseTaxRateOptions(line.tax_rate)}</select></td>
-      <td class="ops-money">${Number(line.line_amount||0).toLocaleString("ja-JP")}</td>
+      <td class="ops-money">${purchaseJpyAmount(line.line_amount).toLocaleString("ja-JP")}</td>
       <td><input class="purchase-line-note ime-ja" value="${esc(line.note||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','note',this.value)"></td>
       <td><input type="checkbox" style="width:18px;min-height:18px" ${line.track_inventory?"checked":""} ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','track_inventory',this.checked)"></td>
     </tr>`).join("");
@@ -9991,7 +9994,7 @@ function purchaseReceiptCardHtml(receipt){
     const action=locked
       ?(currentUserIsAdmin()?`<button class="btn danger" type="button" onclick="unlockPurchaseReceiptForCorrection('${esc(receipt.id)}')">修正解除</button>`:`<span class="pill">確定済み</span>`)
       :`<button class="btn primary" type="button" onclick="confirmPurchaseReceipt('${esc(receipt.id)}')">${receipt.correction_unlocked?"修正を再確定":"仕入確定"}</button>`;
-    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(purchaseReceiptTypeLabel(receipt))}</span><span>${esc(purchaseStatusLabel(receipt.status,receipt))}</span><span class="ops-money">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid">${correctionNote}<label>仕入日<input type="date" value="${esc(receipt.purchase_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','purchase_date',this.value)"></label><label>拠点<select ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','site_code',this.value)">${purchaseSiteOptions(receipt.site_code)}</select></label><label>仕入先コード<input class="ime-en" list="supplier-code-list" value="${esc(receipt.supplier_code||"")}" ${disabled} onchange="savePurchaseSupplier('${esc(receipt.id)}',this.value)"></label><label>仕入先名<div class="site-readonly">${esc(receipt.supplier_name_snapshot||"")}</div></label><label>管理番号<div class="site-readonly">${esc(receipt.supplier_invoice_no||"自動採番待ち")}</div></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>税計算<select ${disabled} onchange="savePurchaseTaxMode('${esc(receipt.id)}',this.value)"><option value="auto" ${receipt.tax_override?"":"selected"}>税率から自動</option><option value="manual" ${receipt.tax_override?"selected":""}>税額を手入力</option></select></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${taxAmountDisabled} onchange="savePurchaseTaxAmount('${esc(receipt.id)}',this.value)"></label><label>合計<div class="site-readonly">¥${Number(receipt.total_amount||0).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input class="ime-ja" value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end">${action}</div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th><th>在庫</th></tr></thead><tbody>${lines||'<tr><td colspan="11">明細なし</td></tr>'}</tbody></table></div></div></details>`;
+    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(purchaseReceiptTypeLabel(receipt))}</span><span>${esc(purchaseStatusLabel(receipt.status,receipt))}</span><span class="ops-money">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid">${correctionNote}<label>仕入日<input type="date" value="${esc(receipt.purchase_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','purchase_date',this.value)"></label><label>拠点<select ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','site_code',this.value)">${purchaseSiteOptions(receipt.site_code)}</select></label><label>仕入先コード<input class="ime-en" list="supplier-code-list" value="${esc(receipt.supplier_code||"")}" ${disabled} onchange="savePurchaseSupplier('${esc(receipt.id)}',this.value)"></label><label>仕入先名<div class="site-readonly">${esc(receipt.supplier_name_snapshot||"")}</div></label><label>管理番号<div class="site-readonly">${esc(receipt.supplier_invoice_no||"自動採番待ち")}</div></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>税計算<select ${disabled} onchange="savePurchaseTaxMode('${esc(receipt.id)}',this.value)"><option value="auto" ${receipt.tax_override?"":"selected"}>税率から自動</option><option value="manual" ${receipt.tax_override?"selected":""}>税額を手入力</option></select></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${taxAmountDisabled} onchange="savePurchaseTaxAmount('${esc(receipt.id)}',this.value)"></label><label>合計<div class="site-readonly">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input class="ime-ja" value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end">${action}</div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th><th>在庫</th></tr></thead><tbody>${lines||'<tr><td colspan="11">明細なし</td></tr>'}</tbody></table></div></div></details>`;
 }
 function renderPurchaseReceipts(){
   const box=document.getElementById("purchase-receipt-list");
@@ -10051,8 +10054,8 @@ function exportPurchaseReferenceExcel(){
   groupSheet("仕入先別",purchaseRefGroupReceipts(rows,purchaseRefSupplierLabel),"仕入先");
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(purchaseRefGroupLines(rows,line=>`${line.product_code||""} ${line.product_name||""}`.trim()).map(row=>({"商品":row.key,"税抜明細金額":row.amount,"明細件数":row.count,"数量（単位別）":Object.entries(row.quantityByUnit).map(([unit,qty])=>`${qty.toLocaleString("ja-JP")} ${unit}`).join(" / ")}))),"商品別");
   if(analysis)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(analysis.monthly.map(row=>({"月":row.month,"税込仕入":row.current,"前年同月":row.previous,"前年差":row.delta,"昨対%":row.ratio,"伝票件数":row.count,"前年伝票件数":row.previousCount}))),"月別昨対");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.map(receipt=>({"仕入日":receipt.purchase_date,"拠点":siteNameFromCode(receipt.site_code),"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,"区分":purchaseReceiptTypeLabel(receipt),"状態":purchaseStatusLabel(receipt.status,receipt),"税抜仕入":receipt.subtotal,"送料":receipt.shipping_fee,"その他費用":receipt.other_fee,"消費税":receipt.tax_amount,"税込仕入":receipt.total_amount,"メモ":receipt.note||""}))),"仕入伝票");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.flatMap(receipt=>(receipt.lines||[]).map(line=>({"仕入日":receipt.purchase_date,"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,"商品コード":line.product_code||"","商品名":line.product_name||"","産地":line.origin||"","数量":line.actual_qty??"","単位":line.actual_unit||"","仕入単価":line.unit_price??"","単価単位":line.price_unit||"","税率":line.tax_rate??"","税抜金額":line.line_amount??0,"明細メモ":line.note||""})))),"仕入明細");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.map(receipt=>({"仕入日":receipt.purchase_date,"拠点":siteNameFromCode(receipt.site_code),"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,"区分":purchaseReceiptTypeLabel(receipt),"状態":purchaseStatusLabel(receipt.status,receipt),"税抜仕入":purchaseJpyAmount(receipt.subtotal),"送料":purchaseJpyAmount(receipt.shipping_fee),"その他費用":purchaseJpyAmount(receipt.other_fee),"消費税":purchaseJpyAmount(receipt.tax_amount),"税込仕入":purchaseJpyAmount(receipt.total_amount),"メモ":receipt.note||""}))),"仕入伝票");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.flatMap(receipt=>(receipt.lines||[]).map(line=>({"仕入日":receipt.purchase_date,"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,"商品コード":line.product_code||"","商品名":line.product_name||"","産地":line.origin||"","数量":line.actual_qty??"","単位":line.actual_unit||"","仕入単価":line.unit_price??"","単価単位":line.price_unit||"","税率":line.tax_rate??"","税抜金額":purchaseJpyAmount(line.line_amount),"明細メモ":line.note||""})))),"仕入明細");
   const stamp=new Date().toISOString().slice(0,10).replace(/-/g,"");
   XLSX.writeFile(wb,`purchase_reference_${stamp}.xlsx`);
 }
@@ -10061,9 +10064,9 @@ function purchaseTaxRateOptions(value){const current=Number(value??8);return [[8
 function purchaseSiteOptions(value){return [["OSA","大阪"],["TYO","東京"]].map(([code,name])=>`<option value="${code}" ${String(value||"")===code?"selected":""}>${name}</option>`).join("")}
 async function savePurchaseReceiptField(id,field,value){
   const receipt=purchaseReceipts.find(row=>row.id===id);if(!receipt||receipt.status==="confirmed")return;
-  const numeric=["shipping_fee","other_fee"].includes(field);const clean=numeric?(dbNumber(value)??0):(String(value||"").trim()||null);receipt[field]=clean;
+  const numeric=["shipping_fee","other_fee"].includes(field);const clean=numeric?purchaseJpyAmount(dbNumber(value)??0):(String(value||"").trim()||null);receipt[field]=clean;
   const payload={[field]:clean};
-  payload.total_amount=Number(receipt.subtotal||0)+Number(receipt.shipping_fee||0)+Number(receipt.other_fee||0)+Number(receipt.tax_amount||0);
+  payload.total_amount=purchaseJpyAmount(receipt.subtotal)+purchaseJpyAmount(receipt.shipping_fee)+purchaseJpyAmount(receipt.other_fee)+purchaseJpyAmount(receipt.tax_amount);
   const {error}=await supabaseClient.from("purchase_receipts").update(payload).eq("id",id);if(error){alert(sitePartnerDbError(error));return}receipt.total_amount=payload.total_amount;renderPurchaseReceipts();
 }
 async function savePurchaseTaxMode(id,value){
@@ -10075,7 +10078,7 @@ async function savePurchaseTaxMode(id,value){
 }
 async function savePurchaseTaxAmount(id,value){
   const receipt=purchaseReceipts.find(row=>row.id===id);if(!receipt||receipt.status==="confirmed")return;
-  const taxAmount=dbNumber(value)??0;
+  const taxAmount=purchaseJpyAmount(dbNumber(value)??0);
   const {data,error}=await supabaseClient.from("purchase_receipts").update({tax_amount:taxAmount,tax_override:true}).eq("id",id).select("tax_override,tax_amount,total_amount").single();
   if(error){alert(sitePartnerDbError(error));return}
   Object.assign(receipt,data||{});renderPurchaseReceipts();
@@ -10089,7 +10092,7 @@ async function savePurchaseSupplier(id,value){
 }
 async function savePurchaseLineField(id,field,value){
   let receipt=null,line=null;for(const row of purchaseReceipts){const found=row.lines.find(item=>item.id===id);if(found){receipt=row;line=found;break}}
-  if(!line||receipt.status==="confirmed")return;const numeric=["actual_qty","unit_price","tax_rate"].includes(field);line[field]=field==="track_inventory"?!!value:numeric?dbNumber(value):(String(value||"").trim()||null);line.line_amount=Number(line.actual_qty||0)*Number(line.unit_price||0);
+  if(!line||receipt.status==="confirmed")return;const numeric=["actual_qty","unit_price","tax_rate"].includes(field);line[field]=field==="track_inventory"?!!value:numeric?dbNumber(value):(String(value||"").trim()||null);line.line_amount=purchaseJpyAmount(Number(line.actual_qty||0)*Number(line.unit_price||0));
   const {error}=await supabaseClient.from("purchase_receipt_lines").update({[field]:line[field],line_amount:line.line_amount}).eq("id",id);if(error){alert(sitePartnerDbError(error));return}
   const headerResult=await supabaseClient.from("purchase_receipts").select("subtotal,tax_amount,tax_override,total_amount").eq("id",receipt.id).single();if(headerResult.error){alert(sitePartnerDbError(headerResult.error));return}Object.assign(receipt,headerResult.data||{});renderPurchaseReceipts();
 }
@@ -10123,7 +10126,7 @@ function advancePurchaseActiveRows(){return advancePurchaseRows.filter(advancePu
 function advancePurchaseAmount(row){
   const qty=dbNumber(row.actualQty);
   const price=dbNumber(row.unitPrice);
-  return qty===null||price===null?0:qty*price;
+  return qty===null||price===null?0:purchaseJpyAmount(qty*price);
 }
 function advancePurchaseTaxAmount(rows=advancePurchaseActiveRows()){
   const bases=new Map([[0,0],[8,0],[10,0]]);

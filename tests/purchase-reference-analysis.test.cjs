@@ -23,8 +23,9 @@ const metricsSource = sourceBetween(
 );
 const analytics = new Function(
   "salesRefNum",
+  "purchaseJpyAmount",
   `${metricsSource}; return { purchaseRefMetrics, purchaseRefGroupReceipts, purchaseRefGroupLines };`
-)(value => Number(value) || 0);
+)(value => Number(value) || 0, value => Math.sign(Number(value) || 0) * Math.round(Math.abs(Number(value) || 0) + Number.EPSILON));
 
 const receipts = [
   {
