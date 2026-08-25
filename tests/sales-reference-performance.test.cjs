@@ -13,14 +13,15 @@ function sourceBetween(start,end){
   return html.slice(from,to);
 }
 
-test("売上明細は仕入原価の照合完了を待たずに表示する",()=>{
-  const source=sourceBetween("async function loadSalesReferenceBoard()","function salesRefResetPage");
-  const renderAt=source.indexOf("renderSalesReferenceBoard();",source.indexOf("const baseMessage="));
-  const costAt=source.indexOf("void salesRefAttachPurchaseCosts(client,currentRows)");
-  assert.ok(renderAt>=0,"初期表示がありません");
-  assert.ok(costAt>renderAt,"原価照合より先に初期表示する必要があります");
-  assert.ok(!source.includes("await salesRefAttachPurchaseCosts(client,currentRows)"),"原価照合で初期表示を待たせています");
-  assert.match(source,/renderSalesReferenceSummary\(\);\s*renderSalesReferenceAnalysis\(\);/);
+test("売上参照では仕入原価を照合せず粗利参照だけで実行する",()=>{
+  const salesSource=sourceBetween("async function loadSalesReferenceBoard()","function renderProfitReferenceBoard");
+  const profitSource=sourceBetween("async function loadProfitReferenceBoard()","function salesRefResetPage");
+  assert.match(salesSource,/renderSalesReferenceBoard\(\);/);
+  assert.doesNotMatch(salesSource,/salesRefAttachPurchaseCosts/);
+  assert.match(profitSource,/await salesRefAttachPurchaseCosts\(client,currentRows\)/);
+  assert.match(profitSource,/renderProfitReferenceBoard\(\)/);
+  assert.match(html,/data-workspace-tab="profit"/);
+  assert.match(html,/data-workspace-panel="profit"/);
 });
 
 test("原価照合の分割問い合わせを制限付きで並列実行する",()=>{
@@ -36,9 +37,9 @@ test("原価照合の分割問い合わせを制限付きで並列実行する",
 });
 
 test("連続再読込では古い結果を画面へ反映しない",()=>{
-  const source=sourceBetween("async function loadSalesReferenceBoard()","function salesRefResetPage");
+  const source=sourceBetween("async function loadSalesReferenceBoard()","function renderProfitReferenceBoard");
   assert.match(source,/const loadSequence=\+\+salesReferenceLoadSequence/);
-  assert.ok((source.match(/loadSequence!==salesReferenceLoadSequence/g)||[]).length>=3);
+  assert.ok((source.match(/loadSequence!==salesReferenceLoadSequence/g)||[]).length>=2);
 });
 
 test("2ページ目以降の売上を並列で取得する",async()=>{

@@ -109,6 +109,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <span class="app-nav-divider" aria-hidden="true"></span>
       <button class="app-nav-link" type="button" data-workspace-tab="purchase-entry" onclick="switchWorkspaceTab('purchase-entry')">仕入入力</button>
       <button class="app-nav-link" type="button" data-workspace-tab="purchases" onclick="switchWorkspaceTab('purchases')">仕入参照</button>
+      <button class="app-nav-link" type="button" data-workspace-tab="profit" onclick="switchWorkspaceTab('profit')">粗利参照</button>
       <button class="app-nav-link" type="button" data-workspace-tab="payables" onclick="switchWorkspaceTab('payables')">買掛管理</button>
       <span class="app-nav-divider" aria-hidden="true"></span>
       <button class="app-nav-link" type="button" data-workspace-tab="masters" onclick="switchWorkspaceTab('masters')">マスタ</button>
@@ -157,6 +158,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <div class="home-group-title">売上・回収<span>確定売上から入金まで</span></div>
         <div class="home-command-grid">
           <button class="home-command" type="button" onclick="switchWorkspaceTab('sales')"><span><b>売上参照</b><span>日別・輸入社別の売上分析</span></span></button>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('profit')"><span><b>粗利参照</b><span>売上と仕入原価の照合・分析</span></span></button>
           <button class="home-command" type="button" onclick="switchWorkspaceTab('receivables')"><span><b>売掛管理</b><span>請求締め・入金・SOA</span></span></button>
         </div>
       </div>
@@ -426,6 +428,31 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="sales-analysis" id="sales-ref-analysis"></div>
       <div class="sales-board-ranks" id="sales-ref-ranks"></div>
       <div class="sales-table-wrap" id="sales-ref-table"><div class="sales-empty">条件を指定して「売上読込」を押してください。</div></div>
+    </div>
+  </section>
+
+  <section class="panel workspace-panel" data-workspace-panel="profit" id="profit-reference-panel" style="margin-top:12px">
+    <div class="panel-head"><span>粗利参照</span><span class="pill warn">仕入照合を行うため読込に時間がかかります</span></div>
+    <div class="panel-body">
+      <div class="sales-board-tools">
+        <label>期間<input id="profit-ref-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="2026 / 202608 / 日付範囲" oninput="invalidateProfitReference()"></label>
+        <label>輸入社<input id="profit-ref-importer" list="importer-code-list" placeholder="例 FBI" oninput="invalidateProfitReference()"></label>
+        <label>得意先<input id="profit-ref-customer" list="profit-ref-customer-list" autocomplete="off" placeholder="コード・得意先名" oninput="invalidateProfitReference()"></label>
+        <label>商品<input id="profit-ref-product" list="profit-ref-product-list" autocomplete="off" placeholder="商品コード・商品名" oninput="invalidateProfitReference()"></label>
+        <label>その他<input id="profit-ref-search" placeholder="箱番号・産地・メモ" oninput="invalidateProfitReference()"></label>
+        <div class="sales-filter-actions"><button class="btn primary" type="button" onclick="loadProfitReferenceBoard()">粗利読込</button><button class="btn" type="button" onclick="clearProfitReferenceFilters()">解除</button></div>
+      </div>
+      <div class="sales-mode-bar">
+        <div class="sales-range-presets" aria-label="粗利期間の選択">
+          <button class="small" type="button" data-profit-period="today" onclick="setProfitReferencePeriod('today')">今日</button>
+          <button class="small" type="button" data-profit-period="week" onclick="setProfitReferencePeriod('week')">今週</button>
+          <button class="small" type="button" data-profit-period="month" onclick="setProfitReferencePeriod('month')">今月</button>
+        </div>
+      </div>
+      <datalist id="profit-ref-customer-list"></datalist>
+      <datalist id="profit-ref-product-list"></datalist>
+      <div class="hint" id="profit-ref-state">条件を指定して「粗利読込」を押してください。</div>
+      <div class="sales-analysis" id="profit-ref-analysis"></div>
     </div>
   </section>
 
@@ -1267,6 +1294,8 @@ let salesReferenceImporterKeysBySession=new Map();
 let salesReferencePage=1;
 const SALES_REFERENCE_PAGE_SIZE=250;
 let salesReferenceLoadSequence=0;
+let profitReferenceLoadSequence=0;
+let profitReferenceReady=false;
 let salesRefCustomerOptions=[];
 let salesRefProductOptions=[];
 let salesRefSuggestionIndex=0;
@@ -3622,6 +3651,40 @@ function setSalesReferenceStatus(kind="confirmed"){
   salesRefResetPage();
   renderSalesReferenceBoard();
 }
+function syncProfitReferencePeriodButtons(kind=""){
+  document.querySelectorAll("[data-profit-period]").forEach(button=>button.classList.toggle("active",button.dataset.profitPeriod===kind));
+}
+function setProfitReferencePeriod(kind){
+  const input=document.getElementById("profit-ref-date-range");
+  if(!input)return;
+  const current=salesRefToday();
+  if(kind==="today")input.value=salesRefCompactDate(current);
+  else if(kind==="week")input.value=`${salesRefCompactDate(salesRefWeekStart(current))}-${salesRefCompactDate(current)}`;
+  else input.value=current.slice(0,7).replace("-","");
+  syncProfitReferencePeriodButtons(kind);
+  loadProfitReferenceBoard();
+}
+function syncProfitReferenceFiltersToSales(){
+  const fields=["date-range","importer","customer","product","search"];
+  fields.forEach(name=>{
+    const source=document.getElementById(`profit-ref-${name}`);
+    const target=document.getElementById(`sales-ref-${name}`);
+    if(source&&target)target.value=source.value;
+  });
+  const status=document.getElementById("sales-ref-status");
+  if(status)status.value="confirmed";
+  document.querySelectorAll("[data-sales-status]").forEach(button=>button.classList.toggle("active",button.dataset.salesStatus==="confirmed"));
+  syncSalesReferencePeriodButtons("");
+  salesRefResetPage();
+}
+function syncSalesReferenceFiltersToProfit(options={}){
+  const fields=["date-range","importer","customer","product","search"];
+  fields.forEach(name=>{
+    const source=document.getElementById(`sales-ref-${name}`);
+    const target=document.getElementById(`profit-ref-${name}`);
+    if(source&&target&&(options.overwrite||!target.value))target.value=source.value;
+  });
+}
 function salesRefIsProvisional(row={}){
   return !!row._sales_provisional||row.source_type==="未確定速報";
 }
@@ -3640,6 +3703,10 @@ function salesRefRenderFilterOptions(){
   const sort=(a,b)=>a.value.localeCompare(b.value,"ja",{numeric:true});
   salesRefCustomerOptions=[...customers.values()].sort(sort);
   salesRefProductOptions=[...products.values()].sort(sort);
+  const customerList=document.getElementById("profit-ref-customer-list");
+  const productList=document.getElementById("profit-ref-product-list");
+  if(customerList)customerList.innerHTML=salesRefCustomerOptions.slice(0,1000).map(item=>`<option value="${esc(item.value)}"></option>`).join("");
+  if(productList)productList.innerHTML=salesRefProductOptions.slice(0,1000).map(item=>`<option value="${esc(item.value)}"></option>`).join("");
 }
 function salesRefSuggestionMatches(type,query){
   const q=salesRefFilterKey(query);
@@ -3717,6 +3784,18 @@ function clearSalesReferenceDetailFilters(){
   ["sales-ref-importer","sales-ref-customer","sales-ref-product","sales-ref-search"].forEach(id=>{const field=document.getElementById(id);if(field)field.value=""});
   salesRefResetPage();
   renderSalesReferenceBoard();
+}
+function clearProfitReferenceFilters(){
+  ["profit-ref-importer","profit-ref-customer","profit-ref-product","profit-ref-search"].forEach(id=>{const field=document.getElementById(id);if(field)field.value=""});
+  syncProfitReferencePeriodButtons("");
+  invalidateProfitReference();
+}
+function invalidateProfitReference(){
+  profitReferenceReady=false;
+  const analysis=document.getElementById("profit-ref-analysis");
+  const state=document.getElementById("profit-ref-state");
+  if(analysis)analysis.innerHTML="";
+  if(state)state.textContent="条件を指定して「粗利読込」を押してください。";
 }
 function salesRefFilteredRows(options={}){
   const q=val("sales-ref-search").trim().toLowerCase();
@@ -4044,7 +4123,8 @@ function salesRefQuantitySummaryText(quantityByUnit){
     ?quantityByUnit.map(([unit,quantity])=>`${salesRefMoney(quantity)} ${unit}`).join(" / ")
     :"0";
 }
-function salesRefMetrics(rows){
+function salesRefMetrics(rows,options={}){
+  const includeProfit=options.includeProfit!==false;
   const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
   const shippingExcluded=salesRefDetailFilterActive();
   const shippingSales=salesRefVisibleShippingFeeForRows(rows);
@@ -4055,17 +4135,19 @@ function salesRefMetrics(rows){
   const customers=new Set(rows.map(row=>row.store_name||row.customer_code).filter(Boolean));
   const products=new Set(rows.map(row=>row.product_id||row.product_name).filter(Boolean));
   let purchaseCost=0,costedSales=0,pricedCount=0,unpricedCount=0,actualCostCount=0,linkedCostCount=0,monthlyPdfCostCount=0,estimatedCostCount=0;
-  rows.forEach(row=>{
-    const cost=salesRefCostInfo(row);
-    if(!cost.priced){unpricedCount++;return}
-    purchaseCost+=cost.amount;
-    costedSales+=salesRefNum(row.amount);
-    pricedCount++;
-    if(["actual","linked","monthly_pdf"].includes(cost.source))actualCostCount++;
-    if(cost.source==="linked")linkedCostCount++;
-    else if(cost.source==="monthly_pdf")monthlyPdfCostCount++;
-    else if(["supplier","product"].includes(cost.source))estimatedCostCount++;
-  });
+  if(includeProfit){
+    rows.forEach(row=>{
+      const cost=salesRefCostInfo(row);
+      if(!cost.priced){unpricedCount++;return}
+      purchaseCost+=cost.amount;
+      costedSales+=salesRefNum(row.amount);
+      pricedCount++;
+      if(["actual","linked","monthly_pdf"].includes(cost.source))actualCostCount++;
+      if(cost.source==="linked")linkedCostCount++;
+      else if(cost.source==="monthly_pdf")monthlyPdfCostCount++;
+      else if(["supplier","product"].includes(cost.source))estimatedCostCount++;
+    });
+  }
   const grossProfit=costedSales-purchaseCost;
   return {
     rows,
@@ -4187,8 +4269,8 @@ function salesRefMonthlyYoYRows(baseRows,limit=12){
     const previousMonth=salesRefShiftMonthYear(month,-1);
     const currentRows=baseRows.filter(row=>salesRefMonth(salesRefRowDate(row))===month);
     const previousRows=baseRows.filter(row=>salesRefMonth(salesRefRowDate(row))===previousMonth);
-    const current=salesRefMetrics(currentRows);
-    const previous=salesRefMetrics(previousRows);
+    const current=salesRefMetrics(currentRows,{includeProfit:false});
+    const previous=salesRefMetrics(previousRows,{includeProfit:false});
     return {
       month,
       current:current.totalSales,
@@ -4209,8 +4291,8 @@ function salesRefAnalysisSnapshot(){
   const previousRange={from:salesRefShiftYear(range.from,-1),to:salesRefShiftYear(range.to,-1)};
   const currentRows=salesRefFilterRowsByDate(baseRows,range.from,range.to);
   const previousRows=salesRefFilterRowsByDate(baseRows,previousRange.from,previousRange.to);
-  const current=salesRefMetrics(currentRows);
-  const previous=salesRefMetrics(previousRows);
+  const current=salesRefMetrics(currentRows,{includeProfit:false});
+  const previous=salesRefMetrics(previousRows,{includeProfit:false});
   const productCompare=salesRefCompareGroups(currentRows,previousRows,row=>`${row.product_id||""} ${row.product_name||""}`.trim()).filter(row=>row.key!=="未設定");
   const customerCompare=salesRefCompareGroups(currentRows,previousRows,row=>row.store_name||row.customer_code).filter(row=>row.key!=="未設定");
   const monthly=salesRefMonthlyYoYRows(baseRows,12);
@@ -4273,8 +4355,7 @@ function renderSalesReferenceAnalysis(){
       ${salesRefAnalysisRowsHtml("伸びた商品",snapshot.productUp)}
       ${salesRefAnalysisRowsHtml("落ちた商品",snapshot.productDown)}
       ${salesRefAnalysisRowsHtml("伸びた得意先",snapshot.customerUp)}
-    </div>
-    ${salesRefProfitAnalysisHtml(snapshot.currentRows)}`;
+    </div>`;
 }
 function salesRefRankHtml(title,rows,unitLabel="金額"){
   const body=rows.length?rows.slice(0,12).map(row=>`<div class="sales-rank-row"><span class="sales-rank-name">${esc(row.key)}</span><span class="sales-rank-value">${esc(salesRefMoney(row.amount))}</span></div>`).join(""):`<div class="sales-rank-row"><span class="sales-rank-name">データなし</span><span class="sales-rank-value"></span></div>`;
@@ -4420,6 +4501,7 @@ async function salesRefReadProvisionalRows(client,sessions){
 }
 async function loadSalesReferenceBoard(){
   const loadSequence=++salesReferenceLoadSequence;
+  if(!document.querySelector('[data-workspace-panel="profit"].active'))profitReferenceReady=false;
   const client=initSupabase();
   if(!client){alert("Supabaseを読み込めません。");return}
   const state=document.getElementById("sales-ref-state");
@@ -4473,23 +4555,8 @@ async function loadSalesReferenceBoard(){
     salesRefResetPage();
     const warnings=[sessionResult.warning,historicalResult.warning,pendingResult.warning,provisionalResult.warning].filter(Boolean).join(" / ");
     const baseMessage=`確定・調整 ${currentRows.length+pastRows.length+adjustmentRows.length}件 / 未確定速報 ${provisionalRows.length}件を読み込みました。${range.label}${warnings?` / ${warnings}`:""}`;
-    if(state)state.textContent=`${baseMessage} / 仕入原価・粗利を更新中...`;
+    if(state)state.textContent=baseMessage;
     renderSalesReferenceBoard();
-    void salesRefAttachPurchaseCosts(client,currentRows).then(result=>{
-      if(loadSequence!==salesReferenceLoadSequence)return;
-      const monthlyText=result.monthlyWarning
-        ?result.monthlyWarning
-        :`月次PDF ${result.monthlyMatchedLines}仕入明細→${result.monthlyMatchedSales}売上 / 未照合 ${result.monthlyUnmatchedLines}明細`;
-      if(state)state.textContent=`${baseMessage} / 仕入原価・粗利まで更新済み（明細リンク ${result.actual}件 / ${monthlyText}）`;
-      renderSalesReferenceSummary();
-      renderSalesReferenceAnalysis();
-    }).catch(error=>{
-      if(loadSequence!==salesReferenceLoadSequence)return;
-      console.warn("仕入原価リンクを取得できません",error);
-      if(state)state.textContent=`${baseMessage} / 仕入原価リンクを取得できません`;
-      renderSalesReferenceSummary();
-      renderSalesReferenceAnalysis();
-    });
   }catch(error){
     if(loadSequence!==salesReferenceLoadSequence)return;
     salesReferenceRows=[];
@@ -4497,6 +4564,56 @@ async function loadSalesReferenceBoard(){
     salesRefRebuildSessionIndexes();
     if(state)state.textContent=salesRefDbErrorMessage(error);
     renderSalesReferenceBoard();
+  }
+}
+function renderProfitReferenceBoard(){
+  const target=document.getElementById("profit-ref-analysis");
+  if(!target)return;
+  if(!profitReferenceReady){
+    target.innerHTML="";
+    return;
+  }
+  const rows=salesRefFilteredRows().filter(row=>!salesRefIsProvisional(row));
+  if(!rows.length){
+    target.innerHTML=`<div class="sales-empty">表示対象の確定売上データはありません。</div>`;
+    return;
+  }
+  target.innerHTML=salesRefProfitAnalysisHtml(rows);
+}
+async function loadProfitReferenceBoard(){
+  const loadSequence=++profitReferenceLoadSequence;
+  const state=document.getElementById("profit-ref-state");
+  profitReferenceReady=false;
+  renderProfitReferenceBoard();
+  syncProfitReferenceFiltersToSales();
+  if(state)state.textContent="売上データを読み込んでいます...";
+  await loadSalesReferenceBoard();
+  if(loadSequence!==profitReferenceLoadSequence)return;
+  const salesLoadSequence=salesReferenceLoadSequence;
+  const client=initSupabase();
+  const user=await ensureCurrentUser();
+  if(!client||!user){
+    if(state)state.textContent="ログインしてください。";
+    renderProfitReferenceBoard();
+    return;
+  }
+  const currentRows=salesReferenceRows.filter(row=>row.source_type==="現場確定"&&!salesRefIsProvisional(row));
+  if(state)state.textContent=`確定売上 ${salesRefFilteredRows().filter(row=>!salesRefIsProvisional(row)).length}件 / 仕入原価を照合中...`;
+  try{
+    const result=await salesRefAttachPurchaseCosts(client,currentRows);
+    if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;
+    const monthlyText=result.monthlyWarning
+      ?result.monthlyWarning
+      :`月次PDF ${result.monthlyMatchedLines}仕入明細→${result.monthlyMatchedSales}売上 / 未照合 ${result.monthlyUnmatchedLines}明細`;
+    profitReferenceReady=true;
+    if(state)state.textContent=`粗利更新済み（明細リンク ${result.actual}件 / ${monthlyText}）`;
+    renderProfitReferenceBoard();
+  }catch(error){
+    if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;
+    console.warn("仕入原価リンクを取得できません",error);
+    if(state)state.textContent=`仕入原価リンクを取得できません: ${salesRefDbErrorMessage(error)}`;
+    const target=document.getElementById("profit-ref-analysis");
+    if(target)target.innerHTML=`<div class="sales-empty">粗利を表示できません。再度「粗利読込」を押してください。</div>`;
   }
 }
 function salesRefResetPage(){salesReferencePage=1}
@@ -4508,16 +4625,13 @@ function salesRefChangePage(delta){
 function renderSalesReferenceSummary(rows=salesRefFilteredRows()){
   const summary=document.getElementById("sales-ref-summary-cards");
   if(!summary)return;
-  const metrics=salesRefMetrics(rows);
+  const metrics=salesRefMetrics(rows,{includeProfit:false});
   const importers=new Set(rows.map(row=>salesRefRowImporter(row).key).filter(key=>key&&key!=="未設定"));
   const customers=new Set(rows.map(row=>row.store_name).filter(Boolean));
   summary.innerHTML=[
     ["総売上",salesRefMoney(metrics.totalSales)],
     ["純売上",salesRefMoney(metrics.netSales)],
     [metrics.shippingExcluded?"送料売上（除外）":"送料売上",metrics.shippingExcluded?"-":salesRefMoney(metrics.shippingSales)],
-    ["仕入原価",salesRefMoney(metrics.purchaseCost)],
-    ["粗利",`${salesRefMoney(metrics.grossProfit)} (${metrics.grossMargin.toFixed(1)}%)`],
-    ["原価未設定",`${metrics.unpricedCount}件`],
     ["明細",`${rows.length}件`],
     ["売上数量合計",salesRefQuantitySummaryText(metrics.quantityByUnit),"compact"],
     ["NET",`${salesRefMoney(metrics.totalNet)} kg`],
@@ -4531,8 +4645,8 @@ function renderSalesReferenceForecast(){
   const rows=salesRefFilteredRows({ignoreStatus:true});
   const provisionalRows=rows.filter(salesRefIsProvisional);
   const confirmedRows=rows.filter(row=>!salesRefIsProvisional(row));
-  const confirmed=salesRefMetrics(confirmedRows);
-  const provisional=salesRefMetrics(provisionalRows);
+  const confirmed=salesRefMetrics(confirmedRows,{includeProfit:false});
+  const provisional=salesRefMetrics(provisionalRows,{includeProfit:false});
   const incomplete=provisionalRows.filter(row=>!row.is_stockout&&(row.input_qty===null||row.input_qty===undefined||row.input_qty===""||row.unit_price===null||row.unit_price===undefined||row.unit_price==="")).length;
   const sessions=new Set(provisionalRows.map(row=>row.session_id).filter(Boolean));
   target.innerHTML=[
@@ -10757,6 +10871,7 @@ function initialWorkspaceTab(){
   const hash=String(location.hash||"").replace(/^#/,"");
   if(hash==="home"||hash==="home-panel")return "home";
   if(hash==="sales-reference-panel"||hash==="sales")return "sales";
+  if(hash==="profit-reference-panel"||hash==="profit")return "profit";
   if(hash==="accounts-receivable-panel"||hash==="receivables"||hash==="ar")return "receivables";
   if(hash==="product-guide-panel"||hash==="guide"||hash==="product-guide")return "guide";
   if(hash==="external-work-panel"||hash==="external")return "external";
@@ -10777,7 +10892,7 @@ function confirmLeaveImportReview(){
   return confirm("取込内容の確認作業が未完了です。\nこのまま移動すると、確認中の内容が見えなくなります。\n移動しますか？");
 }
 function switchWorkspaceTab(tab,options={}){
-  let target=["home","orders","supplier-board","sales","receivables","guide","external","purchase-entry","purchases","payables","masters","users"].includes(tab)?tab:"home";
+  let target=["home","orders","supplier-board","sales","profit","receivables","guide","external","purchase-entry","purchases","payables","masters","users"].includes(tab)?tab:"home";
   if(target==="users"&&!currentUserIsAdmin()&&!options.allowAdminPending){
     alert("ユーザー管理は管理者のみ利用できます。");
     target="home";
@@ -10801,6 +10916,10 @@ function switchWorkspaceTab(tab,options={}){
     button.classList.toggle("workspace-action-hidden",target!=="orders");
   });
   if(target==="sales")renderSalesReferenceBoard();
+  if(target==="profit"){
+    syncSalesReferenceFiltersToProfit();
+    renderProfitReferenceBoard();
+  }
   if(target==="receivables"){
     setReceivableView(receivableView);
     if(!receivablesLoaded)loadReceivables();
