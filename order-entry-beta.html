@@ -1296,6 +1296,7 @@ const SALES_REFERENCE_PAGE_SIZE=250;
 let salesReferenceLoadSequence=0;
 let profitReferenceLoadSequence=0;
 let profitReferenceReady=false;
+let profitReferenceRows=[];
 let salesRefCustomerOptions=[];
 let salesRefProductOptions=[];
 let salesRefSuggestionIndex=0;
@@ -3693,9 +3694,9 @@ function salesRefIsProvisional(row={}){
 function salesRefFilterKey(value){
   return normalizeMasterSearchText(value).replace(/[\/／・･()（）]/g,"");
 }
-function salesRefRenderFilterOptions(){
+function salesRefRenderFilterOptions(rows=salesReferenceRows){
   const customers=new Map(),products=new Map();
-  salesReferenceRows.forEach(row=>{
+  rows.forEach(row=>{
     const customer=[salesRefText(row.customer_code).trim(),salesRefText(row.store_name).trim()].filter(Boolean).join(" ");
     const product=[salesRefText(row.product_id).trim(),salesRefText(row.product_name).trim()].filter(Boolean).join(" ");
     const importer=salesRefRowImporter(row).label;
@@ -3809,7 +3810,8 @@ function salesRefFilteredRows(options={}){
   if(!options.ignoreDate&&inputRange.raw&&(!inputRange.from||!inputRange.to))return [];
   const from=options.ignoreDate?"":(options.from??inputRange.from);
   const to=options.ignoreDate?"":(options.to??inputRange.to);
-  return salesReferenceRows.filter(row=>{
+  const sourceRows=Array.isArray(options.rows)?options.rows:salesReferenceRows;
+  return sourceRows.filter(row=>{
     const d=salesRefRowDate(row);
     const importerIdentity=salesRefRowImporter(row);
     if(status==="confirmed"&&salesRefIsProvisional(row))return false;
@@ -4053,10 +4055,11 @@ async function salesRefReadImportedPurchaseCosts(client,salesRows){
 async function salesRefAttachPurchaseCosts(client,rows){
   const activeRows=(rows||[]).filter(row=>row.id&&!row.is_stockout);
   if(!activeRows.length)return {actual:0,supplierMapped:0,monthlyMatchedLines:0,monthlyMatchedSales:0,monthlyUnmatchedLines:0};
+  const linkableRows=activeRows.filter(row=>!row._domesticSale);
   let supplierBySale=new Map();
-  try{supplierBySale=await readOrderSuppliersForAdvancePurchase(activeRows)}catch(error){console.warn("仕入先の紐づけを読み込めませんでした",error)}
-  activeRows.forEach(row=>{row._purchaseSupplierCode=supplierBySale.get(advancePurchaseSaleSourceKey(row))||""});
-  const salesIds=activeRows.map(row=>row.id);
+  try{supplierBySale=await readOrderSuppliersForAdvancePurchase(linkableRows)}catch(error){console.warn("仕入先の紐づけを読み込めませんでした",error)}
+  linkableRows.forEach(row=>{row._purchaseSupplierCode=supplierBySale.get(advancePurchaseSaleSourceKey(row))||""});
+  const salesIds=linkableRows.map(row=>row.id);
   const links=await salesRefReadChunks(salesIds,200,async ids=>{
     const {data,error}=await client.from("purchase_sales_links").select("sales_record_id,purchase_line_id").in("sales_record_id",ids);
     if(error)throw error;
@@ -4068,7 +4071,7 @@ async function salesRefAttachPurchaseCosts(client,rows){
     if(error)throw error;
     return data||[];
   });
-  const salesById=new Map(activeRows.map(row=>[row.id,row]));
+  const salesById=new Map(linkableRows.map(row=>[row.id,row]));
   const lineById=new Map(lines.map(line=>[line.id,line]));
   const linksByLine=new Map();
   links.forEach(link=>{
@@ -4191,17 +4194,21 @@ function salesRefProfitTable(title,rows){
 }
 function salesRefProfitAnalysisHtml(rows){
   const metrics=salesRefMetrics(rows);
+  const exportSales=rows.filter(row=>!row._domesticSale).reduce((sum,row)=>sum+salesRefNum(row.amount),0);
+  const domesticSales=rows.filter(row=>row._domesticSale).reduce((sum,row)=>sum+salesRefNum(row.amount),0);
   const productRows=salesRefProfitGroups(rows,row=>`${row.product_id||""} ${row.product_name||""}`.trim());
   const customerRows=salesRefProfitGroups(rows,row=>`${row.customer_code||""} ${row.store_name||""}`.trim());
+  const segmentRows=salesRefProfitGroups(rows,row=>row._domesticSale?"国内売上":"輸出売上");
   const importerRows=salesRefProfitGroups(rows,row=>salesRefRowImporter(row).label);
-  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">明細リンクを最優先。PDF直接取込は月＋商品コードで配分し、未登録分はマスタ単価で補完します。PDF配分には一部国内分が含まれる可能性があります。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">原価反映 ${metrics.pricedCount}/${metrics.count}件</span></div>
+  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">送料売上と消費税は粗利計算から除外。仕入明細リンクを最優先し、月次仕入は同月・同商品コードの輸出／国内売上へ配分、未照合分はマスタ仕入単価で補完します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">原価反映 ${metrics.pricedCount}/${metrics.count}件</span></div>
     <div class="sales-analysis-grid">
+      <div class="sales-compare-card"><div class="sales-card-label">合算純売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.netSales))}</div><div class="sales-compare-sub">輸出 ${esc(salesRefMoney(exportSales))} / 国内 ${esc(salesRefMoney(domesticSales))}</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">明細リンク ${metrics.linkedCostCount}件 / 月次PDF ${metrics.monthlyPdfCostCount}件 / マスタ ${metrics.estimatedCostCount}件</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">仕入原価</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.purchaseCost))}</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">粗利</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.grossProfit))}</div><div class="sales-compare-sub">粗利率 ${esc(metrics.grossMargin.toFixed(1))}%</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">原価未設定</div><div class="sales-compare-main">${esc(metrics.unpricedCount)}件</div><div class="sales-compare-sub">設定後に自動再計算</div></div>
     </div>
-    <div class="sales-analysis-tables">${salesRefProfitTable("商品別粗利",productRows)}${salesRefProfitTable("得意先別粗利",customerRows)}${salesRefProfitTable("輸入社別粗利",importerRows)}</div>`;
+    <div class="sales-analysis-tables">${salesRefProfitTable("輸出・国内別粗利",segmentRows)}${salesRefProfitTable("商品別粗利",productRows)}${salesRefProfitTable("得意先別粗利",customerRows)}${salesRefProfitTable("輸入社・国内別粗利",importerRows)}</div>`;
 }
 function salesRefRatio(current,previous){
   if(!previous)return current?null:0;
@@ -4464,6 +4471,55 @@ async function salesRefReadSessions(client,range){
     });
   },4);
 }
+async function salesRefReadDomesticRows(client,range){
+  const sales=await salesRefReadChunks(range.ranges,1,async parts=>{
+    const part=parts[0];
+    return salesRefReadPaged(includeCount=>{
+      let query=client.from("domestic_sales")
+        .select("id,sale_no,sale_date,customer_code,customer_name_snapshot,status,memo,confirmed_at,created_at",includeCount?{count:"exact"}:undefined)
+        .eq("status","confirmed")
+        .order("sale_date",{ascending:false})
+        .order("sale_no",{ascending:false});
+      if(part.from)query=query.gte("sale_date",part.from);
+      if(part.to)query=query.lte("sale_date",part.to);
+      return query;
+    });
+  },4);
+  const saleIds=sales.map(row=>row.id).filter(Boolean);
+  const lines=await salesRefReadChunks(saleIds,100,ids=>salesRefReadPaged(includeCount=>client.from("domestic_sale_lines")
+    .select("id,sale_id,line_no,product_code,product_name_snapshot,quantity,unit,unit_price_jpy,net_amount_jpy,memo",includeCount?{count:"exact"}:undefined)
+    .in("sale_id",ids)
+    .order("sale_id",{ascending:true})
+    .order("line_no",{ascending:true})),4);
+  const saleById=new Map(sales.map(row=>[row.id,row]));
+  return lines.map(line=>{
+    const sale=saleById.get(line.sale_id)||{};
+    const unit=normalizeLineUnit(line.unit)||line.unit||"";
+    const quantity=line.quantity===null||line.quantity===undefined||line.quantity===""?null:Number(line.quantity);
+    return salesRefNormalizeRowImporter({
+      id:line.id,
+      source_type:"国内売上",
+      work_date:sale.sale_date||"",
+      finalized_at:sale.confirmed_at||sale.created_at||"",
+      customer_code:sale.customer_code||"",
+      store_name:sale.customer_name_snapshot||"",
+      product_id:line.product_code||"",
+      product_name:line.product_name_snapshot||"",
+      input_qty:quantity,
+      input_unit:unit,
+      net_weight:unit==="Kg"?quantity:null,
+      unit_price:line.unit_price_jpy,
+      amount:salesRefJpyAmount(line.net_amount_jpy),
+      memo:[line.memo,sale.memo].filter(Boolean).join(" / "),
+      importer_code:"DOMESTIC",
+      importer_name:"国内売上",
+      is_stockout:false,
+      _domesticSale:true,
+      _domesticSaleId:line.sale_id,
+      _domesticSaleNo:sale.sale_no||""
+    },salesReferenceImporterIndex);
+  });
+}
 async function salesRefReadProvisionalRows(client,sessions){
   const activeSessions=(sessions||[]).filter(session=>!(session.locked||session.status==="closed")&&session.status!=="archived");
   const sessionIds=activeSessions.map(session=>session.id).filter(Boolean);
@@ -4575,7 +4631,7 @@ function renderProfitReferenceBoard(){
     target.innerHTML="";
     return;
   }
-  const rows=salesRefFilteredRows().filter(row=>!salesRefIsProvisional(row));
+  const rows=salesRefFilteredRows({rows:profitReferenceRows}).filter(row=>!salesRefIsProvisional(row));
   if(!rows.length){
     target.innerHTML=`<div class="sales-empty">表示対象の確定売上データはありません。</div>`;
     return;
@@ -4586,6 +4642,7 @@ async function loadProfitReferenceBoard(){
   const loadSequence=++profitReferenceLoadSequence;
   const state=document.getElementById("profit-ref-state");
   profitReferenceReady=false;
+  profitReferenceRows=[];
   renderProfitReferenceBoard();
   syncProfitReferenceFiltersToSales();
   if(state)state.textContent="売上データを読み込んでいます...";
@@ -4599,16 +4656,25 @@ async function loadProfitReferenceBoard(){
     renderProfitReferenceBoard();
     return;
   }
-  const currentRows=salesReferenceRows.filter(row=>row.source_type==="現場確定"&&!salesRefIsProvisional(row));
-  if(state)state.textContent=`確定売上 ${salesRefFilteredRows().filter(row=>!salesRefIsProvisional(row)).length}件 / 仕入原価を照合中...`;
+  const range=salesRefDatabaseRange();
+  if(range.error){if(state)state.textContent=range.error;return}
   try{
+    if(state)state.textContent="国内売上を読み込んでいます...";
+    const domesticRows=await salesRefReadDomesticRows(client,range);
+    if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;
+    profitReferenceRows=[...salesReferenceRows,...domesticRows];
+    salesRefRenderFilterOptions(profitReferenceRows);
+    const currentRows=profitReferenceRows.filter(row=>(row.source_type==="現場確定"||row._domesticSale)&&!salesRefIsProvisional(row));
+    const filteredRows=salesRefFilteredRows({rows:profitReferenceRows}).filter(row=>!salesRefIsProvisional(row));
+    const domesticCount=filteredRows.filter(row=>row._domesticSale).length;
+    if(state)state.textContent=`確定売上 ${filteredRows.length}件（国内 ${domesticCount}件）/ 仕入原価を照合中...`;
     const result=await salesRefAttachPurchaseCosts(client,currentRows);
     if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;
     const monthlyText=result.monthlyWarning
       ?result.monthlyWarning
       :`月次PDF ${result.monthlyMatchedLines}仕入明細→${result.monthlyMatchedSales}売上 / 未照合 ${result.monthlyUnmatchedLines}明細`;
     profitReferenceReady=true;
-    if(state)state.textContent=`粗利更新済み（明細リンク ${result.actual}件 / ${monthlyText}）`;
+    if(state)state.textContent=`粗利更新済み（輸出＋国内 / 明細リンク ${result.actual}件 / ${monthlyText}）`;
     renderProfitReferenceBoard();
   }catch(error){
     if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;

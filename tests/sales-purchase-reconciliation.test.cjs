@@ -64,8 +64,32 @@ test("PDF一括取込以外の通常事前仕入は自動配分しない",()=>{
 
 test("粗利画面に月次PDF照合の内訳を表示する",()=>{
   assert.match(html,/月次PDF \$\{metrics\.monthlyPdfCostCount\}件/);
-  assert.match(html,/PDF配分には一部国内分が含まれる可能性があります/);
+  assert.match(html,/送料売上と消費税は粗利計算から除外/);
   assert.match(html,/月次PDF \$\{result\.monthlyMatchedLines\}仕入明細/);
+});
+
+test("粗利画面は国内商品売上を読み込み輸出と合算する",()=>{
+  const domestic=sourceBetween("async function salesRefReadDomesticRows","async function salesRefReadProvisionalRows");
+  const profitLoad=sourceBetween("async function loadProfitReferenceBoard","function salesRefResetPage");
+  const attach=sourceBetween("async function salesRefAttachPurchaseCosts","function salesRefQuantityByUnit");
+  assert.match(domestic,/from\("domestic_sales"\)/);
+  assert.match(domestic,/from\("domestic_sale_lines"\)/);
+  assert.match(domestic,/amount:salesRefJpyAmount\(line\.net_amount_jpy\)/);
+  assert.match(domestic,/_domesticSale:true/);
+  assert.match(profitLoad,/profitReferenceRows=\[\.\.\.salesReferenceRows,\.\.\.domesticRows\]/);
+  assert.match(profitLoad,/salesRefAttachPurchaseCosts\(client,currentRows\)/);
+  assert.match(attach,/linkableRows=activeRows\.filter\(row=>!row\._domesticSale\)/);
+  assert.match(attach,/salesRefAllocateImportedPurchaseCosts\(activeRows/);
+  assert.match(html,/合算純売上/);
+  assert.match(html,/輸出・国内別粗利/);
+});
+
+test("粗利は送料を含まない純売上から計算する",()=>{
+  const metrics=sourceBetween("function salesRefMetrics","function salesRefProfitGroups");
+  assert.match(metrics,/const totalSales=netSales\+shippingSales/);
+  assert.match(metrics,/costedSales\+=salesRefNum\(row\.amount\)/);
+  assert.match(metrics,/const grossProfit=costedSales-purchaseCost/);
+  assert.doesNotMatch(metrics,/grossProfit=totalSales-purchaseCost/);
 });
 
 test("PDF仕入は全期間検索せず対象月だけ取得する",()=>{

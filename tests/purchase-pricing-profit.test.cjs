@@ -86,7 +86,7 @@ assert.match(html, /id="advance-purchase-supplier"/);
 assert.match(html, /productPurchasePriceForSupplier\(product,supplierCode\)/);
 assert.match(html, /商品別粗利/);
 assert.match(html, /得意先別粗利/);
-assert.match(html, /輸入社別粗利/);
+assert.match(html, /輸入社・国内別粗利/);
 assert.match(sql, /create table if not exists public\.product_supplier_prices/);
 assert.match(sql, /purchase_unit_price numeric/);
 assert.match(sql, /trg_product_supplier_prices_change_log/);
