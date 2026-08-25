@@ -25,7 +25,9 @@ assert.match(html, /from\("accounts_payable_supplier_profiles"\)[\s\S]*?\.order\
 assert.doesNotMatch(html, /arReadAll\("accounts_payable_supplier_profiles","supplier_code"\)/);
 assert.match(html, /const openingBalance=arRound\(beforeCharges-beforePayments\)/);
 assert.match(html, /function apClosingGroupCalculations\(\)/);
-assert.match(html, /apClosingDay\(profile\)===context\.closingDay/);
+assert.match(html, /apPayableClosingDays\(profile\)\.includes\(context\.closingDay\)/);
+assert.match(html, /function apIsSemiMonthlyProfile\(profile\)/);
+assert.match(html, /function apClosingDateMatchesDay\(dateValue,closingDay\)/);
 assert.match(html, /function apEffectivePayableSupplierProfiles\(profiles=payableSupplierProfiles,rows=payableRows\)/);
 assert.match(html, /_default_profile:true/);
 assert.match(html, /支払条件未登録.*末締め初期値/);
@@ -78,5 +80,58 @@ assert.deepEqual(profiles.find((profile) => profile.supplier_code === "16"), {
   payment_day: 31,
   _default_profile: true
 });
+
+const closingCalculationSource = html.slice(
+  html.indexOf("function apClosingDay"),
+  html.indexOf("function apClosingGroupContext")
+);
+const closingContext = {
+  payableSupplierProfiles: [],
+  payableRows: [],
+  payableClosings: [],
+  payablesLoaded: false,
+  arNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+  },
+  arMonthDay(month, day, monthOffset = 0) {
+    const match = String(month || "").match(/^(\d{4})-(\d{2})$/);
+    if (!match) return "";
+    const first = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1 + monthOffset, 1));
+    const lastDay = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+    const targetDay = Math.min(Math.max(1, Number(day) || 31), lastDay);
+    return `${first.getUTCFullYear()}-${String(first.getUTCMonth() + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+  },
+  arShiftDate(date, days) {
+    const target = new Date(`${date}T00:00:00Z`);
+    target.setUTCDate(target.getUTCDate() + days);
+    return target.toISOString().slice(0, 10);
+  },
+  apSameSupplier(left, right) {
+    return String(left || "").trim().toLowerCase() === String(right || "").trim().toLowerCase();
+  },
+  apClosingSnapshot() {
+    return null;
+  }
+};
+vm.runInNewContext(closingCalculationSource, closingContext);
+const semiMonthlyProfile = {
+  supplier_code: "02",
+  payment_mode: "credit",
+  closing_day: 15,
+  payment_month_offset: 1,
+  payment_day: 15
+};
+assert.deepEqual(Array.from(closingContext.apPayableClosingDays(semiMonthlyProfile)), [15, 31]);
+const firstHalf = closingContext.apClosingCalculationFor({ code: "02", name: "仕入先" }, "2026-08", semiMonthlyProfile, 15);
+assert.equal(firstHalf.range.from, "2026-08-01");
+assert.equal(firstHalf.range.to, "2026-08-15");
+assert.equal(firstHalf.dueDate, "2026-08-31");
+const secondHalf = closingContext.apClosingCalculationFor({ code: "02", name: "仕入先" }, "2026-08", semiMonthlyProfile, 31);
+assert.equal(secondHalf.range.from, "2026-08-16");
+assert.equal(secondHalf.range.to, "2026-08-31");
+assert.equal(secondHalf.dueDate, "2026-09-15");
+assert.equal(closingContext.apClosingDateMatchesDay("2026-08-15", 15), true);
+assert.equal(closingContext.apClosingDateMatchesDay("2026-08-31", 31), true);
 
 console.log("Accounts payable closing tests passed");

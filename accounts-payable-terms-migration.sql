@@ -42,6 +42,12 @@ begin
 
   invoice_month := date_trunc('month',p_invoice_date)::date;
   invoice_month_last_day := (invoice_month + interval '1 month - 1 day')::date;
+  if least(greatest(coalesce(p_closing_day,31),1),31) = 15 then
+    if extract(day from p_invoice_date)::integer <= 15 then
+      return invoice_month_last_day;
+    end if;
+    return (invoice_month + interval '1 month')::date + 14;
+  end if;
   effective_closing_date := invoice_month + (
     least(
       greatest(coalesce(p_closing_day,31),1),
@@ -252,11 +258,11 @@ where closing_day = 1;
 
 do $$
 begin
-  if public.accounts_payable_due_date(date '2026-08-15',15::smallint,1::smallint,15::smallint) <> date '2026-09-15' then
-    raise exception '15-day closing due date check failed for the closing date.';
+  if public.accounts_payable_due_date(date '2026-08-15',15::smallint,1::smallint,15::smallint) <> date '2026-08-31' then
+    raise exception 'Semi-monthly due date check failed for the first period.';
   end if;
-  if public.accounts_payable_due_date(date '2026-08-16',15::smallint,1::smallint,15::smallint) <> date '2026-10-15' then
-    raise exception '15-day closing due date check failed after the closing date.';
+  if public.accounts_payable_due_date(date '2026-08-16',15::smallint,1::smallint,15::smallint) <> date '2026-09-15' then
+    raise exception 'Semi-monthly due date check failed for the second period.';
   end if;
   if public.accounts_payable_due_date(date '2026-08-31',31::smallint,1::smallint,31::smallint) <> date '2026-09-30' then
     raise exception 'Month-end due date check failed.';

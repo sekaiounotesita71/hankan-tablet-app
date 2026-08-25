@@ -6,10 +6,11 @@ const vm = require("node:vm");
 const root = path.join(__dirname,"..");
 const html = fs.readFileSync(path.join(root,"order-entry-beta.html"),"utf8");
 const sql = fs.readFileSync(path.join(root,"accounts-payable-terms-migration.sql"),"utf8");
+const semiMonthlySql = fs.readFileSync(path.join(root,"accounts-payable-semi-monthly-migration.sql"),"utf8");
 
 assert.match(html,/id="ap-profile-payment-mode"/);
 assert.match(html,/value="cash_on_entry">都度現金払い/);
-assert.match(html,/value="closing15-next15">15日締め・翌月15日払い/);
+assert.match(html,/value="semimonthly15">月2回締め/);
 assert.match(html,/function applyPayableTermPreset\(preset\)/);
 assert.match(html,/payment_mode:paymentMode/);
 assert.match(html,/profile\.payment_mode!=="cash_on_entry"/);
@@ -24,8 +25,10 @@ const dueDateContext = {
   }
 };
 vm.runInNewContext(html.slice(dueDateStart,dueDateEnd),dueDateContext);
-assert.equal(dueDateContext.apDueDate("2026-08-15",1,15,15),"2026-09-15");
-assert.equal(dueDateContext.apDueDate("2026-08-16",1,15,15),"2026-10-15");
+assert.equal(dueDateContext.apDueDate("2026-08-15",1,15,15),"2026-08-31");
+assert.equal(dueDateContext.apDueDate("2026-08-16",1,15,15),"2026-09-15");
+assert.equal(dueDateContext.apDueDate("2027-02-15",1,15,15),"2027-02-28");
+assert.equal(dueDateContext.apDueDate("2027-02-16",1,15,15),"2027-03-15");
 assert.equal(dueDateContext.apDueDate("2026-08-31",1,31,31),"2026-09-30");
 assert.equal(dueDateContext.apDueDate("2027-02-28",1,31,31),"2027-03-31");
 
@@ -33,10 +36,16 @@ assert.match(sql,/add column if not exists payment_mode text not null default 'c
 assert.match(sql,/payment_mode in \('credit','cash_on_entry'\)/);
 assert.match(sql,/create or replace function public\.accounts_payable_due_date\([\s\S]*?p_closing_day smallint/);
 assert.match(sql,/when p_invoice_date <= effective_closing_date then invoice_month/);
+assert.match(sql,/extract\(day from p_invoice_date\)::integer <= 15/);
 assert.match(sql,/create unique index if not exists uq_accounts_payable_payment_source/);
 assert.match(sql,/automatic_payment_key := 'cash-purchase:' \|\| cash_payable\.id::text/);
 assert.match(sql,/on conflict \(source_key\) do update set/);
 assert.match(sql,/where closing_day = 1/);
 assert.match(sql,/profile\.payment_mode = 'cash_on_entry'/);
+assert.match(semiMonthlySql,/create or replace function public\.accounts_payable_due_date/);
+assert.match(semiMonthlySql,/extract\(day from p_invoice_date\)::integer <= 15/);
+assert.match(semiMonthlySql,/payable\.closing_id is null/);
+assert.match(semiMonthlySql,/date '2026-08-15'[\s\S]*?date '2026-08-31'/);
+assert.match(semiMonthlySql,/date '2026-08-16'[\s\S]*?date '2026-09-15'/);
 
 console.log("Accounts payable terms tests passed");
