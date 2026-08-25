@@ -172,8 +172,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="home-group flow-purchase">
         <div class="home-group-title">仕入・支払<span>仕入登録から支払管理へ</span></div>
         <div class="home-command-grid">
-          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchase-entry')"><span><b>仕入入力</b><span>売上引用・事前仕入</span></span></button>
-          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchases')"><span><b>仕入参照</b><span>仕入伝票の検索・照合</span></span></button>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchase-entry')"><span><b>仕入入力</b><span>売上引用・直接入力</span></span></button>
+          <button class="home-command" type="button" onclick="switchWorkspaceTab('purchases')"><span><b>仕入参照</b><span>仕入伝票の検索・修正</span></span></button>
           <button class="home-command" type="button" onclick="switchWorkspaceTab('payables')"><span><b>買掛管理</b><span>請求書照合・支払管理</span></span></button>
         </div>
       </div>
@@ -656,9 +656,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <button class="btn" id="advance-purchase-master-save" type="button" onclick="saveSelectedAdvancePurchaseMasterPrices()">選択単価をマスタ登録</button>
           <span class="advance-master-count" id="advance-purchase-master-count">0件選択</span>
         </div>
-        <button class="btn primary" type="button" onclick="saveAdvancePurchaseBatch()">一括登録 Ctrl+Enter</button>
+        <button class="btn primary" type="button" onclick="saveAdvancePurchaseBatch()">仕入確定 Ctrl+Enter</button>
         <span id="advance-purchase-state" class="pill warn">入力待ち</span>
-        <span class="advance-entry-hint">登録済みの売上は再引用されません。Enterで右へ、Shift+Enterで左へ、上下キーで同じ列を移動</span>
+        <span class="advance-entry-hint">保存すると仕入確定になります。登録済みの売上は再引用されません。</span>
       </div>
       <div class="advance-entry-summary" id="advance-purchase-summary"></div>
       <div class="advance-entry-table-wrap">
@@ -677,7 +677,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>期間<input id="purchase-filter-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 202608 / 2026 / 20260801-20260831" oninput="purchaseRefResetPage();renderPurchaseReceipts()" onkeydown="if(event.key==='Enter')loadPurchaseReceipts()"></label>
         <label>拠点<select id="purchase-filter-site" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label>仕入先<input id="purchase-filter-supplier" list="supplier-code-list" autocomplete="off" placeholder="コード・名称" oninput="purchaseRefResetPage();renderPurchaseReceipts()"></label>
-        <label>状態<select id="purchase-filter-status" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="">全状態</option><option value="expected">未照合</option><option value="invoice_received">請求書受領</option><option value="confirmed" selected>仕入確定</option><option value="cancelled">取消</option></select></label>
+        <label>状態<select id="purchase-filter-status" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="">全状態</option><option value="expected">本社確認待ち</option><option value="invoice_received">請求書受領</option><option value="confirmed" selected>仕入確定</option><option value="cancelled">取消</option></select></label>
         <label>検索<input id="purchase-filter-search" autocomplete="off" placeholder="商品コード・商品名・伝票番号・メモ" oninput="purchaseRefResetPage();renderPurchaseReceipts()"></label>
         <button class="btn" type="button" onclick="loadPurchaseReceipts()">仕入読込</button>
         <button class="btn primary" type="button" onclick="exportPurchaseReferenceExcel()">Excel出力</button>
@@ -9631,11 +9631,11 @@ async function deletePayable(id){
 }
 function purchaseStatusLabel(status,receipt=null){
   if(receipt?.correction_unlocked)return "修正中";
-  return {expected:"未照合",invoice_received:"請求書受領",confirmed:"仕入確定",cancelled:"取消"}[status]||status||"";
+  return {expected:"本社確認待ち",invoice_received:"請求書受領",confirmed:"仕入確定",cancelled:"取消"}[status]||status||"";
 }
 function purchaseReceiptTypeLabel(receipt){
-  if(receipt?.receipt_type==="advance")return "事前仕入";
-  return receipt?.source_assignment_id?"外部作業":"売上連動仕入";
+  if(receipt?.receipt_type==="advance")return "直接入力";
+  return receipt?.source_assignment_id?"外部作業":"売上引用";
 }
 function purchaseRefDateRange(){return salesRefDateRangeFromInput("purchase-filter-date-range")}
 function purchaseRefDatabaseRange(){
@@ -10649,11 +10649,11 @@ async function saveAdvancePurchaseBatch(){
     source_sales_ids:[...new Set((Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[]).filter(Boolean))]
   }));
   const hasSalesLinks=lines.some(line=>line.source_sales_ids.length);
-  const purchaseKindLabel=hasSalesLinks?"売上連動仕入":"事前仕入";
+  const purchaseSourceLabel=hasSalesLinks?"売上引用":"直接入力";
   advancePurchaseSaving=true;
-  setAppBusy(true,`${lines.length}件の${purchaseKindLabel}を一括登録しています...`);
+  setAppBusy(true,`${lines.length}件の仕入を確定しています...`);
   try{
-    const {error}=await supabaseClient.rpc("create_purchase_batch_v3",{
+    const {error}=await supabaseClient.rpc("create_confirmed_purchase_batch_v4",{
       p_purchase_date:purchaseDate,
       p_site_code:siteCode,
       p_supplier_code:supplierCode,
@@ -10664,20 +10664,20 @@ async function saveAdvancePurchaseBatch(){
     if(error)throw error;
     clearAdvancePurchaseRows({confirm:false});
     const state=document.getElementById("advance-purchase-state");
-    if(state){state.textContent=`登録完了 ${lines.length}件`;state.className="pill blue"}
+    if(state){state.textContent=`仕入確定 ${lines.length}件`;state.className="pill blue"}
     document.getElementById("purchase-filter-date-range").value=purchaseDate.replaceAll("-","");
     document.getElementById("purchase-filter-site").value=siteCode;
     document.getElementById("purchase-filter-supplier").value=supplierCode;
-    document.getElementById("purchase-filter-status").value="";
+    document.getElementById("purchase-filter-status").value="confirmed";
     await loadPurchaseReceipts();
-    alert(`${lines.length}件を1枚の${purchaseKindLabel}伝票として登録しました。`);
+    alert(`${purchaseSourceLabel}の${lines.length}件を仕入確定しました。`);
   }catch(error){
     const errorText=String(error?.message||"");
     const duplicateSales=error?.code==="23505"&&/purchase_sales_links|sales_record_id|sales record has already/i.test(errorText);
     const message=duplicateSales
       ?"この売上は別の端末ですでに仕入登録されています。画面をクリアして、もう一度「売上から引用」を実行してください。"
-      :error?.code==="PGRST202"||/create_purchase_batch_v3/i.test(errorText)
-        ?"仕入税率用SQLが未実行です。purchase-tax-rate-migration.sql を実行してください。"
+      :error?.code==="PGRST202"||/create_confirmed_purchase_batch_v4/i.test(errorText)
+        ?"仕入即時確定用SQLが未実行です。purchase-immediate-confirmation-migration.sql を実行してください。"
         :sitePartnerDbError(error);
     alert(message);
   }finally{

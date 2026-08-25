@@ -36,8 +36,8 @@ const labelSource = sourceBetween(
 );
 const purchaseReceiptTypeLabel = new Function(`${labelSource}; return purchaseReceiptTypeLabel;`)();
 
-assert.equal(purchaseReceiptTypeLabel({ receipt_type: "advance" }), "事前仕入");
-assert.equal(purchaseReceiptTypeLabel({ receipt_type: "order", source_assignment_id: null }), "売上連動仕入");
+assert.equal(purchaseReceiptTypeLabel({ receipt_type: "advance" }), "直接入力");
+assert.equal(purchaseReceiptTypeLabel({ receipt_type: "order", source_assignment_id: null }), "売上引用");
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "order", source_assignment_id: "assignment-id" }), "外部作業");
 
 const saveSource = sourceBetween(
@@ -45,7 +45,7 @@ const saveSource = sourceBetween(
   "async function saveAdvancePurchaseBatch",
   "function initialWorkspaceTab"
 );
-assert.match(saveSource, /rpc\("create_purchase_batch_v3"/);
-assert.match(saveSource, /hasSalesLinks\?"売上連動仕入":"事前仕入"/);
+assert.match(saveSource, /rpc\("create_confirmed_purchase_batch_v4"/);
+assert.match(saveSource, /hasSalesLinks\?"売上引用":"直接入力"/);
 
 console.log("Purchase receipt type tests passed");

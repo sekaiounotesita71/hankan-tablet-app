@@ -23,6 +23,6 @@ assert.match(html, /tax_rate:Number\(row\.taxRate\?\?8\)/);
 assert.match(html, /税率から自動/);
 assert.match(html, /税額を手入力/);
 assert.match(html, /savePurchaseTaxMode/);
-assert.match(html, /create_purchase_batch_v3/);
+assert.match(html, /create_confirmed_purchase_batch_v4/);
 
 console.log("Purchase tax rate tests passed");
