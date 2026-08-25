@@ -2938,6 +2938,10 @@ function salesRefNum(value){
   const n=Number(value);
   return Number.isFinite(n)?n:0;
 }
+function salesRefJpyAmount(value){
+  const number=salesRefNum(value);
+  return Math.sign(number)*Math.round(Math.abs(number)+Number.EPSILON);
+}
 function salesRefGrossBoxKey(row={}){
   const boxNo=salesRefText(row.box_no).normalize("NFKC").trim();
   if(!boxNo)return "";
@@ -3190,7 +3194,7 @@ function salesRefAppliedPendingDate(row={}){
 }
 function salesRefPendingSignedAmount(row={}){
   const amount=salesRefNum(row.amount);
-  return (row.entry_type==="credit_note"||row.entry_type==="discount")&&amount>0?-amount:amount;
+  return salesRefJpyAmount((row.entry_type==="credit_note"||row.entry_type==="discount")&&amount>0?-amount:amount);
 }
 async function salesRefReadAppliedPendingRows(client=initSupabase(),options={}){
   const records=[];
@@ -4395,7 +4399,7 @@ async function salesRefReadProvisionalRows(client,sessions){
     const box=boxMap.get(`${line.session_id}::${importer.key}::${salesRefText(line.box_no).trim()}`)||{};
     const qty=line.input_qty===null||line.input_qty===undefined||line.input_qty===""?null:Number(line.input_qty);
     const price=line.unit_price===null||line.unit_price===undefined||line.unit_price===""?null:Number(line.unit_price);
-    const amount=!line.is_stockout&&Number.isFinite(qty)&&Number.isFinite(price)?qty*price:null;
+    const amount=!line.is_stockout&&Number.isFinite(qty)&&Number.isFinite(price)?salesRefJpyAmount(qty*price):null;
     return salesRefNormalizeRowImporter({
       ...line,
       source_type:"未確定速報",
@@ -4450,9 +4454,13 @@ async function loadSalesReferenceBoard(){
       const session=sessionMap.get(row.session_id);
       const finalizedAt=row.finalized_at||session?.finalized_at||session?.updated_at||session?.created_at||"";
       const workDate=salesRefDateOnly(row.work_date)||salesRefSessionWorkDate(session);
-      return salesRefNormalizeRowImporter({...row,source_type:"現場確定",work_date:workDate,finalized_at:finalizedAt},salesReferenceImporterIndex);
+      const hasAmount=row.amount!==null&&row.amount!==undefined&&row.amount!=="";
+      const qty=row.input_qty===null||row.input_qty===undefined||row.input_qty===""?null:Number(row.input_qty);
+      const price=row.unit_price===null||row.unit_price===undefined||row.unit_price===""?null:Number(row.unit_price);
+      const amount=hasAmount?salesRefJpyAmount(row.amount):(Number.isFinite(qty)&&Number.isFinite(price)?salesRefJpyAmount(qty*price):null);
+      return salesRefNormalizeRowImporter({...row,amount,source_type:"現場確定",work_date:workDate,finalized_at:finalizedAt},salesReferenceImporterIndex);
     });
-    const pastRows=historicalResult.rows.map(row=>salesRefNormalizeRowImporter({...row,source_type:"過去データ",work_date:row.work_date||salesRefDateOnly(row.finalized_at),session_id:row.session_id||""},salesReferenceImporterIndex));
+    const pastRows=historicalResult.rows.map(row=>salesRefNormalizeRowImporter({...row,amount:row.amount===null||row.amount===undefined||row.amount===""?null:salesRefJpyAmount(row.amount),source_type:"過去データ",work_date:row.work_date||salesRefDateOnly(row.finalized_at),session_id:row.session_id||""},salesReferenceImporterIndex));
     const adjustmentRows=pendingResult.rows.map(row=>salesRefPendingToRow(row,salesReferenceImporterIndex));
     const provisionalRows=provisionalResult.rows.map(row=>salesRefNormalizeRowImporter(row,salesReferenceImporterIndex));
     salesReferenceRows=[...currentRows,...pastRows,...adjustmentRows,...provisionalRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
@@ -6691,6 +6699,7 @@ function arNumber(value){
 function arRound(value){
   return Math.round((arNumber(value)+Number.EPSILON)*100)/100;
 }
+function arRoundJpy(value){return salesRefJpyAmount(arNumber(value))}
 function arInvoiceNumber(invoiceDate,importerSource,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
   const datePart=String(invoiceDate||"").normalize("NFKC").replace(/\D/g,"").slice(0,8);
   const importerCode=normalizeImporterCode(arImporterIdentity(importerSource,index).code);
@@ -7071,7 +7080,7 @@ function arBuildSalesGroups(salesRows,sessions){
       customers:new Set()
     };
     const directAmount=row.amount!==null&&row.amount!==undefined&&row.amount!=="";
-    group.netSales+=directAmount?arNumber(row.amount):arNumber(row.input_qty)*arNumber(row.unit_price);
+    group.netSales+=arRoundJpy(directAmount?row.amount:arNumber(row.input_qty)*arNumber(row.unit_price));
     if(row.store_name)group.customers.add(String(row.store_name).trim());
     groups.set(key,group);
   });
@@ -7081,9 +7090,9 @@ function arBuildSalesGroups(salesRows,sessions){
     return {
       ...group,
       rawNetSales:group.netSales,
-      netSales:arRound(group.netSales),
-      shipping:arRound(shipping),
-      amount:arRound(group.netSales+shipping)
+      netSales:arRoundJpy(group.netSales),
+      shipping:arRoundJpy(shipping),
+      amount:arRoundJpy(group.netSales+shipping)
     };
   });
 }
@@ -7591,11 +7600,11 @@ async function refreshClosingSalesPreview(options={}){
     const adjustmentRows=pendingRows
       .map(row=>salesRefPendingToRow(row))
       .filter(row=>arSameImporter(row,calculation.importerCode));
-    const netSales=arRound(
+    const netSales=arRoundJpy(
       groups.reduce((sum,group)=>sum+group.rawNetSales,0)
       +adjustmentRows.reduce((sum,row)=>sum+salesRefNum(row.amount),0)
     );
-    const shippingSales=arRound(
+    const shippingSales=arRoundJpy(
       groups.reduce((sum,group)=>sum+group.shipping,0)
       +salesRefShippingAdjustmentForRows(adjustmentRows)
     );
@@ -7603,7 +7612,7 @@ async function refreshClosingSalesPreview(options={}){
     receivableClosingSalesPreview={
       key,
       status:"loaded",
-      amount:arRound(netSales+shippingSales),
+      amount:arRoundJpy(netSales+shippingSales),
       netSales,
       shippingSales,
       groupCount:groups.length,

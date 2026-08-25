@@ -569,12 +569,22 @@ function pendingInvoiceDefaultChecked(entry,targetDate){
 function pendingInvoiceAmount(entry){
   const amount=pendingInvoiceNumber(entry.amount);
   if(amount!==null){
-    if((entry.entry_type==="credit_note"||entry.entry_type==="discount")&&amount>0)return -amount;
-    return amount;
+    if((entry.entry_type==="credit_note"||entry.entry_type==="discount")&&amount>0)return roundJpyAmount(-amount);
+    return roundJpyAmount(amount);
   }
   const qty=pendingInvoiceNumber(entry.qty),price=pendingInvoiceNumber(entry.unit_price);
   const calculated=qty!==null&&price!==null?qty*price:0;
-  return (entry.entry_type==="credit_note"||entry.entry_type==="discount")&&calculated>0?-calculated:calculated;
+  return roundJpyAmount((entry.entry_type==="credit_note"||entry.entry_type==="discount")&&calculated>0?-calculated:calculated);
+}
+function roundFinancialAmount(value,digits=0){
+  const number=Number(value);
+  if(!Number.isFinite(number))return 0;
+  const factor=10**digits;
+  return Math.sign(number)*Math.round((Math.abs(number)+Number.EPSILON)*factor)/factor;
+}
+function roundJpyAmount(value){return roundFinancialAmount(value,0)}
+function roundInvoiceAmount(value,currency="JPY"){
+  return roundFinancialAmount(value,String(currency||"JPY").trim().toUpperCase()==="JPY"?0:2);
 }
 function formatPendingInvoiceAmount(value){
   return Number(value||0).toLocaleString("ja-JP",{maximumFractionDigits:2});
@@ -951,13 +961,17 @@ function buildCustomsInvoiceContexts(payload,settings,mode="customs"){
     const profile=settings.profiles.get(String(code))||{importer_code:code,currency:"JPY",include_shipping_fee:true};
     const records=payload.p1data.filter(record=>customsInvoiceRowImporter(record,fallbackCode)===code&&!record["欠品"]);
     const lines=records.map(record=>mode==="billing"?billingInvoiceLine(record,code):customsInvoiceLine(record,code,settings));
+    const currency=String(profile.currency||"JPY").trim().toUpperCase();
     const seenBoxes=new Set();
     lines.forEach(line=>{
       line.noOfBox=line.boxNo&&!seenBoxes.has(String(line.boxNo))?1:"";
       if(line.boxNo)seenBoxes.add(String(line.boxNo));
+      const hasCalculation=!line.record.__isPending&&line.qty!==""&&line.price!==""&&Number.isFinite(Number(line.qty))&&Number.isFinite(Number(line.price));
+      const rawAmount=hasCalculation?Number(line.qty)*Number(line.price):Number(line.amount)||0;
+      line.amount=roundInvoiceAmount(rawAmount,currency);
     });
-    const subtotal=lines.reduce((sum,line)=>sum+(Number(line.amount)||0),0);
-    const shipping=profile.include_shipping_fee===false?0:customsInvoiceShipping(settings,code);
+    const subtotal=roundInvoiceAmount(lines.reduce((sum,line)=>sum+(Number(line.amount)||0),0),currency);
+    const shipping=roundInvoiceAmount(profile.include_shipping_fee===false?0:customsInvoiceShipping(settings,code),currency);
     const workDate=normalizeWorkDate(currentSessionWorkDate)||normalizeWorkDate(settings.session?.work_date)||currentWorkDateValue();
     const required={shipper_name:"Shipper名",shipper_address:"Shipper住所",consignee_name:"Consignee名",consignee_address:"Consignee住所",destination_port:"ARRIVE / TO"};
     const profileMissing=Object.entries(required).filter(([field])=>!String(profile[field]||"").trim()).map(([,label])=>label);
@@ -965,7 +979,7 @@ function buildCustomsInvoiceContexts(payload,settings,mode="customs"){
     return {
       code,profile,lines,workDate,exportMode:mode,
       invoiceNo:customsInvoiceNo(profile,code,workDate),
-      subtotal,shipping,total:subtotal+shipping,
+      subtotal,shipping,total:roundInvoiceAmount(subtotal+shipping,currency),
       profileMissing,criticalLineCount,
       ruleAppliedCount:lines.filter(line=>!!line.rule).length,
       nameFilledCount:lines.filter(line=>line.nameSource==="商品マスタの日本語名一致"||line.nameSource==="過去の仕向け地別表記").length,
@@ -1281,7 +1295,7 @@ function adjustedInvoiceRawRows(payload,contexts){
   return payload.p1data.map(record=>{
     const line=lineByRecord.get(record),result={};
     payload.headers.forEach(header=>result[header]=record[header]);
-    if(line){result["商品名"]=line.japanese;result["英名・学術名"]=line.english;result.packing=line.packing;result["産地"]=line.origin}
+    if(line){result["商品名"]=line.japanese;result["英名・学術名"]=line.english;result.packing=line.packing;result["産地"]=line.origin;result["金額"]=line.amount}
     result.__isPending=record.__isPending;
     return result;
   });
@@ -4402,7 +4416,7 @@ function salesRecordPayloadTrial(row,finalizedAt=""){
     dry_ice_weight:numberOrNull(box.dry_ice),
     box_size:box.box_size||null,
     unit_price:price,
-    amount:qty!==null&&price!==null?qty*price:null,
+    amount:qty!==null&&price!==null?roundJpyAmount(qty*price):null,
     memo:row._memo||null,
     is_stockout:!!row._stockout
   };
@@ -4541,14 +4555,14 @@ function finalizedReceivablePayloads(workDate,shippingFees){
     const group=groups.get(code)||{code,name:importerDisplayName(code),netSales:0,customers:new Set()};
     const qty=numberOrNull(row._qty);
     const price=numberOrNull(row.unit_price);
-    if(qty!==null&&price!==null)group.netSales+=qty*price;
+    if(qty!==null&&price!==null)group.netSales+=roundJpyAmount(qty*price);
     if(row.customer)group.customers.add(String(row.customer).trim());
     groups.set(code,group);
   });
   return [...groups.values()].map(group=>{
     const feeKey=Object.keys(shippingFees||{}).find(key=>invoiceImporterCode(key)===group.code);
-    const shipping=Number(shippingFees?.[feeKey]||0);
-    const netSales=Math.round((group.netSales+Number.EPSILON)*100)/100;
+    const shipping=roundJpyAmount(shippingFees?.[feeKey]||0);
+    const netSales=roundJpyAmount(group.netSales);
     const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
     return {
       source_key:`sales:${currentSessionId}:${group.code}`,
@@ -4563,7 +4577,7 @@ function finalizedReceivablePayloads(workDate,shippingFees){
       currency:"JPY",
       net_sales_jpy:netSales,
       shipping_amount_jpy:shipping,
-      amount_jpy:Math.round((netSales+shipping+Number.EPSILON)*100)/100,
+      amount_jpy:roundJpyAmount(netSales+shipping),
       updated_by:currentUser.id
     };
   }).filter(row=>Math.abs(row.amount_jpy)>.005);
