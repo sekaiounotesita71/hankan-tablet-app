@@ -26,7 +26,7 @@ assert.doesNotMatch(html, /arReadAll\("accounts_payable_supplier_profiles","supp
 assert.match(html, /const openingBalance=arRound\(beforeCharges-beforePayments\)/);
 assert.match(html, /function apClosingGroupCalculations\(\)/);
 assert.match(html, /apPayableClosingDays\(profile\)\.includes\(context\.closingDay\)/);
-assert.match(html, /function apIsSemiMonthlyProfile\(profile\)/);
+assert.match(html, /function apIsRecurringClosingProfile\(profile\)/);
 assert.match(html, /function apClosingDateMatchesDay\(dateValue,closingDay\)/);
 assert.match(html, /function apEffectivePayableSupplierProfiles\(profiles=payableSupplierProfiles,rows=payableRows\)/);
 assert.match(html, /_default_profile:true/);
@@ -149,5 +149,27 @@ closingContext.payableClosings.push({ supplier_code: "02", status: "closed", per
 const enabledSecondHalf = closingContext.apClosingCalculationFor({ code: "02", name: "仕入先" }, "2026-08", semiMonthlyProfile, 31);
 assert.equal(enabledSecondHalf.error, "");
 assert.equal(enabledSecondHalf.range.from, "2026-08-16");
+const tenDayProfile = {
+  supplier_code: "10",
+  payment_mode: "credit",
+  closing_day: 10,
+  payment_month_offset: 1,
+  payment_day: 10
+};
+closingContext.payableClosings.length = 0;
+closingContext.payablesLoaded = false;
+assert.deepEqual(Array.from(closingContext.apPayableClosingDays(tenDayProfile)), [10, 20, 31]);
+const firstTenDays = closingContext.apClosingCalculationFor({ code: "10", name: "10日仕入先" }, "2026-08", tenDayProfile, 10);
+assert.equal(firstTenDays.range.from, "2026-08-01");
+assert.equal(firstTenDays.range.to, "2026-08-10");
+assert.equal(firstTenDays.dueDate, "2026-08-20");
+const middleTenDays = closingContext.apClosingCalculationFor({ code: "10", name: "10日仕入先" }, "2026-08", tenDayProfile, 20);
+assert.equal(middleTenDays.range.from, "2026-08-11");
+assert.equal(middleTenDays.range.to, "2026-08-20");
+assert.equal(middleTenDays.dueDate, "2026-08-31");
+const finalTenDays = closingContext.apClosingCalculationFor({ code: "10", name: "10日仕入先" }, "2026-08", tenDayProfile, 31);
+assert.equal(finalTenDays.range.from, "2026-08-21");
+assert.equal(finalTenDays.range.to, "2026-08-31");
+assert.equal(finalTenDays.dueDate, "2026-09-10");
 
 console.log("Accounts payable closing tests passed");

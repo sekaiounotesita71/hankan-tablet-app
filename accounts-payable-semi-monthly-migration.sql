@@ -1,5 +1,4 @@
--- Semi-monthly supplier terms: days 1-15 are paid at month-end,
--- and days 16-month-end are paid on the following month's 15th.
+-- Recurring supplier terms for 10-day and 15-day closing cycles.
 -- Run after accounts-payable-terms-migration.sql.
 
 begin;
@@ -28,6 +27,16 @@ begin
 
   invoice_month := date_trunc('month',p_invoice_date)::date;
   invoice_month_last_day := (invoice_month + interval '1 month - 1 day')::date;
+
+  if least(greatest(coalesce(p_closing_day,31),1),31) = 10 then
+    if extract(day from p_invoice_date)::integer <= 10 then
+      return invoice_month + 19;
+    end if;
+    if extract(day from p_invoice_date)::integer <= 20 then
+      return invoice_month_last_day;
+    end if;
+    return (invoice_month + interval '1 month')::date + 9;
+  end if;
 
   if least(greatest(coalesce(p_closing_day,31),1),31) = 15 then
     if extract(day from p_invoice_date)::integer <= 15 then
@@ -76,6 +85,15 @@ where profile.supplier_code = payable.supplier_code
 
 do $$
 begin
+  if public.accounts_payable_due_date(date '2026-08-10',10::smallint,1::smallint,10::smallint) <> date '2026-08-20' then
+    raise exception 'Ten-day cycle first-period due date check failed.';
+  end if;
+  if public.accounts_payable_due_date(date '2026-08-11',10::smallint,1::smallint,10::smallint) <> date '2026-08-31' then
+    raise exception 'Ten-day cycle second-period due date check failed.';
+  end if;
+  if public.accounts_payable_due_date(date '2026-08-21',10::smallint,1::smallint,10::smallint) <> date '2026-09-10' then
+    raise exception 'Ten-day cycle third-period due date check failed.';
+  end if;
   if public.accounts_payable_due_date(date '2026-08-15',15::smallint,1::smallint,15::smallint) <> date '2026-08-31' then
     raise exception 'Semi-monthly first-period due date check failed.';
   end if;

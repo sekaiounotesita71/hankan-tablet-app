@@ -877,6 +877,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <label>支払条件
             <select id="ap-profile-term-preset" onchange="applyPayableTermPreset(this.value)">
               <option value="custom">個別設定</option>
+              <option value="recurring10">月3回締め（10日・20日・末日）</option>
               <option value="semimonthly15">月2回締め（15日分→当月末、末日分→翌月15日）</option>
               <option value="monthend-nextmonthend">末締め・翌月末払い</option>
               <option value="cash">都度現金払い</option>
@@ -9086,11 +9087,15 @@ function apClosingSnapshot(supplierCode,range){
 function apClosingDay(profile){
   return Math.min(31,Math.max(1,Math.trunc(arNumber(profile?.closing_day))||31));
 }
-function apIsSemiMonthlyProfile(profile){
-  return profile?.payment_mode!=="cash_on_entry"&&apClosingDay(profile)===15;
+function apIsRecurringClosingProfile(profile){
+  return profile?.payment_mode!=="cash_on_entry"&&[10,15].includes(apClosingDay(profile));
 }
 function apPayableClosingDays(profile){
-  return apIsSemiMonthlyProfile(profile)?[15,31]:[apClosingDay(profile)];
+  const closingDay=apClosingDay(profile);
+  if(profile?.payment_mode==="cash_on_entry")return [closingDay];
+  if(closingDay===10)return [10,20,31];
+  if(closingDay===15)return [15,31];
+  return [closingDay];
 }
 function apClosingDateMatchesDay(dateValue,closingDay){
   const date=String(dateValue||"");
@@ -9132,22 +9137,24 @@ function apPayableProfileFor(supplierCode){
 function apClosingCalculationFor(supplier,month,profile,requestedClosingDay=apClosingDay(profile)){
   const supplierCode=supplier?.code||"";
   if(!supplierCode||!month||!profile)return {error:"仕入先・対象月・支払条件を確認してください。",supplierCode,supplier};
-  const semimonthly=apIsSemiMonthlyProfile(profile);
-  const closingDay=semimonthly?Number(requestedClosingDay):apClosingDay(profile);
-  if(semimonthly&&![15,31].includes(closingDay))return {error:"月2回締めは15日または末日を選択してください。",supplierCode,supplier};
+  const recurring=apIsRecurringClosingProfile(profile);
+  const recurringDays=apPayableClosingDays(profile);
+  const closingDay=recurring?Number(requestedClosingDay):apClosingDay(profile);
+  const cycleIndex=recurringDays.indexOf(closingDay);
+  if(recurring&&cycleIndex<0)return {error:"締め日サイクルを確認してください。",supplierCode,supplier};
   const paymentDay=Math.min(31,Math.max(1,Math.trunc(arNumber(profile.payment_day))||31));
   const paymentMonthOffset=Math.max(0,Math.trunc(arNumber(profile.payment_month_offset)));
   const periodTo=arMonthDay(month,closingDay);
   const priorClosings=payableClosings
     .filter(row=>apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&String(row.period_to)<periodTo)
     .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to)));
-  const defaultPreviousPeriodTo=semimonthly
-    ?(closingDay===15?arMonthDay(month,31,-1):arMonthDay(month,15))
+  const defaultPreviousPeriodTo=recurring
+    ?(cycleIndex===0?arMonthDay(month,31,-1):arMonthDay(month,recurringDays[cycleIndex-1]))
     :arMonthDay(month,closingDay,-1);
-  const previousPeriodTo=semimonthly?defaultPreviousPeriodTo:(priorClosings[0]?.period_to||defaultPreviousPeriodTo);
+  const previousPeriodTo=recurring?defaultPreviousPeriodTo:(priorClosings[0]?.period_to||defaultPreviousPeriodTo);
   const periodFrom=arShiftDate(previousPeriodTo,1);
-  const dueDate=semimonthly
-    ?(closingDay===15?arMonthDay(month,31):arMonthDay(month,15,1))
+  const dueDate=recurring
+    ?(cycleIndex<recurringDays.length-1?arMonthDay(month,recurringDays[cycleIndex+1]):arMonthDay(month,recurringDays[0],1))
     :arMonthDay(month,paymentDay,paymentMonthOffset);
   if(periodFrom>periodTo)return {error:"前回締め日が対象月より後です。対象月を確認してください。"};
   const existing=payableClosings.find(row=>
@@ -9157,19 +9164,23 @@ function apClosingCalculationFor(supplier,month,profile,requestedClosingDay=apCl
   const range={from:periodFrom,to:periodTo,raw:`${periodFrom}-${periodTo}`};
   const snapshot=payablesLoaded?apClosingSnapshot(supplierCode,range):null;
   let prerequisiteError="";
-  if(semimonthly&&closingDay===31&&payablesLoaded){
-    const firstHalfTo=arMonthDay(month,15);
-    const firstHalfClosed=payableClosings.some(row=>
-      apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&String(row.period_to)===firstHalfTo
+  if(recurring&&cycleIndex>0&&payablesLoaded){
+    const previousCycleDay=recurringDays[cycleIndex-1];
+    const previousCycleTo=arMonthDay(month,previousCycleDay);
+    const previousCycleFrom=cycleIndex===1
+      ?arMonthDay(month,1)
+      :arShiftDate(arMonthDay(month,recurringDays[cycleIndex-2]),1);
+    const previousCycleClosed=payableClosings.some(row=>
+      apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&String(row.period_to)===previousCycleTo
     );
-    const firstHalfRange={from:arMonthDay(month,1),to:firstHalfTo,raw:`${arMonthDay(month,1)}-${firstHalfTo}`};
-    const firstHalfSnapshot=apClosingSnapshot(supplierCode,firstHalfRange);
-    const firstHalfHasBalance=!!firstHalfSnapshot&&(
-      firstHalfSnapshot.charges.length||firstHalfSnapshot.payments.length||Math.abs(firstHalfSnapshot.openingBalance)>.005
+    const previousCycleRange={from:previousCycleFrom,to:previousCycleTo,raw:`${previousCycleFrom}-${previousCycleTo}`};
+    const previousCycleSnapshot=apClosingSnapshot(supplierCode,previousCycleRange);
+    const previousCycleHasBalance=!!previousCycleSnapshot&&(
+      previousCycleSnapshot.charges.length||previousCycleSnapshot.payments.length||Math.abs(previousCycleSnapshot.openingBalance)>.005
     );
-    if(firstHalfHasBalance&&!firstHalfClosed)prerequisiteError="先に同月15日締めを完了してください。";
+    if(previousCycleHasBalance&&!previousCycleClosed)prerequisiteError=`先に同月${previousCycleDay}日締めを完了してください。`;
   }
-  return {error:prerequisiteError,supplierCode,supplier,month,profile,profileIsDefault:!!profile._default_profile,semimonthly,closingDay,range,dueDate,snapshot,existing};
+  return {error:prerequisiteError,supplierCode,supplier,month,profile,profileIsDefault:!!profile._default_profile,recurring,closingDay,range,dueDate,snapshot,existing};
 }
 function apClosingGroupContext(){
   return {
@@ -9312,7 +9323,7 @@ function renderPayableClosingHistory(){
     .filter(row=>{
       const profile=apPayableProfileFor(row.supplier_code);
       if(context.closingDay&&!apPayableClosingDays(profile).includes(context.closingDay))return false;
-      if(context.closingDay&&apIsSemiMonthlyProfile(profile)&&!apClosingDateMatchesDay(row.period_to,context.closingDay))return false;
+      if(context.closingDay&&apIsRecurringClosingProfile(profile)&&!apClosingDateMatchesDay(row.period_to,context.closingDay))return false;
       if(context.filter){
         const supplier=lookupSupplierByCode(row.supplier_code);
         if(![row.supplier_code,supplier?.name].join(" ").toLowerCase().includes(context.filter))return false;
@@ -9457,12 +9468,14 @@ function fillPayableProfileSupplierName(){
 }
 function apPayableTermPreset(paymentMode,closingDay,monthOffset,paymentDay){
   if(paymentMode==="cash_on_entry")return "cash";
+  if(closingDay===10)return "recurring10";
   if(closingDay===15)return "semimonthly15";
   if(closingDay===31&&monthOffset===1&&paymentDay===31)return "monthend-nextmonthend";
   return "custom";
 }
 function apPayableTermLabel(paymentMode,closingDay,monthOffset,paymentDay){
   if(paymentMode==="cash_on_entry")return "仕入確定と同時に支払済";
+  if(closingDay===10)return "月3回締め（1～10日分は20日、11～20日分は月末、21日～末日分は翌月10日払い）";
   if(closingDay===15)return "月2回締め（1～15日分は当月末、16日～末日分は翌月15日払い）";
   const closing=closingDay===31?"末":`${closingDay}日`;
   const paymentMonth=monthOffset===0?"当月":monthOffset===1?"翌月":monthOffset===2?"翌々月":`${monthOffset}か月後`;
@@ -9475,14 +9488,14 @@ function updatePayableProfileModeState(options={}){
   const monthOffset=Math.trunc(arNumber(val("ap-profile-payment-month-offset")));
   const paymentDay=Math.trunc(arNumber(val("ap-profile-payment-day")))||31;
   const cash=paymentMode==="cash_on_entry";
-  const semimonthly=!cash&&closingDay===15;
+  const recurring=!cash&&[10,15].includes(closingDay);
   const closingInput=document.getElementById("ap-profile-closing-day");
   if(closingInput)closingInput.disabled=cash;
   ["ap-profile-payment-month-offset","ap-profile-payment-day"].forEach(id=>{
-    const element=document.getElementById(id);if(element)element.disabled=cash||semimonthly;
+    const element=document.getElementById(id);if(element)element.disabled=cash||recurring;
   });
   const preset=document.getElementById("ap-profile-term-preset");
-  if(preset)preset.value=cash?"cash":semimonthly?"semimonthly15":options.keepPreset===false?"custom":apPayableTermPreset(paymentMode,closingDay,monthOffset,paymentDay);
+  if(preset)preset.value=cash?"cash":recurring?apPayableTermPreset(paymentMode,closingDay,monthOffset,paymentDay):options.keepPreset===false?"custom":apPayableTermPreset(paymentMode,closingDay,monthOffset,paymentDay);
   const preview=document.getElementById("ap-profile-term-preview");
   if(preview)preview.textContent=apPayableTermLabel(paymentMode,closingDay,monthOffset,paymentDay);
 }
@@ -9494,6 +9507,7 @@ function applyPayableTermPreset(preset){
   if(preset==="cash"){mode.value="cash_on_entry"}
   else{
     mode.value="credit";
+    if(preset==="recurring10"){closing.value="10";offset.value="0";payment.value="20"}
     if(preset==="semimonthly15"){closing.value="15";offset.value="0";payment.value="31"}
     if(preset==="monthend-nextmonthend"){closing.value="31";offset.value="1";payment.value="31"}
   }
@@ -9505,6 +9519,12 @@ function apDueDate(invoiceDate,monthOffset=1,paymentDay=31,closingDay=31){
   const invoiceMonth=new Date(Date.UTC(Number(match[1]),Number(match[2])-1,1));
   const invoiceMonthLastDay=new Date(Date.UTC(invoiceMonth.getUTCFullYear(),invoiceMonth.getUTCMonth()+1,0)).getUTCDate();
   const effectiveClosingDay=Math.min(Math.max(1,Math.trunc(arNumber(closingDay))||31),invoiceMonthLastDay);
+  if(effectiveClosingDay===10){
+    if(Number(match[3])<=10)return `${invoiceMonth.getUTCFullYear()}-${String(invoiceMonth.getUTCMonth()+1).padStart(2,"0")}-20`;
+    if(Number(match[3])<=20)return `${invoiceMonth.getUTCFullYear()}-${String(invoiceMonth.getUTCMonth()+1).padStart(2,"0")}-${String(invoiceMonthLastDay).padStart(2,"0")}`;
+    const followingMonth=new Date(Date.UTC(invoiceMonth.getUTCFullYear(),invoiceMonth.getUTCMonth()+1,1));
+    return `${followingMonth.getUTCFullYear()}-${String(followingMonth.getUTCMonth()+1).padStart(2,"0")}-10`;
+  }
   if(effectiveClosingDay===15){
     if(Number(match[3])<=15){
       return `${invoiceMonth.getUTCFullYear()}-${String(invoiceMonth.getUTCMonth()+1).padStart(2,"0")}-${String(invoiceMonthLastDay).padStart(2,"0")}`;
@@ -9555,7 +9575,8 @@ async function savePayableSupplierProfile(){
   if(!code||!supplier){alert("仕入先マスタに登録済みの仕入先コードを入力してください。");return}
   if(closingDay<1||closingDay>31||paymentDay<1||paymentDay>31||monthOffset<0||monthOffset>12){alert("締め日・支払日は1～31、支払月は当月以降で設定してください。");return}
   if(paymentMode==="credit"&&monthOffset===0&&paymentDay<closingDay){alert("当月払いでは支払日を締め日以降に設定してください。");return}
-  const payload={supplier_code:code,payment_mode:paymentMode,closing_day:closingDay,payment_month_offset:closingDay===15?0:monthOffset,payment_day:closingDay===15?31:paymentDay,memo:val("ap-profile-memo").trim()||null,updated_by:user.id};
+  const recurringPaymentDay=closingDay===10?20:closingDay===15?31:paymentDay;
+  const payload={supplier_code:code,payment_mode:paymentMode,closing_day:closingDay,payment_month_offset:[10,15].includes(closingDay)?0:monthOffset,payment_day:recurringPaymentDay,memo:val("ap-profile-memo").trim()||null,updated_by:user.id};
   if(!payableSupplierProfile||payableSupplierProfile.supplier_code!==code)payload.created_by=user.id;
   const {data,error}=await initSupabase().from("accounts_payable_supplier_profiles").upsert(payload,{onConflict:"supplier_code"}).select("*").single();
   if(error){alert(apDbErrorMessage(error));return}

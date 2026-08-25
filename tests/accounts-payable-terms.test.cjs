@@ -10,6 +10,7 @@ const semiMonthlySql = fs.readFileSync(path.join(root,"accounts-payable-semi-mon
 
 assert.match(html,/id="ap-profile-payment-mode"/);
 assert.match(html,/value="cash_on_entry">都度現金払い/);
+assert.match(html,/value="recurring10">月3回締め/);
 assert.match(html,/value="semimonthly15">月2回締め/);
 assert.match(html,/function applyPayableTermPreset\(preset\)/);
 assert.match(html,/payment_mode:paymentMode/);
@@ -25,6 +26,10 @@ const dueDateContext = {
   }
 };
 vm.runInNewContext(html.slice(dueDateStart,dueDateEnd),dueDateContext);
+assert.equal(dueDateContext.apDueDate("2026-08-10",1,10,10),"2026-08-20");
+assert.equal(dueDateContext.apDueDate("2026-08-11",1,10,10),"2026-08-31");
+assert.equal(dueDateContext.apDueDate("2026-08-21",1,10,10),"2026-09-10");
+assert.equal(dueDateContext.apDueDate("2027-02-11",1,10,10),"2027-02-28");
 assert.equal(dueDateContext.apDueDate("2026-08-15",1,15,15),"2026-08-31");
 assert.equal(dueDateContext.apDueDate("2026-08-16",1,15,15),"2026-09-15");
 assert.equal(dueDateContext.apDueDate("2027-02-15",1,15,15),"2027-02-28");
@@ -43,9 +48,13 @@ assert.match(sql,/on conflict \(source_key\) do update set/);
 assert.match(sql,/where closing_day = 1/);
 assert.match(sql,/profile\.payment_mode = 'cash_on_entry'/);
 assert.match(semiMonthlySql,/create or replace function public\.accounts_payable_due_date/);
+assert.match(semiMonthlySql,/coalesce\(p_closing_day,31\),1\),31\) = 10/);
 assert.match(semiMonthlySql,/extract\(day from p_invoice_date\)::integer <= 15/);
 assert.match(semiMonthlySql,/payable\.closing_id is null/);
 assert.match(semiMonthlySql,/date '2026-08-15'[\s\S]*?date '2026-08-31'/);
 assert.match(semiMonthlySql,/date '2026-08-16'[\s\S]*?date '2026-09-15'/);
+assert.match(semiMonthlySql,/date '2026-08-10'[\s\S]*?date '2026-08-20'/);
+assert.match(semiMonthlySql,/date '2026-08-11'[\s\S]*?date '2026-08-31'/);
+assert.match(semiMonthlySql,/date '2026-08-21'[\s\S]*?date '2026-09-10'/);
 
 console.log("Accounts payable terms tests passed");
