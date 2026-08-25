@@ -30,5 +30,6 @@ assert.match(orderApp, /amount=!line\.is_stockout[\s\S]*?salesRefJpyAmount\(qty\
 assert.match(migration, /trg_normalize_sales_record_jpy_amount/, "売上DBに丸めトリガーを追加すること");
 assert.match(migration, /trg_normalize_pending_entry_jpy_amount/, "赤伝DBに丸めトリガーを追加すること");
 assert.match(migration, /trg_normalize_accounts_receivable_jpy_amount/, "売掛DBに丸めトリガーを追加すること");
+assert.match(migration, /new\.amount_jpy := new\.net_sales_jpy \+ new\.shipping_amount_jpy \+ new\.adjustment_amount_jpy/, "売掛合計は丸め済み内訳の合計にすること");
 
 console.log("jpy-invoice-rounding tests passed");

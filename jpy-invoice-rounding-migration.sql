@@ -56,7 +56,11 @@ begin
     new.net_sales_jpy := round(coalesce(new.net_sales_jpy, 0), 0);
     new.shipping_amount_jpy := round(coalesce(new.shipping_amount_jpy, 0), 0);
     new.adjustment_amount_jpy := round(coalesce(new.adjustment_amount_jpy, 0), 0);
-    new.amount_jpy := round(coalesce(new.amount_jpy, 0), 0);
+    if new.source_type = 'sales' then
+      new.amount_jpy := new.net_sales_jpy + new.shipping_amount_jpy + new.adjustment_amount_jpy;
+    else
+      new.amount_jpy := round(coalesce(new.amount_jpy, 0), 0);
+    end if;
   end if;
   return new;
 end;
