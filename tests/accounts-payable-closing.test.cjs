@@ -133,5 +133,21 @@ assert.equal(secondHalf.range.to, "2026-08-31");
 assert.equal(secondHalf.dueDate, "2026-09-15");
 assert.equal(closingContext.apClosingDateMatchesDay("2026-08-15", 15), true);
 assert.equal(closingContext.apClosingDateMatchesDay("2026-08-31", 31), true);
+closingContext.payablesLoaded = true;
+closingContext.apClosingSnapshot = (_supplierCode, range) => ({
+  range,
+  charges: range.to.endsWith("-15") ? [{ id: "purchase-1" }] : [{ id: "purchase-2" }],
+  payments: [],
+  openingBalance: 0,
+  purchaseAmount: 100,
+  paymentAmount: 0,
+  closingBalance: 100
+});
+const blockedSecondHalf = closingContext.apClosingCalculationFor({ code: "02", name: "仕入先" }, "2026-08", semiMonthlyProfile, 31);
+assert.equal(blockedSecondHalf.error, "先に同月15日締めを完了してください。");
+closingContext.payableClosings.push({ supplier_code: "02", status: "closed", period_from: "2026-08-01", period_to: "2026-08-15" });
+const enabledSecondHalf = closingContext.apClosingCalculationFor({ code: "02", name: "仕入先" }, "2026-08", semiMonthlyProfile, 31);
+assert.equal(enabledSecondHalf.error, "");
+assert.equal(enabledSecondHalf.range.from, "2026-08-16");
 
 console.log("Accounts payable closing tests passed");

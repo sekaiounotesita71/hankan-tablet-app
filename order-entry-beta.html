@@ -9144,7 +9144,7 @@ function apClosingCalculationFor(supplier,month,profile,requestedClosingDay=apCl
   const defaultPreviousPeriodTo=semimonthly
     ?(closingDay===15?arMonthDay(month,31,-1):arMonthDay(month,15))
     :arMonthDay(month,closingDay,-1);
-  const previousPeriodTo=priorClosings[0]?.period_to||defaultPreviousPeriodTo;
+  const previousPeriodTo=semimonthly?defaultPreviousPeriodTo:(priorClosings[0]?.period_to||defaultPreviousPeriodTo);
   const periodFrom=arShiftDate(previousPeriodTo,1);
   const dueDate=semimonthly
     ?(closingDay===15?arMonthDay(month,31):arMonthDay(month,15,1))
@@ -9156,7 +9156,20 @@ function apClosingCalculationFor(supplier,month,profile,requestedClosingDay=apCl
   );
   const range={from:periodFrom,to:periodTo,raw:`${periodFrom}-${periodTo}`};
   const snapshot=payablesLoaded?apClosingSnapshot(supplierCode,range):null;
-  return {supplierCode,supplier,month,profile,profileIsDefault:!!profile._default_profile,semimonthly,closingDay,range,dueDate,snapshot,existing};
+  let prerequisiteError="";
+  if(semimonthly&&closingDay===31&&payablesLoaded){
+    const firstHalfTo=arMonthDay(month,15);
+    const firstHalfClosed=payableClosings.some(row=>
+      apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&String(row.period_to)===firstHalfTo
+    );
+    const firstHalfRange={from:arMonthDay(month,1),to:firstHalfTo,raw:`${arMonthDay(month,1)}-${firstHalfTo}`};
+    const firstHalfSnapshot=apClosingSnapshot(supplierCode,firstHalfRange);
+    const firstHalfHasBalance=!!firstHalfSnapshot&&(
+      firstHalfSnapshot.charges.length||firstHalfSnapshot.payments.length||Math.abs(firstHalfSnapshot.openingBalance)>.005
+    );
+    if(firstHalfHasBalance&&!firstHalfClosed)prerequisiteError="先に同月15日締めを完了してください。";
+  }
+  return {error:prerequisiteError,supplierCode,supplier,month,profile,profileIsDefault:!!profile._default_profile,semimonthly,closingDay,range,dueDate,snapshot,existing};
 }
 function apClosingGroupContext(){
   return {
