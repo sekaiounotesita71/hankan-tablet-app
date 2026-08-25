@@ -633,6 +633,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div style="font-weight:900;margin-bottom:8px">仕入明細入力</div>
       <div class="advance-entry-head">
         <label>仕入日<input id="advance-purchase-date" type="date" data-advance-header oninput="updateAdvancePurchaseHeader()"></label>
+        <label>売上引用範囲<select id="advance-purchase-reference-mode" data-advance-header onchange="setAdvancePurchaseReferenceMode(this.value)"><option value="day">日次</option><option value="month">月次</option></select></label>
+        <label>引用対象日／月<input id="advance-purchase-reference-period" type="text" inputmode="numeric" autocomplete="off" data-advance-header placeholder="20260825" oninput="saveAdvancePurchaseDraft()" onchange="normalizeAdvancePurchaseReferencePeriod({syncPurchaseDate:true})"></label>
         <label>拠点<select id="advance-purchase-site" data-advance-header onchange="updateAdvancePurchaseHeader()"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label>引用元発注先コード<input id="advance-purchase-order-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" placeholder="受注登録時の発注先"></label>
         <label>実仕入先コード<div class="lookup-cell"><input id="advance-purchase-supplier" class="ime-en" list="supplier-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-header oninput="updateAdvancePurchaseHeader()" onchange="changeAdvancePurchaseSupplier()"><button class="quick-master-button" type="button" title="仕入先マスタを追加" onclick="openMasterForQuickAdd('suppliers',{codeId:'advance-purchase-supplier'})">+</button></div></label>
@@ -826,6 +828,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="supplier-external-wrap" style="flex-direction:row;align-items:center;gap:7px"><input id="master-external-enabled" type="checkbox" style="width:18px;min-height:18px">外部作業を依頼する仕入先</label>
         <label id="supplier-box-prefix-wrap">箱番号の固定コード<input id="master-box-prefix" autocomplete="off" placeholder="例 TKY"></label>
         <label id="supplier-default-site-wrap">仕入先の既定拠点<select id="master-supplier-site-code"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+        <label id="supplier-purchase-reference-mode-wrap">売上引用の初期範囲<select id="master-supplier-purchase-reference-mode"><option value="day">日次</option><option value="month">月次</option></select></label>
       </div>
       <div class="actions" style="margin-top:8px">
         <button class="btn primary" onclick="addMasterItem()">マスタ追加/更新</button>
@@ -1740,6 +1743,7 @@ function dbText(value){
   const v=String(value??"").trim();
   return v||null;
 }
+function supplierPurchaseReferenceMode(value){return value==="month"?"month":"day"}
 function masterItemToDb(type,item){
   if(type==="importers"){
     return {importer_code:item.code,importer_name:item.name,aliases:item.aliases||[],is_active:true};
@@ -1752,6 +1756,7 @@ function masterItemToDb(type,item){
       external_work_enabled:!!item.externalWorkEnabled,
       box_prefix:dbText(item.boxPrefix),
       default_site_code:dbText(item.siteCode||"OSA"),
+      purchase_reference_mode:supplierPurchaseReferenceMode(item.purchaseReferenceMode),
       is_active:true
     };
   }
@@ -1788,7 +1793,8 @@ function dbMasterToItem(type,row,lookups={}){
     aliases:row.aliases||[],
     externalWorkEnabled:!!row.external_work_enabled,
     boxPrefix:row.box_prefix||"",
-    siteCode:row.default_site_code||"OSA"
+    siteCode:row.default_site_code||"OSA",
+    purchaseReferenceMode:supplierPurchaseReferenceMode(row.purchase_reference_mode)
   };
   if(type==="customers"){
     const importerCode=row.importer_code||"";
@@ -1965,7 +1971,7 @@ async function saveMasterItemToDb(type,item){
   const payload=masterItemToDb(type,item);
   let {error}=await supabaseClient.from(table).upsert(payload,{onConflict:conflict});
   if(error&&type==="suppliers"&&isMissingColumnError(error)){
-    const {external_work_enabled,box_prefix,default_site_code,...legacyPayload}=payload;
+    const {external_work_enabled,box_prefix,default_site_code,purchase_reference_mode,...legacyPayload}=payload;
     ({error}=await supabaseClient.from(table).upsert(legacyPayload,{onConflict:conflict}));
   }
   if(error)throw error;
@@ -2053,7 +2059,7 @@ async function saveMastersToDb(type,items){
     let chunk=payloads.slice(i,i+300);
     let {error}=await supabaseClient.from(table).upsert(chunk,{onConflict:conflict});
     if(error&&type==="suppliers"&&isMissingColumnError(error)){
-      chunk=chunk.map(({external_work_enabled,box_prefix,default_site_code,...legacyPayload})=>legacyPayload);
+      chunk=chunk.map(({external_work_enabled,box_prefix,default_site_code,purchase_reference_mode,...legacyPayload})=>legacyPayload);
       ({error}=await supabaseClient.from(table).upsert(chunk,{onConflict:conflict}));
     }
     if(error)throw error;
@@ -10176,6 +10182,8 @@ async function saveSelectedAdvancePurchaseMasterPrices(){
 function saveAdvancePurchaseDraft(){
   const payload={
     purchaseDate:val("advance-purchase-date")||today(),
+    referenceMode:supplierPurchaseReferenceMode(val("advance-purchase-reference-mode")),
+    referencePeriod:val("advance-purchase-reference-period").trim(),
     siteCode:val("advance-purchase-site")||"OSA",
     orderSupplierCode:val("advance-purchase-order-supplier").trim(),
     supplierCode:val("advance-purchase-supplier").trim(),
@@ -10195,6 +10203,8 @@ function loadAdvancePurchaseDraft(){
   if(saved.orderSupplierCode)document.getElementById("advance-purchase-order-supplier").value=saved.orderSupplierCode;
   if(saved.supplierCode)document.getElementById("advance-purchase-supplier").value=saved.supplierCode;
   if(saved.importerCode)document.getElementById("advance-purchase-importer").value=saved.importerCode;
+  const savedSupplier=lookupSupplierByCode(saved.supplierCode||"");
+  setAdvancePurchaseReferenceMode(saved.referenceMode||savedSupplier?.purchaseReferenceMode||"day",{save:false,syncPurchaseDate:false,period:saved.referencePeriod||""});
   setAdvancePurchaseImportMode(saved.importMode||"detail",{save:false});
   if(saved.note)document.getElementById("advance-purchase-note").value=saved.note;
   advancePurchaseRows=Array.isArray(saved.rows)&&saved.rows.length?saved.rows.map(row=>({...blankAdvancePurchaseRow(),...row,id:row.id||newAppUuid(),invalid:false})):[blankAdvancePurchaseRow()];
@@ -10210,6 +10220,51 @@ function setAdvancePurchaseImportMode(mode,options={}){
     button.classList.toggle("active",active);
     button.setAttribute("aria-pressed",String(active));
   });
+  if(options.save!==false)saveAdvancePurchaseDraft();
+}
+function advancePurchaseReferenceDefault(mode=supplierPurchaseReferenceMode(val("advance-purchase-reference-mode"))){
+  const purchaseDate=val("advance-purchase-date")||today();
+  return mode==="month"?purchaseDate.slice(0,7).replace(/\D/g,""):purchaseDate.replace(/\D/g,"");
+}
+function advancePurchaseReferenceRange(){
+  const mode=supplierPurchaseReferenceMode(val("advance-purchase-reference-mode"));
+  let digits=val("advance-purchase-reference-period").replace(/\D/g,"");
+  if(!digits)digits=advancePurchaseReferenceDefault(mode);
+  if(mode==="month"){
+    if(digits.length===8)digits=digits.slice(0,6);
+    if(digits.length!==6)return null;
+    const from=salesRefNormalizeDateToken(digits,false);
+    const to=salesRefNormalizeDateToken(digits,true);
+    return from&&to?{mode,from,to,period:digits,label:`${digits.slice(0,4)}年${digits.slice(4,6)}月`}:null;
+  }
+  if(digits.length!==8)return null;
+  const date=salesRefNormalizeDateToken(digits,false);
+  return date?{mode,from:date,to:date,period:digits,label:date}:null;
+}
+function normalizeAdvancePurchaseReferencePeriod(options={}){
+  const range=advancePurchaseReferenceRange();
+  const input=document.getElementById("advance-purchase-reference-period");
+  if(!range){
+    if(options.alert!==false)alert("引用対象は日次なら20260825、月次なら202608の形式で入力してください。");
+    input?.focus();
+    return false;
+  }
+  if(input)input.value=range.period;
+  if(options.syncPurchaseDate&&range.mode==="month")document.getElementById("advance-purchase-date").value=range.to;
+  if(options.save!==false)saveAdvancePurchaseDraft();
+  return true;
+}
+function setAdvancePurchaseReferenceMode(mode,options={}){
+  const normalized=supplierPurchaseReferenceMode(mode);
+  const select=document.getElementById("advance-purchase-reference-mode");
+  const period=document.getElementById("advance-purchase-reference-period");
+  if(select)select.value=normalized;
+  if(period){
+    period.placeholder=normalized==="month"?"202608":"20260825";
+    period.value=String(options.period||"").trim()||advancePurchaseReferenceDefault(normalized);
+  }
+  if(normalized==="month"&&options.setImportMode!==false)setAdvancePurchaseImportMode("product",{save:false});
+  normalizeAdvancePurchaseReferencePeriod({alert:false,save:false,syncPurchaseDate:options.syncPurchaseDate!==false});
   if(options.save!==false)saveAdvancePurchaseDraft();
 }
 function updateAdvancePurchaseHeader(options={}){
@@ -10231,18 +10286,22 @@ function refreshAdvancePurchaseMasterPrices(){
 }
 function changeAdvancePurchaseSupplier(){
   advancePurchaseMasterPriceSelections.clear();
+  const supplier=lookupSupplierByCode(val("advance-purchase-supplier"));
+  if(supplier)setAdvancePurchaseReferenceMode(supplier.purchaseReferenceMode||"day",{save:false});
   updateAdvancePurchaseHeader({save:false});
   refreshAdvancePurchaseMasterPrices();
   renderAdvancePurchaseRows();
   saveAdvancePurchaseDraft();
 }
-async function readSalesForAdvancePurchase(workDate){
+async function readSalesForAdvancePurchase(fromDate,toDate=fromDate){
   const result=[];
   const pageSize=1000;
   for(let offset=0;;offset+=pageSize){
     const {data,error}=await supabaseClient.from("sales_records")
       .select("id,session_id,source_row_no,work_date,importer_code,importer_id,product_id,product_name,origin,input_qty,input_unit,net_weight,is_stockout")
-      .eq("work_date",workDate)
+      .gte("work_date",fromDate)
+      .lte("work_date",toDate)
+      .order("work_date")
       .order("id")
       .range(offset,offset+pageSize-1);
     if(error)throw error;
@@ -10307,23 +10366,27 @@ async function readImportedSalesIdsForAdvancePurchase(salesRows){
 }
 async function importSalesIntoAdvancePurchase(){
   if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
-  const purchaseDate=val("advance-purchase-date");
   const siteCode=val("advance-purchase-site")||"OSA";
   let supplierCode=val("advance-purchase-supplier").trim();
   const orderSupplierCode=val("advance-purchase-order-supplier").trim()||supplierCode;
   const orderSupplier=lookupSupplierByCode(orderSupplierCode);
+  const supplierWasAutoAssigned=!supplierCode&&!!orderSupplier;
   if(!supplierCode&&orderSupplier){
     supplierCode=orderSupplier.code;
     document.getElementById("advance-purchase-supplier").value=supplierCode;
     updateAdvancePurchaseHeader({save:false});
   }
   const supplier=lookupSupplierByCode(supplierCode);
+  if(supplierWasAutoAssigned&&supplier)setAdvancePurchaseReferenceMode(supplier.purchaseReferenceMode||"day",{save:false});
+  const purchaseDate=val("advance-purchase-date");
+  const referenceRange=advancePurchaseReferenceRange();
   const importerCode=normalizeImporterCode(val("advance-purchase-importer"));
   if(!purchaseDate||!orderSupplierCode||!orderSupplier){alert("仕入日と、仕入先マスタに登録済みの引用元発注先コードを入力してから引用してください。");return}
   if(!supplier){alert("実仕入先コードは仕入先マスタに登録済みのコードを指定してください。");return}
-  setAppBusy(true,"確定売上から仕入明細を確認しています...");
+  if(!referenceRange){alert("引用対象は日次なら20260825、月次なら202608の形式で入力してください。");document.getElementById("advance-purchase-reference-period")?.focus();return}
+  setAppBusy(true,`${referenceRange.label}の確定売上から仕入明細を確認しています...`);
   try{
-    const salesRows=await readSalesForAdvancePurchase(purchaseDate);
+    const salesRows=await readSalesForAdvancePurchase(referenceRange.from,referenceRange.to);
     const [orderSupplierBySale,registeredSalesIds]=await Promise.all([
       readOrderSuppliersForAdvancePurchase(salesRows),
       readImportedSalesIdsForAdvancePurchase(salesRows)
@@ -10382,13 +10445,15 @@ async function importSalesIntoAdvancePurchase(){
     const active=advancePurchaseActiveRows();
     if(active.length&&!confirm(`入力中の明細 ${active.length}件を残したまま、売上から ${imported.length}件を追加しますか？`))return;
     advancePurchaseRows=active.length?[...active,...imported]:imported;
+    const note=document.getElementById("advance-purchase-note");
+    if(referenceRange.mode==="month"&&note&&!note.value.trim())note.value=`売上引用 ${referenceRange.label}`;
     renderAdvancePurchaseRows();
     saveAdvancePurchaseDraft();
     const state=document.getElementById("advance-purchase-state");
     if(state){state.textContent=`売上引用 ${importedSalesCount}件 → ${imported.length}行`;state.className="pill blue"}
     const otherSkipped=unmapped+invalidQty+draftDuplicate;
     const modeLabel=advancePurchaseImportMode==="product"?"商品コードごと":"明細ごと";
-    alert(`確定売上 ${importedSalesCount}件を、${modeLabel}で ${imported.length}行へ引用しました。\n引用元発注先: ${orderSupplierCode} / 実仕入先: ${supplierCode}\n受注明細の発注先コード: ${orderSupplierMatched}明細${masterSupplierFallback?`\n商品マスタを代替使用: ${masterSupplierFallback}明細`:""}${registeredDuplicate?`\n仕入登録済みのため除外: ${registeredDuplicate}件`:""}${otherSkipped?`\nその他の確認対象外: ${otherSkipped}件`:""}${differentSupplier?`\n他の発注先: ${differentSupplier}件`:""}`);
+    alert(`${referenceRange.label}の確定売上 ${importedSalesCount}件を、${modeLabel}で ${imported.length}行へ引用しました。\n引用元発注先: ${orderSupplierCode} / 実仕入先: ${supplierCode}\n受注明細の発注先コード: ${orderSupplierMatched}明細${masterSupplierFallback?`\n商品マスタを代替使用: ${masterSupplierFallback}明細`:""}${registeredDuplicate?`\n仕入登録済みのため除外: ${registeredDuplicate}件`:""}${otherSkipped?`\nその他の確認対象外: ${otherSkipped}件`:""}${differentSupplier?`\n他の発注先: ${differentSupplier}件`:""}`);
     requestAnimationFrame(()=>focusAdvancePurchaseCell(Math.max(0,advancePurchaseRows.length-imported.length),"unitPrice"));
   }catch(error){
     const message=advancePurchaseSalesLinkSchemaMissing(error)
@@ -10700,6 +10765,7 @@ function init(){
   const purchaseDateRange=document.getElementById("purchase-filter-date-range");
   if(purchaseDateRange)purchaseDateRange.value=today().slice(0,7).replace("-","");
   document.getElementById("advance-purchase-date").value=today();
+  setAdvancePurchaseReferenceMode("day",{save:false,syncPurchaseDate:false});
   const guideYear=document.getElementById("product-guide-year");
   if(guideYear&&!guideYear.value)guideYear.value=new Date().getFullYear();
   const guideRange=document.getElementById("product-guide-range");
@@ -13437,6 +13503,7 @@ function clearMasterForm(){
   document.getElementById("master-purchase-price-unit").value="Kg";
   document.getElementById("master-site-code").value="OSA";
   document.getElementById("master-supplier-site-code").value="OSA";
+  document.getElementById("master-supplier-purchase-reference-mode").value="day";
   document.getElementById("master-external-enabled").checked=false;
 }
 function editMasterItem(index){
@@ -13464,6 +13531,7 @@ function editMasterItem(index){
   document.getElementById("master-external-enabled").checked=!!(item.externalWorkEnabled??item.external_work_enabled);
   document.getElementById("master-box-prefix").value=item.boxPrefix||item.box_prefix||"";
   document.getElementById("master-supplier-site-code").value=item.siteCode||item.default_site_code||"OSA";
+  document.getElementById("master-supplier-purchase-reference-mode").value=supplierPurchaseReferenceMode(item.purchaseReferenceMode||item.purchase_reference_mode);
   document.getElementById("master-code").focus();
   document.getElementById("save-state").textContent=`${item.code||""} を編集中`;
 }
@@ -13508,6 +13576,7 @@ async function addMasterItem(){
     item.externalWorkEnabled=!!document.getElementById("master-external-enabled").checked;
     item.boxPrefix=val("master-box-prefix").trim().toUpperCase();
     item.siteCode=val("master-supplier-site-code")||"OSA";
+    item.purchaseReferenceMode=supplierPurchaseReferenceMode(val("master-supplier-purchase-reference-mode"));
   }
   if(dbReady&&supabaseClient){
     try{
@@ -13634,7 +13703,7 @@ function renderMasters(){
   const isSupplier=masterType==="suppliers";
   ["product-en-wrap","product-scientific-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap","product-purchase-price-wrap","product-purchase-unit-wrap","product-supplier-prices-wrap","product-origin-wrap","product-guide-category-wrap","product-guide-spec-wrap","product-image-url-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
   ["customer-importer-code-wrap","customer-importer-name-wrap","customer-site-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
-  ["supplier-external-wrap","supplier-box-prefix-wrap","supplier-default-site-wrap"].forEach(id=>document.getElementById(id).style.display=isSupplier?"flex":"none");
+  ["supplier-external-wrap","supplier-box-prefix-wrap","supplier-default-site-wrap","supplier-purchase-reference-mode-wrap"].forEach(id=>document.getElementById(id).style.display=isSupplier?"flex":"none");
   const masters=getMasters()[masterType]||[];
   const title={products:"商品",customers:"得意先",suppliers:"仕入先",importers:"輸入社"}[masterType];
   document.getElementById("master-list").innerHTML=masters.length?`<div class="hint" style="padding:6px 8px;margin:0;border-bottom:1px solid var(--line)">一覧行をクリックすると上の入力欄へ反映されます。編集後は「マスタ追加/更新」で保存します。</div>`+masters.map((m,index)=>{
@@ -13650,6 +13719,7 @@ function renderMasters(){
       m.importerCode||m.importerName?`輸入社: ${[m.importerCode,m.importerName].filter(Boolean).join(" ")}`:"",
       m.siteCode?`拠点: ${m.siteCode==="TYO"?"東京":"大阪"}`:"",
       m.externalWorkEnabled?`外部依頼 / 箱コード: ${m.boxPrefix||"未設定"}`:"",
+      masterType==="suppliers"?`売上引用: ${supplierPurchaseReferenceMode(m.purchaseReferenceMode)==="month"?"月次":"日次"}`:"",
       (m.aliases||[]).join(", ")
     ].filter(Boolean).join(" / ");
     const deleteBtn=currentUserIsAdmin()
@@ -13938,7 +14008,7 @@ function exportMasters(){
   const importerCodes=masterType==="products"
     ?[...new Set(masters.flatMap(m=>Object.keys(m.contractPrices||m.importer_prices||{})))].sort()
     :[];
-  const header=["type","code","name","english_name","scientific_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"purchase_unit_price","purchase_price_unit","supplier_purchase_prices","origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","aliases"];
+  const header=["type","code","name","english_name","scientific_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"purchase_unit_price","purchase_price_unit","supplier_purchase_prices","origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","purchase_reference_mode","aliases"];
   const rows=[header,...masters.map(m=>{
     const prices=m.contractPrices||m.importer_prices||{};
     return [
@@ -13946,7 +14016,7 @@ function exportMasters(){
       ...importerCodes.map(code=>prices[code]||""),
       m.purchaseUnitPrice??m.purchase_unit_price??"",purchasePriceUnit(m.purchasePriceUnit||m.purchase_price_unit),formatSupplierPurchasePrices(m.supplierPrices||m.supplier_prices||{}),
       m.origin||"",m.guideCategory||"",m.guideSpec||"",m.imageUrl||"",m.imageSourceUrl||"",m.imageCredit||"",m.imageLicense||"",
-      m.importerCode||"",m.importerName||"",m.siteCode||"",m.externalWorkEnabled?"1":"",m.boxPrefix||"",(m.aliases||[]).join("|")
+      m.importerCode||"",m.importerName||"",m.siteCode||"",m.externalWorkEnabled?"1":"",m.boxPrefix||"",supplierPurchaseReferenceMode(m.purchaseReferenceMode),(m.aliases||[]).join("|")
     ];
   })];
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
@@ -14122,6 +14192,8 @@ function masterItemFromCsvRow(row,headers,type){
     item.externalWorkEnabled=["1","true","yes","on","対象","有効"].includes(rowValue(row,headers,["external_work_enabled","externalworkenabled","外部作業","外部入力"]).toLowerCase());
     item.boxPrefix=rowValue(row,headers,["box_prefix","boxprefix","箱コード","箱番号コード"]).toUpperCase();
     item.siteCode=(rowValue(row,headers,["site_code","sitecode","default_site_code","拠点コード","既定拠点"])||"OSA").toUpperCase()==="TYO"?"TYO":"OSA";
+    const referenceMode=rowValue(row,headers,["purchase_reference_mode","purchasereferencemode","売上引用範囲","仕入引用範囲","引用範囲"]);
+    item.purchaseReferenceMode=/^(month|monthly|月次|月)$/i.test(referenceMode)?"month":"day";
   }
   return item;
 }
@@ -15489,7 +15561,7 @@ document.addEventListener("keydown",e=>{
   if(target instanceof HTMLElement&&target.matches("[data-advance-header]")&&e.key==="Enter"){
     e.preventDefault();
     if(target.id==="advance-purchase-supplier")updateAdvancePurchaseHeader();
-    const headerFlow=["advance-purchase-date","advance-purchase-site","advance-purchase-order-supplier","advance-purchase-supplier","advance-purchase-note"];
+    const headerFlow=["advance-purchase-date","advance-purchase-reference-mode","advance-purchase-reference-period","advance-purchase-site","advance-purchase-order-supplier","advance-purchase-supplier","advance-purchase-importer","advance-purchase-note"];
     const index=headerFlow.indexOf(target.id);
     if(index>=0&&index<headerFlow.length-1){
       const next=document.getElementById(headerFlow[index+1]);
