@@ -8714,6 +8714,22 @@ function supplierReviewStatusLabel(row){
   if(row.purchase_ordered)return "発注済み";
   return row.supplier_decision_status==="confirmed"?"発注先確定":"仮コード";
 }
+function supplierReviewCodeCompare(left,right){
+  const a=String(left??"").normalize("NFKC").trim();
+  const b=String(right??"").normalize("NFKC").trim();
+  if(!a&&!b)return 0;
+  if(!a)return 1;
+  if(!b)return -1;
+  return a.localeCompare(b,"ja",{numeric:true,sensitivity:"base"});
+}
+function supplierReviewSortRows(rows){
+  return [...(rows||[])].sort((a,b)=>
+    supplierReviewCodeCompare(a.supplier_code,b.supplier_code)||
+    supplierReviewCodeCompare(a.product_code,b.product_code)||
+    String(a.customer_name_snapshot||a.customer_code||"").localeCompare(String(b.customer_name_snapshot||b.customer_code||""),"ja",{numeric:true,sensitivity:"base"})||
+    String(a.line_id||"").localeCompare(String(b.line_id||""),"ja",{numeric:true,sensitivity:"base"})
+  );
+}
 function switchSupplierReviewTab(key){
   const tabs=document.getElementById("supplier-review-tabs");
   if(tabs)supplierReviewTabScrollLeft=tabs.scrollLeft||0;
@@ -8725,7 +8741,7 @@ function renderSupplierReviewBoard(){
   const summary=document.getElementById("supplier-review-summary");
   const tabs=document.getElementById("supplier-review-tabs");
   if(!host||!summary||!tabs)return;
-  const rows=supplierReviewVisibleRows();
+  const rows=supplierReviewSortRows(supplierReviewVisibleRows());
   if(!rows.length){summary.innerHTML='<span class="pill warn">表示 0明細</span>';tabs.innerHTML="";host.innerHTML='<div class="sales-empty">条件に一致する明細はありません。</div>';supplierReviewGroups=[];activeSupplierReviewKey="__all__";return}
   const grouped=new Map();
   rows.forEach(row=>{
@@ -8733,7 +8749,9 @@ function renderSupplierReviewBoard(){
     if(!grouped.has(key))grouped.set(key,[]);
     grouped.get(key).push(row);
   });
-  supplierReviewGroups=[...grouped.entries()].map(([key,groupRows])=>({key,rows:groupRows}));
+  supplierReviewGroups=[...grouped.entries()].map(([key,groupRows])=>({key,rows:groupRows})).sort((a,b)=>
+    supplierReviewCodeCompare(a.rows[0]?.supplier_code,b.rows[0]?.supplier_code)
+  );
   if(activeSupplierReviewKey!=="__all__"&&!supplierReviewGroups.some(group=>group.key===activeSupplierReviewKey))activeSupplierReviewKey="__all__";
   tabs.innerHTML=[`<button class="supplier-review-tab${activeSupplierReviewKey==="__all__"?" active":""}" type="button" role="tab" aria-selected="${activeSupplierReviewKey==="__all__"}" onclick="switchSupplierReviewTab('__all__')">ALL <span class="supplier-review-tab-count">${rows.length}</span></button>`,...supplierReviewGroups.map(group=>{
     const first=group.rows[0]||{};
