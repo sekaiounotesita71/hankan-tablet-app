@@ -10739,8 +10739,8 @@ function renderAdvancePurchaseRows(){
   if(!body)return;
   body.innerHTML=advancePurchaseRows.map((row,index)=>`<tr data-advance-row="${index}" class="${[row.invalid?"invalid":"",advancePurchaseMasterPriceSelections.has(row.id)?"advance-master-selected":""].filter(Boolean).join(" ")}">
     <td>${index+1}</td>
-    <td><div class="lookup-cell"><input class="product-code ime-ja" list="product-code-list" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-input data-advance-row-index="${index}" data-advance-field="productCode" value="${esc(row.productCode)}" oninput="setAdvancePurchaseRow(${index},'productCode',this.value)" onblur="resolveAdvancePurchaseProduct(${index},this.value)"><button class="lookup-btn" type="button" onclick="openAdvancePurchaseProductLookup(${index})">+</button></div></td>
-    <td><input class="product-name ime-ja" autocomplete="off" data-advance-input data-advance-row-index="${index}" data-advance-field="productName" value="${esc(row.productName)}" oninput="setAdvancePurchaseRow(${index},'productName',this.value)"></td>
+    <td><div class="lookup-cell"><input class="product-code ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-input data-advance-row-index="${index}" data-advance-field="productCode" value="${esc(row.productCode)}" oninput="setAdvancePurchaseRow(${index},'productCode',this.value)" onblur="resolveAdvancePurchaseProduct(${index},this.value)"><button class="lookup-btn" type="button" onclick="openAdvancePurchaseProductLookup(${index})">+</button></div></td>
+    <td><input class="product-name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-input data-advance-row-index="${index}" data-advance-field="productName" value="${esc(row.productName)}" oninput="setAdvancePurchaseRow(${index},'productName',this.value)"></td>
     <td><input class="origin ime-en" lang="en" autocapitalize="none" autocomplete="off" data-advance-input data-advance-row-index="${index}" data-advance-field="origin" value="${esc(row.origin)}" oninput="setAdvancePurchaseRow(${index},'origin',this.value)"></td>
     <td><input class="quantity" inputmode="decimal" data-advance-input data-advance-row-index="${index}" data-advance-field="actualQty" value="${esc(row.actualQty)}" oninput="setAdvancePurchaseRow(${index},'actualQty',this.value)"></td>
     <td><select class="unit" data-advance-input data-advance-row-index="${index}" data-advance-field="actualUnit" onchange="setAdvancePurchaseRow(${index},'actualUnit',this.value)">${purchaseUnitOptions(row.actualUnit)}</select></td>
@@ -10761,12 +10761,62 @@ function setAdvancePurchaseRow(index,field,value){
   if(!row)return;
   row[field]=field==="trackInventory"?!!value:field==="taxRate"?Number(value):value;
   if(field==="unitPrice")row.unitPriceSource="manual";
+  if(field==="productCode"||field==="productName")showAdvancePurchaseProductSuggestions(index,field,value);
   row.invalid=false;
   document.querySelector(`[data-advance-row="${index}"]`)?.classList.remove("invalid");
   const amount=document.querySelector(`[data-advance-amount="${index}"]`);
   if(amount)amount.textContent=`¥${Number(advancePurchaseAmount(row)).toLocaleString("ja-JP")}`;
   updateAdvancePurchaseSummary();
   saveAdvancePurchaseDraft();
+}
+function hideAdvancePurchaseProductSuggestions(index=null){
+  if(index===null)document.querySelectorAll(".advance-product-suggest").forEach(box=>box.remove());
+  else document.getElementById(`advance-product-suggest-${index}`)?.remove();
+}
+function showAdvancePurchaseProductSuggestions(index,field,query){
+  hideAdvancePurchaseProductSuggestions();
+  const matches=productInlineMatches(query);
+  if(!matches.length)return;
+  const input=document.querySelector(`[data-advance-row-index="${index}"][data-advance-field="${field}"]`);
+  if(!input)return;
+  const rect=input.getBoundingClientRect();
+  const box=document.createElement("div");
+  box.className="inline-product-suggest advance-product-suggest";
+  box.id=`advance-product-suggest-${index}`;
+  box.dataset.payload=JSON.stringify(matches);
+  box.innerHTML=matches.map((product,candidateIndex)=>`<button type="button" class="${candidateIndex===0?"active":""}" onpointerdown="event.preventDefault()" onclick="chooseAdvancePurchaseProductSuggestion(${index},${candidateIndex})">
+    <b>${esc(product.code)}</b><span>${esc(product.name)}</span><span class="subtext">${esc([product.origin,product.supplierCode,product.supplierName].filter(Boolean).join(" / "))}</span>
+  </button>`).join("");
+  document.body.appendChild(box);
+  const width=Math.min(430,window.innerWidth-16);
+  const left=Math.min(Math.max(8,rect.left),window.innerWidth-width-8);
+  const below=rect.bottom+6;
+  const availableBelow=window.innerHeight-below-8;
+  const availableAbove=rect.top-14;
+  const maxHeight=Math.max(120,Math.min(360,Math.max(availableBelow,availableAbove)));
+  box.style.maxHeight=`${maxHeight}px`;
+  const top=below+box.offsetHeight>window.innerHeight-8?Math.max(8,rect.top-box.offsetHeight-6):below;
+  box.style.left=`${left}px`;
+  box.style.top=`${top}px`;
+  box.style.width=`${width}px`;
+}
+function chooseAdvancePurchaseProductSuggestion(index,candidateIndex){
+  const box=document.getElementById(`advance-product-suggest-${index}`);
+  if(!box)return false;
+  let products=[];
+  try{products=JSON.parse(box.dataset.payload||"[]")}catch(_error){}
+  const product=products[candidateIndex];
+  if(!product)return false;
+  hideAdvancePurchaseProductSuggestions();
+  applyAdvancePurchaseProduct(index,product);
+  requestAnimationFrame(()=>focusAdvancePurchaseCell(index,"actualQty"));
+  return true;
+}
+function chooseActiveAdvancePurchaseProduct(index){
+  const buttons=[...document.querySelectorAll(`#advance-product-suggest-${index} button`)];
+  if(!buttons.length)return false;
+  const candidateIndex=Math.max(0,buttons.findIndex(button=>button.classList.contains("active")));
+  return chooseAdvancePurchaseProductSuggestion(index,candidateIndex);
 }
 function applyAdvancePurchaseProduct(index,product){
   const row=advancePurchaseRows[index];
@@ -10781,11 +10831,12 @@ function applyAdvancePurchaseProduct(index,product){
     row.unitPriceSource=price.price===null?"":"master";
   }
   row.invalid=false;
+  hideAdvancePurchaseProductSuggestions();
   renderAdvancePurchaseRows();
   saveAdvancePurchaseDraft();
 }
 function resolveAdvancePurchaseProduct(index,value){
-  const product=findMasterProduct(value,"");
+  const product=resolveProductMaster(value);
   if(!product)return false;
   applyAdvancePurchaseProduct(index,product);
   return true;
@@ -15802,6 +15853,22 @@ document.addEventListener("keydown",e=>{
     return;
   }
   if(target instanceof HTMLElement&&target.matches("[data-advance-input]")){
+    const advanceRowIndex=Number(target.dataset.advanceRowIndex);
+    const advanceProductField=target.dataset.advanceField==="productCode"||target.dataset.advanceField==="productName";
+    if(advanceProductField&&(e.key==="ArrowDown"||e.key==="ArrowUp")){
+      if(moveActiveOption(`#advance-product-suggest-${advanceRowIndex}`,"button",e.key==="ArrowDown"?1:-1)){
+        e.preventDefault();
+        return;
+      }
+    }
+    if(advanceProductField&&e.key==="Escape"){
+      hideAdvancePurchaseProductSuggestions(advanceRowIndex);
+      return;
+    }
+    if(advanceProductField&&e.key==="Enter"&&chooseActiveAdvancePurchaseProduct(advanceRowIndex)){
+      e.preventDefault();
+      return;
+    }
     if(e.key==="ArrowUp"||e.key==="ArrowDown"){
       if(target instanceof HTMLSelectElement)return;
       e.preventDefault();
@@ -15818,7 +15885,7 @@ document.addEventListener("keydown",e=>{
     }
     if(e.key!=="Enter")return;
     e.preventDefault();
-    if(target.dataset.advanceField==="productCode")resolveAdvancePurchaseProduct(Number(target.dataset.advanceRowIndex),target.value);
+    if(target.dataset.advanceField==="productCode")resolveAdvancePurchaseProduct(advanceRowIndex,target.value);
     moveAdvancePurchaseFocus(target,e.shiftKey?-1:1);
     return;
   }
