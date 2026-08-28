@@ -35,10 +35,11 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
 .sale-detail td{padding:0!important;background:#f8fafb}.sale-detail-box{padding:9px 12px;white-space:normal}.detail-table{width:100%;border-collapse:collapse}.detail-table th,.detail-table td{padding:5px 7px!important;border:1px solid var(--line);background:#fff;font-size:11px}.empty{padding:26px;text-align:center;color:var(--muted);font-weight:800}
 .ar-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:11px}.side-stack{display:grid;gap:11px;align-content:start}.selected-box{border:1px solid var(--line);border-radius:7px;background:#f8fafb;padding:10px}.selected-box b{display:block;margin-bottom:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .full{grid-column:1/-1}.admin-only-hidden{display:none!important}
 .master-layout{display:grid;grid-template-columns:minmax(330px,.72fr) minmax(0,1.45fr);gap:11px}.master-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.master-form .full{grid-column:1/-1}.check-label{display:flex;align-items:center;gap:7px;min-height:38px;color:var(--text);font-size:12px}.check-label input{width:18px;height:18px;min-height:18px}.master-search{display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:7px;align-items:end;margin-bottom:8px}.master-note{margin-top:8px;color:var(--muted);font-size:11px;font-weight:700}
+.closing-tools{display:grid;grid-template-columns:145px 145px minmax(230px,1fr) auto auto;gap:8px;align-items:end}.closing-summary{display:grid;grid-template-columns:repeat(4,minmax(135px,1fr));gap:8px;margin-top:10px}.closing-list{margin-top:10px}.closing-table{min-width:1120px}.closing-state{margin-top:8px;color:var(--muted);font-size:11px;font-weight:800}.doc-actions{display:flex;gap:5px;align-items:center}
 .busy-overlay{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(21,24,28,.56)}.busy-overlay.open{display:flex}.busy-box{display:flex;align-items:center;gap:12px;max-width:430px;padding:17px 20px;border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(0,0,0,.26);font-weight:900}.spinner{width:25px;height:25px;flex:0 0 25px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;right:16px;bottom:16px;z-index:1200;display:none;max-width:min(440px,calc(100vw - 32px));padding:11px 13px;border:1px solid #aacdbd;border-radius:7px;background:#eff9f3;color:#0b5d3d;box-shadow:0 8px 24px rgba(20,35,45,.18);font-weight:900}.toast.open{display:block}.toast.error{border-color:#e2b5b1;background:#fff1f0;color:var(--danger)}
-@media(max-width:1000px){.entry-head{grid-template-columns:1fr 1fr}.entry-head label:last-child{grid-column:1/-1}.filter-grid{grid-template-columns:1fr 1fr}.filter-grid label:nth-child(4){grid-column:1/-1}.summary-grid{grid-template-columns:1fr 1fr}.ar-layout,.master-layout{grid-template-columns:1fr}.table-wrap{max-height:55vh}.header-user{width:100%;justify-content:space-between}.app-header-row{align-items:flex-start;flex-direction:column}}
-@media(max-width:620px){main{padding:9px 9px 28px}.entry-head,.filter-grid,.form-grid,.master-form{grid-template-columns:1fr}.entry-head label:last-child,.filter-grid label:nth-child(4),.form-grid .full,.master-form .full{grid-column:auto}.summary-grid{grid-template-columns:1fr 1fr}.summary-item{min-width:105px}.status-message{display:none}}
+@media(max-width:1000px){.entry-head{grid-template-columns:1fr 1fr}.entry-head label:last-child{grid-column:1/-1}.filter-grid,.closing-tools{grid-template-columns:1fr 1fr}.filter-grid label:nth-child(4),.closing-tools label:nth-child(3){grid-column:1/-1}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.ar-layout,.master-layout{grid-template-columns:1fr}.table-wrap{max-height:55vh}.header-user{width:100%;justify-content:space-between}.app-header-row{align-items:flex-start;flex-direction:column}}
+@media(max-width:620px){main{padding:9px 9px 28px}.entry-head,.filter-grid,.form-grid,.master-form,.closing-tools{grid-template-columns:1fr}.entry-head label:last-child,.filter-grid label:nth-child(4),.form-grid .full,.master-form .full,.closing-tools label:nth-child(3){grid-column:auto}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.summary-item{min-width:105px}.status-message{display:none}}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260806-2">
 </head>
@@ -140,6 +141,26 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
   </section>
 
   <section class="workspace" data-panel="receivables">
+    <div class="panel" style="margin-bottom:12px">
+      <div class="panel-head"><span>請求締め・請求書</span><button class="btn small" type="button" onclick="loadDomesticClosingData()">再読込</button></div>
+      <div class="panel-body">
+        <div class="closing-tools">
+          <label>対象月<input id="closing-month" type="month" onchange="refreshDomesticClosingPreview()"></label>
+          <label>締め日グループ<select id="closing-day" onchange="refreshDomesticClosingPreview()"><option value="">締め日を選択</option></select></label>
+          <label>得意先<input id="closing-customer" list="domestic-customer-list" autocomplete="off" placeholder="コード・名称" oninput="renderDomesticClosingDayOptions();refreshDomesticClosingPreview()"></label>
+          <button class="btn" type="button" onclick="refreshDomesticClosingPreview()">内容確認</button>
+          <button id="close-billing-button" class="btn primary" type="button" onclick="closeDomesticBillingPeriod()" disabled>締め確定・請求書</button>
+        </div>
+        <div class="closing-summary">
+          <div class="summary-card"><span>前回繰越</span><b id="closing-carryover">0</b></div>
+          <div class="summary-card"><span>今回売上</span><b id="closing-sales">0</b></div>
+          <div class="summary-card"><span>期間内入金</span><b id="closing-payment">0</b></div>
+          <div class="summary-card"><span>今回ご請求額</span><b id="closing-total">0</b></div>
+        </div>
+        <div id="closing-state" class="closing-state">対象月・締め日・得意先を選択してください。</div>
+        <div id="closing-history" class="table-wrap closing-list"><div class="empty">請求締め履歴を読み込んでいます。</div></div>
+      </div>
+    </div>
     <div class="ar-layout">
       <div class="panel">
         <div class="panel-head"><span>国内売掛管理</span><button class="btn small" type="button" onclick="loadReceivables()">再読込</button></div>
@@ -205,7 +226,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
             <label>電話<input id="master-phone" autocomplete="tel"></label>
             <label class="full">住所<input id="master-address" class="ime-ja" autocomplete="street-address"></label>
             <label class="full">メール<input id="master-email" type="email" autocomplete="email"></label>
-            <label>締め日<input id="master-closing-day" type="number" min="1" max="31" value="31"></label>
+            <label>締め日（10・15は複数回）<input id="master-closing-day" type="number" min="1" max="31" value="31"></label>
             <label>支払月<select id="master-payment-offset"><option value="0">当月</option><option value="1" selected>翌月</option><option value="2">翌々月</option><option value="3">3か月後</option></select></label>
             <label>支払日<input id="master-payment-day" type="number" min="1" max="31" value="31"></label>
             <label class="check-label"><input id="master-active" type="checkbox" checked>有効</label>
@@ -243,6 +264,10 @@ let customers=[];
 let entryLines=[];
 let salesRows=[];
 let receivableRows=[];
+let receivablePayments=[];
+let domesticClosingRows=[];
+let domesticClosingPreview=null;
+let domesticClosingDbReady=true;
 let selectedReceivable=null;
 let draftTimer=0;
 let appBusy=false;
@@ -287,6 +312,7 @@ function setBusy(active,message="処理しています。"){
 function friendlyError(error){
   const message=String(error?.message||error||"");
   if(error?.code==="42P01"||/relation .* does not exist/i.test(message))return "国内販売の初期設定が完了していません。管理者へ連絡してください。";
+  if(/close_domestic_billing_period|reopen_domestic_billing_period|domestic_billing_closings/i.test(message))return "国内請求締め用SQLが未実行です。管理者へ連絡してください。";
   if(error?.code==="PGRST202"||/schema cache|function .* not found/i.test(message))return "国内販売の設定を確認中です。時間をおいて再度お試しください。";
   if(/row-level security|permission denied|Internal access/i.test(message))return "この操作を行う社内権限がありません。管理者へ確認してください。";
   return message||"処理に失敗しました。";
@@ -626,7 +652,8 @@ function renderSalesReference(){
     const generated=row.source_type==="export_intermediary";
     const cancelButton=isAdmin()&&row.status==="confirmed"&&!generated?`<button class="btn small danger" type="button" onclick="cancelSale('${row.id}')">取消</button>`:"";
     const sourceBadge=generated?`<span class="status-chip confirmed" title="輸出作業から自動作成">輸出連動 ${esc(row.source_importer_code||"")}</span>`:"";
-    return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span>${sourceBadge}</td><td><div class="toolbar"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${cancelButton}</div></td></tr>${detail}`;
+    const deliveryButton=row.status==="confirmed"?`<button class="btn small blue" type="button" onclick="printDomesticDeliveryNote('${row.id}')">納品書</button>`:"";
+    return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span>${sourceBadge}</td><td><div class="doc-actions"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${deliveryButton}${cancelButton}</div></td></tr>${detail}`;
   }).join("");
 }
 function toggleSaleDetail(id){expandedSales.has(id)?expandedSales.delete(id):expandedSales.add(id);renderSalesReference()}
@@ -648,35 +675,46 @@ async function loadReceivables(){
   if(!currentUser)return;
   setBusy(true,"国内売掛を読み込んでいます。");
   try{
-    const customerQuery=value("ar-customer").trim();
-    const status=value("ar-status");
-    receivableRows=await fetchPaged(()=>{
-      let query=supabaseClient.from("domestic_receivables").select("*").order("invoice_date",{ascending:false}).order("created_at",{ascending:false});
-      if(status==="open")query=query.in("status",["unpaid","partial"]);
-      else if(status)query=query.eq("status",status);
-      if(customerQuery){
-        const exact=findCustomer(customerQuery);
-        if(exact)query=query.eq("customer_code",exact.customer_code);
-        else query=query.or(`customer_code.ilike.%${customerQuery.replace(/[,%]/g,"")}%,customer_name_snapshot.ilike.%${customerQuery.replace(/[,%]/g,"")}%`);
-      }
-      return query;
-    });
+    const [receivables,payments,closingsResult]=await Promise.all([
+      fetchPaged(()=>supabaseClient.from("domestic_receivables").select("*").order("invoice_date",{ascending:false}).order("created_at",{ascending:false})),
+      fetchPaged(()=>supabaseClient.from("domestic_receivable_payments").select("*").order("payment_date",{ascending:false}).order("created_at",{ascending:false})),
+      supabaseClient.from("domestic_billing_closings").select("*").order("period_to",{ascending:false}).order("closed_at",{ascending:false}).limit(300)
+    ]);
+    receivableRows=receivables;
+    receivablePayments=payments;
+    domesticClosingDbReady=!closingsResult.error;
+    domesticClosingRows=closingsResult.error?[]:(closingsResult.data||[]);
     renderReceivables();
+    renderDomesticClosingDayOptions();
+    refreshDomesticClosingPreview();
+    renderDomesticClosingHistory();
     setStatus(`国内売掛 ${receivableRows.length}件を表示中`,"ok");
   }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
 }
+async function loadDomesticClosingData(){await loadReceivables()}
 function receivableStatus(row){
   if(row.status==="unpaid"&&row.due_date&&row.due_date<today())return{key:"overdue",label:"期限超過"};
   return{key:row.status,label:{unpaid:"未入金",partial:"一部入金",paid:"入金済",cancelled:"取消済"}[row.status]||row.status};
 }
 function renderReceivables(){
-  const active=receivableRows.filter(row=>row.status!=="cancelled");
+  const customerQuery=value("ar-customer").trim();
+  const statusFilter=value("ar-status");
+  const exactCustomer=findCustomer(customerQuery);
+  const queryKey=normalize(customerQuery);
+  const rows=receivableRows.filter(row=>{
+    if(statusFilter==="open"&&!['unpaid','partial'].includes(row.status))return false;
+    if(statusFilter&&statusFilter!=="open"&&row.status!==statusFilter)return false;
+    if(!queryKey)return true;
+    if(exactCustomer)return row.customer_code===exactCustomer.customer_code;
+    return normalize(`${row.customer_code} ${row.customer_name_snapshot}`).includes(queryKey);
+  });
+  const active=rows.filter(row=>row.status!=="cancelled");
   document.getElementById("ar-billed").textContent=money(active.reduce((sum,row)=>sum+Number(row.amount_jpy||0),0));
   document.getElementById("ar-paid").textContent=money(active.reduce((sum,row)=>sum+Number(row.paid_amount_jpy||0),0));
   document.getElementById("ar-balance").textContent=money(active.reduce((sum,row)=>sum+Number(row.balance_jpy||0),0));
   const body=document.getElementById("ar-body");
-  if(!receivableRows.length){body.innerHTML='<tr><td colspan="9" class="empty">該当する売掛はありません。</td></tr>';return}
-  body.innerHTML=receivableRows.map(row=>{
+  if(!rows.length){body.innerHTML='<tr><td colspan="9" class="empty">該当する売掛はありません。</td></tr>';return}
+  body.innerHTML=rows.map(row=>{
     const status=receivableStatus(row);
     const selected=selectedReceivable?.id===row.id?" selected":"";
     return `<tr class="${selected}"><td>${esc(row.invoice_date)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td>${row.source_type==="opening"?"開始残高":"売上"}</td><td>${esc(row.due_date||"")}</td><td class="money">${money(row.amount_jpy)}</td><td class="money">${money(row.paid_amount_jpy)}</td><td class="money">${money(row.balance_jpy)}</td><td><span class="status-chip ${status.key}">${status.label}</span></td><td><button class="btn small" type="button"${Number(row.balance_jpy)<=0||row.status==="cancelled"?" disabled":""} onclick="selectReceivable('${row.id}')">入金</button></td></tr>`;
@@ -730,13 +768,216 @@ async function createOpeningBalance(){
   }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
 }
 
+function domesticClosingDay(customer){return Math.min(31,Math.max(1,Math.trunc(Number(customer?.closing_day)||31)))}
+function domesticClosingDays(customer){
+  const day=domesticClosingDay(customer);
+  if(day===10)return[10,20,31];
+  if(day===15)return[15,31];
+  return[day];
+}
+function domesticRecurringClosing(customer){return[10,15].includes(domesticClosingDay(customer))}
+function domesticMonthDay(month,day,monthOffset=0){
+  if(!/^\d{4}-\d{2}$/.test(String(month||"")))return"";
+  const [year,monthNumber]=month.split("-").map(Number);
+  const first=new Date(year,monthNumber-1+monthOffset,1);
+  const last=new Date(first.getFullYear(),first.getMonth()+1,0).getDate();
+  const target=new Date(first.getFullYear(),first.getMonth(),Math.min(Math.max(1,Number(day)||31),last));
+  return`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,"0")}-${String(target.getDate()).padStart(2,"0")}`;
+}
+function domesticShiftDate(value,days){
+  const [year,month,day]=String(value||"").split("-").map(Number);
+  if(!year||!month||!day)return"";
+  const target=new Date(year,month-1,day+days);
+  return`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,"0")}-${String(target.getDate()).padStart(2,"0")}`;
+}
+function domesticCustomerTermsLabel(customer){
+  const day=domesticClosingDay(customer);
+  if(day===10)return"月3回締め（10日・20日・末日）／次回締め日払い";
+  if(day===15)return"月2回締め（15日・末日）／次回締め日払い";
+  const offset=Number(customer?.payment_month_offset||0);
+  const monthLabel=offset===0?"当月":offset===1?"翌月":`${offset}か月後`;
+  return`${day===31?"末日":`${day}日`}締め／${monthLabel}${Number(customer?.payment_day||31)===31?"末日":`${customer.payment_day}日`}払い`;
+}
+function renderDomesticClosingDayOptions(){
+  const select=document.getElementById("closing-day");
+  if(!select)return;
+  const selected=findCustomer(value("closing-customer"));
+  const days=[...new Set((selected?[selected]:customers.filter(row=>row.active)).flatMap(domesticClosingDays))].sort((a,b)=>a-b);
+  const previous=Number(select.value);
+  select.innerHTML='<option value="">締め日を選択</option>'+days.map(day=>`<option value="${day}">${day===31?"末日":`${day}日`}</option>`).join("");
+  if(days.includes(previous))select.value=String(previous);
+  else if(selected&&days.length)select.value=String(days[0]);
+}
+function domesticClosingSnapshot(customerCode,range){
+  const records=receivableRows.filter(row=>row.customer_code===customerCode&&row.status!=="cancelled");
+  const recordIds=new Set(records.map(row=>row.id));
+  const beforeCharges=records.filter(row=>String(row.invoice_date||"")<range.from).reduce((sum,row)=>sum+Number(row.amount_jpy||0),0);
+  const beforePayments=receivablePayments.filter(row=>recordIds.has(row.receivable_id)&&String(row.payment_date||"")<range.from).reduce((sum,row)=>sum+Number(row.amount_jpy||0),0);
+  const charges=records.filter(row=>String(row.invoice_date||"")>=range.from&&String(row.invoice_date||"")<=range.to).sort((a,b)=>String(a.invoice_date).localeCompare(String(b.invoice_date)));
+  const payments=receivablePayments.filter(row=>recordIds.has(row.receivable_id)&&String(row.payment_date||"")>=range.from&&String(row.payment_date||"")<=range.to).sort((a,b)=>String(a.payment_date).localeCompare(String(b.payment_date)));
+  const carryover=Math.round(beforeCharges-beforePayments);
+  const sales=Math.round(charges.reduce((sum,row)=>sum+Number(row.amount_jpy||0),0));
+  const payment=Math.round(payments.reduce((sum,row)=>sum+Number(row.amount_jpy||0),0));
+  return{range,charges,payments,carryover,sales,payment,total:Math.round(carryover+sales-payment)};
+}
+function domesticClosingCalculation(){
+  const customer=findCustomer(value("closing-customer"));
+  const month=value("closing-month");
+  const requestedDay=Number(value("closing-day"));
+  if(!customer||!month||!domesticClosingDays(customer).includes(requestedDay))return{error:"対象月・締め日・得意先を選択してください。"};
+  const days=domesticClosingDays(customer);
+  const recurring=domesticRecurringClosing(customer);
+  const cycleIndex=days.indexOf(requestedDay);
+  const periodTo=domesticMonthDay(month,requestedDay);
+  const previousPeriodTo=recurring
+    ?(cycleIndex===0?domesticMonthDay(month,31,-1):domesticMonthDay(month,days[cycleIndex-1]))
+    :domesticMonthDay(month,domesticClosingDay(customer),-1);
+  const range={from:domesticShiftDate(previousPeriodTo,1),to:periodTo};
+  const dueDate=recurring
+    ?(cycleIndex<days.length-1?domesticMonthDay(month,days[cycleIndex+1]):domesticMonthDay(month,days[0],1))
+    :domesticMonthDay(month,Number(customer.payment_day)||31,Math.max(0,Number(customer.payment_month_offset)||0));
+  const existing=domesticClosingRows.find(row=>row.customer_code===customer.customer_code&&row.status==="closed"&&!(String(row.period_to)<range.from||String(row.period_from)>range.to));
+  let prerequisiteError="";
+  if(recurring&&cycleIndex>0){
+    const previousTo=domesticMonthDay(month,days[cycleIndex-1]);
+    const previousFrom=cycleIndex===1?domesticMonthDay(month,1):domesticShiftDate(domesticMonthDay(month,days[cycleIndex-2]),1);
+    const previousSnapshot=domesticClosingSnapshot(customer.customer_code,{from:previousFrom,to:previousTo});
+    const previousClosed=domesticClosingRows.some(row=>row.customer_code===customer.customer_code&&row.status==="closed"&&row.period_to===previousTo);
+    if(!previousClosed&&(previousSnapshot.charges.length||previousSnapshot.payments.length||Math.abs(previousSnapshot.carryover)>.5))prerequisiteError=`先に同月${days[cycleIndex-1]}日締めを完了してください。`;
+  }
+  return{error:prerequisiteError,customer,month,closingDay:requestedDay,range,dueDate,existing,snapshot:domesticClosingSnapshot(customer.customer_code,range)};
+}
+function refreshDomesticClosingPreview(){
+  const calculation=domesticClosingCalculation();
+  domesticClosingPreview=calculation.error?null:calculation;
+  const snapshot=calculation.snapshot||{carryover:0,sales:0,payment:0,total:0};
+  document.getElementById("closing-carryover").textContent=money(snapshot.carryover);
+  document.getElementById("closing-sales").textContent=money(snapshot.sales);
+  document.getElementById("closing-payment").textContent=money(snapshot.payment);
+  document.getElementById("closing-total").textContent=money(snapshot.total);
+  const state=document.getElementById("closing-state");
+  const button=document.getElementById("close-billing-button");
+  if(!domesticClosingDbReady){state.textContent="国内請求締め用SQLが未実行です。";button.disabled=true;return}
+  if(calculation.error){state.textContent=calculation.error;button.disabled=true;return}
+  if(calculation.existing){state.textContent=`${calculation.range.from} ～ ${calculation.range.to} は締め済みです。履歴から請求書を再発行できます。`;button.disabled=true;return}
+  const hasActivity=calculation.snapshot.charges.length||calculation.snapshot.payments.length||Math.abs(calculation.snapshot.carryover)>.5;
+  state.textContent=`${calculation.range.from} ～ ${calculation.range.to}／支払期限 ${calculation.dueDate}／売上 ${calculation.snapshot.charges.length}件・入金 ${calculation.snapshot.payments.length}件`;
+  button.disabled=!hasActivity;
+}
+function domesticClosingPayload(snapshot){
+  return{
+    range:snapshot.range,
+    charges:snapshot.charges.map(row=>({id:row.id,sale_id:row.sale_id,source_type:row.source_type,invoice_date:row.invoice_date,amount_jpy:row.amount_jpy,memo:row.memo})),
+    payments:snapshot.payments.map(row=>({id:row.id,receivable_id:row.receivable_id,payment_date:row.payment_date,amount_jpy:row.amount_jpy,reference_no:row.reference_no})),
+    carryover:snapshot.carryover,sales:snapshot.sales,payment:snapshot.payment,total:snapshot.total
+  };
+}
+async function closeDomesticBillingPeriod(){
+  const calculation=domesticClosingCalculation();
+  if(calculation.error)return showToast(calculation.error,true);
+  if(calculation.existing)return showToast("この期間は締め済みです。履歴から請求書を再発行してください。",true);
+  if(!confirm(`${calculation.customer.customer_name}\n${calculation.range.from} ～ ${calculation.range.to}\n請求額 ${money(calculation.snapshot.total)}円で締め確定します。よろしいですか？`))return;
+  const printWindow=openDomesticPrintWindow("請求書を作成しています");
+  setBusy(true,"国内請求を締めています。");
+  try{
+    const {data,error}=await supabaseClient.rpc("close_domestic_billing_period",{
+      p_customer_code:calculation.customer.customer_code,p_period_from:calculation.range.from,p_period_to:calculation.range.to,p_due_date:calculation.dueDate,
+      p_carryover_amount_jpy:calculation.snapshot.carryover,p_sales_amount_jpy:calculation.snapshot.sales,p_payment_amount_jpy:calculation.snapshot.payment,p_billing_amount_jpy:calculation.snapshot.total,p_snapshot:domesticClosingPayload(calculation.snapshot)
+    });
+    if(error)throw error;
+    await loadReceivables();
+    showToast(`${data.invoice_no} を締め確定しました。`);
+    await printDomesticInvoice(data.id,printWindow);
+  }catch(error){printWindow?.close();showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+function renderDomesticClosingHistory(){
+  const box=document.getElementById("closing-history");
+  if(!box)return;
+  if(!domesticClosingDbReady){box.innerHTML='<div class="empty">国内請求締め用SQLを実行すると利用できます。</div>';return}
+  if(!domesticClosingRows.length){box.innerHTML='<div class="empty">請求締め履歴はありません。</div>';return}
+  box.innerHTML=`<table class="data-table closing-table"><thead><tr><th>請求書No.</th><th>得意先</th><th>締め期間</th><th>支払期限</th><th class="money">今回売上</th><th class="money">入金</th><th class="money">請求額</th><th>状態</th><th>操作</th></tr></thead><tbody>${domesticClosingRows.map(row=>{
+    const active=row.status==="closed";
+    const reopen=active&&isAdmin()?`<button class="btn small danger" type="button" onclick="reopenDomesticBillingClosing('${row.id}')">締め解除</button>`:"";
+    return`<tr><td>${esc(row.invoice_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td>${esc(row.period_from)} ～ ${esc(row.period_to)}</td><td>${esc(row.due_date)}</td><td class="money">${money(row.sales_amount_jpy)}</td><td class="money">${money(row.payment_amount_jpy)}</td><td class="money">${money(row.billing_amount_jpy)}</td><td><span class="status-chip ${active?"paid":"cancelled"}">${active?"締め済":"解除済"}</span></td><td><div class="doc-actions"><button class="btn small blue" type="button" onclick="printDomesticInvoice('${row.id}')" ${active?"":"disabled"}>請求書</button>${reopen}</div></td></tr>`;
+  }).join("")}</tbody></table>`;
+}
+async function reopenDomesticBillingClosing(id){
+  if(!isAdmin())return showToast("管理者のみ締め解除できます。",true);
+  const reason=prompt("締め解除の理由を入力してください。");
+  if(reason===null)return;
+  if(!reason.trim())return showToast("解除理由を入力してください。",true);
+  if(!confirm("請求締めを解除します。よろしいですか？"))return;
+  setBusy(true,"国内請求締めを解除しています。");
+  try{
+    const {error}=await supabaseClient.rpc("reopen_domestic_billing_period",{p_closing_id:id,p_reason:reason.trim()});
+    if(error)throw error;
+    showToast("請求締めを解除しました。");
+    await loadReceivables();
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+function openDomesticPrintWindow(title){
+  const printWindow=window.open("","_blank");
+  if(!printWindow){showToast("印刷画面を開けません。ブラウザのポップアップを許可してください。",true);return null}
+  printWindow.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title></head><body style="font-family:Meiryo,sans-serif;padding:24px">${esc(title)}...</body></html>`);
+  printWindow.document.close();
+  return printWindow;
+}
+function domesticPrintCss(){return`<style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{margin:0;color:#111;font-family:"Yu Gothic",Meiryo,sans-serif;font-size:9.5pt}.print-actions{display:flex;gap:8px;margin-bottom:6mm}.print-actions button{padding:8px 14px;border:1px solid #555;background:#fff;font:inherit;font-weight:700}.document{min-height:270mm}.doc-title{text-align:center;font-size:22pt;font-weight:900;letter-spacing:0;margin:0 0 8mm}.doc-top{display:grid;grid-template-columns:1.35fr 1fr;gap:12mm;margin-bottom:6mm}.customer-name{font-size:15pt;font-weight:900;border-bottom:1px solid #111;padding:0 0 2mm}.address{white-space:pre-line;line-height:1.55;margin-top:3mm}.company{text-align:right;line-height:1.5}.company b{font-size:12pt}.meta{width:100%;border-collapse:collapse;margin-top:4mm}.meta th,.meta td{border:1px solid #777;padding:2mm}.meta th{width:28%;background:#f2f2f2}.amount-due{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #111;margin:6mm 0 5mm;padding:0 2mm 2mm;font-size:12pt;font-weight:900}.amount-due strong{font-size:19pt}.lines{width:100%;border-collapse:collapse;table-layout:fixed}.lines th,.lines td{border:1px solid #777;padding:1.7mm 1.4mm;vertical-align:top}.lines th{background:#eee;text-align:center}.num{text-align:right}.center{text-align:center}.summary{width:86mm;margin:5mm 0 0 auto;border-collapse:collapse}.summary th,.summary td{border:1px solid #777;padding:2mm}.summary th{background:#f2f2f2;text-align:left}.summary td{text-align:right;font-weight:800}.note{margin-top:5mm;white-space:pre-line;border-top:1px solid #aaa;padding-top:3mm}@media print{.print-actions{display:none}.document{min-height:0}}</style>`}
+function domesticCompanyHtml(){return'<div class="company"><b>株式会社ゆみるめ</b><br>〒556-0004 大阪市浪速区日本橋西2-2-11<br>TEL 06-6537-9994　FAX 06-6536-8496<br>info@yumirume.co.jp</div>'}
+function writeDomesticPrintDocument(printWindow,title,body){
+  if(!printWindow)return;
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title>${domesticPrintCss()}</head><body><div class="print-actions"><button onclick="window.print()">印刷 / PDF保存</button><button onclick="window.close()">閉じる</button></div>${body}</body></html>`);
+  printWindow.document.close();printWindow.focus();
+}
+async function domesticSaleForDocument(saleId){
+  const cached=salesRows.find(row=>row.id===saleId);
+  if(cached?.lines?.length)return cached;
+  const [{data:sale,error:saleError},{data:lines,error:lineError}]=await Promise.all([
+    supabaseClient.from("domestic_sales").select("*").eq("id",saleId).single(),
+    supabaseClient.from("domestic_sale_lines").select("*").eq("sale_id",saleId).order("line_no")
+  ]);
+  if(saleError)throw saleError;if(lineError)throw lineError;
+  return{...sale,lines:lines||[]};
+}
+async function printDomesticDeliveryNote(saleId){
+  const printWindow=openDomesticPrintWindow("納品書を作成しています");if(!printWindow)return;
+  try{
+    const sale=await domesticSaleForDocument(saleId);
+    const customer=customers.find(row=>row.customer_code===sale.customer_code)||{};
+    const lineRows=(sale.lines||[]).map(line=>`<tr><td>${line.line_no}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}</td><td class="num">${Number(line.quantity).toLocaleString("ja-JP")}</td><td class="center">${esc(line.unit)}</td><td class="num">${money(line.unit_price_jpy)}</td><td class="num">${money(line.net_amount_jpy)}</td></tr>`).join("");
+    const body=`<main class="document"><h1 class="doc-title">納 品 書</h1><div class="doc-top"><div><div class="customer-name">${esc(sale.customer_name_snapshot)} 御中</div><div class="address">${esc([customer.postal_code?`〒${customer.postal_code}`:"",customer.address_text,customer.phone?`TEL ${customer.phone}`:""].filter(Boolean).join("\n"))}</div><table class="meta"><tr><th>納品日</th><td>${esc(sale.sale_date)}</td></tr><tr><th>伝票番号</th><td>${esc(sale.sale_no)}</td></tr></table></div>${domesticCompanyHtml()}</div><table class="lines"><thead><tr><th style="width:7%">No.</th><th style="width:16%">商品コード</th><th>商品名</th><th style="width:11%">数量</th><th style="width:8%">単位</th><th style="width:14%">単価</th><th style="width:15%">金額</th></tr></thead><tbody>${lineRows}${Number(sale.shipping_amount_jpy)>0?`<tr><td></td><td></td><td>送料</td><td></td><td></td><td></td><td class="num">${money(sale.shipping_amount_jpy)}</td></tr>`:""}</tbody></table><table class="summary"><tr><th>税抜合計</th><td>${money(sale.total_net_jpy)}円</td></tr><tr><th>消費税</th><td>${money(sale.tax_total_jpy)}円</td></tr><tr><th>税込合計</th><td>${money(sale.total_amount_jpy)}円</td></tr></table>${sale.memo?`<div class="note">備考　${esc(sale.memo)}</div>`:""}</main>`;
+    writeDomesticPrintDocument(printWindow,`納品書 ${sale.sale_no}`,body);
+  }catch(error){printWindow.close();showToast(friendlyError(error),true)}
+}
+async function printDomesticInvoice(closingId,existingWindow=null){
+  const printWindow=existingWindow||openDomesticPrintWindow("請求書を作成しています");if(!printWindow)return;
+  try{
+    let closing=domesticClosingRows.find(row=>row.id===closingId);
+    if(!closing){const {data,error}=await supabaseClient.from("domestic_billing_closings").select("*").eq("id",closingId).single();if(error)throw error;closing=data}
+    const customer=customers.find(row=>row.customer_code===closing.customer_code)||{};
+    const snapshot=closing.snapshot||{};
+    const saleIds=[...new Set((snapshot.charges||[]).map(row=>row.sale_id).filter(Boolean))];
+    const sales=await Promise.all(saleIds.map(domesticSaleForDocument));
+    let lineNo=0;
+    const lineRows=sales.flatMap(sale=>{
+      const rows=(sale.lines||[]).map(line=>`<tr><td>${++lineNo}</td><td>${esc(sale.sale_date)}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}</td><td class="num">${Number(line.quantity).toLocaleString("ja-JP")}</td><td class="center">${esc(line.unit)}</td><td class="num">${money(line.unit_price_jpy)}</td><td class="num">${money(line.net_amount_jpy)}</td></tr>`);
+      if(Number(sale.shipping_amount_jpy)>0)rows.push(`<tr><td>${++lineNo}</td><td>${esc(sale.sale_date)}</td><td></td><td>送料</td><td></td><td></td><td></td><td class="num">${money(sale.shipping_amount_jpy)}</td></tr>`);
+      return rows;
+    }).join("");
+    const tax=sales.reduce((sum,row)=>sum+Number(row.tax_total_jpy||0),0);
+    const body=`<main class="document"><h1 class="doc-title">請 求 書</h1><div class="doc-top"><div><div class="customer-name">${esc(closing.customer_name_snapshot)} 御中</div><div class="address">${esc([customer.postal_code?`〒${customer.postal_code}`:"",customer.address_text,customer.phone?`TEL ${customer.phone}`:""].filter(Boolean).join("\n"))}</div><table class="meta"><tr><th>請求書番号</th><td>${esc(closing.invoice_no)}</td></tr><tr><th>請求期間</th><td>${esc(closing.period_from)} ～ ${esc(closing.period_to)}</td></tr><tr><th>支払期限</th><td>${esc(closing.due_date)}</td></tr></table></div>${domesticCompanyHtml()}</div><div class="amount-due"><span>今回ご請求額（税込）</span><strong>${money(closing.billing_amount_jpy)} 円</strong></div><table class="lines"><thead><tr><th style="width:6%">No.</th><th style="width:12%">日付</th><th style="width:14%">商品コード</th><th>商品名</th><th style="width:9%">数量</th><th style="width:7%">単位</th><th style="width:12%">単価</th><th style="width:14%">金額</th></tr></thead><tbody>${lineRows||'<tr><td colspan="8" class="center">当期売上明細なし</td></tr>'}</tbody></table><table class="summary"><tr><th>前回繰越</th><td>${money(closing.carryover_amount_jpy)}円</td></tr><tr><th>今回売上（税込）</th><td>${money(closing.sales_amount_jpy)}円</td></tr><tr><th>うち消費税</th><td>${money(tax)}円</td></tr><tr><th>期間内入金</th><td>-${money(closing.payment_amount_jpy)}円</td></tr><tr><th>今回ご請求額</th><td>${money(closing.billing_amount_jpy)}円</td></tr></table></main>`;
+    writeDomesticPrintDocument(printWindow,`請求書 ${closing.invoice_no}`,body);
+  }catch(error){printWindow.close();showToast(friendlyError(error),true)}
+}
+
 function renderCustomerList(){
   const query=normalize(value("customer-search"));
   const rows=customers.filter(row=>!query||normalize(row.customer_code).includes(query)||normalize(row.customer_name).includes(query)||(row.aliases||[]).some(alias=>normalize(alias).includes(query)));
   document.getElementById("customer-count").textContent=`${rows.length}件`;
   const body=document.getElementById("customer-body");
   if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">該当する得意先はありません。</td></tr>';return}
-  body.innerHTML=rows.map(row=>`<tr><td>${esc(row.customer_code)}</td><td>${esc(row.customer_name)}</td><td>${row.closing_day}日締 / ${Number(row.payment_month_offset)===0?"当月":Number(row.payment_month_offset)===1?"翌月":`${row.payment_month_offset}か月後`}${row.payment_day}日</td><td>${esc(row.phone||row.email||"")}</td><td><span class="status-chip ${row.active?"paid":"cancelled"}">${row.active?"有効":"停止"}</span></td><td><button class="btn small" type="button" onclick="editCustomer('${esc(row.customer_code)}')">選択</button></td></tr>`).join("");
+  body.innerHTML=rows.map(row=>`<tr><td>${esc(row.customer_code)}</td><td>${esc(row.customer_name)}</td><td>${esc(domesticCustomerTermsLabel(row))}</td><td>${esc(row.phone||row.email||"")}</td><td><span class="status-chip ${row.active?"paid":"cancelled"}">${row.active?"有効":"停止"}</span></td><td><button class="btn small" type="button" onclick="editCustomer('${esc(row.customer_code)}')">選択</button></td></tr>`).join("");
 }
 function resetCustomerForm(){
   document.getElementById("master-customer-code").value="";
@@ -792,6 +1033,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("sales-to").value=today();
   document.getElementById("payment-date").value=today();
   document.getElementById("opening-date").value=today();
+  document.getElementById("closing-month").value=today().slice(0,7);
   restoreEntryDraft();
   document.querySelectorAll("[data-entry-header]").forEach(node=>node.addEventListener("input",scheduleDraftSave));
   initSupabase();

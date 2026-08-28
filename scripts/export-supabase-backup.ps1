@@ -22,6 +22,8 @@ $tables = @(
   "order_entry_batches", "order_entry_lines", "pending_entries", "historical_sales_records",
   "accounts_receivable", "accounts_receivable_payments", "accounts_receivable_statement_profiles",
   "accounts_receivable_statements", "accounts_receivable_closings",
+  "domestic_customer_master", "domestic_sales", "domestic_sale_lines", "domestic_receivables",
+  "domestic_receivable_payments", "domestic_billing_closings",
   "external_work_assignments", "external_work_assignment_lines", "external_work_inputs",
   "purchase_receipts", "purchase_receipt_lines", "inventory_lots", "inventory_allocations",
   "accounts_payable_supplier_profiles", "accounts_payable", "accounts_payable_payments",
@@ -39,6 +41,8 @@ $tableOrder = @{
   order_entry_batches = "id"; order_entry_lines = "id"; pending_entries = "id"; historical_sales_records = "id"
   accounts_receivable = "id"; accounts_receivable_payments = "id"; accounts_receivable_statement_profiles = "importer_code"
   accounts_receivable_statements = "id"; accounts_receivable_closings = "id"
+  domestic_customer_master = "customer_code"; domestic_sales = "id"; domestic_sale_lines = "id"
+  domestic_receivables = "id"; domestic_receivable_payments = "id"; domestic_billing_closings = "id"
   external_work_assignments = "id"; external_work_assignment_lines = "id"; external_work_inputs = "assignment_line_id"
   purchase_receipts = "id"; purchase_receipt_lines = "id"; inventory_lots = "id"; inventory_allocations = "id"
   accounts_payable_supplier_profiles = "supplier_code"; accounts_payable = "id"; accounts_payable_payments = "id"
