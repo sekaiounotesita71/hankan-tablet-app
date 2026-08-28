@@ -13,18 +13,19 @@ function sourceBetween(start,end){
   return html.slice(from,to);
 }
 
-test("売上参照では仕入原価を照合せず粗利参照だけで実行する",()=>{
+test("売上参照では原価を読まず粗利参照はマスタ価格だけを判定する",()=>{
   const salesSource=sourceBetween("async function loadSalesReferenceBoard()","function renderProfitReferenceBoard");
   const profitSource=sourceBetween("async function loadProfitReferenceBoard()","function salesRefResetPage");
   assert.match(salesSource,/renderSalesReferenceBoard\(\);/);
   assert.doesNotMatch(salesSource,/salesRefAttachPurchaseCosts/);
-  assert.match(profitSource,/await salesRefAttachPurchaseCosts\(client,currentRows\)/);
+  assert.match(profitSource,/await salesRefAttachMasterCostContext\(currentRows\)/);
+  assert.doesNotMatch(profitSource,/salesRefAttachPurchaseCosts/);
   assert.match(profitSource,/renderProfitReferenceBoard\(\)/);
   assert.match(html,/data-workspace-tab="profit"/);
   assert.match(html,/data-workspace-panel="profit"/);
 });
 
-test("原価照合の分割問い合わせを制限付きで並列実行する",()=>{
+test("発注先別マスタ単価の分割問い合わせを制限付きで並列実行する",()=>{
   const helper=sourceBetween("async function salesRefReadChunks","async function salesRefAttachPurchaseCosts");
   const attach=sourceBetween("async function salesRefAttachPurchaseCosts","function salesRefMetrics");
   const suppliers=sourceBetween("async function readOrderSuppliersForAdvancePurchase","function advancePurchaseSalesLinkSchemaMissing");
@@ -34,6 +35,9 @@ test("原価照合の分割問い合わせを制限付きで並列実行する",
   assert.match(attach,/salesRefReadChunks\(lineIds,200/);
   assert.match(suppliers,/salesRefReadChunks\(sessionIds,100/);
   assert.match(suppliers,/salesRefReadChunks\(sourceIds,200/);
+  const masterContext=sourceBetween("async function salesRefAttachMasterCostContext","function salesRefQuantityByUnit");
+  assert.doesNotMatch(masterContext,/purchase_sales_links/);
+  assert.doesNotMatch(masterContext,/purchase_receipt_lines/);
 });
 
 test("連続再読込では古い結果を画面へ反映しない",()=>{

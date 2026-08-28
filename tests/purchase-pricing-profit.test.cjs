@@ -53,6 +53,7 @@ assert.equal(pricing.productPurchasePriceForSupplier(product, "S002").price, 240
 assert.equal(pricing.productPurchasePriceForSupplier(product, "S002").unit, "PC");
 assert.equal(pricing.productPurchasePriceForSupplier(product, "S999").price, 1200);
 assert.equal(pricing.productPurchasePriceForSupplier(product, "S999").source, "product");
+assert.equal(pricing.productPurchasePriceForSupplier({ purchaseUnitPrice: 0 }, "S999").price, null);
 
 const costSource = sourceBetween(
   html,
@@ -77,7 +78,8 @@ const cost = new Function(
 
 assert.equal(cost.salesRefCostInfo({ input_qty: 3, input_unit: "PC", _purchaseSupplierCode: "S002" }).amount, 720);
 assert.equal(cost.salesRefCostInfo({ net_weight: 2.5, input_unit: "PC", _purchaseSupplierCode: "S001" }).amount, 2450);
-assert.deepEqual(cost.salesRefCostInfo({ _purchaseCostActual: 777 }), { priced: true, amount: 777, source: "actual" });
+assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001", _purchaseCostActual: 777 }).amount, 1960);
+assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001", _purchaseCostActual: 777 }).source, "supplier");
 activeProduct = null;
 assert.equal(cost.salesRefCostInfo({ input_qty: 1, input_unit: "PC" }).priced, false);
 
@@ -87,6 +89,8 @@ assert.match(html, /productPurchasePriceForSupplier\(product,supplierCode\)/);
 assert.match(html, /商品別粗利/);
 assert.match(html, /得意先別粗利/);
 assert.match(html, /輸入社・国内別粗利/);
+assert.match(html, /原価未設定商品（売上金額順）/);
+assert.match(html, /原価未設定売上/);
 assert.match(sql, /create table if not exists public\.product_supplier_prices/);
 assert.match(sql, /purchase_unit_price numeric/);
 assert.match(sql, /trg_product_supplier_prices_change_log/);

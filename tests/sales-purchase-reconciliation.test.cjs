@@ -62,24 +62,27 @@ test("PDF一括取込以外の通常事前仕入は自動配分しない",()=>{
   assert.equal(sales[0]._purchaseCostActual,undefined);
 });
 
-test("粗利画面に月次PDF照合の内訳を表示する",()=>{
-  assert.match(html,/月次PDF \$\{metrics\.monthlyPdfCostCount\}件/);
+test("粗利画面はマスタ仕入単価を基準に表示する",()=>{
+  assert.match(html,/発注先別仕入単価を優先/);
   assert.match(html,/送料売上と消費税は粗利計算から除外/);
-  assert.match(html,/月次PDF \$\{result\.monthlyMatchedLines\}仕入明細/);
+  assert.match(html,/原価未設定商品（売上金額順）/);
+  assert.doesNotMatch(html,/明細リンク \$\{metrics\.linkedCostCount\}件/);
 });
 
 test("粗利画面は国内商品売上を読み込み輸出と合算する",()=>{
   const domestic=sourceBetween("async function salesRefReadDomesticRows","async function salesRefReadProvisionalRows");
   const profitLoad=sourceBetween("async function loadProfitReferenceBoard","function salesRefResetPage");
-  const attach=sourceBetween("async function salesRefAttachPurchaseCosts","function salesRefQuantityByUnit");
+  const attach=sourceBetween("async function salesRefAttachMasterCostContext","function salesRefQuantityByUnit");
   assert.match(domestic,/from\("domestic_sales"\)/);
   assert.match(domestic,/from\("domestic_sale_lines"\)/);
   assert.match(domestic,/amount:salesRefJpyAmount\(line\.net_amount_jpy\)/);
   assert.match(domestic,/_domesticSale:true/);
   assert.match(profitLoad,/profitReferenceRows=\[\.\.\.salesReferenceRows,\.\.\.domesticRows\]/);
-  assert.match(profitLoad,/salesRefAttachPurchaseCosts\(client,currentRows\)/);
-  assert.match(attach,/linkableRows=activeRows\.filter\(row=>!row\._domesticSale\)/);
-  assert.match(attach,/salesRefAllocateImportedPurchaseCosts\(activeRows/);
+  assert.match(profitLoad,/salesRefAttachMasterCostContext\(currentRows\)/);
+  assert.doesNotMatch(profitLoad,/salesRefAttachPurchaseCosts/);
+  assert.match(attach,/activeRows=\(rows\|\|\[\]\)\.filter\(row=>row\.id&&!row\.is_stockout&&!row\._domesticSale\)/);
+  assert.match(attach,/readOrderSuppliersForAdvancePurchase\(activeRows\)/);
+  assert.doesNotMatch(attach,/salesRefAllocateImportedPurchaseCosts/);
   assert.match(html,/合算純売上/);
   assert.match(html,/輸出・国内別粗利/);
 });
