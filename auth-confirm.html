@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" type="image/jpeg" href="./yumirume-logo.jpg">
+  <title>利用登録 | ゆみるめ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--bg:#eef1f3;--panel:#fff;--line:#d8dde3;--text:#15181c;--muted:#64707d;--blue:#174ea6;--danger:#b42318;--success:#0f6b43}
+    *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{display:grid;place-items:center;padding:20px;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Meiryo,sans-serif;font-size:14px}
+    .confirm-shell{width:min(430px,100%);overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 18px 48px rgba(30,38,46,.16)}
+    .confirm-head{padding:22px 24px 16px;border-bottom:1px solid var(--line);background:#fbfcfd}.confirm-logo{display:block;width:150px;height:92px;object-fit:contain}.confirm-head h1{margin:8px 0 0;font-size:21px}.confirm-body{display:grid;gap:14px;padding:20px 24px 24px}.confirm-body p{margin:0;color:var(--muted);font-weight:700;line-height:1.7}
+    .confirm-button{width:100%;height:46px;border:1px solid var(--blue);border-radius:7px;background:var(--blue);color:#fff;font:inherit;font-weight:900;cursor:pointer}.confirm-button:disabled{cursor:wait;opacity:.55}
+    .confirm-state{min-height:38px;padding:9px;border-radius:6px;background:#f3f5f7;color:var(--muted);font-size:12px;font-weight:800;line-height:1.55}.confirm-state.error{background:#fff0ef;color:var(--danger)}.confirm-state.ok{background:#e8f4ee;color:var(--success)}
+  </style>
+</head>
+<body>
+  <main class="confirm-shell">
+    <div class="confirm-head"><img class="confirm-logo" src="./yumirume-logo.jpg" alt="YUMIRUME INC."><h1>業務アプリ 利用登録</h1></div>
+    <div class="confirm-body">
+      <p>下のボタンを押すと招待を承認し、初回パスワード設定へ進みます。</p>
+      <button id="confirm-button" class="confirm-button" type="button" onclick="confirmAuthentication()">招待を承認</button>
+      <div id="confirm-state" class="confirm-state" role="status" aria-live="polite">この画面を開いただけでは登録は完了しません。</div>
+    </div>
+  </main>
+  <script>
+    const SUPABASE_URL="https://bvgjscxyjosjqqhxutyk.supabase.co";
+    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYXNlIiwicmVmIjoiYnZnanNjeHlqb3NqcXFoeHV0eWsiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3OTIxNzc4OCwiZXhwIjoyMDk0NzkzNzg4fQ.-C7xeh8e-OW4QsJDGV4TRdVcHWmaF-nydbvSjNP25Hg";
+    const callbackParams=new URLSearchParams(String(location.hash||"").replace(/^#/,""));
+    const tokenHash=callbackParams.get("token_hash")||"";
+    const callbackType=callbackParams.get("type")||"invite";
+    const allowedTypes=new Set(["invite","recovery"]);
+
+    function setConfirmState(message,type=""){
+      const state=document.getElementById("confirm-state");
+      state.textContent=message;
+      state.className=`confirm-state${type?` ${type}`:""}`;
+    }
+    function validateConfirmation(){
+      if(!tokenHash||!allowedTypes.has(callbackType)){
+        document.getElementById("confirm-button").disabled=true;
+        setConfirmState("招待情報が見つかりません。管理者へ再送を依頼してください。","error");
+        return false;
+      }
+      if(callbackType==="recovery"){
+        document.querySelector(".confirm-body p").textContent="下のボタンを押すと本人確認を行い、新しいパスワード設定へ進みます。";
+        document.getElementById("confirm-button").textContent="パスワードを再設定";
+      }
+      return true;
+    }
+    async function confirmAuthentication(){
+      if(!validateConfirmation())return;
+      const button=document.getElementById("confirm-button");
+      button.disabled=true;
+      setConfirmState("本人確認を行っています...");
+      try{
+        const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+        const {error}=await client.auth.verifyOtp({token_hash:tokenHash,type:callbackType});
+        if(error)throw error;
+        history.replaceState(null,"",location.pathname);
+        setConfirmState("確認できました。パスワード設定へ移動します。","ok");
+        location.replace("./order-entry-beta.html?setup=1");
+      }catch(error){
+        button.disabled=false;
+        setConfirmState("招待リンクが無効または期限切れです。管理者から再送してください。","error");
+      }
+    }
+    validateConfirmation();
+  </script>
+</body>
+</html>

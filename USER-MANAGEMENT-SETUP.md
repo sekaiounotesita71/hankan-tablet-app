@@ -21,6 +21,28 @@ Supabaseの `Authentication` → `URL Configuration` で、次を設定します
 
 Site URLが初期値のlocalhostのままだと、招待メールを開いた端末から業務アプリへ戻れません。
 
+## 社内メールのSafe Links対策
+
+Supabaseの `Authentication` → `Email Templates` → `Invite user` を開き、本文の招待リンクを次へ変更します。
+
+```html
+<h2>ゆみるめ業務アプリ</h2>
+<p>以下のボタンから利用登録を完了してください。</p>
+<p><a href="{{ .SiteURL }}/auth-confirm.html#token_hash={{ .TokenHash }}&type=invite">招待を承認する</a></p>
+<p>この招待に心当たりがない場合は、このメールを破棄してください。</p>
+```
+
+`Reset password` も同じ対策を行う場合は、本文のリンクを次へ変更します。
+
+```html
+<h2>ゆみるめ業務アプリ</h2>
+<p>以下のボタンからパスワードを再設定してください。</p>
+<p><a href="{{ .SiteURL }}/auth-confirm.html#token_hash={{ .TokenHash }}&type=recovery">パスワードを再設定する</a></p>
+<p>この操作に心当たりがない場合は、このメールを破棄してください。</p>
+```
+
+メールの安全確認は確認画面を開くだけで、Supabaseの一回限りのトークンを使用しません。利用者が画面上のボタンを押した時だけ本人確認を実行します。
+
 ## 利用方法
 
 1. 管理者で販売・業務管理へログインします。
