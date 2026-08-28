@@ -4247,14 +4247,15 @@ function salesRefUnpricedProductGroups(rows){
     if(salesRefCostInfo(row).priced)return;
     const code=String(row.product_id||"").trim();
     const name=String(row.product_name||"").trim();
-    const key=`${code}\u0000${name}`;
-    const current=groups.get(key)||{code,name,sales:0,count:0,rows:[]};
+    const key=code?`code:${code}`:`name:${name}`;
+    const current=groups.get(key)||{code,names:new Set(),sales:0,count:0,rows:[]};
+    if(name)current.names.add(name);
     current.sales+=salesRefNum(row.amount);
     current.count++;
     current.rows.push(row);
     groups.set(key,current);
   });
-  return [...groups.values()].sort((a,b)=>b.sales-a.sales||b.count-a.count||a.code.localeCompare(b.code,"ja"));
+  return [...groups.values()].map(group=>({...group,name:[...group.names].join(" / ")})).sort((a,b)=>b.sales-a.sales||b.count-a.count||a.code.localeCompare(b.code,"ja"));
 }
 function salesRefUnpricedProductTable(rows){
   const groups=salesRefUnpricedProductGroups(rows);

@@ -83,6 +83,30 @@ assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001
 activeProduct = null;
 assert.equal(cost.salesRefCostInfo({ input_qty: 1, input_unit: "PC" }).priced, false);
 
+const unpricedSource = sourceBetween(
+  html,
+  "function salesRefUnpricedProductGroups",
+  "function salesRefUnpricedProductTable"
+);
+const unpricedGroups = new Function(
+  "salesRefCostInfo",
+  "salesRefNum",
+  `${unpricedSource}; return salesRefUnpricedProductGroups;`
+)(
+  () => ({ priced: false }),
+  value => Number(value) || 0
+);
+const groupedUnpriced = unpricedGroups([
+  { product_id: "157C", product_name: "畜養マグロ 腹上", amount: 100 },
+  { product_id: "157C", product_name: "冷凍短期畜養マグロ 腹上", amount: 200 },
+  { product_id: "422", product_name: "ウニ", amount: 250 }
+]);
+assert.equal(groupedUnpriced.length, 2);
+assert.equal(groupedUnpriced[0].code, "157C");
+assert.equal(groupedUnpriced[0].sales, 300);
+assert.match(groupedUnpriced[0].name, /畜養マグロ 腹上/);
+assert.match(groupedUnpriced[0].name, /冷凍短期畜養マグロ 腹上/);
+
 assert.match(html, /id="advance-purchase-order-supplier"/);
 assert.match(html, /id="advance-purchase-supplier"/);
 assert.match(html, /productPurchasePriceForSupplier\(product,supplierCode\)/);
