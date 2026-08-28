@@ -92,7 +92,16 @@ test("粗利は送料を含まない純売上から計算する",()=>{
   assert.match(metrics,/const totalSales=netSales\+shippingSales/);
   assert.match(metrics,/costedSales\+=salesRefNum\(row\.amount\)/);
   assert.match(metrics,/const grossProfit=costedSales-purchaseCost/);
+  assert.match(metrics,/grossProfitComplete=unpricedCount===0/);
   assert.doesNotMatch(metrics,/grossProfit=totalSales-purchaseCost/);
+});
+
+test("原価未設定を含む集計は全体粗利を表示しない",()=>{
+  const table=sourceBetween("function salesRefProfitTable","function salesRefUnpricedProductGroups");
+  const analysis=sourceBetween("function salesRefProfitAnalysisHtml","function salesRefRatio");
+  assert.match(table,/incomplete=row\.unpriced>0/);
+  assert.match(table,/算出不可/);
+  assert.match(analysis,/grossProfitComplete\?salesRefMoney\(metrics\.grossProfit\):"算出不可"/);
 });
 
 test("PDF仕入は全期間検索せず対象月だけ取得する",()=>{

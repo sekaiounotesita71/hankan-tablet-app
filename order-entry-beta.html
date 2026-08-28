@@ -4203,6 +4203,7 @@ function salesRefMetrics(rows,options={}){
     });
   }
   const grossProfit=costedSales-purchaseCost;
+  const grossProfitComplete=unpricedCount===0;
   return {
     rows,
     count:rows.length,
@@ -4216,7 +4217,7 @@ function salesRefMetrics(rows,options={}){
     products:products.size,
     avgCustomer:customers.size?totalSales/customers.size:0,
     avgNetUnit:totalNet?netSales/totalNet:0,
-    purchaseCost,costedSales,grossProfit,grossMargin:costedSales?grossProfit/costedSales*100:0,
+    purchaseCost,costedSales,grossProfit,grossMargin:costedSales?grossProfit/costedSales*100:0,grossProfitComplete,
     pricedCount,unpricedCount,unpricedSales,supplierPriceCount,productPriceCount
   };
 }
@@ -4238,7 +4239,10 @@ function salesRefProfitGroups(rows,keyFn){
   return [...groups.values()].sort((a,b)=>b.profit-a.profit||b.sales-a.sales||String(a.key).localeCompare(String(b.key),"ja"));
 }
 function salesRefProfitTable(title,rows){
-  const body=rows.length?rows.slice(0,50).map(row=>`<tr><td>${esc(row.key)}</td><td>${esc(salesRefMoney(row.sales))}</td><td>${esc(salesRefMoney(row.cost))}</td><td>${esc(salesRefMoney(row.profit))}</td><td>${esc(row.margin.toFixed(1))}%</td><td>${row.unpriced?`${esc(row.unpriced)}件`:"-"}</td></tr>`).join(""):`<tr><td colspan="6">データなし</td></tr>`;
+  const body=rows.length?rows.slice(0,50).map(row=>{
+    const incomplete=row.unpriced>0;
+    return `<tr><td>${esc(row.key)}</td><td>${esc(salesRefMoney(row.sales))}</td><td>${incomplete?"-":esc(salesRefMoney(row.cost))}</td><td>${incomplete?"算出不可":esc(salesRefMoney(row.profit))}</td><td>${incomplete?"-":`${esc(row.margin.toFixed(1))}%`}</td><td>${incomplete?`${esc(row.unpriced)}件`:"-"}</td></tr>`;
+  }).join(""):`<tr><td colspan="6">データなし</td></tr>`;
   return `<div class="sales-analysis-table"><table><caption>${esc(title)}</caption><thead><tr><th>項目</th><th>純売上</th><th>仕入原価</th><th>粗利</th><th>粗利率</th><th>原価未設定</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function salesRefUnpricedProductGroups(rows){
@@ -4274,12 +4278,16 @@ function salesRefProfitAnalysisHtml(rows){
   const customerRows=salesRefProfitGroups(rows,row=>`${row.customer_code||""} ${row.store_name||""}`.trim());
   const segmentRows=salesRefProfitGroups(rows,row=>row._domesticSale?"国内売上":"輸出売上");
   const importerRows=salesRefProfitGroups(rows,row=>salesRefRowImporter(row).label);
+  const grossProfitText=metrics.grossProfitComplete?salesRefMoney(metrics.grossProfit):"算出不可";
+  const grossProfitSub=metrics.grossProfitComplete
+    ?`粗利率 ${metrics.grossMargin.toFixed(1)}%`
+    :`原価未設定売上 ${salesRefMoney(metrics.unpricedSales)} のため未算出`;
   return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">送料売上と消費税は粗利計算から除外。販売数量に、発注先別仕入単価を優先して掛け、未設定時は商品マスタの標準仕入単価で計算します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">原価反映 ${metrics.pricedCount}/${metrics.count}件</span></div>
     <div class="sales-analysis-grid">
       <div class="sales-compare-card"><div class="sales-card-label">合算純売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.netSales))}</div><div class="sales-compare-sub">輸出 ${esc(salesRefMoney(exportSales))} / 国内 ${esc(salesRefMoney(domesticSales))}</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">仕入先別単価 ${metrics.supplierPriceCount}件 / 標準仕入単価 ${metrics.productPriceCount}件</div></div>
-      <div class="sales-compare-card"><div class="sales-card-label">仕入原価</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.purchaseCost))}</div></div>
-      <div class="sales-compare-card"><div class="sales-card-label">粗利</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.grossProfit))}</div><div class="sales-compare-sub">粗利率 ${esc(metrics.grossMargin.toFixed(1))}%</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">原価確認済み額</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.purchaseCost))}</div><div class="sales-compare-sub">原価設定済み売上に対する金額</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">全体粗利</div><div class="sales-compare-main">${esc(grossProfitText)}</div><div class="sales-compare-sub">${esc(grossProfitSub)}</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">原価未設定売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.unpricedSales))}</div><div class="sales-compare-sub">${esc(metrics.unpricedCount)}明細 / 設定後に自動再計算</div></div>
     </div>
     <div class="sales-analysis-tables">${salesRefUnpricedProductTable(rows)}${salesRefProfitTable("輸出・国内別粗利",segmentRows)}${salesRefProfitTable("商品別粗利",productRows)}${salesRefProfitTable("得意先別粗利",customerRows)}${salesRefProfitTable("輸入社・国内別粗利",importerRows)}</div>`;
