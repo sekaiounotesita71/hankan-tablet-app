@@ -238,6 +238,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <datalist id="product-name-list"></datalist>
         <datalist id="supplier-code-list"></datalist>
         <datalist id="master-code-list"></datalist>
+        <datalist id="domestic-billing-customer-list"></datalist>
         <div class="status-line">
           <span id="confirm-state" class="pill warn">未確定</span>
           <span id="db-state" class="pill warn">DB未接続</span>
@@ -857,6 +858,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="supplier-box-prefix-wrap">箱番号の固定コード<input id="master-box-prefix" autocomplete="off" placeholder="例 TKY"></label>
         <label id="supplier-default-site-wrap">仕入先の既定拠点<select id="master-supplier-site-code"><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label id="supplier-purchase-reference-mode-wrap">売上引用の初期範囲<select id="master-supplier-purchase-reference-mode"><option value="day">日次</option><option value="month">月次</option></select></label>
+        <label id="importer-revenue-route-wrap">売上計上<select id="master-revenue-route" onchange="updateImporterRevenueRouteFields()"><option value="direct_export">直接輸出</option><option value="domestic_intermediary">国内会社経由</option></select></label>
+        <label id="importer-domestic-customer-wrap">国内請求先コード<input id="master-domestic-customer-code" list="domestic-billing-customer-list" autocomplete="off" oninput="fillDomesticBillingCustomerName()" placeholder="国内会社経由のみ"></label>
+        <label id="importer-domestic-customer-name-wrap">国内請求先名<input id="master-domestic-customer-name" readonly placeholder="国内得意先マスタから表示"></label>
       </div>
       <div class="actions" style="margin-top:8px">
         <button class="btn primary" onclick="addMasterItem()">マスタ追加/更新</button>
@@ -1338,6 +1342,7 @@ let currentImportDraftId="";
 let currentOrderAttemptId="";
 let masterType="products";
 let masterView="core";
+let domesticBillingCustomers=[];
 let quickMasterContext=null;
 let confirmed=false;
 let lastOrderRowIndex=0;
@@ -1595,6 +1600,7 @@ async function redirectPartnerUserIfNeeded(){
 }
 function dbErrorMessage(error){
   const msg=String(error?.message||error||"");
+  if(/revenue_route|domestic_customer_code|finalize_export_revenue_route/i.test(msg))return "国内会社経由の売上設定用SQLが未実行です。domestic-intermediary-export-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42P01"||/relation .* does not exist/i.test(msg))return "受注登録用SQLが未実行です。order-entry-beta-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42703"||/column .* does not exist|schema cache/i.test(msg))return "受注登録用SQLが古い可能性があります。order-entry-beta-migration.sql を再実行してください。";
   return msg||"DB処理でエラーが発生しました。";
@@ -1783,9 +1789,17 @@ function dbText(value){
   return v||null;
 }
 function supplierPurchaseReferenceMode(value){return value==="month"?"month":"day"}
+function importerRevenueRoute(value){return value==="domestic_intermediary"?"domestic_intermediary":"direct_export"}
 function masterItemToDb(type,item){
   if(type==="importers"){
-    return {importer_code:item.code,importer_name:item.name,aliases:item.aliases||[],is_active:true};
+    return {
+      importer_code:item.code,
+      importer_name:item.name,
+      aliases:item.aliases||[],
+      revenue_route:importerRevenueRoute(item.revenueRoute),
+      domestic_customer_code:importerRevenueRoute(item.revenueRoute)==="domestic_intermediary"?dbText(item.domesticCustomerCode):null,
+      is_active:true
+    };
   }
   if(type==="suppliers"){
     return {
@@ -1825,7 +1839,14 @@ function masterItemToDb(type,item){
   };
 }
 function dbMasterToItem(type,row,lookups={}){
-  if(type==="importers")return {code:row.importer_code||"",name:row.importer_name||"",aliases:row.aliases||[]};
+  if(type==="importers")return {
+    code:row.importer_code||"",
+    name:row.importer_name||"",
+    aliases:row.aliases||[],
+    revenueRoute:importerRevenueRoute(row.revenue_route),
+    domesticCustomerCode:row.domestic_customer_code||"",
+    domesticCustomerName:lookups.domesticCustomerNames?.[row.domestic_customer_code]||""
+  };
   if(type==="suppliers")return {
     code:row.supplier_code||"",
     name:row.supplier_name||"",
@@ -2135,12 +2156,22 @@ async function loadMastersFromDb(){
       throw error;
     }
   };
-  const [importerRows,supplierRows,customerRows,contractRows,supplierPriceRows]=await Promise.all([
+  const loadDomesticCustomerRows=async()=>{
+    try{
+      return await readAllSupabaseRows((from,to)=>supabaseClient.from("domestic_customer_master").select("customer_code,customer_name,active").eq("active",true).order("customer_code").range(from,to));
+    }catch(error){
+      const text=String(error?.message||"");
+      if(error?.code==="42P01"||error?.code==="PGRST205"||/domestic_customer_master/i.test(text))return [];
+      throw error;
+    }
+  };
+  const [importerRows,supplierRows,customerRows,contractRows,supplierPriceRows,domesticCustomerRows]=await Promise.all([
     readAllSupabaseRows((from,to)=>supabaseClient.from("importer_master").select("*").eq("is_active",true).order("importer_code").range(from,to)),
     readAllSupabaseRows((from,to)=>supabaseClient.from("supplier_master").select("*").eq("is_active",true).order("supplier_code").range(from,to)),
     loadCustomerRows(),
     readAllSupabaseRows((from,to)=>supabaseClient.from("product_price_contracts").select("product_id,importer_code,unit_price").order("product_id").order("importer_code").range(from,to)),
-    loadSupplierPriceRows()
+    loadSupplierPriceRows(),
+    loadDomesticCustomerRows()
   ]);
   let productRows;
   try{
@@ -2151,6 +2182,9 @@ async function loadMastersFromDb(){
   }
   const importerNames=Object.fromEntries(importerRows.map(r=>[r.importer_code,r.importer_name]));
   const supplierNames=Object.fromEntries(supplierRows.map(r=>[r.supplier_code,r.supplier_name]));
+  domesticBillingCustomers=(domesticCustomerRows||[]).map(row=>({code:row.customer_code||"",name:row.customer_name||""}));
+  const domesticCustomerNames=Object.fromEntries(domesticBillingCustomers.map(row=>[row.code,row.name]));
+  refreshDomesticBillingCustomerList();
   const contractPrices={};
   contractRows.forEach(row=>{
     const productId=String(row.product_id||"").trim();
@@ -2168,7 +2202,7 @@ async function loadMastersFromDb(){
     supplierPrices[productId][supplierCode]={price:row.unit_price,unit:purchasePriceUnit(row.price_unit)};
   });
   saveMastersObject({
-    importers:importerRows.map(r=>dbMasterToItem("importers",r)),
+    importers:importerRows.map(r=>dbMasterToItem("importers",r,{domesticCustomerNames})),
     suppliers:supplierRows.map(r=>dbMasterToItem("suppliers",r)),
     customers:customerRows.map(r=>dbMasterToItem("customers",r,{importerNames})),
     products:productRows.map(r=>dbMasterToItem("products",r,{supplierNames,contractPrices,supplierPrices}))
@@ -4447,7 +4481,7 @@ async function salesRefReadPaged(buildQuery,pageSize=1000){
   return rows;
 }
 async function salesRefReadCurrentRows(client,range){
-  return salesRefReadChunks(range.ranges,1,async parts=>{
+  const rows=await salesRefReadChunks(range.ranges,1,async parts=>{
     const part=parts[0];
     return salesRefReadPaged(includeCount=>{
     let query=client.from("sales_records").select("*",includeCount?{count:"exact"}:undefined).order("finalized_at",{ascending:false}).order("id",{ascending:false});
@@ -4456,6 +4490,7 @@ async function salesRefReadCurrentRows(client,range){
     return query;
     });
   },4);
+  return rows.filter(row=>row.revenue_recognition_mode!=="customs_only");
 }
 async function salesRefReadHistoricalRows(client,range){
   return salesRefReadChunks(range.ranges,1,async parts=>{
@@ -4484,7 +4519,7 @@ async function salesRefReadDomesticRows(client,range){
     const part=parts[0];
     return salesRefReadPaged(includeCount=>{
       let query=client.from("domestic_sales")
-        .select("id,sale_no,sale_date,customer_code,customer_name_snapshot,status,memo,confirmed_at,created_at",includeCount?{count:"exact"}:undefined)
+        .select("id,sale_no,sale_date,customer_code,customer_name_snapshot,status,memo,confirmed_at,created_at,source_type,source_importer_code",includeCount?{count:"exact"}:undefined)
         .eq("status","confirmed")
         .order("sale_date",{ascending:false})
         .order("sale_no",{ascending:false});
@@ -4506,7 +4541,7 @@ async function salesRefReadDomesticRows(client,range){
     const quantity=line.quantity===null||line.quantity===undefined||line.quantity===""?null:Number(line.quantity);
     return salesRefNormalizeRowImporter({
       id:line.id,
-      source_type:"国内売上",
+      source_type:sale.source_type==="export_intermediary"?"国内経由売上":"国内売上",
       work_date:sale.sale_date||"",
       finalized_at:sale.confirmed_at||sale.created_at||"",
       customer_code:sale.customer_code||"",
@@ -4520,7 +4555,7 @@ async function salesRefReadDomesticRows(client,range){
       amount:salesRefJpyAmount(line.net_amount_jpy),
       memo:[line.memo,sale.memo].filter(Boolean).join(" / "),
       importer_code:"DOMESTIC",
-      importer_name:"国内売上",
+      importer_name:sale.source_type==="export_intermediary"?`国内売上 (${sale.source_importer_code||"輸出"})`:"国内売上",
       is_stockout:false,
       _domesticSale:true,
       _domesticSaleId:line.sale_id,
@@ -7357,7 +7392,7 @@ function arBuildSalesGroups(salesRows,sessions){
   const sessionMap=new Map((sessions||[])
     .filter(session=>session.locked||session.status==="closed")
     .map(session=>[session.id,session]));
-  const eligible=(salesRows||[]).filter(row=>!row.is_stockout&&isUuid(row.session_id)&&sessionMap.has(row.session_id));
+  const eligible=(salesRows||[]).filter(row=>row.revenue_recognition_mode!=="customs_only"&&!row.is_stockout&&isUuid(row.session_id)&&sessionMap.has(row.session_id));
   const importerSets=new Map();
   eligible.forEach(row=>{
     const identity=arImporterIdentity({...row,importer_code:row.importer_code||row.importer_id||""},index);
@@ -7417,7 +7452,7 @@ async function arReadSalesRows(options={}){
     if(range.to)query=query.lte("work_date",range.to);
     const {data,error}=await query.range(offset,offset+pageSize-1);
     if(error)throw error;
-    const page=data||[];
+    const page=(data||[]).filter(row=>row.revenue_recognition_mode!=="customs_only");
     rows.push(...page);
     if(page.length<pageSize)break;
   }
@@ -11769,6 +11804,26 @@ function refreshImporterLists(){
   document.getElementById("importer-code-list").innerHTML=masters.importers.map(c=>`<option value="${esc(c.code)}">${esc(c.name)}</option>`).join("");
   document.getElementById("importer-name-list").innerHTML=masters.importers.map(c=>`<option value="${esc(c.name)}">${esc(c.code)}</option>`).join("");
 }
+function refreshDomesticBillingCustomerList(){
+  const list=document.getElementById("domestic-billing-customer-list");
+  if(list)list.innerHTML=domesticBillingCustomers.map(c=>`<option value="${esc(c.code)}">${esc(c.name)}</option>`).join("");
+}
+function fillDomesticBillingCustomerName(){
+  const code=val("master-domestic-customer-code").trim();
+  const customer=domesticBillingCustomers.find(item=>masterCodeKey(item.code)===masterCodeKey(code));
+  document.getElementById("master-domestic-customer-name").value=customer?.name||"";
+}
+function updateImporterRevenueRouteFields(){
+  const domestic=importerRevenueRoute(val("master-revenue-route"))==="domestic_intermediary";
+  ["importer-domestic-customer-wrap","importer-domestic-customer-name-wrap"].forEach(id=>{
+    const element=document.getElementById(id);
+    if(element)element.style.display=masterType==="importers"&&domestic?"flex":"none";
+  });
+  if(!domestic){
+    document.getElementById("master-domestic-customer-code").value="";
+    document.getElementById("master-domestic-customer-name").value="";
+  }else fillDomesticBillingCustomerName();
+}
 function refreshProductLists(){
   const masters=getMasters();
   const products=uniqueMasterItems(masters.products).slice(0,PRODUCT_DATALIST_LIMIT);
@@ -13948,12 +14003,14 @@ function completeMasterQuickAdd(item){
   return true;
 }
 function clearMasterForm(){
-  ["master-code","master-name","master-aliases","master-english","master-scientific","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-purchase-unit-price","master-supplier-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix"].forEach(id=>document.getElementById(id).value="");
+  ["master-code","master-name","master-aliases","master-english","master-scientific","master-supplier-code","master-supplier-name","master-unit-price","master-contract-prices","master-purchase-unit-price","master-supplier-prices","master-origin","master-guide-category","master-guide-spec","master-image-url","master-importer-code","master-importer-name","master-box-prefix","master-domestic-customer-code","master-domestic-customer-name"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("master-purchase-price-unit").value="Kg";
   document.getElementById("master-site-code").value="OSA";
   document.getElementById("master-supplier-site-code").value="OSA";
   document.getElementById("master-supplier-purchase-reference-mode").value="day";
+  document.getElementById("master-revenue-route").value="direct_export";
   document.getElementById("master-external-enabled").checked=false;
+  updateImporterRevenueRouteFields();
 }
 function editMasterItem(index){
   const item=(getMasters()[masterType]||[])[index];
@@ -13981,6 +14038,10 @@ function editMasterItem(index){
   document.getElementById("master-box-prefix").value=item.boxPrefix||item.box_prefix||"";
   document.getElementById("master-supplier-site-code").value=item.siteCode||item.default_site_code||"OSA";
   document.getElementById("master-supplier-purchase-reference-mode").value=supplierPurchaseReferenceMode(item.purchaseReferenceMode||item.purchase_reference_mode);
+  document.getElementById("master-revenue-route").value=importerRevenueRoute(item.revenueRoute||item.revenue_route);
+  document.getElementById("master-domestic-customer-code").value=item.domesticCustomerCode||item.domestic_customer_code||"";
+  fillDomesticBillingCustomerName();
+  updateImporterRevenueRouteFields();
   document.getElementById("master-code").focus();
   document.getElementById("save-state").textContent=`${item.code||""} を編集中`;
 }
@@ -14026,6 +14087,16 @@ async function addMasterItem(){
     item.boxPrefix=val("master-box-prefix").trim().toUpperCase();
     item.siteCode=val("master-supplier-site-code")||"OSA";
     item.purchaseReferenceMode=supplierPurchaseReferenceMode(val("master-supplier-purchase-reference-mode"));
+  }
+  if(masterType==="importers"){
+    item.revenueRoute=importerRevenueRoute(val("master-revenue-route"));
+    item.domesticCustomerCode=val("master-domestic-customer-code").trim();
+    const domesticCustomer=domesticBillingCustomers.find(row=>masterCodeKey(row.code)===masterCodeKey(item.domesticCustomerCode));
+    item.domesticCustomerName=domesticCustomer?.name||"";
+    if(item.revenueRoute==="domestic_intermediary"&&!domesticCustomer){
+      alert("国内会社経由では、国内得意先マスタに登録済みの国内請求先を選択してください。");
+      return;
+    }
   }
   if(dbReady&&supabaseClient){
     try{
@@ -14150,9 +14221,12 @@ function renderMasters(){
   const isProduct=masterType==="products";
   const isCustomer=masterType==="customers";
   const isSupplier=masterType==="suppliers";
+  const isImporter=masterType==="importers";
   ["product-en-wrap","product-scientific-wrap","product-supplier-wrap","product-supplier-name-wrap","product-price-wrap","product-contract-price-wrap","product-purchase-price-wrap","product-purchase-unit-wrap","product-supplier-prices-wrap","product-origin-wrap","product-guide-category-wrap","product-guide-spec-wrap","product-image-url-wrap"].forEach(id=>document.getElementById(id).style.display=isProduct?"flex":"none");
   ["customer-importer-code-wrap","customer-importer-name-wrap","customer-site-wrap"].forEach(id=>document.getElementById(id).style.display=isCustomer?"flex":"none");
   ["supplier-external-wrap","supplier-box-prefix-wrap","supplier-default-site-wrap","supplier-purchase-reference-mode-wrap"].forEach(id=>document.getElementById(id).style.display=isSupplier?"flex":"none");
+  document.getElementById("importer-revenue-route-wrap").style.display=isImporter?"flex":"none";
+  updateImporterRevenueRouteFields();
   const masters=getMasters()[masterType]||[];
   const title={products:"商品",customers:"得意先",suppliers:"仕入先",importers:"輸入社"}[masterType];
   document.getElementById("master-list").innerHTML=masters.length?`<div class="hint" style="padding:6px 8px;margin:0;border-bottom:1px solid var(--line)">一覧行をクリックすると上の入力欄へ反映されます。編集後は「マスタ追加/更新」で保存します。</div>`+masters.map((m,index)=>{
@@ -14169,6 +14243,7 @@ function renderMasters(){
       m.siteCode?`拠点: ${m.siteCode==="TYO"?"東京":"大阪"}`:"",
       m.externalWorkEnabled?`外部依頼 / 箱コード: ${m.boxPrefix||"未設定"}`:"",
       masterType==="suppliers"?`売上引用: ${supplierPurchaseReferenceMode(m.purchaseReferenceMode)==="month"?"月次":"日次"}`:"",
+      masterType==="importers"?(importerRevenueRoute(m.revenueRoute)==="domestic_intermediary"?`売上: 国内会社経由 / 請求先: ${[m.domesticCustomerCode,m.domesticCustomerName].filter(Boolean).join(" ")||"未設定"}`:"売上: 直接輸出"):"",
       (m.aliases||[]).join(", ")
     ].filter(Boolean).join(" / ");
     const deleteBtn=currentUserIsAdmin()
@@ -14457,7 +14532,7 @@ function exportMasters(){
   const importerCodes=masterType==="products"
     ?[...new Set(masters.flatMap(m=>Object.keys(m.contractPrices||m.importer_prices||{})))].sort()
     :[];
-  const header=["type","code","name","english_name","scientific_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"purchase_unit_price","purchase_price_unit","supplier_purchase_prices","origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","purchase_reference_mode","aliases"];
+  const header=["type","code","name","english_name","scientific_name","supplier_code","supplier_name","unit_price","contract_prices",...importerCodes.map(code=>`${code}単価`),"purchase_unit_price","purchase_price_unit","supplier_purchase_prices","origin","guide_category","guide_spec","image_url","image_source_url","image_credit","image_license","importer_code","importer_name","site_code","external_work_enabled","box_prefix","purchase_reference_mode","revenue_route","domestic_customer_code","aliases"];
   const rows=[header,...masters.map(m=>{
     const prices=m.contractPrices||m.importer_prices||{};
     return [
@@ -14465,7 +14540,7 @@ function exportMasters(){
       ...importerCodes.map(code=>prices[code]||""),
       m.purchaseUnitPrice??m.purchase_unit_price??"",purchasePriceUnit(m.purchasePriceUnit||m.purchase_price_unit),formatSupplierPurchasePrices(m.supplierPrices||m.supplier_prices||{}),
       m.origin||"",m.guideCategory||"",m.guideSpec||"",m.imageUrl||"",m.imageSourceUrl||"",m.imageCredit||"",m.imageLicense||"",
-      m.importerCode||"",m.importerName||"",m.siteCode||"",m.externalWorkEnabled?"1":"",m.boxPrefix||"",supplierPurchaseReferenceMode(m.purchaseReferenceMode),(m.aliases||[]).join("|")
+      m.importerCode||"",m.importerName||"",m.siteCode||"",m.externalWorkEnabled?"1":"",m.boxPrefix||"",supplierPurchaseReferenceMode(m.purchaseReferenceMode),importerRevenueRoute(m.revenueRoute),m.domesticCustomerCode||"",(m.aliases||[]).join("|")
     ];
   })];
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
@@ -14643,6 +14718,13 @@ function masterItemFromCsvRow(row,headers,type){
     item.siteCode=(rowValue(row,headers,["site_code","sitecode","default_site_code","拠点コード","既定拠点"])||"OSA").toUpperCase()==="TYO"?"TYO":"OSA";
     const referenceMode=rowValue(row,headers,["purchase_reference_mode","purchasereferencemode","売上引用範囲","仕入引用範囲","引用範囲"]);
     item.purchaseReferenceMode=/^(month|monthly|月次|月)$/i.test(referenceMode)?"month":"day";
+  }
+  if(type==="importers"){
+    const route=rowValue(row,headers,["revenue_route","revenueroute","売上計上","売上経路"]);
+    item.revenueRoute=/domestic|国内会社|国内経由/i.test(route)?"domestic_intermediary":"direct_export";
+    item.domesticCustomerCode=rowValue(row,headers,["domestic_customer_code","domesticcustomercode","国内請求先コード","国内得意先コード"]);
+    const domesticCustomer=domesticBillingCustomers.find(entry=>masterCodeKey(entry.code)===masterCodeKey(item.domesticCustomerCode));
+    item.domesticCustomerName=domesticCustomer?.name||"";
   }
   return item;
 }

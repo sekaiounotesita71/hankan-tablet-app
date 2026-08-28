@@ -408,6 +408,7 @@ let sitePartnerSchemaReady=false;
 let realtimeChannels=[];
 let saveStateTimer=null;
 let importerDisplayNames={};
+let importerRevenueRoutes={};
 let importerDisplayNamesUserId="";
 const ORDER_MAP={
   "商品ID":"product_id","商品名":"product_name","単位":"unit","数量":"csv_qty",
@@ -429,6 +430,9 @@ function importerDisplayName(code){
   const row=rows.find(item=>workImporterKey(item.importer_id||item.country)===key&&String(item.importer_name||"").trim());
   return String(row?.importer_name||importerDisplayNames[key]||code||"-").trim();
 }
+function importerRevenueRoute(code){
+  return importerRevenueRoutes[workImporterKey(code)]||"direct_export";
+}
 async function loadImporterDisplayNames(options={}){
   const force=!!options.force;
   if(!supabaseClient||!currentUser)return false;
@@ -437,15 +441,27 @@ async function loadImporterDisplayNames(options={}){
   try{
     data=await readAllWorkRows((from,to)=>supabaseClient
       .from("importer_master")
-      .select("importer_code,importer_name")
+      .select("importer_code,importer_name,revenue_route,domestic_customer_code")
       .eq("is_active",true)
       .order("importer_code",{ascending:true})
       .range(from,to));
   }catch(error){
-    return false;
+    if(error?.code!=="42703"&&!/revenue_route|domestic_customer_code|schema cache/i.test(String(error?.message||"")))return false;
+    try{
+      data=await readAllWorkRows((from,to)=>supabaseClient
+        .from("importer_master")
+        .select("importer_code,importer_name")
+        .eq("is_active",true)
+        .order("importer_code",{ascending:true})
+        .range(from,to));
+    }catch(_fallbackError){return false}
   }
   importerDisplayNames={};
-  (data||[]).forEach(item=>rememberImporterDisplayName(item.importer_code,item.importer_name));
+  importerRevenueRoutes={};
+  (data||[]).forEach(item=>{
+    rememberImporterDisplayName(item.importer_code,item.importer_name);
+    importerRevenueRoutes[workImporterKey(item.importer_code)]=item.revenue_route==="domestic_intermediary"?"domestic_intermediary":"direct_export";
+  });
   importerDisplayNamesUserId=currentUser.id;
   return true;
 }
@@ -4516,6 +4532,7 @@ mergeAndRender=function(){
 };
 function salesLockSetupErrorMessage(error){
   const msg=String(error?.message||"");
+  if(error?.code==="PGRST202"||/finalize_export_revenue_route|revenue_recognition_mode|domestic_sale_id|revenue_route|domestic_customer_code/i.test(msg))return "国内会社経由の売上設定用SQLが未実行です。domestic-intermediary-export-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42703"&&/work_date/i.test(msg))return "作業日対応SQLが未実行です。work-date-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42P01"||/sales_records|user_roles/i.test(msg))return "売上確定用SQLが未実行です。sales-lock-trial-migration.sql をSupabase SQL Editorで実行してください。";
   if(error?.code==="42703"||/locked|finalized_at|schema cache/i.test(msg))return "work_sessionsにロック用カラムがありません。sales-lock-trial-migration.sql を再実行してください。";
@@ -4525,8 +4542,10 @@ async function checkSalesLockSetupTrial(){
   if(!(await requireSupabaseLogin()))return false;
   const {error:sessionError}=await supabaseClient.from("work_sessions").select("id,work_date,locked,finalized_at,shipping_fee,shipping_fees").limit(1);
   if(sessionError){alert(salesLockSetupErrorMessage(sessionError));return false}
-  const {error:salesError}=await supabaseClient.from("sales_records").select("id,work_date").limit(1);
+  const {error:salesError}=await supabaseClient.from("sales_records").select("id,work_date,revenue_recognition_mode,domestic_sale_id").limit(1);
   if(salesError){alert(salesLockSetupErrorMessage(salesError));return false}
+  const {error:importerError}=await supabaseClient.from("importer_master").select("importer_code,revenue_route,domestic_customer_code").limit(1);
+  if(importerError){alert(salesLockSetupErrorMessage(importerError));return false}
   return true;
 }
 async function upsertSalesRecordsTrial(payloads){
@@ -4547,12 +4566,14 @@ async function upsertSalesRecordsTrial(payloads){
     throw error;
   }
 }
-function finalizedReceivablePayloads(workDate,shippingFees){
+function finalizedReceivablePayloads(workDate,shippingFees,directImporters=null){
+  const directSet=Array.isArray(directImporters)?new Set(directImporters.map(invoiceImporterCode).filter(Boolean)):null;
   const groups=new Map();
   rows.filter(row=>!row._stockout).forEach(row=>{
     const rawImporter=importerCode(row.importer_id||row.country);
     const code=invoiceImporterCode(rawImporter);
     if(!code)throw new Error(`${rawImporter||"未設定"} の輸入社コードからInvoice No.を作成できません。`);
+    if(directSet&&!directSet.has(code))return;
     const group=groups.get(code)||{code,name:importerDisplayName(code),netSales:0,customers:new Set()};
     const qty=numberOrNull(row._qty);
     const price=numberOrNull(row.unit_price);
@@ -4595,10 +4616,10 @@ async function receivableOperationStartDateTrial(){
   }
   return String(data?.operation_start_date||fallback).slice(0,10);
 }
-async function syncFinalizedSessionToReceivables(workDate,shippingFees){
+async function syncFinalizedSessionToReceivables(workDate,shippingFees,directImporters=null){
   const operationStartDate=await receivableOperationStartDateTrial();
   if(workDate<operationStartDate)return 0;
-  const payloads=finalizedReceivablePayloads(workDate,shippingFees);
+  const payloads=finalizedReceivablePayloads(workDate,shippingFees,directImporters);
   if(!payloads.length)return 0;
   const {data,error}=await supabaseClient.from("accounts_receivable").upsert(payloads,{onConflict:"source_key"}).select("source_key");
   if(error)throw error;
@@ -4654,23 +4675,27 @@ finalizeSalesTrial=async function(){
     const workDate=currentWorkDateValue();
     currentSessionWorkDate=workDate;
     await upsertSalesRecordsTrial(rows.map(row=>salesRecordPayloadTrial(row,finalizedAt)));
-    const {data,error}=await supabaseClient.from("work_sessions")
-      .update({locked:true,work_date:workDate,finalized_at:finalizedAt,finalized_by:currentUser.id,status:"closed",shipping_fee:shippingFee,shipping_fees:shippingFees})
-      .eq("id",currentSessionId)
-      .eq("locked",false)
-      .select("*")
-      .maybeSingle();
+    const {data,error}=await supabaseClient.rpc("finalize_export_revenue_route",{
+      p_session_id:currentSessionId,
+      p_work_date:workDate,
+      p_finalized_at:finalizedAt,
+      p_shipping_fee:shippingFee,
+      p_shipping_fees:shippingFees
+    });
     if(error)throw error;
-    if(!data)throw new Error("別の端末で先に売上確定された可能性があります。最新状態を再読込してください。");
-    setSessionLockStateTrial(data);
+    if(!data?.session)throw new Error("売上経路の確定結果を取得できません。最新状態を再読込してください。");
+    setSessionLockStateTrial(data.session);
+    const directImporters=Array.isArray(data.direct_importers)?data.direct_importers:[];
+    const domesticSales=Array.isArray(data.domestic_sales)?data.domestic_sales:[];
     try{
-      const receivableCount=await syncFinalizedSessionToReceivables(workDate,shippingFees);
+      const receivableCount=await syncFinalizedSessionToReceivables(workDate,shippingFees,directImporters);
+      const domesticLabel=domesticSales.length?` / 国内会社経由 ${domesticSales.length}件`:"";
       if(receivableCount){
-        setSaveState("Supabase: 売上確定・請求締め候補反映済み");
-        toast("売上確定し、請求締め候補へ反映しました");
+        setSaveState(`Supabase: 売上確定・請求締め候補反映済み${domesticLabel}`);
+        toast(`売上確定し、請求締め候補へ反映しました${domesticLabel}`);
       }else{
-        setSaveState("Supabase: 売上確定済み / 売掛対象なし");
-        toast("売上確定しました（売掛対象なし）");
+        setSaveState(domesticSales.length?"Supabase: 売上確定・国内売上反映済み":"Supabase: 売上確定済み / 売掛対象なし");
+        toast(domesticSales.length?"売上確定し、国内売上・売掛へ反映しました":"売上確定しました（売掛対象なし）");
       }
     }catch(receivableError){
       setSaveState("Supabase: 売上確定済み / 請求締め候補反映待ち",true);
