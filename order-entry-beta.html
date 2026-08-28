@@ -1364,7 +1364,8 @@ let quickProductCodeCandidatesOpen=false;
 let supabaseClient=null;
 let currentUser=null;
 let currentUserRole="user";
-let authPasswordSetupMode=new URLSearchParams(location.search).has("setup")||new URLSearchParams(location.search).has("reset");
+const authCallbackType=()=>/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").replace(/^#/,""));
+let authPasswordSetupMode=new URLSearchParams(location.search).has("setup")||new URLSearchParams(location.search).has("reset")||authCallbackType();
 let managedUsers=[];
 let selectedManagedUserId="";
 let managedUsersLoaded=false;
@@ -1492,7 +1493,7 @@ function initSupabase(){
   });
   supabaseClient.auth.onAuthStateChange((event,session)=>{
     currentUser=session?.user||null;
-    if(event==="PASSWORD_RECOVERY")authPasswordSetupMode=true;
+    if(event==="PASSWORD_RECOVERY"||authCallbackType())authPasswordSetupMode=true;
     updateAuthStatus();
     setTimeout(()=>loadCurrentUserRole(),0);
     renderReportFilterCount();

@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/jpeg" href="./yumirume-logo.jpg">
 <title>オーダー管理 P1/P2</title>
+<script>
+if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").replace(/^#/,""))){
+  location.replace(`./order-entry-beta.html?setup=1${location.hash}`);
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
