@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/jpeg" href="./yumirume-logo.jpg">
 <title>オーダー管理 P1/P2</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -189,12 +190,12 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
   .sales-ref-card-body{max-height:90px}
 }
 </style>
-<link rel="stylesheet" href="./app-nav.css?v=20260806-2">
+<link rel="stylesheet" href="./app-nav.css?v=20260828-1">
 </head>
 <body class="work-auth-checking">
 <div class="work-auth-gate" aria-live="polite">
   <div class="work-auth-shell">
-    <div class="work-auth-head"><div class="work-auth-title">ゆみるめ 現場作業</div><p>登録されたアカウントでログインしてください。</p></div>
+    <div class="work-auth-head"><img class="app-login-logo" src="./yumirume-logo.jpg" alt="YUMIRUME INC."><div class="work-auth-title">ゆみるめ 現場作業</div><p>登録されたアカウントでログインしてください。</p></div>
     <form class="work-auth-form" onsubmit="signInSupabase(event)">
       <label>メールアドレス<input id="login-email" type="email" autocomplete="username" inputmode="email" required></label>
       <label>パスワード<input id="login-password" type="password" autocomplete="current-password" required></label>
@@ -227,7 +228,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
     <a class="app-nav-link" href="./order-entry-beta.html#guide" target="_blank" rel="noopener">商品案内</a>
   </nav>
   <div class="app-header-row">
-    <div class="header-title-wrap"><div class="header-title">オーダー管理</div><button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button></div>
+    <div class="header-title-wrap"><div class="app-brand-lockup"><img class="app-brand-logo" src="./yumirume-logo.jpg" alt="YUMIRUME INC."><div class="header-title">オーダー管理</div></div><button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button></div>
     <div class="header-right">
     <div class="phase-switcher">
       <button class="phase-btn active" id="btn-p1" onclick="switchPhase(1)">Phase 1 入力</button>

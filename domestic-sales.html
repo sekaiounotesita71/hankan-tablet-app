@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/jpeg" href="./yumirume-logo.jpg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <title>国内販売管理</title>
@@ -41,12 +42,12 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
 @media(max-width:1000px){.entry-head{grid-template-columns:1fr 1fr}.entry-head label:last-child{grid-column:1/-1}.filter-grid,.closing-tools{grid-template-columns:1fr 1fr}.filter-grid label:nth-child(4),.closing-tools label:nth-child(3){grid-column:1/-1}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.ar-layout,.master-layout{grid-template-columns:1fr}.table-wrap{max-height:55vh}.header-user{width:100%;justify-content:space-between}.app-header-row{align-items:flex-start;flex-direction:column}}
 @media(max-width:620px){main{padding:9px 9px 28px}.entry-head,.filter-grid,.form-grid,.master-form,.closing-tools{grid-template-columns:1fr}.entry-head label:last-child,.filter-grid label:nth-child(4),.form-grid .full,.master-form .full,.closing-tools label:nth-child(3){grid-column:auto}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.summary-item{min-width:105px}.status-message{display:none}}
 </style>
-<link rel="stylesheet" href="./app-nav.css?v=20260806-2">
+<link rel="stylesheet" href="./app-nav.css?v=20260828-1">
 </head>
 <body class="auth-checking">
 <div id="auth-gate" class="auth-gate" aria-live="polite">
   <div class="auth-shell">
-    <div class="auth-shell-head"><div class="auth-brand">ゆみるめ 業務管理</div><p>登録された社内アカウントでログインしてください。</p></div>
+    <div class="auth-shell-head"><img class="app-login-logo" src="./yumirume-logo.jpg" alt="YUMIRUME INC."><div class="auth-brand">ゆみるめ 業務管理</div><p>登録された社内アカウントでログインしてください。</p></div>
     <div class="auth-shell-body">
       <form onsubmit="signIn(event)">
         <div style="display:grid;gap:12px">
@@ -76,7 +77,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
     <a class="app-nav-link" href="./order-entry-beta.html#masters">共通マスタ</a>
   </nav>
   <div class="app-header-row">
-    <div class="title">国内販売管理</div>
+    <div class="app-brand-lockup"><img class="app-brand-logo" src="./yumirume-logo.jpg" alt="YUMIRUME INC."><div class="title">国内販売管理</div></div>
     <div class="header-user"><span id="role-pill" class="pill">一般</span><span id="user-email" class="header-email"></span><button class="btn small" type="button" onclick="signOut()">ログアウト</button></div>
   </div>
 </header>
@@ -922,8 +923,8 @@ function openDomesticPrintWindow(title){
   printWindow.document.close();
   return printWindow;
 }
-function domesticPrintCss(){return`<style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{margin:0;color:#111;font-family:"Yu Gothic",Meiryo,sans-serif;font-size:9.5pt}.print-actions{display:flex;gap:8px;margin-bottom:6mm}.print-actions button{padding:8px 14px;border:1px solid #555;background:#fff;font:inherit;font-weight:700}.document{min-height:270mm}.doc-title{text-align:center;font-size:22pt;font-weight:900;letter-spacing:0;margin:0 0 8mm}.doc-top{display:grid;grid-template-columns:1.35fr 1fr;gap:12mm;margin-bottom:6mm}.customer-name{font-size:15pt;font-weight:900;border-bottom:1px solid #111;padding:0 0 2mm}.address{white-space:pre-line;line-height:1.55;margin-top:3mm}.company{text-align:right;line-height:1.5}.company b{font-size:12pt}.meta{width:100%;border-collapse:collapse;margin-top:4mm}.meta th,.meta td{border:1px solid #777;padding:2mm}.meta th{width:28%;background:#f2f2f2}.amount-due{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #111;margin:6mm 0 5mm;padding:0 2mm 2mm;font-size:12pt;font-weight:900}.amount-due strong{font-size:19pt}.lines{width:100%;border-collapse:collapse;table-layout:fixed}.lines th,.lines td{border:1px solid #777;padding:1.7mm 1.4mm;vertical-align:top}.lines th{background:#eee;text-align:center}.num{text-align:right}.center{text-align:center}.summary{width:86mm;margin:5mm 0 0 auto;border-collapse:collapse}.summary th,.summary td{border:1px solid #777;padding:2mm}.summary th{background:#f2f2f2;text-align:left}.summary td{text-align:right;font-weight:800}.note{margin-top:5mm;white-space:pre-line;border-top:1px solid #aaa;padding-top:3mm}@media print{.print-actions{display:none}.document{min-height:0}}</style>`}
-function domesticCompanyHtml(){return'<div class="company"><b>株式会社ゆみるめ</b><br>〒556-0004 大阪市浪速区日本橋西2-2-11<br>TEL 06-6537-9994　FAX 06-6536-8496<br>info@yumirume.co.jp</div>'}
+function domesticPrintCss(){return`<style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{margin:0;color:#111;font-family:"Yu Gothic",Meiryo,sans-serif;font-size:9.5pt}.print-actions{display:flex;gap:8px;margin-bottom:6mm}.print-actions button{padding:8px 14px;border:1px solid #555;background:#fff;font:inherit;font-weight:700}.document{min-height:270mm}.doc-title{text-align:center;font-size:22pt;font-weight:900;letter-spacing:0;margin:0 0 8mm}.doc-top{display:grid;grid-template-columns:1.35fr 1fr;gap:12mm;margin-bottom:6mm}.customer-name{font-size:15pt;font-weight:900;border-bottom:1px solid #111;padding:0 0 2mm}.address{white-space:pre-line;line-height:1.55;margin-top:3mm}.company{text-align:right;line-height:1.5}.company-logo{display:block;width:34mm;height:21mm;object-fit:contain;margin:0 0 1.5mm auto}.company b{font-size:12pt}.meta{width:100%;border-collapse:collapse;margin-top:4mm}.meta th,.meta td{border:1px solid #777;padding:2mm}.meta th{width:28%;background:#f2f2f2}.amount-due{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #111;margin:6mm 0 5mm;padding:0 2mm 2mm;font-size:12pt;font-weight:900}.amount-due strong{font-size:19pt}.lines{width:100%;border-collapse:collapse;table-layout:fixed}.lines th,.lines td{border:1px solid #777;padding:1.7mm 1.4mm;vertical-align:top}.lines th{background:#eee;text-align:center}.num{text-align:right}.center{text-align:center}.summary{width:86mm;margin:5mm 0 0 auto;border-collapse:collapse}.summary th,.summary td{border:1px solid #777;padding:2mm}.summary th{background:#f2f2f2;text-align:left}.summary td{text-align:right;font-weight:800}.note{margin-top:5mm;white-space:pre-line;border-top:1px solid #aaa;padding-top:3mm}@media print{.print-actions{display:none}.document{min-height:0}}</style>`}
+function domesticCompanyHtml(){const logoUrl=new URL("./yumirume-logo.jpg",location.href).href;return`<div class="company"><img class="company-logo" src="${esc(logoUrl)}" alt="YUMIRUME INC."><b>株式会社ゆみるめ</b><br>〒556-0004 大阪市浪速区日本橋西2-2-11<br>TEL 06-6537-9994　FAX 06-6536-8496<br>info@yumirume.co.jp</div>`}
 function writeDomesticPrintDocument(printWindow,title,body){
   if(!printWindow)return;
   printWindow.document.open();

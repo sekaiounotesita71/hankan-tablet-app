@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/jpeg" href="./yumirume-logo.jpg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -69,12 +70,12 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 @media (max-width:900px){.supplier-review-tools{grid-template-columns:1fr 1fr}.supplier-review-group-head{grid-template-columns:1fr 1fr}.supplier-review-group-title{grid-column:1/-1}.supplier-review-table-wrap{max-height:460px}}
 @media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
 </style>
-<link rel="stylesheet" href="./app-nav.css?v=20260806-2">
+<link rel="stylesheet" href="./app-nav.css?v=20260828-1">
 </head>
 <body class="auth-checking">
 <div id="auth-gate" class="auth-gate" aria-live="polite">
   <div class="auth-shell">
-    <div class="auth-shell-head"><div class="auth-brand">ゆみるめ 業務管理</div><p>登録されたアカウントでログインしてください。</p></div>
+    <div class="auth-shell-head"><img class="app-login-logo" src="./yumirume-logo.jpg" alt="YUMIRUME INC."><div class="auth-brand">ゆみるめ 業務管理</div><p>登録されたアカウントでログインしてください。</p></div>
     <div class="auth-shell-body">
       <form id="auth-login-form" class="auth-login-form" onsubmit="signInSupabase(event)">
         <div style="display:grid;gap:12px">
@@ -119,7 +120,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   </nav>
   <div class="app-header-row">
     <div class="title-wrap">
-      <div><div class="title">販売・業務管理</div></div>
+      <div class="app-brand-lockup"><img class="app-brand-logo" src="./yumirume-logo.jpg" alt="YUMIRUME INC."><div class="title">販売・業務管理</div></div>
       <button class="language-switch" type="button" data-language-switch data-no-i18n onclick="toggleUiLanguage()" aria-label="英語へ切替" title="英語へ切替">EN</button>
     </div>
     <div class="actions">
@@ -8432,8 +8433,7 @@ function arStatementDocumentHtml(snapshot,issue){
   const profile=snapshot.profile;
   const address=String(profile.address_text||"").split(/\r?\n/).map(line=>esc(line)).join("<br>");
   const compact=snapshot.charges.length+snapshot.payments.length>10?" compact":"";
-  const logoScript=document.querySelector("script[data-soa-logo]")?.textContent||"";
-  const logoUrl=window.YUMIRUME_SOA_LOGO||logoScript.match(/"(data:image\/jpeg;base64,[^"]+)"/)?.[1]||"";
+  const logoUrl=new URL("./yumirume-logo.jpg",location.href).href;
   return `<!doctype html><html><head><meta charset="utf-8"><title>SOA ${esc(snapshot.importerCode)} ${esc(snapshot.range.from)}-${esc(snapshot.range.to)}</title>
   <style>
   @page{size:A4 portrait;margin:9mm}
@@ -8568,20 +8568,21 @@ function writeAccountingReport(reportWindow,{title,subtitle="",meta=[],summary=[
     return `<td class="${esc(data.className||"")}">${esc(data.text??"")}</td>`;
   }).join("")}</tr>`).join("");
   const issuedAt=new Date().toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+  const logoUrl=new URL("./yumirume-logo.jpg",location.href).href;
   reportWindow.document.open();
   reportWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
   <style>
   @page{size:A4 ${orientation};margin:10mm}
   *{box-sizing:border-box}body{margin:0;color:#111;background:#fff;font-family:"Yu Gothic","Meiryo",sans-serif;font-size:9pt;line-height:1.4}
   .print-actions{display:flex;gap:8px;margin:0 0 7mm}.print-actions button{padding:8px 16px;border:1px solid #333;background:#fff;font:inherit;font-weight:700;cursor:pointer}
-  header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:3mm;margin-bottom:3mm}h1{font-size:19pt;letter-spacing:0;margin:0}.company{text-align:right;font-weight:700}.subtitle{font-size:10pt;margin-top:1mm;color:#333}
+  header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:3mm;margin-bottom:3mm}h1{font-size:19pt;letter-spacing:0;margin:0}.report-brand{display:flex;align-items:center;gap:3mm}.report-brand img{display:block;width:25mm;height:15mm;object-fit:contain}.company{text-align:right;font-weight:700}.subtitle{font-size:10pt;margin-top:1mm;color:#333}
   .meta{display:flex;flex-wrap:wrap;gap:2mm 7mm;margin:0 0 3mm}.meta span{white-space:nowrap}.summary{display:grid;grid-template-columns:repeat(${Math.min(Math.max(summary.length,1),4)},1fr);gap:2mm;margin:0 0 4mm}.summary-item{border:1px solid #777;padding:2.5mm 3mm}.summary-item span{display:block;font-size:8pt;color:#444}.summary-item b{display:block;text-align:right;font-size:13pt;margin-top:.5mm}
   table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{break-inside:avoid}th,td{border:1px solid #777;padding:1.6mm 1.8mm;vertical-align:top;overflow-wrap:anywhere}th{background:#e9edf2;text-align:left;font-size:8pt}.money{text-align:right;white-space:nowrap}.center{text-align:center}.code{font-family:Consolas,"Courier New",monospace}.negative{color:#b42318}.muted{color:#555}.total-row td{font-weight:700;border-top:2px solid #111}.portrait th:nth-child(1){width:21mm}.portrait th:nth-child(2){width:20mm}.portrait th:nth-child(3){width:32mm}.portrait th:nth-child(5),.portrait th:nth-child(6),.portrait th:nth-child(7){width:25mm}
   footer{margin-top:3mm;text-align:right;color:#555;font-size:7.5pt}
   @media print{.print-actions{display:none}body{font-size:8.5pt}a{color:inherit;text-decoration:none}}
   </style></head><body class="${esc(orientation)}">
   <div class="print-actions"><button onclick="window.print()">印刷 / PDF保存</button><button onclick="window.close()">閉じる</button></div>
-  <header><div><h1>${esc(title)}</h1>${subtitle?`<div class="subtitle">${esc(subtitle)}</div>`:""}</div><div class="company">株式会社ゆみるめ</div></header>
+  <header><div><h1>${esc(title)}</h1>${subtitle?`<div class="subtitle">${esc(subtitle)}</div>`:""}</div><div class="report-brand"><img src="${esc(logoUrl)}" alt="YUMIRUME INC."><div class="company">株式会社ゆみるめ</div></div></header>
   ${metaHtml?`<div class="meta">${metaHtml}</div>`:""}
   ${summaryHtml?`<div class="summary">${summaryHtml}</div>`:""}
   <table><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>
