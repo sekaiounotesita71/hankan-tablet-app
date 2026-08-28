@@ -31,6 +31,6 @@ test("print documents use the shared logo", () => {
 
 test("logo sizes are constrained for tablet headers", () => {
   const css = read("app-nav.css");
-  assert.match(css, /\.app-brand-logo\{[^}]*width:52px[^}]*height:32px/);
+  assert.match(css, /\.app-brand-logo\{[^}]*width:88px[^}]*height:54px/);
   assert.match(css, /\.app-login-logo\{[^}]*width:150px[^}]*height:92px/);
 });

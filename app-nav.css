@@ -73,7 +73,7 @@ html{scrollbar-gutter:stable}
 .app-shell-header .header-right,
 .app-shell-header .actions{min-width:0}
 .app-brand-lockup{display:flex;align-items:center;gap:9px;min-width:0}
-.app-brand-logo{display:block;width:52px;height:32px;object-fit:contain;flex:0 0 auto}
+.app-brand-logo{display:block;width:88px;height:54px;object-fit:contain;flex:0 0 auto}
 .app-login-logo{display:block;width:150px;height:92px;object-fit:contain;margin:0 auto 8px}
 @media(max-width:900px){
   .app-shell-header{padding:8px 10px 10px}
@@ -82,5 +82,5 @@ html{scrollbar-gutter:stable}
   .app-shell-header .title-wrap{width:100%;align-items:center;flex-direction:row}
   .app-shell-header .header-right,
   .app-shell-header .actions{width:100%}
-  .app-brand-logo{width:46px;height:29px}
+  .app-brand-logo{width:72px;height:44px}
 }
