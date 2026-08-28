@@ -1306,6 +1306,7 @@ let salesReferenceLoadSequence=0;
 let profitReferenceLoadSequence=0;
 let profitReferenceReady=false;
 let profitReferenceRows=[];
+let profitReferencePurchaseSummary={subtotal:0,fees:0,cost:0,receiptCount:0};
 let salesRefCustomerOptions=[];
 let salesRefProductOptions=[];
 let salesRefSuggestionIndex=0;
@@ -4203,7 +4204,6 @@ function salesRefMetrics(rows,options={}){
     });
   }
   const grossProfit=costedSales-purchaseCost;
-  const grossProfitComplete=unpricedCount===0;
   return {
     rows,
     count:rows.length,
@@ -4217,7 +4217,7 @@ function salesRefMetrics(rows,options={}){
     products:products.size,
     avgCustomer:customers.size?totalSales/customers.size:0,
     avgNetUnit:totalNet?netSales/totalNet:0,
-    purchaseCost,costedSales,grossProfit,grossMargin:costedSales?grossProfit/costedSales*100:0,grossProfitComplete,
+    purchaseCost,costedSales,grossProfit,grossMargin:costedSales?grossProfit/costedSales*100:0,
     pricedCount,unpricedCount,unpricedSales,supplierPriceCount,productPriceCount
   };
 }
@@ -4270,7 +4270,10 @@ function salesRefUnpricedProductTable(rows){
   }).join(""):`<tr><td colspan="6">原価未設定の商品はありません。</td></tr>`;
   return `<div class="sales-analysis-table"><table><caption>原価未設定商品（売上金額順）</caption><thead><tr><th>商品コード</th><th>商品名</th><th>対象売上</th><th>明細</th><th>売上数量</th><th>NET</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
-function salesRefProfitAnalysisHtml(rows){
+function profitReferenceDetailFilterActive(){
+  return ["profit-ref-importer","profit-ref-customer","profit-ref-product","profit-ref-search"].some(id=>val(id).trim());
+}
+function salesRefProfitAnalysisHtml(rows,purchaseSummary=profitReferencePurchaseSummary){
   const metrics=salesRefMetrics(rows);
   const exportSales=rows.filter(row=>!row._domesticSale).reduce((sum,row)=>sum+salesRefNum(row.amount),0);
   const domesticSales=rows.filter(row=>row._domesticSale).reduce((sum,row)=>sum+salesRefNum(row.amount),0);
@@ -4278,17 +4281,21 @@ function salesRefProfitAnalysisHtml(rows){
   const customerRows=salesRefProfitGroups(rows,row=>`${row.customer_code||""} ${row.store_name||""}`.trim());
   const segmentRows=salesRefProfitGroups(rows,row=>row._domesticSale?"国内売上":"輸出売上");
   const importerRows=salesRefProfitGroups(rows,row=>salesRefRowImporter(row).label);
-  const grossProfitText=metrics.grossProfitComplete?salesRefMoney(metrics.grossProfit):"算出不可";
-  const grossProfitSub=metrics.grossProfitComplete
-    ?`粗利率 ${metrics.grossMargin.toFixed(1)}%`
-    :`原価未設定売上 ${salesRefMoney(metrics.unpricedSales)} のため未算出`;
-  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">送料売上と消費税は粗利計算から除外。販売数量に、発注先別仕入単価を優先して掛け、未設定時は商品マスタの標準仕入単価で計算します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">原価反映 ${metrics.pricedCount}/${metrics.count}件</span></div>
+  const periodPurchaseCost=salesRefNum(purchaseSummary.cost);
+  const aggregateAvailable=!profitReferenceDetailFilterActive();
+  const aggregateGrossProfit=metrics.netSales-periodPurchaseCost;
+  const aggregateMargin=metrics.netSales?aggregateGrossProfit/metrics.netSales*100:0;
+  const grossProfitText=aggregateAvailable?salesRefMoney(aggregateGrossProfit):"全体表示で確認";
+  const grossProfitSub=aggregateAvailable
+    ?`粗利率 ${aggregateMargin.toFixed(1)}%`
+    :"輸入社・得意先・商品等の絞り込みを解除してください";
+  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">全体粗利は、期間内の純売上から仕入確定の税抜商品仕入・送料・その他費用を差し引いて計算します。商品別粗利はマスタ仕入単価で計算します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">商品別原価 ${metrics.pricedCount}/${metrics.count}件</span></div>
     <div class="sales-analysis-grid">
       <div class="sales-compare-card"><div class="sales-card-label">合算純売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.netSales))}</div><div class="sales-compare-sub">輸出 ${esc(salesRefMoney(exportSales))} / 国内 ${esc(salesRefMoney(domesticSales))}</div></div>
-      <div class="sales-compare-card"><div class="sales-card-label">原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">仕入先別単価 ${metrics.supplierPriceCount}件 / 標準仕入単価 ${metrics.productPriceCount}件</div></div>
-      <div class="sales-compare-card"><div class="sales-card-label">原価確認済み額</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.purchaseCost))}</div><div class="sales-compare-sub">原価設定済み売上に対する金額</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">期間仕入（税抜）</div><div class="sales-compare-main">${esc(salesRefMoney(periodPurchaseCost))}</div><div class="sales-compare-sub">商品 ${esc(salesRefMoney(purchaseSummary.subtotal))} / 送料・その他 ${esc(salesRefMoney(purchaseSummary.fees))} / ${esc(purchaseSummary.receiptCount)}伝票</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">全体粗利</div><div class="sales-compare-main">${esc(grossProfitText)}</div><div class="sales-compare-sub">${esc(grossProfitSub)}</div></div>
-      <div class="sales-compare-card"><div class="sales-card-label">原価未設定売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.unpricedSales))}</div><div class="sales-compare-sub">${esc(metrics.unpricedCount)}明細 / 設定後に自動再計算</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">商品別原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">仕入先別単価 ${metrics.supplierPriceCount}件 / 標準仕入単価 ${metrics.productPriceCount}件</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">商品別原価未設定売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.unpricedSales))}</div><div class="sales-compare-sub">${esc(metrics.unpricedCount)}明細 / 全体粗利には影響しません</div></div>
     </div>
     <div class="sales-analysis-tables">${salesRefUnpricedProductTable(rows)}${salesRefProfitTable("輸出・国内別粗利",segmentRows)}${salesRefProfitTable("商品別粗利",productRows)}${salesRefProfitTable("得意先別粗利",customerRows)}${salesRefProfitTable("輸入社・国内別粗利",importerRows)}</div>`;
 }
@@ -4719,13 +4726,20 @@ function renderProfitReferenceBoard(){
     target.innerHTML=`<div class="sales-empty">表示対象の確定売上データはありません。</div>`;
     return;
   }
-  target.innerHTML=salesRefProfitAnalysisHtml(rows);
+  target.innerHTML=salesRefProfitAnalysisHtml(rows,profitReferencePurchaseSummary);
+}
+async function salesRefReadPurchaseSummary(client,range){
+  const receipts=(await purchaseRefReadReceipts(client,range)).filter(receipt=>receipt.status==="confirmed");
+  const subtotal=receipts.reduce((sum,receipt)=>sum+purchaseJpyAmount(receipt.subtotal),0);
+  const fees=receipts.reduce((sum,receipt)=>sum+purchaseJpyAmount(receipt.shipping_fee)+purchaseJpyAmount(receipt.other_fee),0);
+  return {subtotal,fees,cost:subtotal+fees,receiptCount:receipts.length};
 }
 async function loadProfitReferenceBoard(){
   const loadSequence=++profitReferenceLoadSequence;
   const state=document.getElementById("profit-ref-state");
   profitReferenceReady=false;
   profitReferenceRows=[];
+  profitReferencePurchaseSummary={subtotal:0,fees:0,cost:0,receiptCount:0};
   renderProfitReferenceBoard();
   syncProfitReferenceFiltersToSales();
   if(state)state.textContent="売上データを読み込んでいます...";
@@ -4742,10 +4756,14 @@ async function loadProfitReferenceBoard(){
   const range=salesRefDatabaseRange();
   if(range.error){if(state)state.textContent=range.error;return}
   try{
-    if(state)state.textContent="国内売上を読み込んでいます...";
-    const domesticRows=await salesRefReadDomesticRows(client,range);
+    if(state)state.textContent="国内売上と期間仕入を読み込んでいます...";
+    const [domesticRows,purchaseSummary]=await Promise.all([
+      salesRefReadDomesticRows(client,range),
+      salesRefReadPurchaseSummary(client,range)
+    ]);
     if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;
     profitReferenceRows=[...salesReferenceRows,...domesticRows];
+    profitReferencePurchaseSummary=purchaseSummary;
     salesRefRenderFilterOptions(profitReferenceRows);
     const currentRows=profitReferenceRows.filter(row=>(row.source_type==="現場確定"||row._domesticSale)&&!salesRefIsProvisional(row));
     const filteredRows=salesRefFilteredRows({rows:profitReferenceRows}).filter(row=>!salesRefIsProvisional(row));
@@ -4754,7 +4772,7 @@ async function loadProfitReferenceBoard(){
     const result=await salesRefAttachMasterCostContext(currentRows);
     if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;
     profitReferenceReady=true;
-    if(state)state.textContent=`粗利更新済み（価格ベース / 発注先別単価を判定 ${result.supplierMapped}明細${result.warning?` / ${result.warning}`:""}）`;
+    if(state)state.textContent=`粗利更新済み（期間仕入 ${purchaseSummary.receiptCount}伝票 / 商品別の発注先単価を判定 ${result.supplierMapped}明細${result.warning?` / ${result.warning}`:""}）`;
     renderProfitReferenceBoard();
   }catch(error){
     if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;

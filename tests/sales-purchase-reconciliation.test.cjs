@@ -63,8 +63,8 @@ test("PDF一括取込以外の通常事前仕入は自動配分しない",()=>{
 });
 
 test("粗利画面はマスタ仕入単価を基準に表示する",()=>{
-  assert.match(html,/発注先別仕入単価を優先/);
-  assert.match(html,/送料売上と消費税は粗利計算から除外/);
+  assert.match(html,/商品別粗利はマスタ仕入単価で計算/);
+  assert.match(html,/全体粗利は、期間内の純売上から仕入確定/);
   assert.match(html,/原価未設定商品（売上金額順）/);
   assert.doesNotMatch(html,/明細リンク \$\{metrics\.linkedCostCount\}件/);
 });
@@ -92,16 +92,26 @@ test("粗利は送料を含まない純売上から計算する",()=>{
   assert.match(metrics,/const totalSales=netSales\+shippingSales/);
   assert.match(metrics,/costedSales\+=salesRefNum\(row\.amount\)/);
   assert.match(metrics,/const grossProfit=costedSales-purchaseCost/);
-  assert.match(metrics,/grossProfitComplete=unpricedCount===0/);
   assert.doesNotMatch(metrics,/grossProfit=totalSales-purchaseCost/);
 });
 
-test("原価未設定を含む集計は全体粗利を表示しない",()=>{
+test("原価未設定を含む商品別集計は粗利を表示しない",()=>{
   const table=sourceBetween("function salesRefProfitTable","function salesRefUnpricedProductGroups");
   const analysis=sourceBetween("function salesRefProfitAnalysisHtml","function salesRefRatio");
   assert.match(table,/incomplete=row\.unpriced>0/);
   assert.match(table,/算出不可/);
-  assert.match(analysis,/grossProfitComplete\?salesRefMoney\(metrics\.grossProfit\):"算出不可"/);
+  assert.match(analysis,/aggregateGrossProfit=metrics\.netSales-periodPurchaseCost/);
+  assert.match(analysis,/全体粗利には影響しません/);
+});
+
+test("全体粗利は同期間の仕入確定を税抜で集計する",()=>{
+  const summary=sourceBetween("async function salesRefReadPurchaseSummary","async function loadProfitReferenceBoard");
+  const load=sourceBetween("async function loadProfitReferenceBoard","function salesRefResetPage");
+  assert.match(summary,/receipt\.status==="confirmed"/);
+  assert.match(summary,/purchaseJpyAmount\(receipt\.subtotal\)/);
+  assert.match(summary,/purchaseJpyAmount\(receipt\.shipping_fee\)\+purchaseJpyAmount\(receipt\.other_fee\)/);
+  assert.match(summary,/cost:subtotal\+fees/);
+  assert.match(load,/salesRefReadPurchaseSummary\(client,range\)/);
 });
 
 test("PDF仕入は全期間検索せず対象月だけ取得する",()=>{
