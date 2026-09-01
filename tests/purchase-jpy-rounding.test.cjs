@@ -16,7 +16,7 @@ assert.equal(sandbox.purchaseJpyAmount(98363.2), 98363);
 assert.equal(sandbox.purchaseJpyAmount(100.5), 101);
 assert.equal(sandbox.purchaseJpyAmount(-100.5), -101);
 
-assert.match(app, /return qty===null\|\|price===null\?0:purchaseJpyAmount\(qty\*price\)/, "仕入入力は明細ごとに1円単位へ丸めること");
+assert.match(app, /const amount=purchaseJpyAmount\(qty\*price\)/, "仕入入力は明細ごとに1円単位へ丸めること");
 assert.match(app, /line\.line_amount=purchaseJpyAmount\(Number\(line\.actual_qty\|\|0\)\*Number\(line\.unit_price\|\|0\)\)/, "仕入修正も同じ丸め規則を使うこと");
 assert.match(app, /"税抜金額":purchaseJpyAmount\(line\.line_amount\)/, "仕入Excelは丸め済み明細金額を出力すること");
 
