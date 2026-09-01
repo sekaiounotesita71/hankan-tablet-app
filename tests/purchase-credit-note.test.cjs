@@ -21,6 +21,15 @@ test("credit-note entry is submitted through the versioned atomic RPC", () => {
   assert.match(html, /entryType==="credit_note"\?"赤伝"/);
 });
 
+test("current database can store credit notes without the new migration", () => {
+  assert.match(html, /function createConfirmedPurchaseCreditNoteCompat/);
+  assert.match(html, /rpc\("create_purchase_batch_v3"/);
+  assert.match(html, /actual_qty:-Math\.abs/);
+  assert.match(html, /update\(\{tax_override:true,tax_amount:taxAmount\}\)/);
+  assert.match(html, /rpc\("confirm_purchase_receipt"/);
+  assert.match(html, /delete\(\)\.eq\("id",receiptId\)\.neq\("status","confirmed"\)/);
+});
+
 test("database stores purchase credit notes as negative receipts", () => {
   assert.match(sql, /receipt_type in \('order','advance','credit_note'\)/);
   assert.match(sql, /create or replace function public\.create_confirmed_purchase_batch_v5/);

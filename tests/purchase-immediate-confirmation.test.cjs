@@ -12,7 +12,7 @@ assert.match(sql, /perform public\.confirm_purchase_receipt\(v_receipt_id\)/);
 assert.doesNotMatch(sql, /update public\.purchase_receipts/);
 
 assert.match(html, />仕入確定 Ctrl\+Enter</);
-assert.match(html, /rpc\("create_confirmed_purchase_batch_v5"/);
+assert.match(html, /rpc\("create_confirmed_purchase_batch_v4"/);
 assert.match(html, /purchase-filter-status"\)\.value="confirmed"/);
 assert.match(html, /expected">本社確認待ち</);
 assert.doesNotMatch(html, />未照合</);

@@ -38,6 +38,7 @@ const purchaseReceiptTypeLabel = new Function(`${labelSource}; return purchaseRe
 
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "advance" }), "直接入力");
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "credit_note" }), "赤伝・減額");
+assert.equal(purchaseReceiptTypeLabel({ receipt_type: "advance", note: "[赤伝] 単価訂正" }), "赤伝・減額");
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "order", source_assignment_id: null }), "売上引用");
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "order", source_assignment_id: "assignment-id" }), "外部作業");
 
@@ -47,6 +48,7 @@ const saveSource = sourceBetween(
   "function initialWorkspaceTab"
 );
 assert.match(saveSource, /rpc\("create_confirmed_purchase_batch_v5"/);
+assert.match(saveSource, /rpc\("create_confirmed_purchase_batch_v4"/);
 assert.match(saveSource, /entryType==="credit_note"\?"赤伝":hasSalesLinks\?"売上引用":"直接入力"/);
 
 console.log("Purchase receipt type tests passed");

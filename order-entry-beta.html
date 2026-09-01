@@ -10111,7 +10111,7 @@ function purchaseStatusLabel(status,receipt=null){
   return {expected:"本社確認待ち",invoice_received:"請求書受領",confirmed:"仕入確定",cancelled:"取消"}[status]||status||"";
 }
 function purchaseReceiptTypeLabel(receipt){
-  if(receipt?.receipt_type==="credit_note")return "赤伝・減額";
+  if(receipt?.receipt_type==="credit_note"||String(receipt?.note||"").trimStart().startsWith("[赤伝]"))return "赤伝・減額";
   if(receipt?.receipt_type==="advance")return "直接入力";
   return receipt?.source_assignment_id?"外部作業":"売上引用";
 }
@@ -11203,16 +11203,31 @@ async function saveAdvancePurchaseBatch(){
   advancePurchaseSaving=true;
   setAppBusy(true,`${lines.length}件の仕入を確定しています...`);
   try{
-    const {error}=await supabaseClient.rpc("create_confirmed_purchase_batch_v5",{
-      p_purchase_date:purchaseDate,
-      p_site_code:siteCode,
-      p_supplier_code:supplierCode,
-      p_supplier_invoice_no:null,
-      p_note:val("advance-purchase-note").trim()||null,
-      p_entry_type:entryType,
-      p_lines:lines
-    });
-    if(error)throw error;
+    const note=val("advance-purchase-note").trim()||null;
+    if(entryType==="credit_note"){
+      const {error}=await supabaseClient.rpc("create_confirmed_purchase_batch_v5",{
+        p_purchase_date:purchaseDate,
+        p_site_code:siteCode,
+        p_supplier_code:supplierCode,
+        p_supplier_invoice_no:null,
+        p_note:note,
+        p_entry_type:entryType,
+        p_lines:lines
+      });
+      if(error&&purchaseRpcMissing(error,"create_confirmed_purchase_batch_v5")){
+        await createConfirmedPurchaseCreditNoteCompat({purchaseDate,siteCode,supplierCode,note,lines});
+      }else if(error)throw error;
+    }else{
+      const {error}=await supabaseClient.rpc("create_confirmed_purchase_batch_v4",{
+        p_purchase_date:purchaseDate,
+        p_site_code:siteCode,
+        p_supplier_code:supplierCode,
+        p_supplier_invoice_no:null,
+        p_note:note,
+        p_lines:lines
+      });
+      if(error)throw error;
+    }
     clearAdvancePurchaseRows({confirm:false,resetEntryType:true});
     const state=document.getElementById("advance-purchase-state");
     if(state){state.textContent=`仕入確定 ${lines.length}件`;state.className="pill blue"}
@@ -11227,13 +11242,58 @@ async function saveAdvancePurchaseBatch(){
     const duplicateSales=error?.code==="23505"&&/purchase_sales_links|sales_record_id|sales record has already/i.test(errorText);
     const message=duplicateSales
       ?"この売上は別の端末ですでに仕入登録されています。画面をクリアして、もう一度「売上から引用」を実行してください。"
-      :error?.code==="PGRST202"||/create_confirmed_purchase_batch_v5/i.test(errorText)
-        ?"仕入赤伝対応SQLが未実行です。purchase-credit-note-migration.sql を実行してください。"
-        :sitePartnerDbError(error);
+      :sitePartnerDbError(error);
     alert(message);
   }finally{
     advancePurchaseSaving=false;
     setAppBusy(false);
+  }
+}
+function purchaseRpcMissing(error,functionName){
+  return error?.code==="PGRST202"||String(error?.message||"").includes(functionName);
+}
+async function createConfirmedPurchaseCreditNoteCompat({purchaseDate,siteCode,supplierCode,note,lines}){
+  let receiptId=null;
+  let confirmed=false;
+  try{
+    const taggedNote=`[赤伝]${note?` ${note}`:""}`;
+    const {data,error}=await supabaseClient.rpc("create_purchase_batch_v3",{
+      p_purchase_date:purchaseDate,
+      p_site_code:siteCode,
+      p_supplier_code:supplierCode,
+      p_supplier_invoice_no:null,
+      p_note:taggedNote,
+      p_lines:lines
+    });
+    if(error)throw error;
+    receiptId=data;
+    const {data:storedLines,error:lineReadError}=await supabaseClient
+      .from("purchase_receipt_lines")
+      .select("id,actual_qty")
+      .eq("receipt_id",receiptId);
+    if(lineReadError)throw lineReadError;
+    if(!Array.isArray(storedLines)||storedLines.length!==lines.length)throw new Error("赤伝明細の作成件数を確認できませんでした。");
+    const updateResults=await Promise.all(storedLines.map(line=>supabaseClient
+      .from("purchase_receipt_lines")
+      .update({actual_qty:-Math.abs(Number(line.actual_qty||0)),track_inventory:false})
+      .eq("id",line.id)));
+    const lineUpdateError=updateResults.find(result=>result.error)?.error;
+    if(lineUpdateError)throw lineUpdateError;
+    const taxAmount=advancePurchaseTaxAmount();
+    const {error:receiptUpdateError}=await supabaseClient
+      .from("purchase_receipts")
+      .update({tax_override:true,tax_amount:taxAmount})
+      .eq("id",receiptId);
+    if(receiptUpdateError)throw receiptUpdateError;
+    const {error:confirmError}=await supabaseClient.rpc("confirm_purchase_receipt",{p_receipt_id:receiptId});
+    if(confirmError)throw confirmError;
+    confirmed=true;
+    return receiptId;
+  }catch(error){
+    if(receiptId&&!confirmed){
+      await supabaseClient.from("purchase_receipts").delete().eq("id",receiptId).neq("status","confirmed");
+    }
+    throw error;
   }
 }
 function initialWorkspaceTab(){
