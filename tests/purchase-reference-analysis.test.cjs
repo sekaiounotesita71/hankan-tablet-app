@@ -75,6 +75,7 @@ assert.equal(productGroups.find(row => row.key === "P1").amount, 1100);
 assert.deepEqual(productGroups.find(row => row.key === "P1").quantityByUnit, { Kg: 3 });
 
 assert.match(html, /id="purchase-filter-date-range"/);
+assert.match(html, /setPurchaseReferencePeriod\('recent'\)/);
 assert.match(html, /setPurchaseReferencePeriod\('month'\)/);
 assert.match(html, /setPurchaseReferencePeriod\('year'\)/);
 assert.match(html, /function purchaseRefMonthlyYoYRows/);
@@ -87,6 +88,8 @@ assert.match(html, /年別仕入/);
 assert.match(html, /仕入先別/);
 assert.match(html, /商品別/);
 assert.match(html, /salesRefReadPaged/);
+assert.match(html, /purchaseDateRange\.value=purchaseRefRecentRange\(31\)/);
+assert.match(html, /id="purchase-filter-status"[^>]*>[\s\S]*?<option value="" selected>全状態<\/option>/);
 assert.doesNotMatch(sourceBetween(html, "async function loadPurchaseReceipts", "function purchaseReceiptCardHtml"), /\.limit\(500\)/);
 
 console.log("Purchase reference analysis tests passed");

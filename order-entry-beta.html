@@ -708,13 +708,14 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>期間<input id="purchase-filter-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 202608 / 2026 / 20260801-20260831" oninput="purchaseRefResetPage();renderPurchaseReceipts()" onkeydown="if(event.key==='Enter')loadPurchaseReceipts()"></label>
         <label>拠点<select id="purchase-filter-site" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label>仕入先<input id="purchase-filter-supplier" list="supplier-code-list" autocomplete="off" placeholder="コード・名称" oninput="purchaseRefResetPage();renderPurchaseReceipts()"></label>
-        <label>状態<select id="purchase-filter-status" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="">全状態</option><option value="expected">本社確認待ち</option><option value="invoice_received">請求書受領</option><option value="confirmed" selected>仕入確定</option><option value="cancelled">取消</option></select></label>
+        <label>状態<select id="purchase-filter-status" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="" selected>全状態</option><option value="expected">本社確認待ち</option><option value="invoice_received">請求書受領</option><option value="confirmed">仕入確定</option><option value="cancelled">取消</option></select></label>
         <label>検索<input id="purchase-filter-search" autocomplete="off" placeholder="商品コード・商品名・伝票番号・メモ" oninput="purchaseRefResetPage();renderPurchaseReceipts()"></label>
         <button class="btn" type="button" onclick="loadPurchaseReceipts()">仕入読込</button>
         <button class="btn primary" type="button" onclick="exportPurchaseReferenceExcel()">Excel出力</button>
         <span id="purchase-state" class="pill warn">未読込</span>
       </div>
       <div class="purchase-range-presets" aria-label="仕入期間の選択">
+        <button class="small" type="button" data-purchase-period="recent" onclick="setPurchaseReferencePeriod('recent')">直近31日</button>
         <button class="small" type="button" data-purchase-period="month" onclick="setPurchaseReferencePeriod('month')">今月</button>
         <button class="small" type="button" data-purchase-period="previous-month" onclick="setPurchaseReferencePeriod('previous-month')">前月</button>
         <button class="small" type="button" data-purchase-period="year" onclick="setPurchaseReferencePeriod('year')">今年</button>
@@ -10135,12 +10136,20 @@ function purchaseRefDatabaseRange(){
 function purchaseRefToday(){
   return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 }
+function purchaseRefRecentRange(days=31){
+  const today=purchaseRefToday();
+  const start=new Date(`${today}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate()-Math.max(0,days-1));
+  const from=`${start.getUTCFullYear()}${String(start.getUTCMonth()+1).padStart(2,"0")}${String(start.getUTCDate()).padStart(2,"0")}`;
+  return `${from}-${today.replaceAll("-","")}`;
+}
 function setPurchaseReferencePeriod(kind){
   const input=document.getElementById("purchase-filter-date-range");
   if(!input)return;
   const today=purchaseRefToday();
   const [year,month]=today.split("-").map(Number);
-  if(kind==="month")input.value=`${year}${String(month).padStart(2,"0")}`;
+  if(kind==="recent")input.value=purchaseRefRecentRange(31);
+  else if(kind==="month")input.value=`${year}${String(month).padStart(2,"0")}`;
   else if(kind==="previous-month"){
     const previous=new Date(Date.UTC(year,month-2,1));
     input.value=`${previous.getUTCFullYear()}${String(previous.getUTCMonth()+1).padStart(2,"0")}`;
@@ -11341,7 +11350,7 @@ function init(){
   document.getElementById("external-work-date").value=today();
   document.getElementById("supplier-review-date").value=today();
   const purchaseDateRange=document.getElementById("purchase-filter-date-range");
-  if(purchaseDateRange)purchaseDateRange.value=today().slice(0,7).replace("-","");
+  if(purchaseDateRange)purchaseDateRange.value=purchaseRefRecentRange(31);
   document.getElementById("advance-purchase-date").value=today();
   setAdvancePurchaseReferenceMode("day",{save:false,syncPurchaseDate:false});
   const guideYear=document.getElementById("product-guide-year");
