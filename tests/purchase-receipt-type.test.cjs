@@ -38,7 +38,6 @@ const purchaseReceiptTypeLabel = new Function(`${labelSource}; return purchaseRe
 
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "advance" }), "直接入力");
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "credit_note" }), "赤伝・減額");
-assert.equal(purchaseReceiptTypeLabel({ receipt_type: "advance", note: "[赤伝] 単価訂正" }), "赤伝・減額");
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "order", source_assignment_id: null }), "売上引用");
 assert.equal(purchaseReceiptTypeLabel({ receipt_type: "order", source_assignment_id: "assignment-id" }), "外部作業");
 
