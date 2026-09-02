@@ -31,7 +31,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;padding:0 11px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--text);font-weight:900;white-space:nowrap}.btn:hover{background:#f2f4f6}.btn.primary{border-color:var(--accent);background:var(--accent);color:#fff}.btn.blue{border-color:var(--blue);background:var(--blue);color:#fff}.btn.danger{border-color:#ddbab7;background:#fff;color:var(--danger)}.btn.small{min-height:30px;padding:0 8px;font-size:11px}.btn:disabled{cursor:not-allowed;opacity:.5}
 .toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.entry-head{display:grid;grid-template-columns:150px 160px minmax(220px,1.1fr) 150px minmax(220px,1.2fr);gap:9px;align-items:end}.lookup-input{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:5px}.lookup-input .btn{min-width:38px;padding:0;font-size:18px}
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fff}.entry-table-wrap{max-height:52vh;margin-top:11px}.data-table{width:100%;border-collapse:separate;border-spacing:0}.data-table th,.data-table td{padding:6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.data-table th{position:sticky;top:0;z-index:3;background:#f7f9fa;color:var(--muted);font-weight:900}.data-table tbody tr:last-child td{border-bottom:0}.data-table tbody tr.selected td{background:var(--blue-bg)}.entry-table{min-width:1230px;table-layout:fixed}.entry-table .col-no{width:44px;text-align:center}.entry-table .col-code{width:120px}.entry-table .col-name{width:220px}.entry-table .col-qty{width:90px}.entry-table .col-unit{width:76px}.entry-table .col-price{width:112px}.entry-table .col-tax{width:72px}.entry-table .col-amount{width:118px}.entry-table .col-memo{width:210px}.entry-table .col-actions{width:170px}.entry-table input,.entry-table select{min-height:34px;height:34px;padding:5px 7px}.money{text-align:right!important;font-family:Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:900}.entry-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}.entry-summary{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}.summary-item{min-width:120px;border:1px solid var(--line);border-radius:6px;background:#f8fafb;padding:6px 9px}.summary-label{color:var(--muted);font-size:10px;font-weight:900}.summary-value{margin-top:2px;text-align:right;font-family:Consolas,monospace;font-size:17px;font-weight:900}
-.filter-grid{display:grid;grid-template-columns:145px 145px 180px minmax(190px,1fr) auto;gap:8px;align-items:end}.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;margin:10px 0}.summary-card{border:1px solid var(--line);border-radius:7px;background:#f9fafb;padding:9px}.summary-card b{display:block;margin-top:4px;text-align:right;font-family:Consolas,monospace;font-size:20px}.summary-card span{color:var(--muted);font-size:11px;font-weight:900}
+.filter-grid{display:grid;grid-template-columns:145px 145px 180px minmax(190px,1fr) auto;gap:8px;align-items:end}.date-range-presets{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px}.date-range-presets .btn.active{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;margin:10px 0}.summary-card{border:1px solid var(--line);border-radius:7px;background:#f9fafb;padding:9px}.summary-card b{display:block;margin-top:4px;text-align:right;font-family:Consolas,monospace;font-size:20px}.summary-card span{color:var(--muted);font-size:11px;font-weight:900}
 .sales-table{min-width:1030px}.ar-table{min-width:1100px}.customer-table{min-width:930px}.status-chip{display:inline-flex;align-items:center;min-height:23px;padding:0 7px;border-radius:5px;background:#edf0f2;color:#4d5965;font-size:10px;font-weight:900}.status-chip.unpaid,.status-chip.overdue{background:var(--warn-bg);color:var(--warn)}.status-chip.partial{background:var(--blue-bg);color:var(--blue)}.status-chip.paid{background:var(--accent-bg);color:var(--accent)}.status-chip.cancelled{background:var(--danger-bg);color:var(--danger)}
 .sale-detail td{padding:0!important;background:#f8fafb}.sale-detail-box{padding:9px 12px;white-space:normal}.detail-table{width:100%;border-collapse:collapse}.detail-table th,.detail-table td{padding:5px 7px!important;border:1px solid var(--line);background:#fff;font-size:11px}.empty{padding:26px;text-align:center;color:var(--muted);font-weight:800}
 .ar-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:11px}.side-stack{display:grid;gap:11px;align-content:start}.selected-box{border:1px solid var(--line);border-radius:7px;background:#f8fafb;padding:10px}.selected-box b{display:block;margin-bottom:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .full{grid-column:1/-1}.admin-only-hidden{display:none!important}
@@ -124,11 +124,20 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
       <div class="panel-head"><span>国内売上参照</span><button class="btn small" type="button" onclick="loadSalesReference()">再読込</button></div>
       <div class="panel-body">
         <div class="filter-grid">
-          <label>開始日<input id="sales-from" type="date"></label>
-          <label>終了日<input id="sales-to" type="date"></label>
+          <label>開始日<input id="sales-from" type="date" oninput="syncDomesticSalesPeriodButtons('')"></label>
+          <label>終了日<input id="sales-to" type="date" oninput="syncDomesticSalesPeriodButtons('')"></label>
           <label>得意先<input id="sales-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称"></label>
           <label>商品<input id="sales-product" autocomplete="off" data-domestic-suggest="product-filter" placeholder="商品コード・商品名"></label>
           <button class="btn blue" type="button" onclick="loadSalesReference()">検索</button>
+        </div>
+        <div class="date-range-presets" aria-label="国内売上期間の選択">
+          <button class="btn small" type="button" data-domestic-sales-period="recent" onclick="setDomesticSalesPeriod('recent')">直近31日</button>
+          <button class="btn small" type="button" data-domestic-sales-period="today" onclick="setDomesticSalesPeriod('today')">今日</button>
+          <button class="btn small" type="button" data-domestic-sales-period="week" onclick="setDomesticSalesPeriod('week')">今週</button>
+          <button class="btn small active" type="button" data-domestic-sales-period="month" onclick="setDomesticSalesPeriod('month')">今月</button>
+          <button class="btn small" type="button" data-domestic-sales-period="previous-month" onclick="setDomesticSalesPeriod('previous-month')">先月</button>
+          <button class="btn small" type="button" data-domestic-sales-period="year" onclick="setDomesticSalesPeriod('year')">今年</button>
+          <button class="btn small" type="button" data-domestic-sales-period="all" onclick="setDomesticSalesPeriod('all')">全期間</button>
         </div>
         <div class="summary-grid">
           <div class="summary-card"><span>伝票数</span><b id="sales-count">0</b></div>
@@ -313,6 +322,32 @@ const expandedSales=new Set();
 
 function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
 function monthStart(){return `${today().slice(0,7)}-01`}
+function domesticDateText(date){return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,"0")}-${String(date.getUTCDate()).padStart(2,"0")}`}
+function domesticAddDays(value,delta){const date=new Date(`${value}T00:00:00Z`);date.setUTCDate(date.getUTCDate()+delta);return domesticDateText(date)}
+function domesticWeekStart(value){const date=new Date(`${value}T00:00:00Z`);date.setUTCDate(date.getUTCDate()-(date.getUTCDay()+6)%7);return domesticDateText(date)}
+function domesticSalesPeriodRange(kind){
+  const current=today();
+  if(kind==="recent")return {from:domesticAddDays(current,-30),to:current};
+  if(kind==="today")return {from:current,to:current};
+  if(kind==="week")return {from:domesticWeekStart(current),to:current};
+  if(kind==="month")return {from:monthStart(),to:current};
+  if(kind==="previous-month"){
+    const [year,month]=current.split("-").map(Number);
+    const first=new Date(Date.UTC(year,month-2,1));
+    const last=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0));
+    return {from:domesticDateText(first),to:domesticDateText(last)};
+  }
+  if(kind==="year")return {from:`${current.slice(0,4)}-01-01`,to:current};
+  return {from:"",to:""};
+}
+function syncDomesticSalesPeriodButtons(kind=""){document.querySelectorAll("[data-domestic-sales-period]").forEach(button=>button.classList.toggle("active",button.dataset.domesticSalesPeriod===kind))}
+function setDomesticSalesPeriod(kind){
+  const range=domesticSalesPeriodRange(kind);
+  document.getElementById("sales-from").value=range.from;
+  document.getElementById("sales-to").value=range.to;
+  syncDomesticSalesPeriodButtons(kind);
+  loadSalesReference();
+}
 function esc(value){return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]))}
 function money(value){return Math.round(Number(value)||0).toLocaleString("ja-JP")}
 function numberValue(id){return Number(document.getElementById(id)?.value||0)}
@@ -732,14 +767,16 @@ async function confirmDomesticSale(){
 
 async function loadSalesReference(){
   if(!currentUser)return;
-  const from=value("sales-from")||monthStart();
-  const to=value("sales-to")||today();
+  const from=value("sales-from");
+  const to=value("sales-to");
   const customerQuery=value("sales-customer").trim();
   const productQuery=normalize(value("sales-product"));
   setBusy(true,"国内売上を読み込んでいます。");
   try{
     let rows=await fetchPaged(()=>{
-      let query=supabaseClient.from("domestic_sales").select("*").gte("sale_date",from).lte("sale_date",to).order("sale_date",{ascending:false}).order("sale_no",{ascending:false});
+      let query=supabaseClient.from("domestic_sales").select("*").order("sale_date",{ascending:false}).order("sale_no",{ascending:false});
+      if(from)query=query.gte("sale_date",from);
+      if(to)query=query.lte("sale_date",to);
       if(customerQuery){
         const exact=findCustomer(customerQuery);
         if(exact)query=query.eq("customer_code",exact.customer_code);

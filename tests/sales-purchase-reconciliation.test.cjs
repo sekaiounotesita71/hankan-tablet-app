@@ -127,5 +127,6 @@ test("売上参照の期間空欄は当月を初期値にする",()=>{
   assert.match(source,/if\(!input\.raw\)/);
   assert.match(source,/sales-ref-date-range/);
   assert.match(source,/salesRefDateRangeFromText\(month\)/);
-  assert.doesNotMatch(source,/label:"全期間"/);
+  assert.match(source,/dataset\.periodAll==="true"/);
+  assert.match(source,/label:"全期間"/);
 });

@@ -395,9 +395,13 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       </div>
       <div class="sales-mode-bar">
         <div class="sales-range-presets" aria-label="売上期間の選択">
+          <button class="small" type="button" data-sales-period="recent" onclick="setSalesReferencePeriod('recent')">直近31日</button>
           <button class="small" type="button" data-sales-period="today" onclick="setSalesReferencePeriod('today')">今日</button>
           <button class="small" type="button" data-sales-period="week" onclick="setSalesReferencePeriod('week')">今週</button>
-          <button class="small" type="button" data-sales-period="month" onclick="setSalesReferencePeriod('month')">今月</button>
+          <button class="small active" type="button" data-sales-period="month" onclick="setSalesReferencePeriod('month')">今月</button>
+          <button class="small" type="button" data-sales-period="previous-month" onclick="setSalesReferencePeriod('previous-month')">先月</button>
+          <button class="small" type="button" data-sales-period="year" onclick="setSalesReferencePeriod('year')">今年</button>
+          <button class="small" type="button" data-sales-period="all" onclick="setSalesReferencePeriod('all')">全期間</button>
         </div>
         <div class="sales-status-presets" aria-label="売上区分の選択">
           <input id="sales-ref-status" type="hidden" value="confirmed">
@@ -438,7 +442,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-head"><span>粗利参照</span><span class="pill blue">マスタ仕入単価で計算</span></div>
     <div class="panel-body">
       <div class="sales-board-tools">
-        <label>期間<input id="profit-ref-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="2026 / 202608 / 日付範囲" oninput="invalidateProfitReference()"></label>
+        <label>期間<input id="profit-ref-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="2026 / 202608 / 日付範囲" oninput="delete this.dataset.periodAll;syncProfitReferencePeriodButtons('');invalidateProfitReference()"></label>
         <label>輸入社<input id="profit-ref-importer" list="importer-code-list" placeholder="例 FBI" oninput="invalidateProfitReference()"></label>
         <label>得意先<input id="profit-ref-customer" list="profit-ref-customer-list" autocomplete="off" placeholder="コード・得意先名" oninput="invalidateProfitReference()"></label>
         <label>商品<input id="profit-ref-product" list="profit-ref-product-list" autocomplete="off" placeholder="商品コード・商品名" oninput="invalidateProfitReference()"></label>
@@ -447,9 +451,13 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       </div>
       <div class="sales-mode-bar">
         <div class="sales-range-presets" aria-label="粗利期間の選択">
+          <button class="small" type="button" data-profit-period="recent" onclick="setProfitReferencePeriod('recent')">直近31日</button>
           <button class="small" type="button" data-profit-period="today" onclick="setProfitReferencePeriod('today')">今日</button>
           <button class="small" type="button" data-profit-period="week" onclick="setProfitReferencePeriod('week')">今週</button>
-          <button class="small" type="button" data-profit-period="month" onclick="setProfitReferencePeriod('month')">今月</button>
+          <button class="small active" type="button" data-profit-period="month" onclick="setProfitReferencePeriod('month')">今月</button>
+          <button class="small" type="button" data-profit-period="previous-month" onclick="setProfitReferencePeriod('previous-month')">先月</button>
+          <button class="small" type="button" data-profit-period="year" onclick="setProfitReferencePeriod('year')">今年</button>
+          <button class="small" type="button" data-profit-period="all" onclick="setProfitReferencePeriod('all')">全期間</button>
         </div>
       </div>
       <datalist id="profit-ref-customer-list"></datalist>
@@ -705,7 +713,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-head"><span>仕入参照</span><button class="small" type="button" onclick="loadPurchaseReceipts()">再読込</button></div>
     <div class="panel-body">
       <div class="purchase-board-tools">
-        <label>期間<input id="purchase-filter-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 202608 / 2026 / 20260801-20260831" oninput="purchaseRefResetPage();renderPurchaseReceipts()" onkeydown="if(event.key==='Enter')loadPurchaseReceipts()"></label>
+        <label>期間<input id="purchase-filter-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 202608 / 2026 / 20260801-20260831" oninput="document.querySelectorAll('[data-purchase-period]').forEach(button=>button.classList.remove('active'));purchaseRefResetPage();renderPurchaseReceipts()" onkeydown="if(event.key==='Enter')loadPurchaseReceipts()"></label>
         <label>拠点<select id="purchase-filter-site" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label>仕入先<input id="purchase-filter-supplier" list="supplier-code-list" autocomplete="off" placeholder="コード・名称" oninput="purchaseRefResetPage();renderPurchaseReceipts()"></label>
         <label>状態<select id="purchase-filter-status" onchange="purchaseRefResetPage();renderPurchaseReceipts()"><option value="" selected>全状態</option><option value="expected">本社確認待ち</option><option value="invoice_received">請求書受領</option><option value="confirmed">仕入確定</option><option value="cancelled">取消</option></select></label>
@@ -715,9 +723,11 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <span id="purchase-state" class="pill warn">未読込</span>
       </div>
       <div class="purchase-range-presets" aria-label="仕入期間の選択">
-        <button class="small" type="button" data-purchase-period="recent" onclick="setPurchaseReferencePeriod('recent')">直近31日</button>
+        <button class="small active" type="button" data-purchase-period="recent" onclick="setPurchaseReferencePeriod('recent')">直近31日</button>
+        <button class="small" type="button" data-purchase-period="today" onclick="setPurchaseReferencePeriod('today')">今日</button>
+        <button class="small" type="button" data-purchase-period="week" onclick="setPurchaseReferencePeriod('week')">今週</button>
         <button class="small" type="button" data-purchase-period="month" onclick="setPurchaseReferencePeriod('month')">今月</button>
-        <button class="small" type="button" data-purchase-period="previous-month" onclick="setPurchaseReferencePeriod('previous-month')">前月</button>
+        <button class="small" type="button" data-purchase-period="previous-month" onclick="setPurchaseReferencePeriod('previous-month')">先月</button>
         <button class="small" type="button" data-purchase-period="year" onclick="setPurchaseReferencePeriod('year')">今年</button>
         <button class="small" type="button" data-purchase-period="all" onclick="setPurchaseReferencePeriod('all')">全期間</button>
       </div>
@@ -732,7 +742,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-head"><span>買掛管理</span><button class="small" type="button" onclick="openPayableProfileMasterFromPayables()">支払条件マスタ</button></div>
     <div class="panel-body">
       <div class="ar-tools">
-        <label>請求書日<input id="ap-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderPayables()"></label>
+        <label>請求書日<input id="ap-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="document.querySelectorAll('[data-payable-period]').forEach(button=>button.classList.remove('active'));renderPayables()"></label>
         <label>仕入先<input id="ap-supplier" list="supplier-code-list" autocomplete="off" placeholder="空欄=ALL" oninput="renderPayables()"></label>
         <label>状態
           <select id="ap-status" onchange="renderPayables()">
@@ -750,6 +760,15 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <button class="btn primary" type="button" onclick="syncPurchasesToPayables()">仕入確定を反映</button>
         <button class="btn" type="button" onclick="printPayableListPdf()">買掛一覧PDF</button>
         <button class="btn" type="button" title="仕入先コードを選択して出力" onclick="printSupplierLedgerPdf()">仕入先明細PDF</button>
+      </div>
+      <div class="sales-range-presets" aria-label="買掛期間の選択">
+        <button class="small" type="button" data-payable-period="recent" onclick="setPayableReferencePeriod('recent')">直近31日</button>
+        <button class="small" type="button" data-payable-period="today" onclick="setPayableReferencePeriod('today')">今日</button>
+        <button class="small" type="button" data-payable-period="week" onclick="setPayableReferencePeriod('week')">今週</button>
+        <button class="small" type="button" data-payable-period="month" onclick="setPayableReferencePeriod('month')">今月</button>
+        <button class="small" type="button" data-payable-period="previous-month" onclick="setPayableReferencePeriod('previous-month')">先月</button>
+        <button class="small" type="button" data-payable-period="year" onclick="setPayableReferencePeriod('year')">今年</button>
+        <button class="small active" type="button" data-payable-period="all" onclick="setPayableReferencePeriod('all')">全期間</button>
       </div>
       <div class="hint" id="ap-state">仕入確定データを、自動採番された仕入管理番号ごとに買掛へ反映します。</div>
       <div class="ar-summary" id="ap-summary"></div>
@@ -3678,16 +3697,38 @@ function salesRefWeekStart(value){
   date.setUTCDate(date.getUTCDate()-mondayOffset);
   return date.toISOString().slice(0,10);
 }
+function salesRefAddDays(value,delta){
+  const date=new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate()+delta);
+  return date.toISOString().slice(0,10);
+}
+function salesRefPreviousMonth(value){
+  const [year,month]=String(value||"").split("-").map(Number);
+  const date=new Date(Date.UTC(year,month-2,1));
+  return `${date.getUTCFullYear()}${String(date.getUTCMonth()+1).padStart(2,"0")}`;
+}
+function salesRefPeriodValue(kind,current=salesRefToday()){
+  if(kind==="recent")return `${salesRefCompactDate(salesRefAddDays(current,-30))}-${salesRefCompactDate(current)}`;
+  if(kind==="today")return salesRefCompactDate(current);
+  if(kind==="week")return `${salesRefCompactDate(salesRefWeekStart(current))}-${salesRefCompactDate(current)}`;
+  if(kind==="month")return current.slice(0,7).replace("-","");
+  if(kind==="previous-month")return salesRefPreviousMonth(current);
+  if(kind==="year")return current.slice(0,4);
+  if(kind==="all")return "";
+  return current.slice(0,7).replace("-","");
+}
+function salesRefAssignPeriodInput(input,kind,current=salesRefToday()){
+  input.value=salesRefPeriodValue(kind,current);
+  if(kind==="all")input.dataset.periodAll="true";
+  else delete input.dataset.periodAll;
+}
 function syncSalesReferencePeriodButtons(kind=""){
   document.querySelectorAll("[data-sales-period]").forEach(button=>button.classList.toggle("active",button.dataset.salesPeriod===kind));
 }
 function setSalesReferencePeriod(kind){
   const input=document.getElementById("sales-ref-date-range");
   if(!input)return;
-  const current=salesRefToday();
-  if(kind==="today")input.value=salesRefCompactDate(current);
-  else if(kind==="week")input.value=`${salesRefCompactDate(salesRefWeekStart(current))}-${salesRefCompactDate(current)}`;
-  else input.value=current.slice(0,7).replace("-","");
+  salesRefAssignPeriodInput(input,kind);
   syncSalesReferencePeriodButtons(kind);
   salesRefResetPage();
   loadSalesReferenceBoard();
@@ -3705,10 +3746,7 @@ function syncProfitReferencePeriodButtons(kind=""){
 function setProfitReferencePeriod(kind){
   const input=document.getElementById("profit-ref-date-range");
   if(!input)return;
-  const current=salesRefToday();
-  if(kind==="today")input.value=salesRefCompactDate(current);
-  else if(kind==="week")input.value=`${salesRefCompactDate(salesRefWeekStart(current))}-${salesRefCompactDate(current)}`;
-  else input.value=current.slice(0,7).replace("-","");
+  salesRefAssignPeriodInput(input,kind);
   syncProfitReferencePeriodButtons(kind);
   loadProfitReferenceBoard();
 }
@@ -3717,7 +3755,11 @@ function syncProfitReferenceFiltersToSales(){
   fields.forEach(name=>{
     const source=document.getElementById(`profit-ref-${name}`);
     const target=document.getElementById(`sales-ref-${name}`);
-    if(source&&target)target.value=source.value;
+    if(source&&target){
+      target.value=source.value;
+      if(name==="date-range"&&source.dataset.periodAll==="true")target.dataset.periodAll="true";
+      else if(name==="date-range")delete target.dataset.periodAll;
+    }
   });
   const status=document.getElementById("sales-ref-status");
   if(status)status.value="confirmed";
@@ -4465,10 +4507,11 @@ function salesRefRankHtml(title,rows,unitLabel="金額"){
 }
 function salesRefDatabaseRange(){
   let input=salesRefDateRangeFromInput();
+  const field=document.getElementById("sales-ref-date-range");
+  if(!input.raw&&field?.dataset.periodAll==="true")return {ranges:[{from:"",to:""}],label:"全期間"};
   if(!input.raw){
     const now=new Date();
     const month=`${now.getFullYear()}${salesRefPad2(now.getMonth()+1)}`;
-    const field=document.getElementById("sales-ref-date-range");
     if(field)field.value=month;
     input=salesRefDateRangeFromText(month);
   }
@@ -10146,18 +10189,17 @@ function purchaseRefRecentRange(days=31){
 function setPurchaseReferencePeriod(kind){
   const input=document.getElementById("purchase-filter-date-range");
   if(!input)return;
-  const today=purchaseRefToday();
-  const [year,month]=today.split("-").map(Number);
-  if(kind==="recent")input.value=purchaseRefRecentRange(31);
-  else if(kind==="month")input.value=`${year}${String(month).padStart(2,"0")}`;
-  else if(kind==="previous-month"){
-    const previous=new Date(Date.UTC(year,month-2,1));
-    input.value=`${previous.getUTCFullYear()}${String(previous.getUTCMonth()+1).padStart(2,"0")}`;
-  }else if(kind==="year")input.value=String(year);
-  else input.value="";
+  input.value=salesRefPeriodValue(kind,purchaseRefToday());
   document.querySelectorAll("[data-purchase-period]").forEach(button=>button.classList.toggle("active",button.dataset.purchasePeriod===kind));
   purchaseRefResetPage();
   loadPurchaseReceipts();
+}
+function setPayableReferencePeriod(kind){
+  const input=document.getElementById("ap-date-range");
+  if(!input)return;
+  input.value=salesRefPeriodValue(kind,purchaseRefToday());
+  document.querySelectorAll("[data-payable-period]").forEach(button=>button.classList.toggle("active",button.dataset.payablePeriod===kind));
+  renderPayables();
 }
 function purchaseRefResetPage(){purchaseReferencePage=1}
 function purchaseRefChangePage(delta){
@@ -16121,7 +16163,7 @@ document.addEventListener("blur",handlePendingInput,true);
 ["sales-ref-date-range","sales-ref-importer","sales-ref-customer","sales-ref-product","sales-ref-search"].forEach(id=>{
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
-    if(id==="sales-ref-date-range")syncSalesReferencePeriodButtons();
+    if(id==="sales-ref-date-range"){delete e.target.dataset.periodAll;syncSalesReferencePeriodButtons()}
     if(id==="sales-ref-customer")showSalesRefSuggestions("customer",e.target.value);
     else if(id==="sales-ref-product")showSalesRefSuggestions("product",e.target.value);
     salesRefResetPage();
