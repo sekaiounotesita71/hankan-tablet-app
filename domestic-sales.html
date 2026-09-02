@@ -37,10 +37,12 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
 .ar-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:11px}.side-stack{display:grid;gap:11px;align-content:start}.selected-box{border:1px solid var(--line);border-radius:7px;background:#f8fafb;padding:10px}.selected-box b{display:block;margin-bottom:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .full{grid-column:1/-1}.admin-only-hidden{display:none!important}
 .master-layout{display:grid;grid-template-columns:minmax(330px,.72fr) minmax(0,1.45fr);gap:11px}.master-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.master-form .full{grid-column:1/-1}.check-label{display:flex;align-items:center;gap:7px;min-height:38px;color:var(--text);font-size:12px}.check-label input{width:18px;height:18px;min-height:18px}.master-search{display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:7px;align-items:end;margin-bottom:8px}.master-note{margin-top:8px;color:var(--muted);font-size:11px;font-weight:700}
 .closing-tools{display:grid;grid-template-columns:145px 145px minmax(230px,1fr) auto auto;gap:8px;align-items:end}.closing-summary{display:grid;grid-template-columns:repeat(4,minmax(135px,1fr));gap:8px;margin-top:10px}.closing-list{margin-top:10px}.closing-table{min-width:1120px}.closing-state{margin-top:8px;color:var(--muted);font-size:11px;font-weight:800}.doc-actions{display:flex;gap:5px;align-items:center}
-.busy-overlay{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(21,24,28,.56)}.busy-overlay.open{display:flex}.busy-box{display:flex;align-items:center;gap:12px;max-width:430px;padding:17px 20px;border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(0,0,0,.26);font-weight:900}.spinner{width:25px;height:25px;flex:0 0 25px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;right:16px;bottom:16px;z-index:1200;display:none;max-width:min(440px,calc(100vw - 32px));padding:11px 13px;border:1px solid #aacdbd;border-radius:7px;background:#eff9f3;color:#0b5d3d;box-shadow:0 8px 24px rgba(20,35,45,.18);font-weight:900}.toast.open{display:block}.toast.error{border-color:#e2b5b1;background:#fff1f0;color:var(--danger)}
-@media(max-width:1000px){.entry-head{grid-template-columns:1fr 1fr}.entry-head label:last-child{grid-column:1/-1}.filter-grid,.closing-tools{grid-template-columns:1fr 1fr}.filter-grid label:nth-child(4),.closing-tools label:nth-child(3){grid-column:1/-1}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.ar-layout,.master-layout{grid-template-columns:1fr}.table-wrap{max-height:55vh}.header-user{width:100%;justify-content:space-between}.app-header-row{align-items:flex-start;flex-direction:column}}
-@media(max-width:620px){main{padding:9px 9px 28px}.entry-head,.filter-grid,.form-grid,.master-form,.closing-tools{grid-template-columns:1fr}.entry-head label:last-child,.filter-grid label:nth-child(4),.form-grid .full,.master-form .full,.closing-tools label:nth-child(3){grid-column:auto}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.summary-item{min-width:105px}.status-message{display:none}}
+.inline-suggest{position:fixed;z-index:1350;width:min(470px,calc(100vw - 16px));max-height:min(360px,65vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 12px 28px rgba(20,35,45,.2)}.inline-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;width:100%;min-height:38px;padding:6px 9px;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;cursor:pointer}.inline-suggest button:hover,.inline-suggest button.active{background:var(--blue-bg)}.inline-suggest b{font-family:Consolas,monospace}.inline-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-suggest-empty{padding:10px;color:var(--muted);font-size:11px;font-weight:800}
+.modal-overlay{position:fixed;inset:0;z-index:1300;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(21,24,28,.58)}.modal-overlay.open{display:flex}.modal-shell{display:grid;grid-template-rows:auto minmax(0,1fr);width:min(1320px,100%);max-height:94vh;overflow:hidden;border:1px solid var(--line2);border-radius:8px;background:#fff;box-shadow:0 22px 54px rgba(0,0,0,.3)}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:#f7f9fa;font-weight:900}.modal-body{overflow:auto;padding:12px}.correction-head{display:grid;grid-template-columns:145px 170px minmax(220px,1fr) 150px;gap:8px;align-items:end}.correction-head .full{grid-column:1/-1}.correction-table{min-width:1140px;table-layout:fixed}.correction-table input,.correction-table select{min-height:34px;height:34px;padding:5px 7px}.correction-footer{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}.correction-reason{min-width:min(480px,100%);flex:1}.correction-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.busy-overlay{position:fixed;inset:0;z-index:1500;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(21,24,28,.56)}.busy-overlay.open{display:flex}.busy-box{display:flex;align-items:center;gap:12px;max-width:430px;padding:17px 20px;border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(0,0,0,.26);font-weight:900}.spinner{width:25px;height:25px;flex:0 0 25px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;right:16px;bottom:16px;z-index:1600;display:none;max-width:min(440px,calc(100vw - 32px));padding:11px 13px;border:1px solid #aacdbd;border-radius:7px;background:#eff9f3;color:#0b5d3d;box-shadow:0 8px 24px rgba(20,35,45,.18);font-weight:900}.toast.open{display:block}.toast.error{border-color:#e2b5b1;background:#fff1f0;color:var(--danger)}
+@media(max-width:1000px){.entry-head{grid-template-columns:1fr 1fr}.entry-head label:last-child{grid-column:1/-1}.filter-grid,.closing-tools,.correction-head{grid-template-columns:1fr 1fr}.filter-grid label:nth-child(4),.closing-tools label:nth-child(3),.correction-head .full{grid-column:1/-1}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.ar-layout,.master-layout{grid-template-columns:1fr}.table-wrap{max-height:55vh}.header-user{width:100%;justify-content:space-between}.app-header-row{align-items:flex-start;flex-direction:column}}
+@media(max-width:620px){main{padding:9px 9px 28px}.entry-head,.filter-grid,.form-grid,.master-form,.closing-tools,.correction-head{grid-template-columns:1fr}.entry-head label:last-child,.filter-grid label:nth-child(4),.form-grid .full,.master-form .full,.closing-tools label:nth-child(3),.correction-head .full{grid-column:auto}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.summary-item{min-width:105px}.status-message{display:none}.modal-overlay{padding:6px}.modal-shell{max-height:98vh}}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260828-2">
 </head>
@@ -91,7 +93,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
       <div class="panel-body">
         <div class="entry-head">
           <label>売上日<input id="entry-date" type="date" data-entry-header></label>
-          <label>得意先コード<div class="lookup-input"><input id="entry-customer-code" list="domestic-customer-list" autocomplete="off" data-entry-header oninput="resolveEntryCustomer()"><button class="btn" type="button" title="国内得意先を登録" onclick="openCustomerMasterFromEntry()">+</button></div></label>
+          <label>得意先コード<div class="lookup-input"><input id="entry-customer-code" autocomplete="off" data-entry-header data-domestic-suggest="customer" oninput="resolveEntryCustomer()"><button class="btn" type="button" title="国内得意先を登録" onclick="openCustomerMasterFromEntry()">+</button></div></label>
           <label>得意先名<input id="entry-customer-name" readonly></label>
           <label>送料（税抜・10%）<input id="entry-shipping" type="number" min="0" step="1" inputmode="decimal" value="0" data-entry-header oninput="updateEntryTotals()"></label>
           <label>伝票メモ<input id="entry-memo" class="ime-ja" autocomplete="off" data-entry-header></label>
@@ -124,8 +126,8 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="filter-grid">
           <label>開始日<input id="sales-from" type="date"></label>
           <label>終了日<input id="sales-to" type="date"></label>
-          <label>得意先<input id="sales-customer" list="domestic-customer-list" autocomplete="off" placeholder="コード・名称"></label>
-          <label>商品<input id="sales-product" autocomplete="off" placeholder="商品コード・商品名"></label>
+          <label>得意先<input id="sales-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称"></label>
+          <label>商品<input id="sales-product" autocomplete="off" data-domestic-suggest="product-filter" placeholder="商品コード・商品名"></label>
           <button class="btn blue" type="button" onclick="loadSalesReference()">検索</button>
         </div>
         <div class="summary-grid">
@@ -148,7 +150,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="closing-tools">
           <label>対象月<input id="closing-month" type="month" onchange="refreshDomesticClosingPreview()"></label>
           <label>締め日グループ<select id="closing-day" onchange="refreshDomesticClosingPreview()"><option value="">締め日を選択</option></select></label>
-          <label>得意先<input id="closing-customer" list="domestic-customer-list" autocomplete="off" placeholder="コード・名称" oninput="renderDomesticClosingDayOptions();refreshDomesticClosingPreview()"></label>
+          <label>得意先<input id="closing-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称" oninput="renderDomesticClosingDayOptions();refreshDomesticClosingPreview()"></label>
           <button class="btn" type="button" onclick="refreshDomesticClosingPreview()">内容確認</button>
           <button id="close-billing-button" class="btn primary" type="button" onclick="closeDomesticBillingPeriod()" disabled>締め確定・請求書</button>
         </div>
@@ -167,7 +169,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="panel-head"><span>国内売掛管理</span><button class="btn small" type="button" onclick="loadReceivables()">再読込</button></div>
         <div class="panel-body">
           <div class="filter-grid" style="grid-template-columns:190px 150px auto">
-            <label>得意先<input id="ar-customer" list="domestic-customer-list" autocomplete="off" placeholder="コード・名称"></label>
+            <label>得意先<input id="ar-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称"></label>
             <label>状態<select id="ar-status"><option value="open">未回収のみ</option><option value="">すべて</option><option value="unpaid">未入金</option><option value="partial">一部入金</option><option value="paid">入金済み</option></select></label>
             <button class="btn blue" type="button" onclick="loadReceivables()">検索</button>
           </div>
@@ -201,7 +203,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
           <div class="panel-head">開始残高</div>
           <div class="panel-body">
             <div class="form-grid">
-              <label class="full">得意先<input id="opening-customer" list="domestic-customer-list" autocomplete="off"></label>
+              <label class="full">得意先<input id="opening-customer" autocomplete="off" data-domestic-suggest="customer"></label>
               <label>基準日<input id="opening-date" type="date"></label>
               <label>支払期限<input id="opening-due" type="date"></label>
               <label class="full">開始残高<input id="opening-amount" type="number" min="1" step="1" inputmode="decimal"></label>
@@ -249,6 +251,38 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
   </section>
 </main>
 
+<div id="domestic-sale-correction-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="domestic-sale-correction-title">
+  <div class="modal-shell">
+    <div class="modal-head"><span id="domestic-sale-correction-title">国内売上の管理者修正</span><button class="btn small" type="button" onclick="closeDomesticSaleCorrection()">閉じる</button></div>
+    <div class="modal-body">
+      <div class="correction-head">
+        <label>売上日<input id="correction-date" type="date"></label>
+        <label>得意先コード<input id="correction-customer-code" autocomplete="off" data-domestic-suggest="customer" oninput="resolveCorrectionCustomer()"></label>
+        <label>得意先名<input id="correction-customer-name" readonly></label>
+        <label>送料（税抜・10%）<input id="correction-shipping" type="number" min="0" step="1" inputmode="decimal" oninput="updateCorrectionTotals()"></label>
+        <label class="full">伝票メモ<input id="correction-memo" class="ime-ja" autocomplete="off"></label>
+      </div>
+      <div class="table-wrap" style="max-height:50vh;margin-top:10px">
+        <table class="data-table correction-table">
+          <thead><tr><th style="width:44px">No.</th><th style="width:120px">商品コード</th><th style="width:220px">商品名</th><th style="width:90px">数量</th><th style="width:76px">単位</th><th style="width:112px">単価（税抜）</th><th style="width:72px">税率</th><th style="width:118px" class="money">金額</th><th style="width:190px">明細メモ</th><th style="width:130px">操作</th></tr></thead>
+          <tbody id="correction-lines"></tbody>
+        </table>
+      </div>
+      <div class="correction-footer">
+        <div class="toolbar"><button class="btn" type="button" onclick="addCorrectionLine(true)">行追加</button></div>
+        <label class="correction-reason">修正理由（4文字以上）<input id="correction-reason" class="ime-ja" autocomplete="off" placeholder="例：単価入力誤り"></label>
+        <div class="correction-summary">
+          <span class="pill">税抜 <b id="correction-net" style="margin-left:5px">0</b></span>
+          <span class="pill">税額 <b id="correction-tax" style="margin-left:5px">0</b></span>
+          <span class="pill blue">税込 <b id="correction-total" style="margin-left:5px">0</b></span>
+          <button id="save-correction-button" class="btn primary" type="button" onclick="saveDomesticSaleCorrection()">修正を保存</button>
+        </div>
+      </div>
+      <div class="master-note">入金済み・請求締め済み・輸出連動の売上はここでは修正できません。先に入金または請求締めを確認してください。</div>
+    </div>
+  </div>
+</div>
+
 <div id="busy-overlay" class="busy-overlay" role="status" aria-live="assertive"><div class="busy-box"><span class="spinner" aria-hidden="true"></span><span id="busy-message">処理しています。</span></div></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -272,6 +306,9 @@ let domesticClosingDbReady=true;
 let selectedReceivable=null;
 let draftTimer=0;
 let appBusy=false;
+let correctionTarget=null;
+let correctionLines=[];
+let domesticSuggestion=null;
 const expandedSales=new Set();
 
 function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
@@ -309,11 +346,14 @@ function setBusy(active,message="処理しています。"){
   document.getElementById("busy-message").textContent=message;
   document.getElementById("busy-overlay").classList.toggle("open",appBusy);
   document.getElementById("confirm-sale-button").disabled=appBusy;
+  const correctionButton=document.getElementById("save-correction-button");
+  if(correctionButton)correctionButton.disabled=appBusy;
 }
 function friendlyError(error){
   const message=String(error?.message||error||"");
   if(error?.code==="42P01"||/relation .* does not exist/i.test(message))return "国内販売の初期設定が完了していません。管理者へ連絡してください。";
   if(/close_domestic_billing_period|reopen_domestic_billing_period|domestic_billing_closings/i.test(message))return "国内請求締め用SQLが未実行です。管理者へ連絡してください。";
+  if(/correct_domestic_sale/i.test(message)&&(error?.code==="PGRST202"||/schema cache|not found|does not exist/i.test(message)))return "国内売上修正用SQLが未実行です。管理者へ連絡してください。";
   if(error?.code==="PGRST202"||/schema cache|function .* not found/i.test(message))return "国内販売の設定を確認中です。時間をおいて再度お試しください。";
   if(/row-level security|permission denied|Internal access/i.test(message))return "この操作を行う社内権限がありません。管理者へ確認してください。";
   return message||"処理に失敗しました。";
@@ -429,8 +469,98 @@ function findCustomer(raw){
   const byName=customers.filter(row=>normalize(row.customer_name)===key||row.aliases?.some(alias=>normalize(alias)===key));
   return byName.length===1?byName[0]:null;
 }
+function domesticMatchRank(code,name,aliases,query){
+  const key=normalize(query);
+  const normalizedCode=normalize(code),normalizedName=normalize(name);
+  const normalizedAliases=(aliases||[]).map(normalize);
+  if(normalizedCode===key)return 0;
+  if(normalizedName===key||normalizedAliases.includes(key))return 1;
+  if(normalizedCode.startsWith(key))return 2;
+  if(normalizedName.startsWith(key)||normalizedAliases.some(alias=>alias.startsWith(key)))return 3;
+  if(normalizedCode.includes(key))return 4;
+  if(normalizedName.includes(key)||normalizedAliases.some(alias=>alias.includes(key)))return 5;
+  return 99;
+}
+function domesticCustomerMatches(query){
+  if(!normalize(query))return [];
+  return customers.filter(row=>row.active).map(row=>({row,rank:domesticMatchRank(row.customer_code,row.customer_name,row.aliases,query)})).filter(item=>item.rank<99).sort((a,b)=>a.rank-b.rank||String(a.row.customer_code).localeCompare(String(b.row.customer_code),"ja")).slice(0,10).map(item=>item.row);
+}
+function domesticProductMatches(query){
+  if(!normalize(query))return [];
+  return products.map(row=>({row,rank:domesticMatchRank(row.product_id,row.product_name,row.aliases,query)})).filter(item=>item.rank<99).sort((a,b)=>a.rank-b.rank||String(a.row.product_id).localeCompare(String(b.row.product_id),"ja")).slice(0,10).map(item=>item.row);
+}
+function closeDomesticSuggestion(){
+  domesticSuggestion?.box?.remove();
+  domesticSuggestion=null;
+}
+function renderDomesticSuggestionActive(){
+  if(!domesticSuggestion)return;
+  const buttons=[...domesticSuggestion.box.querySelectorAll("button")];
+  buttons.forEach((button,index)=>button.classList.toggle("active",index===domesticSuggestion.index));
+  buttons[domesticSuggestion.index]?.scrollIntoView({block:"nearest"});
+}
+function openDomesticSuggestion(input,kind,items){
+  closeDomesticSuggestion();
+  if(!input||!items.length)return;
+  const box=document.createElement("div");
+  box.className="inline-suggest";
+  box.innerHTML=items.map((item,index)=>{
+    const code=kind==="customer"?item.customer_code:item.product_id;
+    const name=kind==="customer"?item.customer_name:item.product_name;
+    return `<button type="button" class="${index===0?"active":""}" onpointerdown="event.preventDefault()" onclick="chooseDomesticSuggestion(${index})"><b>${esc(code)}</b><span>${esc(name||"")}</span></button>`;
+  }).join("");
+  document.body.appendChild(box);
+  const rect=input.getBoundingClientRect();
+  const width=Math.min(470,window.innerWidth-16);
+  const left=Math.min(Math.max(8,rect.left),window.innerWidth-width-8);
+  const below=rect.bottom+5;
+  box.style.width=`${width}px`;
+  box.style.left=`${left}px`;
+  box.style.top=`${below}px`;
+  if(below+box.offsetHeight>window.innerHeight-8)box.style.top=`${Math.max(8,rect.top-box.offsetHeight-5)}px`;
+  domesticSuggestion={input,kind,items,index:0,box};
+}
+function showDomesticSuggestions(input){
+  const kind=input?.dataset?.domesticSuggest;
+  if(!kind)return;
+  const items=kind==="customer"?domesticCustomerMatches(input.value):domesticProductMatches(input.value);
+  openDomesticSuggestion(input,kind==="customer"?"customer":"product",items);
+}
+function moveDomesticSuggestion(input,delta){
+  if(!domesticSuggestion||domesticSuggestion.input!==input)return false;
+  const length=domesticSuggestion.items.length;
+  if(!length)return false;
+  domesticSuggestion.index=(domesticSuggestion.index+delta+length)%length;
+  renderDomesticSuggestionActive();
+  return true;
+}
+function chooseDomesticSuggestion(index=domesticSuggestion?.index||0){
+  if(!domesticSuggestion)return false;
+  const {input,kind,items}=domesticSuggestion;
+  const item=items[index];
+  if(!item)return false;
+  closeDomesticSuggestion();
+  if(kind==="customer"){
+    input.value=item.customer_code;
+    if(input.id==="entry-customer-code")resolveEntryCustomer();
+    if(input.id==="correction-customer-code")resolveCorrectionCustomer();
+    if(input.id==="closing-customer"){renderDomesticClosingDayOptions();refreshDomesticClosingPreview()}
+    input.focus();
+    return true;
+  }
+  const context=input.dataset.productContext||"filter";
+  if(context==="entry")applyProductToEntry(Number(input.dataset.rowIndex),item,true);
+  else if(context==="correction")applyProductToCorrection(Number(input.dataset.rowIndex),item,true);
+  else{input.value=item.product_id;input.focus()}
+  return true;
+}
+function chooseActiveDomesticSuggestion(input){
+  if(!domesticSuggestion||domesticSuggestion.input!==input)return false;
+  return chooseDomesticSuggestion(domesticSuggestion.index);
+}
 
 function switchTab(name,options={}){
+  closeDomesticSuggestion();
   document.querySelectorAll("[data-panel]").forEach(panel=>panel.classList.toggle("active",panel.dataset.panel===name));
   document.querySelectorAll("[data-domestic-tab]").forEach(button=>button.classList.toggle("active",button.dataset.domesticTab===name));
   if(!options.skipHash)history.replaceState(null,"",`#${name}`);
@@ -452,17 +582,6 @@ function openCustomerMasterFromEntry(){
   if(code)document.getElementById("master-customer-code").value=code;
   document.getElementById(code?"master-customer-name":"master-customer-code").focus();
 }
-function updateProductList(query){
-  const key=normalize(query);
-  const list=document.getElementById("domestic-product-list");
-  if(!key){list.innerHTML="";return}
-  const matches=products.filter(row=>normalize(row.product_id).includes(key)||normalize(row.product_name).includes(key)||(row.aliases||[]).some(alias=>normalize(alias).includes(key))).sort((a,b)=>{
-    const aStart=normalize(a.product_id).startsWith(key)||normalize(a.product_name).startsWith(key)?0:1;
-    const bStart=normalize(b.product_id).startsWith(key)||normalize(b.product_name).startsWith(key)?0:1;
-    return aStart-bStart||String(a.product_id).localeCompare(String(b.product_id),"ja");
-  }).slice(0,10);
-  list.innerHTML=matches.map(row=>`<option value="${esc(row.product_id)}">${esc(row.product_name||"")}</option>`).join("");
-}
 function resolveProduct(index,raw){
   const line=entryLines[index];
   if(!line)return;
@@ -473,14 +592,18 @@ function resolveProduct(index,raw){
     if(named.length===1)product=named[0];
   }
   if(!product)return;
+  applyProductToEntry(index,product,false);
+}
+function applyProductToEntry(index,product,focusNext=false){
+  const line=entryLines[index];
+  if(!line||!product)return;
   const changed=line.resolvedCode!==product.product_id;
   line.productCode=product.product_id;
   if(changed||!line.productName)line.productName=product.product_name||line.productName;
   if((changed||line.unitPrice==="")&&product.unit_price!==null)line.unitPrice=String(product.unit_price);
   line.resolvedCode=product.product_id;
-  renderEntryLines();
-  updateEntryTotals();
-  scheduleDraftSave();
+  renderEntryLines();updateEntryTotals();scheduleDraftSave();
+  if(focusNext)requestAnimationFrame(()=>{const node=document.querySelector(`[data-row-index="${index}"][data-field="quantity"]`);node?.focus();node?.select?.()});
 }
 function addEntryLine(focus=false,source=null){
   entryLines.push(source?{...source,id:newId()}:blankLine());
@@ -497,7 +620,6 @@ function removeEntryLine(index){
 function setEntryLine(index,field,newValue){
   if(!entryLines[index])return;
   entryLines[index][field]=newValue;
-  if(field==="productCode")updateProductList(newValue);
   updateEntryTotals();
   scheduleDraftSave();
 }
@@ -506,7 +628,7 @@ function renderEntryLines(){
     const amount=Math.round((Number(line.quantity)||0)*(Number(line.unitPrice)||0));
     return `<tr>
       <td class="col-no">${index+1}</td>
-      <td><input data-entry-cell data-row-index="${index}" data-field="productCode" list="domestic-product-list" autocomplete="off" value="${esc(line.productCode)}" onfocus="updateProductList(this.value)" oninput="setEntryLine(${index},'productCode',this.value)" onchange="resolveProduct(${index},this.value)" onkeydown="handleEntryKey(event,${index},'productCode')"></td>
+      <td><input data-entry-cell data-row-index="${index}" data-field="productCode" data-domestic-suggest="product" data-product-context="entry" autocomplete="off" value="${esc(line.productCode)}" oninput="setEntryLine(${index},'productCode',this.value)" onchange="resolveProduct(${index},this.value)" onkeydown="handleEntryKey(event,${index},'productCode')"></td>
       <td><input data-entry-cell data-row-index="${index}" data-field="productName" class="ime-ja" autocomplete="off" value="${esc(line.productName)}" oninput="setEntryLine(${index},'productName',this.value)" onkeydown="handleEntryKey(event,${index},'productName')"></td>
       <td><input data-entry-cell data-row-index="${index}" data-field="quantity" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(line.quantity)}" oninput="setEntryLine(${index},'quantity',this.value)" onkeydown="handleEntryKey(event,${index},'quantity')"></td>
       <td><select data-entry-cell data-row-index="${index}" data-field="unit" onchange="setEntryLine(${index},'unit',this.value)" onkeydown="handleEntryKey(event,${index},'unit')">${["Kg","pkt","PC","CS"].map(unit=>`<option${line.unit===unit?" selected":""}>${unit}</option>`).join("")}</select></td>
@@ -521,6 +643,7 @@ function renderEntryLines(){
 function handleEntryKey(event,index,field){
   if(event.key!=="Enter"||event.isComposing)return;
   event.preventDefault();
+  if(field==="productCode"&&chooseActiveDomesticSuggestion(event.currentTarget))return;
   if(field==="productCode")resolveProduct(index,event.currentTarget.value);
   requestAnimationFrame(()=>{
     const controls=[...document.querySelectorAll("[data-entry-cell]")];
@@ -594,7 +717,7 @@ async function confirmDomesticSale(){
     if(!line.productName.trim())return showToast(`${index+1}行目の商品名を入力してください。`,true);
     if(!(Number(line.quantity)>0))return showToast(`${index+1}行目の数量を入力してください。`,true);
     if(line.unitPrice===""||Number(line.unitPrice)<0)return showToast(`${index+1}行目の単価を入力してください。`,true);
-    if(line.productCode&&!products.some(product=>product.product_id===line.productCode))return showToast(`${index+1}行目の商品コードがマスタと一致しません。`,true);
+    if(line.productCode&&!products.some(product=>product.product_id===line.productCode)&&line.productCode!==line.resolvedCode)return showToast(`${index+1}行目の商品コードがマスタと一致しません。`,true);
   }
   setBusy(true,"国内売上と売掛を確定しています。画面を閉じないでください。");
   try{
@@ -651,13 +774,147 @@ function renderSalesReference(){
     const expanded=expandedSales.has(row.id);
     const detail=`<tr class="sale-detail"${expanded?"":" hidden"} id="sale-detail-${row.id}"><td colspan="10"><div class="sale-detail-box"><table class="detail-table"><thead><tr><th>No.</th><th>商品コード</th><th>商品名</th><th class="money">数量</th><th>単位</th><th class="money">単価</th><th>税率</th><th class="money">金額</th><th>メモ</th></tr></thead><tbody>${row.lines.map(line=>`<tr><td>${line.line_no}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}</td><td class="money">${Number(line.quantity).toLocaleString("ja-JP")}</td><td>${esc(line.unit)}</td><td class="money">${money(line.unit_price_jpy)}</td><td>${line.tax_rate}%</td><td class="money">${money(line.net_amount_jpy)}</td><td>${esc(line.memo||"")}</td></tr>`).join("")}</tbody></table></div></td></tr>`;
     const generated=row.source_type==="export_intermediary";
+    const correctionButton=isAdmin()&&row.status==="confirmed"&&!generated?`<button class="btn small" type="button" onclick="openDomesticSaleCorrection('${row.id}')">修正</button>`:"";
     const cancelButton=isAdmin()&&row.status==="confirmed"&&!generated?`<button class="btn small danger" type="button" onclick="cancelSale('${row.id}')">取消</button>`:"";
     const sourceBadge=generated?`<span class="status-chip confirmed" title="輸出作業から自動作成">輸出連動 ${esc(row.source_importer_code||"")}</span>`:"";
     const deliveryButton=row.status==="confirmed"?`<button class="btn small blue" type="button" onclick="printDomesticDeliveryNote('${row.id}')">納品書</button>`:"";
-    return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span>${sourceBadge}</td><td><div class="doc-actions"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${deliveryButton}${cancelButton}</div></td></tr>${detail}`;
+    return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span>${sourceBadge}</td><td><div class="doc-actions"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${deliveryButton}${correctionButton}${cancelButton}</div></td></tr>${detail}`;
   }).join("");
 }
 function toggleSaleDetail(id){expandedSales.has(id)?expandedSales.delete(id):expandedSales.add(id);renderSalesReference()}
+function openDomesticSaleCorrection(id){
+  if(!isAdmin())return showToast("確定済み売上を修正できるのは管理者のみです。",true);
+  const row=salesRows.find(item=>item.id===id);
+  if(!row)return showToast("修正する国内売上が見つかりません。",true);
+  if(row.status!=="confirmed")return showToast("取消済み売上は修正できません。",true);
+  if(row.source_type==="export_intermediary")return showToast("輸出連動売上は輸出側の元データから修正してください。",true);
+  correctionTarget=row;
+  correctionLines=(row.lines||[]).map(line=>({id:newId(),productCode:line.product_code||"",productName:line.product_name_snapshot||"",quantity:String(line.quantity??""),unit:line.unit||"Kg",unitPrice:String(line.unit_price_jpy??""),taxRate:Number(line.tax_rate||8),memo:line.memo||"",resolvedCode:line.product_code||""}));
+  if(!correctionLines.length)correctionLines=[blankLine()];
+  document.getElementById("domestic-sale-correction-title").textContent=`国内売上の管理者修正 ${row.sale_no}`;
+  document.getElementById("correction-date").value=row.sale_date||today();
+  document.getElementById("correction-customer-code").value=row.customer_code||"";
+  document.getElementById("correction-customer-name").value=row.customer_name_snapshot||"";
+  document.getElementById("correction-shipping").value=String(row.shipping_amount_jpy??0);
+  document.getElementById("correction-memo").value=row.memo||"";
+  document.getElementById("correction-reason").value="";
+  renderCorrectionLines();updateCorrectionTotals();
+  document.getElementById("domestic-sale-correction-modal").classList.add("open");
+  requestAnimationFrame(()=>document.getElementById("correction-date")?.focus());
+}
+function closeDomesticSaleCorrection(){
+  closeDomesticSuggestion();
+  document.getElementById("domestic-sale-correction-modal").classList.remove("open");
+  correctionTarget=null;correctionLines=[];
+}
+function resolveCorrectionCustomer(){
+  const row=findCustomer(value("correction-customer-code"));
+  document.getElementById("correction-customer-name").value=row?.active?row.customer_name:"";
+}
+function setCorrectionLine(index,field,newValue){
+  if(!correctionLines[index])return;
+  correctionLines[index][field]=newValue;
+  updateCorrectionTotals();
+}
+function applyProductToCorrection(index,product,focusNext=false){
+  const line=correctionLines[index];
+  if(!line||!product)return;
+  const changed=line.resolvedCode!==product.product_id;
+  line.productCode=product.product_id;
+  if(changed||!line.productName)line.productName=product.product_name||line.productName;
+  if((changed||line.unitPrice==="")&&product.unit_price!==null)line.unitPrice=String(product.unit_price);
+  line.resolvedCode=product.product_id;
+  renderCorrectionLines();updateCorrectionTotals();
+  if(focusNext)requestAnimationFrame(()=>{const node=document.querySelector(`[data-correction-row="${index}"][data-correction-field="quantity"]`);node?.focus();node?.select?.()});
+}
+function resolveCorrectionProduct(index,raw){
+  const key=normalize(raw);
+  let product=products.find(row=>normalize(row.product_id)===key);
+  if(!product){
+    const named=products.filter(row=>normalize(row.product_name)===key||(row.aliases||[]).some(alias=>normalize(alias)===key));
+    if(named.length===1)product=named[0];
+  }
+  if(product)applyProductToCorrection(index,product,false);
+}
+function addCorrectionLine(focus=false,source=null){
+  correctionLines.push(source?{...source,id:newId()}:blankLine());
+  renderCorrectionLines();updateCorrectionTotals();
+  if(focus)requestAnimationFrame(()=>document.querySelector(`[data-correction-row="${correctionLines.length-1}"][data-correction-field="productCode"]`)?.focus());
+}
+function removeCorrectionLine(index){
+  if(correctionLines.length===1)correctionLines=[blankLine()];else correctionLines.splice(index,1);
+  renderCorrectionLines();updateCorrectionTotals();
+}
+function renderCorrectionLines(){
+  document.getElementById("correction-lines").innerHTML=correctionLines.map((line,index)=>{
+    const amount=Math.round((Number(line.quantity)||0)*(Number(line.unitPrice)||0));
+    return `<tr><td>${index+1}</td>
+      <td><input data-correction-row="${index}" data-correction-field="productCode" data-domestic-suggest="product" data-product-context="correction" data-row-index="${index}" autocomplete="off" value="${esc(line.productCode)}" oninput="setCorrectionLine(${index},'productCode',this.value)" onchange="resolveCorrectionProduct(${index},this.value)" onkeydown="handleCorrectionKey(event,${index},'productCode')"></td>
+      <td><input data-correction-row="${index}" data-correction-field="productName" class="ime-ja" autocomplete="off" value="${esc(line.productName)}" oninput="setCorrectionLine(${index},'productName',this.value)" onkeydown="handleCorrectionKey(event,${index},'productName')"></td>
+      <td><input data-correction-row="${index}" data-correction-field="quantity" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(line.quantity)}" oninput="setCorrectionLine(${index},'quantity',this.value)" onkeydown="handleCorrectionKey(event,${index},'quantity')"></td>
+      <td><select data-correction-row="${index}" data-correction-field="unit" onchange="setCorrectionLine(${index},'unit',this.value)" onkeydown="handleCorrectionKey(event,${index},'unit')">${["Kg","pkt","PC","CS"].map(unit=>`<option${line.unit===unit?" selected":""}>${unit}</option>`).join("")}</select></td>
+      <td><input data-correction-row="${index}" data-correction-field="unitPrice" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(line.unitPrice)}" oninput="setCorrectionLine(${index},'unitPrice',this.value)" onkeydown="handleCorrectionKey(event,${index},'unitPrice')"></td>
+      <td><select data-correction-row="${index}" data-correction-field="taxRate" onchange="setCorrectionLine(${index},'taxRate',Number(this.value))" onkeydown="handleCorrectionKey(event,${index},'taxRate')"><option value="8"${Number(line.taxRate)===8?" selected":""}>8%</option><option value="10"${Number(line.taxRate)===10?" selected":""}>10%</option></select></td>
+      <td class="money">${money(amount)}</td>
+      <td><input data-correction-row="${index}" data-correction-field="memo" class="ime-ja" autocomplete="off" value="${esc(line.memo)}" oninput="setCorrectionLine(${index},'memo',this.value)" onkeydown="handleCorrectionKey(event,${index},'memo')"></td>
+      <td><div class="toolbar"><button class="btn small" type="button" onclick="addCorrectionLine(false,correctionLines[${index}])">複製</button><button class="btn small danger" type="button" onclick="removeCorrectionLine(${index})">削除</button></div></td></tr>`;
+  }).join("");
+}
+function handleCorrectionKey(event,index,field){
+  if(event.key!=="Enter"||event.isComposing)return;
+  event.preventDefault();
+  if(field==="productCode"&&chooseActiveDomesticSuggestion(event.currentTarget))return;
+  if(field==="productCode")resolveCorrectionProduct(index,event.currentTarget.value);
+  requestAnimationFrame(()=>{
+    const controls=[...document.querySelectorAll("[data-correction-row]")];
+    const current=controls.findIndex(node=>Number(node.dataset.correctionRow)===index&&node.dataset.correctionField===field);
+    if(current===controls.length-1){addCorrectionLine(true);return}
+    controls[current+1]?.focus();controls[current+1]?.select?.();
+  });
+}
+function calculateCorrectionTotals(){
+  let subtotal8=0,subtotal10=0;
+  correctionLines.forEach(line=>{
+    const amount=Math.round((Number(line.quantity)||0)*(Number(line.unitPrice)||0));
+    if(Number(line.taxRate)===10)subtotal10+=amount;else subtotal8+=amount;
+  });
+  const shipping=Math.max(0,numberValue("correction-shipping"));
+  const tax8=Math.floor(subtotal8*.08),tax10=Math.floor((subtotal10+shipping)*.10);
+  return{net:subtotal8+subtotal10+shipping,tax:tax8+tax10,total:subtotal8+subtotal10+shipping+tax8+tax10};
+}
+function updateCorrectionTotals(){
+  const totals=calculateCorrectionTotals();
+  document.getElementById("correction-net").textContent=money(totals.net);
+  document.getElementById("correction-tax").textContent=money(totals.tax);
+  document.getElementById("correction-total").textContent=money(totals.total);
+}
+async function saveDomesticSaleCorrection(){
+  if(appBusy||!correctionTarget)return;
+  if(!isAdmin())return showToast("確定済み売上を修正できるのは管理者のみです。",true);
+  const customer=findCustomer(value("correction-customer-code"));
+  if(!customer?.active)return showToast("有効な国内得意先を選択してください。",true);
+  const reason=value("correction-reason").trim();
+  if(reason.length<4)return showToast("修正理由を4文字以上入力してください。",true);
+  const entered=correctionLines.filter(line=>line.productCode||line.productName||line.quantity||line.unitPrice||line.memo);
+  if(!entered.length)return showToast("商品明細を1件以上入力してください。",true);
+  for(let index=0;index<entered.length;index++){
+    const line=entered[index];
+    if(!line.productName.trim())return showToast(`${index+1}行目の商品名を入力してください。`,true);
+    if(!(Number(line.quantity)>0))return showToast(`${index+1}行目の数量を入力してください。`,true);
+    if(line.unitPrice===""||Number(line.unitPrice)<0)return showToast(`${index+1}行目の単価を入力してください。`,true);
+    if(line.productCode&&!products.some(product=>product.product_id===line.productCode)&&line.productCode!==line.resolvedCode)return showToast(`${index+1}行目の商品コードがマスタと一致しません。`,true);
+  }
+  setBusy(true,"国内売上と売掛を修正しています。");
+  try{
+    const payload=entered.map(line=>({product_code:line.productCode||null,product_name:line.productName,quantity:Number(line.quantity),unit:line.unit,unit_price:Number(line.unitPrice),tax_rate:Number(line.taxRate),memo:line.memo||null}));
+    const {data,error}=await supabaseClient.rpc("correct_domestic_sale",{p_sale_id:correctionTarget.id,p_sale_date:value("correction-date"),p_customer_code:customer.customer_code,p_shipping_amount_jpy:numberValue("correction-shipping"),p_memo:value("correction-memo")||null,p_lines:payload,p_reason:reason});
+    if(error)throw error;
+    closeDomesticSaleCorrection();
+    receivableRows=[];domesticClosingRows=[];
+    showToast(`${data.sale_no} を修正しました。税込 ${money(data.total_amount_jpy)}円`);
+    await loadSalesReference();
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
 async function cancelSale(id){
   const reason=prompt("売上の取消理由を3文字以上で入力してください。");
   if(reason===null)return;
@@ -978,7 +1235,7 @@ function renderCustomerList(){
   document.getElementById("customer-count").textContent=`${rows.length}件`;
   const body=document.getElementById("customer-body");
   if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty">該当する得意先はありません。</td></tr>';return}
-  body.innerHTML=rows.map(row=>`<tr><td>${esc(row.customer_code)}</td><td>${esc(row.customer_name)}</td><td>${esc(domesticCustomerTermsLabel(row))}</td><td>${esc(row.phone||row.email||"")}</td><td><span class="status-chip ${row.active?"paid":"cancelled"}">${row.active?"有効":"停止"}</span></td><td><button class="btn small" type="button" onclick="editCustomer('${esc(row.customer_code)}')">選択</button></td></tr>`).join("");
+  body.innerHTML=rows.map(row=>`<tr><td>${esc(row.customer_code)}</td><td>${esc(row.customer_name)}</td><td>${esc(domesticCustomerTermsLabel(row))}</td><td>${esc(row.phone||row.email||"")}</td><td><span class="status-chip ${row.active?"paid":"cancelled"}">${row.active?"有効":"停止"}</span></td><td><div class="toolbar"><button class="btn small" type="button" onclick="editCustomer('${esc(row.customer_code)}')">選択</button>${isAdmin()?`<button class="btn small ${row.active?"danger":""}" type="button" onclick="toggleDomesticCustomerActive('${esc(row.customer_code)}',${row.active?"false":"true"})">${row.active?"停止":"再開"}</button>`:""}</div></td></tr>`).join("");
 }
 function resetCustomerForm(){
   document.getElementById("master-customer-code").value="";
@@ -1028,6 +1285,20 @@ async function saveCustomerMaster(){
     editCustomer(code);
   }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
 }
+async function toggleDomesticCustomerActive(code,nextActive){
+  if(!isAdmin())return showToast("管理者のみ更新できます。",true);
+  const row=customers.find(customer=>customer.customer_code===code);
+  if(!row)return;
+  const action=nextActive?"再開":"停止";
+  if(!confirm(`${code} ${row.customer_name} を${action}しますか？\n過去の売上・売掛は削除されません。`))return;
+  setBusy(true,`国内得意先を${action}しています。`);
+  try{
+    const {error}=await supabaseClient.from("domestic_customer_master").update({active:!!nextActive}).eq("customer_code",code);
+    if(error)throw error;
+    showToast(`${code} ${row.customer_name} を${action}しました。`);
+    await loadCustomerMaster();
+  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
 
 document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("sales-from").value=monthStart();
@@ -1038,6 +1309,28 @@ document.addEventListener("DOMContentLoaded",()=>{
   restoreEntryDraft();
   document.querySelectorAll("[data-entry-header]").forEach(node=>node.addEventListener("input",scheduleDraftSave));
   initSupabase();
+});
+document.addEventListener("input",event=>{
+  const input=event.target?.closest?.("[data-domestic-suggest]");
+  if(input)showDomesticSuggestions(input);
+});
+document.addEventListener("focusin",event=>{
+  const input=event.target?.closest?.("[data-domestic-suggest]");
+  if(input&&input.value)showDomesticSuggestions(input);
+});
+document.addEventListener("keydown",event=>{
+  const input=event.target?.closest?.("[data-domestic-suggest]");
+  if(!input||event.isComposing)return;
+  if(event.key==="ArrowDown"||event.key==="ArrowUp"){
+    if(moveDomesticSuggestion(input,event.key==="ArrowDown"?1:-1)){event.preventDefault();event.stopImmediatePropagation()}
+    return;
+  }
+  if(event.key==="Escape"&&domesticSuggestion?.input===input){event.preventDefault();closeDomesticSuggestion();return}
+  if(event.key==="Enter"&&domesticSuggestion?.input===input){event.preventDefault();event.stopImmediatePropagation();chooseActiveDomesticSuggestion(input)}
+});
+document.addEventListener("pointerdown",event=>{
+  if(event.target?.closest?.(".inline-suggest")||event.target?.closest?.("[data-domestic-suggest]"))return;
+  closeDomesticSuggestion();
 });
 window.addEventListener("hashchange",()=>{
   const name=location.hash.slice(1);
