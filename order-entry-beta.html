@@ -10375,12 +10375,13 @@ async function loadPurchaseReceipts(){
   state.textContent=`仕入データを読込中... ${range.label}`;state.className="pill warn";
   try{
     const receipts=await purchaseRefReadReceipts(supabaseClient,range);
-    const lines=[];const ids=receipts.map(row=>row.id);
-    for(let index=0;index<ids.length;index+=200){
-      const result=await supabaseClient.from("purchase_receipt_lines").select("*").in("receipt_id",ids.slice(index,index+200)).order("created_at");
-      if(result.error)throw result.error;
-      lines.push(...(result.data||[]));
-    }
+    const ids=receipts.map(row=>row.id);
+    const lines=await salesRefReadChunks(ids,100,chunk=>salesRefReadPaged(includeCount=>supabaseClient
+      .from("purchase_receipt_lines")
+      .select("*",includeCount?{count:"exact"}:undefined)
+      .in("receipt_id",chunk)
+      .order("receipt_id",{ascending:true})
+      .order("created_at",{ascending:true})),4);
     const byReceipt=new Map();
     lines.forEach(line=>{if(!byReceipt.has(line.receipt_id))byReceipt.set(line.receipt_id,[]);byReceipt.get(line.receipt_id).push(line)});
     purchaseReceipts=receipts.map(row=>({...row,lines:byReceipt.get(row.id)||[]}));

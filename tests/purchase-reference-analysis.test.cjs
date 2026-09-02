@@ -90,6 +90,10 @@ assert.match(html, /商品別/);
 assert.match(html, /salesRefReadPaged/);
 assert.match(html, /purchaseDateRange\.value=purchaseRefRecentRange\(31\)/);
 assert.match(html, /id="purchase-filter-status"[^>]*>[\s\S]*?<option value="" selected>全状態<\/option>/);
-assert.doesNotMatch(sourceBetween(html, "async function loadPurchaseReceipts", "function purchaseReceiptCardHtml"), /\.limit\(500\)/);
+const loadSource = sourceBetween(html, "async function loadPurchaseReceipts", "function purchaseReceiptCardHtml");
+assert.doesNotMatch(loadSource, /\.limit\(500\)/);
+assert.match(loadSource, /salesRefReadChunks\(ids,100,chunk=>salesRefReadPaged/);
+assert.match(loadSource, /select\("\*",includeCount\?\{count:"exact"\}:undefined\)/);
+assert.doesNotMatch(loadSource, /for\(let index=0;index<ids\.length;index\+=200\)/);
 
 console.log("Purchase reference analysis tests passed");
