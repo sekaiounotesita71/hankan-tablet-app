@@ -57,7 +57,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .inline-customer-suggest{position:absolute;left:0;top:62px;z-index:16;width:min(520px,92vw);max-height:230px;overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-customer-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr) 120px;gap:8px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:8px;cursor:pointer}.inline-customer-suggest button:hover,.inline-customer-suggest button.active{background:#eaf2ff}.inline-customer-suggest b{font-family:Consolas,monospace}.inline-customer-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-customer-suggest .subtext{color:var(--muted);font-size:12px}
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(21,24,28,.36);display:none;align-items:center;justify-content:center;padding:18px}.modal-backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 18px 45px rgba(0,0,0,.24);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:900}.modal-body{padding:12px}.lookup-results{max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:7px}.lookup-row{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1.1fr) 170px;gap:8px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:10px;cursor:pointer}.lookup-row:hover,.lookup-row.active{background:#eaf2ff}.lookup-row:last-child{border-bottom:0}.lookup-row b{font-family:Consolas,monospace}.lookup-row .subtext{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .quick-product-master-modal{width:min(760px,100%)}.quick-product-master-form{max-height:calc(88vh - 50px);overflow:auto}.quick-product-master-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-product-master-grid .wide{grid-column:1/-1}.quick-product-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}.quick-product-code-button{min-width:72px;white-space:nowrap}.quick-product-code-candidates{display:none;padding:9px 10px;border:1px solid #9fb4c7;border-radius:7px;background:#f7fbff}.quick-product-code-candidates.open{display:grid;gap:8px}.quick-product-code-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#25445f;font-size:12px;font-weight:900}.quick-product-code-groups{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quick-product-code-group{display:grid;gap:6px}.quick-product-code-label{color:var(--muted);font-size:11px;font-weight:900}.quick-product-code-list{display:flex;gap:5px;flex-wrap:wrap}.quick-product-code-option{min-width:52px;min-height:32px;padding:0 8px;border:1px solid #8da7bd;border-radius:6px;background:#fff;color:#173a57;font-family:Consolas,monospace;font-weight:900;cursor:pointer}.quick-product-code-option:hover,.quick-product-code-option:focus-visible{border-color:var(--blue);background:var(--blue-bg);outline:none}.quick-product-code-note{color:var(--muted);font-size:11px;font-weight:800}.quick-product-master-status{min-height:36px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#f7f9fb;color:var(--muted);font-size:12px;font-weight:800}.quick-product-master-status.existing{border-color:#d4b36a;background:#fff8e8;color:#7a5100}.quick-product-master-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:700px){.quick-product-master-grid{grid-template-columns:1fr}.quick-product-master-grid .wide{grid-column:auto}.quick-product-code-groups{grid-template-columns:1fr}}
-.app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}
+.app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}.single-submit-pending{pointer-events:none!important;opacity:.58!important}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-tools [hidden]{display:none!important}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-table tbody tr.locked td{background:#f3f5f7}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue,.ar-status.overpaid,.ar-status.credit{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}.ap-closing-entry{grid-column:1/-1}
 .ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.ar-mode-tabs{display:flex;align-items:center;gap:4px;margin-bottom:10px;padding:4px;border:1px solid var(--line);border-radius:8px;background:#f3f5f7;overflow-x:auto}.ar-mode-tab{flex:0 0 auto;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}.ar-mode-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.13)}.ar-group-table{min-width:980px}.ar-group-table tbody tr:hover td{background:#f7f9fb}.ar-group-code{font-size:14px;font-weight:900}.ar-group-name{margin-left:5px;color:var(--muted)}.ar-group-alert{color:var(--danger);font-weight:900}.ar-summary-card.balance{border-color:#9bc9af;background:#f1faf4}.ar-summary-card.overdue{border-color:#efb9b3;background:#fff5f4}
 .ops-tools{display:grid;grid-template-columns:170px 150px minmax(190px,1fr) minmax(180px,1fr) auto auto;gap:8px;align-items:end}.ops-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.ops-table-wrap{max-height:560px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ops-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.ops-table th,.ops-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.ops-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ops-table input,.ops-table select{height:34px;min-height:34px;border-radius:6px}.ops-table tr.submitted td{background:#fff8e8}.ops-table tr.accepted td{background:#eef8f2}.ops-table tr.returned td{background:#fff0ef}.ops-actions{display:flex;gap:5px;align-items:center}.ops-money{text-align:right;font-family:Consolas,monospace;font-weight:900}.purchase-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-form .wide{grid-column:span 2}.purchase-form .full{grid-column:1/-1}.purchase-receipt{border-bottom:1px solid var(--line)}.purchase-receipt summary{display:grid;grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 120px auto;gap:8px;align-items:center;padding:9px 10px;cursor:pointer;font-weight:900;background:#fff}.purchase-receipt summary:hover{background:#f7f9fb}.purchase-detail{padding:10px;border-top:1px solid var(--line);background:#fbfcfd}.purchase-detail-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-correction-note{grid-column:1/-1;padding:8px 10px;border:1px solid #e6b86a;border-radius:7px;background:#fff8e8;color:#7a4a00;font-size:12px;font-weight:900}.purchase-detail-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0;margin-top:8px}.purchase-detail-table th,.purchase-detail-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.purchase-detail-table input{height:32px;min-height:32px}.purchase-detail-table .purchase-product-code{width:110px}.purchase-detail-table .purchase-product-name{width:190px}.purchase-detail-table .purchase-line-note{width:180px}.site-readonly{display:flex;align-items:center;min-height:38px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#f3f5f7;color:#334155;font-weight:900}.admin-box{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}
@@ -127,7 +127,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <button class="btn" data-workspace-action="orders" onclick="document.getElementById('order-import-file').click()">受注CSV/PDF取込</button>
     <button class="btn" data-workspace-action="orders" onclick="addOrderRow()">商品追加</button>
     <button class="btn" data-workspace-action="orders" onclick="toggleMasterAdminPanel()">マスタ管理</button>
-    <button class="btn blue" data-workspace-action="orders" onclick="confirmCustomerOrder()">受注確定 Ctrl+Enter</button>
+    <button class="btn blue" id="confirm-customer-order-button" data-workspace-action="orders" onclick="confirmCustomerOrder()">受注確定 Ctrl+Enter</button>
     <button class="btn primary" data-workspace-action="orders" onclick="printPurchaseOrders()">発注書PDF</button>
     <button class="btn primary" data-workspace-action="orders" onclick="printPickingTickets()">現品票PDF</button>
     <button class="btn danger" data-workspace-action="orders" onclick="clearAll()">入力クリア</button>
@@ -1494,6 +1494,8 @@ function setAppBusy(active,message="受注を確定しています。画面を�
     overlay.setAttribute("aria-hidden",appBusy?"false":"true");
     if(appBusy)overlay.focus();
   }
+  const confirmButton=document.getElementById("confirm-customer-order-button");
+  if(confirmButton)confirmButton.disabled=appBusy;
   document.body.classList.toggle("app-busy-active",appBusy);
 }
 function initSupabase(){
@@ -13283,6 +13285,7 @@ function addDraftRows(){
   render();
 }
 async function confirmCustomerOrder(options={}){
+  if(appBusy)return false;
   const c=customer();
   const im=importer();
   if(!im.code&&!im.name){alert("輸入社を入力してください。");return}
@@ -13294,28 +13297,29 @@ async function confirmCustomerOrder(options={}){
     alert("DBへ接続できていないため受注確定を中止しました。入力内容は端末に残っています。接続後にもう一度確定してください。");
     return false;
   }
-  const learnedCount=await learnLineDictionaryFromOrders(activeOrderRows(),{...c,importerCode:im.code});
   const batch=currentBatch();
   saveLocal();
-  if(dbReady&&supabaseClient){
-    try{
-      const saved=await saveConfirmedBatchToDb(batch);
-      if(saved?.id)batch.id=saved.id;
-    }catch(error){
-      alert(dbErrorMessage(error));
-      return false;
-    }
+  setAppBusy(true,"受注を確定しています。画面を閉じないでください。");
+  try{
+    const learnedCount=await learnLineDictionaryFromOrders(batch.rows,{...c,importerCode:im.code});
+    const saved=await saveConfirmedBatchToDb(batch);
+    if(saved?.id)batch.id=saved.id;
+    confirmedBatches.unshift(batch);
+    saveConfirmedBatches();
+    const completedDraftId=currentImportDraftId;
+    if(completedDraftId)removeImportDraftById(completedDraftId);
+    currentImportDraftId="";
+    const message=`受注確定しました / 明細 ${batch.rows.length}件${learnedCount?` / 辞書更新 ${learnedCount}件`:""}`;
+    if(options.silent)document.getElementById("save-state").textContent=message;
+    else alert(message+"。次の得意先を入力してください。");
+    resetCurrentOrderForm();
+    return true;
+  }catch(error){
+    alert(dbErrorMessage(error));
+    return false;
+  }finally{
+    setAppBusy(false);
   }
-  confirmedBatches.unshift(batch);
-  saveConfirmedBatches();
-  const completedDraftId=currentImportDraftId;
-  if(completedDraftId)removeImportDraftById(completedDraftId);
-  currentImportDraftId="";
-  const message=`受注確定しました / 明細 ${batch.rows.length}件${learnedCount?` / 辞書更新 ${learnedCount}件`:""}`;
-  if(options.silent)document.getElementById("save-state").textContent=message;
-  else alert(message+"。次の得意先を入力してください。");
-  resetCurrentOrderForm();
-  return true;
 }
 function groupedBySupplier(rows){
   const map=new Map();
@@ -16144,6 +16148,11 @@ function applySearchResult(type,index){
 });
 document.addEventListener("keydown",handleImportReviewEnter);
 document.addEventListener("keydown",handleImportReviewArrow);
+document.addEventListener("click",e=>{
+  if(!appBusy)return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+},true);
 document.addEventListener("keydown",e=>{
   if(!appBusy)return;
   e.preventDefault();
@@ -16364,6 +16373,42 @@ window.addEventListener("beforeunload",e=>{
   e.preventDefault();
   e.returnValue="";
 });
+function protectSingleSubmitAction(name){
+  const original=window[name];
+  if(typeof original!=="function"||original.singleSubmitProtected)return;
+  let running=false;
+  const guarded=async function(...args){
+    if(running)return false;
+    running=true;
+    const controls=[
+      ...document.querySelectorAll(`button[onclick*="${name}("]`),
+      ...[...document.querySelectorAll(`form[onsubmit*="${name}("]`)].flatMap(form=>[...form.querySelectorAll('button[type="submit"],input[type="submit"]')])
+    ];
+    controls.forEach(control=>{control.classList.add("single-submit-pending");control.setAttribute("aria-disabled","true")});
+    try{return await original.apply(this,args)}
+    finally{
+      running=false;
+      controls.forEach(control=>{control.classList.remove("single-submit-pending");control.removeAttribute("aria-disabled")});
+    }
+  };
+  guarded.singleSubmitProtected=true;
+  window[name]=guarded;
+}
+[
+  "confirmCustomerOrder","savePendingEntry","setPendingStatus","saveHistoricalSalesImport",
+  "savePostSaleAdjustment","saveSalesRecordCorrection","saveShippingCorrection",
+  "saveProductGuideTemplate","saveProductGuideRowsToMaster","syncSalesToReceivables",
+  "saveOpeningReceivable","saveReceivablePayment","saveStatementProfile",
+  "closeAccountsReceivablePeriod","reopenAccountsReceivablePeriod","confirmSupplierReviewGroup",
+  "setSupplierReviewOrdered","publishExternalAssignment","registerPartnerUser","saveManagedUser",
+  "reviewExternalAssignment","closeSelectedAccountsPayablePeriods","reopenAccountsPayablePeriod",
+  "syncPurchasesToPayables","savePayableSupplierProfile","saveOpeningPayable","savePayablePayment",
+  "confirmPurchaseReceipt","unlockPurchaseReceiptForCorrection","saveSelectedAdvancePurchaseMasterPrices",
+  "saveAdvancePurchaseBatch","saveSelectedLineReconciliationDictionary","restoreConfirmedBatch",
+  "deleteConfirmedBatch","saveInvoiceProfileMaster","saveInvoiceProductRule","saveQuickProductMaster",
+  "setDbMasterActive","restoreSelectedAuditEvent","createManualBusinessSnapshot",
+  "confirmImportReviewGroup","confirmImportReviewReadyGroups","confirmImportReviewDirect"
+].forEach(protectSingleSubmitAction);
 document.addEventListener("scroll",hideAllProductSuggestions,true);
 window.addEventListener("resize",hideAllProductSuggestions);
 init();

@@ -413,6 +413,8 @@ let currentSessionId=null,currentSessionName="",currentSessionWorkDate="",curren
 let sitePartnerSchemaReady=false;
 let realtimeChannels=[];
 let saveStateTimer=null;
+let workSessionSaveInProgress=false;
+let salesFinalizeInProgress=false;
 let importerDisplayNames={};
 let importerRevenueRoutes={};
 let importerDisplayNamesUserId="";
@@ -2797,62 +2799,71 @@ function mergeAndRender(){
 }
 async function saveCurrentSessionToSupabase(){
   if(!rows.length){toast("先にCSVを読み込んで表示してください");return}
-  if(!(await requireSupabaseLogin()))return;
-  setSaveState("Supabase: 保存中...");
-  const createdNewSession=!currentSessionId;
-  const failSave=async message=>{
-    let cleanupError=null;
-    if(createdNewSession&&currentSessionId){
-      const result=await supabaseClient.from("work_sessions").delete().eq("id",currentSessionId);
-      cleanupError=result.error||null;
-      if(!cleanupError)currentSessionId=null;
+  if(workSessionSaveInProgress){toast("保存処理中です。完了までお待ちください");return false}
+  workSessionSaveInProgress=true;
+  const saveButton=document.getElementById("cloud-save-btn");
+  if(saveButton){saveButton.disabled=true;saveButton.textContent="保存中..."}
+  try{
+    if(!(await requireSupabaseLogin()))return false;
+    setSaveState("Supabase: 保存中...");
+    const createdNewSession=!currentSessionId;
+    const failSave=async message=>{
+      let cleanupError=null;
+      if(createdNewSession&&currentSessionId){
+        const result=await supabaseClient.from("work_sessions").delete().eq("id",currentSessionId);
+        cleanupError=result.error||null;
+        if(!cleanupError)currentSessionId=null;
+      }
+      setSaveState("Supabase: 保存失敗",true);
+      updateCloudSaveButton();
+      toast(cleanupError
+        ?`${message} 作成途中データの取消にも失敗しました。管理者確認が必要です: ${cleanupError.message}`
+        :`${message} 入力中の画面は消していません。`);
+    };
+    const nameInput=document.getElementById("session-name-input");
+    currentSessionName=(nameInput?.value||"").trim()||currentSessionName||suggestSessionName();
+    if(nameInput)nameInput.value=currentSessionName;
+    currentSessionWorkDate=currentWorkDateValue();
+    currentSessionSiteCode=document.getElementById("work-session-site")?.value||currentSessionSiteCode||"OSA";
+    const sessionPayload={name:currentSessionName,status:"active",work_date:currentSessionWorkDate,site_code:currentSessionSiteCode||"OSA",source_order_filename:latestOrderFilename||null,source_master_filename:latestMasterFilename||null};
+    if(!currentSessionId){
+      let {data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...sessionPayload,created_by:currentUser.id}).select("id,name").single();
+      if(sessionError?.code==="42703"&&/(work_date|site_code)/i.test(String(sessionError.message||""))){
+        const {work_date,site_code,...legacyPayload}=sessionPayload;
+        ({data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...legacyPayload,created_by:currentUser.id}).select("id,name").single());
+      }
+      if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業作成エラー: "+sessionError.message);return false}
+      currentSessionId=session.id;
+      updateCloudSaveButton();
+    }else{
+      let {error:sessionError}=await supabaseClient.from("work_sessions").update(sessionPayload).eq("id",currentSessionId);
+      if(sessionError?.code==="42703"&&/(work_date|site_code)/i.test(String(sessionError.message||""))){
+        const {work_date,site_code,...legacyPayload}=sessionPayload;
+        ({error:sessionError}=await supabaseClient.from("work_sessions").update(legacyPayload).eq("id",currentSessionId));
+      }
+      if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業更新エラー: "+sessionError.message);return false}
     }
-    setSaveState("Supabase: 保存失敗",true);
+    const payloads=rows.map(rowToOrderLinePayload);
+    const chunkSize=500;
+    for(let i=0;i<payloads.length;i+=chunkSize){
+      const chunk=payloads.slice(i,i+chunkSize);
+      const {data,error}=await supabaseClient.from("order_lines").upsert(chunk,{onConflict:"session_id,source_row_no"}).select("source_row_no");
+      if(error){await failSave("明細保存エラー: "+error.message);return false}
+      if((data||[]).length!==chunk.length){await failSave(`明細保存件数が一致しません（入力 ${payloads.length}件）`);return false}
+    }
+    const {count:savedLineCount,error:countError}=await supabaseClient.from("order_lines").select("source_row_no",{count:"exact",head:true}).eq("session_id",currentSessionId);
+    if(countError){await failSave("明細保存確認エラー: "+countError.message);return false}
+    if(savedLineCount!==payloads.length){await failSave(`明細保存件数が一致しません（入力 ${payloads.length}件 / DB ${savedLineCount??0}件）`);return false}
+    if(!(await saveAllBoxesToSupabase())){await failSave("箱情報を保存できませんでした。");return false}
+    document.getElementById("cloud-save-info").textContent=`Supabase保存済み: ${currentSessionName}`;
+    subscribeCurrentSession();
+    setSaveState("Supabase: 保存済み");
+    toast("Supabaseに保存しました");
+    return true;
+  }finally{
+    workSessionSaveInProgress=false;
     updateCloudSaveButton();
-    toast(cleanupError
-      ?`${message} 作成途中データの取消にも失敗しました。管理者確認が必要です: ${cleanupError.message}`
-      :`${message} 入力中の画面は消していません。`);
-  };
-  const nameInput=document.getElementById("session-name-input");
-  currentSessionName=(nameInput?.value||"").trim()||currentSessionName||suggestSessionName();
-  if(nameInput)nameInput.value=currentSessionName;
-  currentSessionWorkDate=currentWorkDateValue();
-  currentSessionSiteCode=document.getElementById("work-session-site")?.value||currentSessionSiteCode||"OSA";
-  const sessionPayload={name:currentSessionName,status:"active",work_date:currentSessionWorkDate,site_code:currentSessionSiteCode||"OSA",source_order_filename:latestOrderFilename||null,source_master_filename:latestMasterFilename||null};
-  if(!currentSessionId){
-    let {data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...sessionPayload,created_by:currentUser.id}).select("id,name").single();
-    if(sessionError?.code==="42703"&&/(work_date|site_code)/i.test(String(sessionError.message||""))){
-      const {work_date,site_code,...legacyPayload}=sessionPayload;
-      ({data:session,error:sessionError}=await supabaseClient.from("work_sessions").insert({...legacyPayload,created_by:currentUser.id}).select("id,name").single());
-    }
-    if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業作成エラー: "+sessionError.message);return}
-    currentSessionId=session.id;
-    updateCloudSaveButton();
-  }else{
-    let {error:sessionError}=await supabaseClient.from("work_sessions").update(sessionPayload).eq("id",currentSessionId);
-    if(sessionError?.code==="42703"&&/(work_date|site_code)/i.test(String(sessionError.message||""))){
-      const {work_date,site_code,...legacyPayload}=sessionPayload;
-      ({error:sessionError}=await supabaseClient.from("work_sessions").update(legacyPayload).eq("id",currentSessionId));
-    }
-    if(sessionError){setSaveState("Supabase: 保存失敗",true);toast("作業更新エラー: "+sessionError.message);return}
   }
-  const payloads=rows.map(rowToOrderLinePayload);
-  const chunkSize=500;
-  for(let i=0;i<payloads.length;i+=chunkSize){
-    const chunk=payloads.slice(i,i+chunkSize);
-    const {data,error}=await supabaseClient.from("order_lines").upsert(chunk,{onConflict:"session_id,source_row_no"}).select("source_row_no");
-    if(error){await failSave("明細保存エラー: "+error.message);return}
-    if((data||[]).length!==chunk.length){await failSave(`明細保存件数が一致しません（入力 ${payloads.length}件）`);return}
-  }
-  const {count:savedLineCount,error:countError}=await supabaseClient.from("order_lines").select("source_row_no",{count:"exact",head:true}).eq("session_id",currentSessionId);
-  if(countError){await failSave("明細保存確認エラー: "+countError.message);return}
-  if(savedLineCount!==payloads.length){await failSave(`明細保存件数が一致しません（入力 ${payloads.length}件 / DB ${savedLineCount??0}件）`);return}
-  if(!(await saveAllBoxesToSupabase())){await failSave("箱情報を保存できませんでした。");return}
-  document.getElementById("cloud-save-info").textContent=`Supabase保存済み: ${currentSessionName}`;
-  updateCloudSaveButton();
-  subscribeCurrentSession();
-  setSaveState("Supabase: 保存済み");
-  toast("Supabaseに保存しました");
 }
 function boxInput(row){
   return `<input class="inline-box-input" data-row-idx="${row._idx}" inputmode="numeric" pattern="[0-9]*" lang="en" autocomplete="off" value="${esc(row._box)}" placeholder="箱" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleInlineBoxKey(event,${row._idx})" onblur="updateInlineBox(${row._idx},this.value)">`;
@@ -4447,27 +4458,37 @@ function salesRecordPayloadTrial(row,finalizedAt=""){
   return payload;
 }
 async function finalizeSalesTrial(){
-  if(!currentSessionId){
-    await saveCurrentSessionToSupabase();
-    if(!currentSessionId)return;
+  if(salesFinalizeInProgress){toast("売上確定処理中です。完了までお待ちください");return false}
+  salesFinalizeInProgress=true;
+  const finalizeButton=document.getElementById("finalize-btn");
+  if(finalizeButton){finalizeButton.disabled=true;finalizeButton.textContent="売上確定中..."}
+  try{
+    if(!currentSessionId){
+      await saveCurrentSessionToSupabase();
+      if(!currentSessionId)return false;
+    }
+    if(currentSessionLocked){toast("すでに売上確定済みです");return false}
+    if(!(await requireSupabaseLogin()))return false;
+    const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
+    if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return false;
+    if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return false;
+    await refreshCurrentSessionFromSupabase();
+    setSaveState("Supabase: 売上確定中...");
+    const payloads=rows.map(salesRecordPayloadTrial);
+    for(let i=0;i<payloads.length;i+=300){
+      const {error}=await supabaseClient.from("sales_records").upsert(payloads.slice(i,i+300),{onConflict:"session_id,source_row_no"});
+      if(error){setSaveState("Supabase: 売上確定失敗",true);toast("売上確定エラー: "+error.message);return false}
+    }
+    const {data,error}=await supabaseClient.from("work_sessions").update({locked:true,finalized_at:new Date().toISOString(),finalized_by:currentUser.id,status:"closed"}).eq("id",currentSessionId).select("locked,finalized_at").single();
+    if(error){setSaveState("Supabase: ロック失敗",true);toast("ロック更新エラー: "+error.message);return false}
+    setSessionLockStateTrial(data);
+    setSaveState("Supabase: 売上確定済み");
+    toast("売上確定しました");
+    return true;
+  }finally{
+    salesFinalizeInProgress=false;
+    updateLockUITrial();
   }
-  if(currentSessionLocked){toast("すでに売上確定済みです");return}
-  if(!(await requireSupabaseLogin()))return;
-  const incomplete=rows.filter(r=>!r._stockout&&(!r._qty||!r._net||!r._box)).length;
-  if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
-  if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
-  await refreshCurrentSessionFromSupabase();
-  setSaveState("Supabase: 売上確定中...");
-  const payloads=rows.map(salesRecordPayloadTrial);
-  for(let i=0;i<payloads.length;i+=300){
-    const {error}=await supabaseClient.from("sales_records").upsert(payloads.slice(i,i+300),{onConflict:"session_id,source_row_no"});
-    if(error){setSaveState("Supabase: 売上確定失敗",true);toast("売上確定エラー: "+error.message);return}
-  }
-  const {data,error}=await supabaseClient.from("work_sessions").update({locked:true,finalized_at:new Date().toISOString(),finalized_by:currentUser.id,status:"closed"}).eq("id",currentSessionId).select("locked,finalized_at").single();
-  if(error){setSaveState("Supabase: ロック失敗",true);toast("ロック更新エラー: "+error.message);return}
-  setSessionLockStateTrial(data);
-  setSaveState("Supabase: 売上確定済み");
-  toast("売上確定しました");
 }
 async function unlockSessionTrial(){
   if(!currentSessionId||!currentSessionLocked)return;
@@ -4659,68 +4680,79 @@ async function confirmOutstandingExternalWorkBeforeSales(){
   return confirm(`未確認の外部作業が ${outstanding.length}件あります。管理者権限で売上確定を続けますか？\n\n${label}`);
 }
 finalizeSalesTrial=async function(){
-  if(!currentSessionId){
-    await saveCurrentSessionToSupabase();
-    if(!currentSessionId)return;
-  }
-  if(currentSessionLocked){toast("すでに売上確定済みです");return}
-  if(!(await checkSalesLockSetupTrial()))return;
-  if(!(await confirmOutstandingExternalWorkBeforeSales()))return;
-  const incomplete=incompleteSalesWorkRows().length;
-  if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return;
-  if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return;
-  const shippingImporters=[...new Set(rows.map(r=>importerCode(r.importer_id)).filter(Boolean))].sort();
-  const shippingFees=salesShippingFeesPromptValue(shippingImporters);
-  if(shippingFees===null)return;
-  const shippingFee=salesShippingFeesTotal(shippingFees);
-  const refreshed=await refreshCurrentSessionFromSupabase();
-  if(!refreshed){alert("最新データの取得に失敗したため、売上確定を中止しました。");return}
+  if(salesFinalizeInProgress){toast("売上確定処理中です。完了までお待ちください");return false}
+  salesFinalizeInProgress=true;
+  const finalizeButton=document.getElementById("finalize-btn");
+  if(finalizeButton){finalizeButton.disabled=true;finalizeButton.textContent="売上確定中..."}
   try{
-    setSaveState("Supabase: 売上確定中...");
-    const finalizedAt=new Date().toISOString();
-    const workDate=currentWorkDateValue();
-    currentSessionWorkDate=workDate;
-    await upsertSalesRecordsTrial(rows.map(row=>salesRecordPayloadTrial(row,finalizedAt)));
-    const {data,error}=await supabaseClient.rpc("finalize_export_revenue_route",{
-      p_session_id:currentSessionId,
-      p_work_date:workDate,
-      p_finalized_at:finalizedAt,
-      p_shipping_fee:shippingFee,
-      p_shipping_fees:shippingFees
-    });
-    if(error)throw error;
-    if(!data?.session)throw new Error("売上経路の確定結果を取得できません。最新状態を再読込してください。");
-    setSessionLockStateTrial(data.session);
-    const directImporters=Array.isArray(data.direct_importers)?data.direct_importers:[];
-    const domesticSales=Array.isArray(data.domestic_sales)?data.domestic_sales:[];
-    try{
-      const receivableCount=await syncFinalizedSessionToReceivables(workDate,shippingFees,directImporters);
-      const domesticLabel=domesticSales.length?` / 国内会社経由 ${domesticSales.length}件`:"";
-      if(receivableCount){
-        setSaveState(`Supabase: 売上確定・請求締め候補反映済み${domesticLabel}`);
-        toast(`売上確定し、請求締め候補へ反映しました${domesticLabel}`);
-      }else{
-        setSaveState(domesticSales.length?"Supabase: 売上確定・国内売上反映済み":"Supabase: 売上確定済み / 売掛対象なし");
-        toast(domesticSales.length?"売上確定し、国内売上・売掛へ反映しました":"売上確定しました（売掛対象なし）");
-      }
-    }catch(receivableError){
-      setSaveState("Supabase: 売上確定済み / 請求締め候補反映待ち",true);
-      alert(`売上確定は完了しましたが、請求締め候補への自動反映に失敗しました。\n売掛管理の「対象期間を再同期」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
+    if(!currentSessionId){
+      await saveCurrentSessionToSupabase();
+      if(!currentSessionId)return false;
     }
-  }catch(error){
-    let cleanupMessage="";
+    if(currentSessionLocked){toast("すでに売上確定済みです");return false}
+    if(!(await checkSalesLockSetupTrial()))return false;
+    if(!(await confirmOutstandingExternalWorkBeforeSales()))return false;
+    const incomplete=incompleteSalesWorkRows().length;
+    if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return false;
+    if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return false;
+    const shippingImporters=[...new Set(rows.map(r=>importerCode(r.importer_id)).filter(Boolean))].sort();
+    const shippingFees=salesShippingFeesPromptValue(shippingImporters);
+    if(shippingFees===null)return false;
+    const shippingFee=salesShippingFeesTotal(shippingFees);
+    const refreshed=await refreshCurrentSessionFromSupabase();
+    if(!refreshed){alert("最新データの取得に失敗したため、売上確定を中止しました。");return false}
     try{
-      const {data:sessionState}=await supabaseClient.from("work_sessions").select("locked,status").eq("id",currentSessionId).maybeSingle();
-      if(sessionState&&!(sessionState.locked||sessionState.status==="closed")){
-        const {error:cleanupError}=await supabaseClient.from("sales_records").delete().eq("session_id",currentSessionId);
-        if(cleanupError)cleanupMessage=` / 作成途中の売上明細を取消できませんでした: ${cleanupError.message}`;
+      setSaveState("Supabase: 売上確定中...");
+      const finalizedAt=new Date().toISOString();
+      const workDate=currentWorkDateValue();
+      currentSessionWorkDate=workDate;
+      await upsertSalesRecordsTrial(rows.map(row=>salesRecordPayloadTrial(row,finalizedAt)));
+      const {data,error}=await supabaseClient.rpc("finalize_export_revenue_route",{
+        p_session_id:currentSessionId,
+        p_work_date:workDate,
+        p_finalized_at:finalizedAt,
+        p_shipping_fee:shippingFee,
+        p_shipping_fees:shippingFees
+      });
+      if(error)throw error;
+      if(!data?.session)throw new Error("売上経路の確定結果を取得できません。最新状態を再読込してください。");
+      setSessionLockStateTrial(data.session);
+      const directImporters=Array.isArray(data.direct_importers)?data.direct_importers:[];
+      const domesticSales=Array.isArray(data.domestic_sales)?data.domestic_sales:[];
+      try{
+        const receivableCount=await syncFinalizedSessionToReceivables(workDate,shippingFees,directImporters);
+        const domesticLabel=domesticSales.length?` / 国内会社経由 ${domesticSales.length}件`:"";
+        if(receivableCount){
+          setSaveState(`Supabase: 売上確定・請求締め候補反映済み${domesticLabel}`);
+          toast(`売上確定し、請求締め候補へ反映しました${domesticLabel}`);
+        }else{
+          setSaveState(domesticSales.length?"Supabase: 売上確定・国内売上反映済み":"Supabase: 売上確定済み / 売掛対象なし");
+          toast(domesticSales.length?"売上確定し、国内売上・売掛へ反映しました":"売上確定しました（売掛対象なし）");
+        }
+      }catch(receivableError){
+        setSaveState("Supabase: 売上確定済み / 請求締め候補反映待ち",true);
+        alert(`売上確定は完了しましたが、請求締め候補への自動反映に失敗しました。\n売掛管理の「対象期間を再同期」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
       }
-    }catch(cleanupError){
-      cleanupMessage=` / 売上明細の取消確認に失敗しました: ${cleanupError.message}`;
+      return true;
+    }catch(error){
+      let cleanupMessage="";
+      try{
+        const {data:sessionState}=await supabaseClient.from("work_sessions").select("locked,status").eq("id",currentSessionId).maybeSingle();
+        if(sessionState&&!(sessionState.locked||sessionState.status==="closed")){
+          const {error:cleanupError}=await supabaseClient.from("sales_records").delete().eq("session_id",currentSessionId);
+          if(cleanupError)cleanupMessage=` / 作成途中の売上明細を取消できませんでした: ${cleanupError.message}`;
+        }
+      }catch(cleanupError){
+        cleanupMessage=` / 売上明細の取消確認に失敗しました: ${cleanupError.message}`;
+      }
+      const message=salesLockSetupErrorMessage(error)+cleanupMessage;
+      setSaveState("Supabase: 売上確定失敗",true);
+      alert("売上確定エラー: "+message);
+      return false;
     }
-    const message=salesLockSetupErrorMessage(error)+cleanupMessage;
-    setSaveState("Supabase: 売上確定失敗",true);
-    alert("売上確定エラー: "+message);
+  }finally{
+    salesFinalizeInProgress=false;
+    updateLockUITrial();
   }
 };
 function sessionListStatusLabelTrial(session){
