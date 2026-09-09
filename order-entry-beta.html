@@ -69,6 +69,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 @media (max-width:900px){.ops-tools,.purchase-form,.purchase-detail-grid,.partner-register-tools,.advance-entry-head{grid-template-columns:1fr 1fr}.purchase-form .wide,.purchase-form .full,.advance-entry-head .wide{grid-column:1/-1}.partner-register-action,.partner-register-note{grid-column:1/-1}.purchase-receipt summary{min-width:850px}.ops-table-wrap,.advance-entry-table-wrap{max-height:460px}.advance-entry-hint{width:100%;margin-left:0}}
 @media (max-width:900px){.supplier-review-tools{grid-template-columns:1fr 1fr}.supplier-review-group-head{grid-template-columns:1fr 1fr}.supplier-review-group-title{grid-column:1/-1}.supplier-review-table-wrap{max-height:460px}}
 @media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
+.ar-closing-breakdown{min-width:680px;table-layout:fixed}
+.ar-closing-breakdown tbody th,.ar-closing-breakdown tfoot th{position:static}
+.ar-closing-breakdown td:nth-child(2),.ar-closing-breakdown tfoot th{white-space:normal;overflow-wrap:anywhere}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260828-2">
 </head>
@@ -8105,7 +8108,7 @@ function arClosingBreakdownTable(preview){
   const money=value=>salesRefMoney(value)||"0";
   const amounts=row=>`<td class="ar-money">${money(row.netSales)}</td><td class="ar-money">${money(row.shipping)}</td><td class="ar-money">${money(row.amount)}</td>`;
   const days=arClosingDailyBreakdown(preview.groups,preview.adjustmentRows);
-  return `<table class="ar-table"><thead><tr><th>日付</th><th>内容</th><th>明細数</th><th>純売上</th><th>送料</th><th>売上合計</th></tr></thead><tbody>${days.map(day=>`
+  return `<table class="ar-table ar-closing-breakdown"><colgroup><col style="width:15%"><col style="width:34%"><col style="width:9%"><col style="width:14%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>日付</th><th>内容</th><th>明細数</th><th>純売上</th><th>送料</th><th>売上合計</th></tr></thead><tbody>${days.map(day=>`
     <tr class="ar-closing-day-total" style="font-weight:700;background:#f1f5f9"><th scope="row">${esc(day.date)}</th><td>日計（${day.workCount}作業・赤伝調整込み）</td><td>${day.lineCount}</td>${amounts(day)}</tr>
     ${day.rows.map(row=>`<tr><td></td><td>${row.kind==="work"?"作業：":""}${esc(row.label)}</td><td>${row.kind==="work"?row.lineCount:"-"}</td>${amounts(row)}</tr>`).join("")}`).join("")}</tbody>
     <tfoot><tr style="font-weight:700"><th colspan="3" scope="row">期間合計（赤伝・調整込み）</th>${amounts({netSales:preview.netSales,shipping:preview.shippingSales,amount:preview.amount})}</tr></tfoot></table>`;
