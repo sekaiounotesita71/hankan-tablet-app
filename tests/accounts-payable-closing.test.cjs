@@ -7,6 +7,7 @@ const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "order-entry-beta.html"), "utf8");
 const sql = fs.readFileSync(path.join(root, "accounts-payable-closing-migration.sql"), "utf8");
 const groupSql = fs.readFileSync(path.join(root, "accounts-payable-group-closing-migration.sql"), "utf8");
+const paymentSql = fs.readFileSync(path.join(root, "accounts-payable-closing-payment-migration.sql"), "utf8");
 
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map((match) => match[1])
@@ -40,6 +41,11 @@ assert.match(html, /保存件数が一致しません/);
 assert.match(html, /function renderPayableClosingHistory\(\)/);
 assert.match(html, /function reopenAccountsPayablePeriod\(closingId\)/);
 assert.match(html, /if\(apClosingIsActive\(payment\?\.closing_id\)\)/);
+assert.match(html, /id="ap-payment-closing-id"/);
+assert.match(html, /function selectPayableClosingForPayment\(id\)/);
+assert.match(html, /function apClosingCurrentBalance\(closing\)/);
+assert.match(html, /rpc\("register_accounts_payable_closing_payment"/);
+assert.match(html, /function deletePayablePaymentGroup\(groupId\)/);
 
 assert.match(sql, /create table if not exists public\.accounts_payable_closings/);
 assert.match(sql, /add column if not exists closing_id uuid/);
@@ -60,6 +66,14 @@ assert.match(groupSql, /item_count > 200/);
 assert.match(groupSql, /from public\.close_accounts_payable_period\(/);
 assert.match(groupSql, /return next closing_row/);
 assert.match(groupSql, /grant execute on function public\.close_accounts_payable_group\(jsonb\)/);
+
+assert.match(paymentSql, /add column if not exists target_closing_id uuid/);
+assert.match(paymentSql, /add column if not exists payment_group_id uuid/);
+assert.match(paymentSql, /create or replace function public\.register_accounts_payable_closing_payment\(/);
+assert.match(paymentSql, /for update;/);
+assert.match(paymentSql, /order by payable\.invoice_date, payable\.created_at, payable\.id/);
+assert.match(paymentSql, /target_closing_id, payment_group_id/);
+assert.match(paymentSql, /grant execute on function public\.register_accounts_payable_closing_payment/);
 
 const effectiveProfileSource = html.slice(
   html.indexOf("function apEffectivePayableSupplierProfiles"),
@@ -171,5 +185,36 @@ const finalTenDays = closingContext.apClosingCalculationFor({ code: "10", name: 
 assert.equal(finalTenDays.range.from, "2026-08-21");
 assert.equal(finalTenDays.range.to, "2026-08-31");
 assert.equal(finalTenDays.dueDate, "2026-09-10");
+
+const paymentCalculationSource = html.slice(
+  html.indexOf("function apPayablesForClosing"),
+  html.indexOf("function apClosingIsActive")
+);
+const paymentContext = {
+  payableRows: [
+    { id: "old", supplier_code: "01", invoice_date: "2026-07-31", balance: 30 },
+    { id: "current", supplier_code: "01", invoice_date: "2026-08-31", balance: 70 },
+    { id: "future", supplier_code: "01", invoice_date: "2026-09-01", balance: 90 },
+    { id: "other", supplier_code: "02", invoice_date: "2026-08-31", balance: 50 }
+  ],
+  payablePayments: [
+    { id: "payment-1", target_closing_id: "closing-1" },
+    { id: "payment-2", target_closing_id: "closing-2" }
+  ],
+  apSameSupplier(left, right) {
+    return String(left || "").trim().toLowerCase() === String(right || "").trim().toLowerCase();
+  },
+  apRecordState(row) {
+    return { balance: row.balance };
+  },
+  arRound(value) {
+    return Math.round(Number(value) * 100) / 100;
+  }
+};
+vm.runInNewContext(paymentCalculationSource, paymentContext);
+const paymentClosing = { id: "closing-1", supplier_code: "01", period_to: "2026-08-31" };
+assert.deepEqual(Array.from(paymentContext.apPayablesForClosing(paymentClosing), (row) => row.id), ["old", "current"]);
+assert.equal(paymentContext.apClosingCurrentBalance(paymentClosing), 100);
+assert.deepEqual(Array.from(paymentContext.apPaymentsForTargetClosing("closing-1"), (row) => row.id), ["payment-1"]);
 
 console.log("Accounts payable closing tests passed");

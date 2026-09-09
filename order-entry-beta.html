@@ -59,7 +59,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .quick-product-master-modal{width:min(760px,100%)}.quick-product-master-form{max-height:calc(88vh - 50px);overflow:auto}.quick-product-master-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-product-master-grid .wide{grid-column:1/-1}.quick-product-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}.quick-product-code-button{min-width:72px;white-space:nowrap}.quick-product-code-candidates{display:none;padding:9px 10px;border:1px solid #9fb4c7;border-radius:7px;background:#f7fbff}.quick-product-code-candidates.open{display:grid;gap:8px}.quick-product-code-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#25445f;font-size:12px;font-weight:900}.quick-product-code-groups{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quick-product-code-group{display:grid;gap:6px}.quick-product-code-label{color:var(--muted);font-size:11px;font-weight:900}.quick-product-code-list{display:flex;gap:5px;flex-wrap:wrap}.quick-product-code-option{min-width:52px;min-height:32px;padding:0 8px;border:1px solid #8da7bd;border-radius:6px;background:#fff;color:#173a57;font-family:Consolas,monospace;font-weight:900;cursor:pointer}.quick-product-code-option:hover,.quick-product-code-option:focus-visible{border-color:var(--blue);background:var(--blue-bg);outline:none}.quick-product-code-note{color:var(--muted);font-size:11px;font-weight:800}.quick-product-master-status{min-height:36px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#f7f9fb;color:var(--muted);font-size:12px;font-weight:800}.quick-product-master-status.existing{border-color:#d4b36a;background:#fff8e8;color:#7a5100}.quick-product-master-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:700px){.quick-product-master-grid{grid-template-columns:1fr}.quick-product-master-grid .wide{grid-column:auto}.quick-product-code-groups{grid-template-columns:1fr}}
 .app-busy-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(21,24,28,.58);padding:20px}.app-busy-overlay.open{display:flex}.app-busy-box{display:flex;align-items:center;gap:14px;max-width:420px;padding:18px 22px;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.3);font-size:15px;font-weight:900}.app-busy-spinner{width:26px;height:26px;flex:0 0 26px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:busy-spin .8s linear infinite}@keyframes busy-spin{to{transform:rotate(360deg)}}body.app-busy-active{overflow:hidden}.single-submit-pending{pointer-events:none!important;opacity:.58!important}
 .ar-tools{display:grid;grid-template-columns:230px 150px 145px minmax(190px,1fr) auto auto auto;gap:8px;align-items:end}.ar-tools [hidden]{display:none!important}.ar-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}.ar-summary-card{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;padding:10px}.ar-summary-label{color:var(--muted);font-size:12px;font-weight:900}.ar-summary-value{margin-top:4px;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.ar-table-wrap{max-height:520px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ar-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0}.ar-table th,.ar-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.ar-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ar-table tbody tr.selected td{background:#eaf2ff}.ar-table tbody tr.locked td{background:#f3f5f7}.ar-money{text-align:right!important;font-family:Consolas,monospace;font-weight:900}.ar-status{display:inline-flex;min-height:24px;align-items:center;padding:0 8px;border-radius:999px;background:#f1f3f5;color:var(--muted);font-size:11px;font-weight:900}.ar-status.unpaid{background:#fff6e6;color:#9a5b00}.ar-status.partial{background:#eaf2ff;color:#174ea6}.ar-status.paid{background:#eaf7ef;color:#0f7a3b}.ar-status.overdue,.ar-status.overpaid,.ar-status.credit{background:#fff0ef;color:#b42318}.ar-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.ar-entry{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;overflow:hidden}.ar-entry summary{cursor:pointer;padding:10px 12px;background:#f7f9fb;font-weight:900}.ar-entry-body{padding:10px}.ar-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ar-form .wide{grid-column:span 2}.ar-form .full{grid-column:1/-1}.ar-form textarea{min-height:76px}.ar-check{display:flex;flex-direction:row;align-items:center;gap:7px;min-height:38px;color:var(--text)}.ar-check input{width:18px;height:18px;min-height:18px}.ar-payment-history{max-height:180px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.ar-payment-row{display:grid;grid-template-columns:90px 1fr 1fr minmax(100px,1.2fr) auto;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}.ar-payment-row:last-child{border-bottom:0}.ar-statement-profile{margin-top:10px}.ap-closing-entry{grid-column:1/-1}
-.ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 140px 85px minmax(160px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.ar-mode-tabs{display:flex;align-items:center;gap:4px;margin-bottom:10px;padding:4px;border:1px solid var(--line);border-radius:8px;background:#f3f5f7;overflow-x:auto}.ar-mode-tab{flex:0 0 auto;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}.ar-mode-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.13)}.ar-group-table{min-width:980px}.ar-group-table tbody tr:hover td{background:#f7f9fb}.ar-group-code{font-size:14px;font-weight:900}.ar-group-name{margin-left:5px;color:var(--muted)}.ar-group-alert{color:var(--danger);font-weight:900}.ar-summary-card.balance{border-color:#9bc9af;background:#f1faf4}.ar-summary-card.overdue{border-color:#efb9b3;background:#fff5f4}
+.ar-table tbody tr.locked td{background:#f3f5f7}.ar-lock{display:inline-flex;align-items:center;min-height:22px;padding:0 7px;border-radius:5px;background:#e8edf2;color:#334155;font-size:11px;font-weight:900}.ar-closing-grid{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:8px;align-items:end}.ar-closing-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.ar-closing-history{margin-top:10px;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:auto;max-height:260px}.ar-closing-row{display:grid;grid-template-columns:85px 180px 105px 125px 125px 85px minmax(150px,1fr) auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--line);font-size:12px}.ar-closing-row:last-child{border-bottom:0}.ar-closing-row.selected{background:#eaf4ff;box-shadow:inset 3px 0 0 var(--blue)}.ar-closing-row.reopened{opacity:.62}.ar-closing-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.ar-mode-tabs{display:flex;align-items:center;gap:4px;margin-bottom:10px;padding:4px;border:1px solid var(--line);border-radius:8px;background:#f3f5f7;overflow-x:auto}.ar-mode-tab{flex:0 0 auto;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}.ar-mode-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.13)}.ar-group-table{min-width:980px}.ar-group-table tbody tr:hover td{background:#f7f9fb}.ar-group-code{font-size:14px;font-weight:900}.ar-group-name{margin-left:5px;color:var(--muted)}.ar-group-alert{color:var(--danger);font-weight:900}.ar-summary-card.balance{border-color:#9bc9af;background:#f1faf4}.ar-summary-card.overdue{border-color:#efb9b3;background:#fff5f4}
 .ops-tools{display:grid;grid-template-columns:170px 150px minmax(190px,1fr) minmax(180px,1fr) auto auto;gap:8px;align-items:end}.ops-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.ops-table-wrap{max-height:560px;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:8px}.ops-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.ops-table th,.ops-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.ops-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.ops-table input,.ops-table select{height:34px;min-height:34px;border-radius:6px}.ops-table tr.submitted td{background:#fff8e8}.ops-table tr.accepted td{background:#eef8f2}.ops-table tr.returned td{background:#fff0ef}.ops-actions{display:flex;gap:5px;align-items:center}.ops-money{text-align:right;font-family:Consolas,monospace;font-weight:900}.purchase-form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-form .wide{grid-column:span 2}.purchase-form .full{grid-column:1/-1}.purchase-receipt{border-bottom:1px solid var(--line)}.purchase-receipt summary{display:grid;grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 120px auto;gap:8px;align-items:center;padding:9px 10px;cursor:pointer;font-weight:900;background:#fff}.purchase-receipt summary:hover{background:#f7f9fb}.purchase-detail{padding:10px;border-top:1px solid var(--line);background:#fbfcfd}.purchase-detail-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.purchase-correction-note{grid-column:1/-1;padding:8px 10px;border:1px solid #e6b86a;border-radius:7px;background:#fff8e8;color:#7a4a00;font-size:12px;font-weight:900}.purchase-detail-table{width:100%;min-width:1260px;border-collapse:separate;border-spacing:0;margin-top:8px}.purchase-detail-table th,.purchase-detail-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.purchase-detail-table input{height:32px;min-height:32px}.purchase-detail-table .purchase-product-code{width:110px}.purchase-detail-table .purchase-product-name{width:190px}.purchase-detail-table .purchase-line-note{width:180px}.site-readonly{display:flex;align-items:center;min-height:38px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:#f3f5f7;color:#334155;font-weight:900}.admin-box{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}
 .advance-entry-head{display:grid;grid-template-columns:150px 120px 180px minmax(180px,1fr) 180px minmax(220px,1.2fr);gap:8px;align-items:end}.advance-entry-head .wide{grid-column:span 2}#advance-purchase-entry-type.credit-note{border-color:#b42318;background:#fff0ef;color:#9d1c14;font-weight:900}.advance-entry-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}.advance-import-mode{display:inline-flex;align-items:stretch;height:38px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fff}.advance-import-mode-label{display:flex;align-items:center;padding:0 9px;background:#f3f5f7;color:var(--muted);font-size:11px;font-weight:900}.advance-import-mode button{min-width:92px;border:0;border-left:1px solid var(--line);border-radius:0;background:#fff;color:var(--text);font-weight:900;cursor:pointer}.advance-import-mode button.active{background:#174ea6;color:#fff}.advance-master-tools{display:flex;align-items:center;gap:6px;height:38px;padding-left:7px;border-left:1px solid var(--line)}.advance-master-tools label{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;font-weight:900}.advance-master-tools select{height:36px;min-height:36px;min-width:150px}.advance-master-tools .btn{height:36px;min-height:36px}.advance-master-count{min-width:52px;color:var(--muted);font-size:11px;font-weight:900}.advance-entry-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}.advance-entry-table-wrap{max-height:460px;overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:7px;background:#fff}.advance-entry-table{width:100%;min-width:1450px;border-collapse:separate;border-spacing:0}.advance-entry-table th,.advance-entry-table td{padding:6px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap;vertical-align:middle}.advance-entry-table th{position:sticky;top:0;z-index:3;background:#f7f9fb;color:var(--muted);font-weight:900}.advance-entry-table input,.advance-entry-table select{height:34px;min-height:34px;border-radius:6px}.advance-entry-table .product-code{width:118px}.advance-entry-table .product-name{width:220px}.advance-entry-table .origin{width:140px}.advance-entry-table .quantity{width:85px}.advance-entry-table .unit{width:76px}.advance-entry-table .price{width:100px}.advance-entry-table .tax-rate{width:72px}.advance-entry-table .memo{width:190px}.advance-entry-table .line-amount{text-align:right;font-family:Consolas,monospace;font-weight:900}.advance-entry-table tr.advance-master-selected td{background:#eef6ff}.advance-entry-table tr.invalid td{background:#fff0ef}.advance-stock-check,.advance-master-check{display:flex;align-items:center;justify-content:center}.advance-stock-check input,.advance-master-check input{width:18px;height:18px;min-height:18px}.advance-row-actions{display:flex;gap:4px}.advance-row-actions .small{min-width:46px}.advance-entry-hint{margin-left:auto;color:var(--muted);font-size:12px}
 .partner-register-tools{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,1fr) 150px auto minmax(200px,1fr);gap:8px;align-items:end}
@@ -822,7 +822,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <summary>支払を登録</summary>
           <div class="ar-entry-body">
             <input id="ap-payment-payable-id" type="hidden">
-            <div class="hint" id="ap-payment-target">一覧から対象の「支払」を押してください。</div>
+            <input id="ap-payment-closing-id" type="hidden">
+            <div class="hint" id="ap-payment-target">買掛締め履歴または買掛一覧から対象の「支払」を押してください。</div>
             <div class="ar-form">
               <label>支払日<input id="ap-payment-date" type="date"></label>
               <label>支払額<input id="ap-payment-amount" inputmode="decimal"></label>
@@ -834,7 +835,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
               <button class="btn primary" type="button" onclick="savePayablePayment()">支払を登録</button>
               <button class="btn" type="button" onclick="clearPayablePaymentForm()">選択解除</button>
             </div>
-            <div class="ar-payment-history" id="ap-payment-history"><div class="sales-empty">買掛を選択すると支払履歴を表示します。</div></div>
+            <div class="ar-payment-history" id="ap-payment-history"><div class="sales-empty">買掛締めまたは買掛を選択すると支払履歴を表示します。</div></div>
           </div>
         </details>
       </div>
@@ -9345,6 +9346,9 @@ async function reviewExternalAssignment(id,action){
 }
 function apDbErrorMessage(error){
   const message=String(error?.message||error||"");
+  if(/register_accounts_payable_closing_payment|target_closing_id|payment_group_id/i.test(message)){
+    return "買掛締め単位の支払登録用SQLが未実行です。accounts-payable-closing-payment-migration.sql をSupabase SQL Editorで実行してください。";
+  }
   if(/payment_mode|accounts_payable_due_date|accounts_payable_payment_source/i.test(message)){
     return "買掛支払条件用SQLが未実行です。accounts-payable-terms-migration.sql をSupabase SQL Editorで実行してください。";
   }
@@ -9361,6 +9365,19 @@ function apDbErrorMessage(error){
 }
 function apSameSupplier(a,b){return String(a||"").trim().toLowerCase()===String(b||"").trim().toLowerCase()}
 function apPaymentsFor(payableId){return payablePayments.filter(payment=>payment.payable_id===payableId)}
+function apPayablesForClosing(closing){
+  if(!closing)return [];
+  return payableRows.filter(row=>
+    apSameSupplier(row.supplier_code,closing.supplier_code)&&
+    String(row.invoice_date||"")<=String(closing.period_to||"")
+  );
+}
+function apClosingCurrentBalance(closing){
+  return arRound(apPayablesForClosing(closing).reduce((sum,row)=>sum+Math.max(0,apRecordState(row).balance),0));
+}
+function apPaymentsForTargetClosing(closingId){
+  return payablePayments.filter(payment=>payment.target_closing_id===closingId);
+}
 function apClosingIsActive(closingId){
   if(!closingId)return false;
   const closing=payableClosings.find(row=>row.id===closingId);
@@ -9791,19 +9808,25 @@ function renderPayableClosingHistory(){
     .sort((a,b)=>String(b.period_to||"").localeCompare(String(a.period_to||""))||String(b.closed_at||"").localeCompare(String(a.closed_at||"")))
     .slice(0,100);
   if(!rows.length){container.innerHTML='<div class="sales-empty">買掛締め履歴はありません。</div>';return}
+  const selectedClosingId=val("ap-payment-closing-id");
   container.innerHTML=rows.map(row=>{
     const status=row.status==="closed"?"締め済":"解除済";
     const note=row.status==="reopened"?`解除理由: ${row.reopen_reason||"-"}`:`締め日時: ${String(row.closed_at||"").replace("T"," ").slice(0,16)}`;
+    const currentBalance=apClosingCurrentBalance(row);
+    const paymentButton=row.status==="closed"&&currentBalance>0
+      ?`<button class="small primary" type="button" onclick="selectPayableClosingForPayment('${esc(row.id)}')">支払</button>`
+      :(row.status==="closed"?'<span class="ar-status paid">支払済</span>':"");
     const reopenButton=currentUserIsAdmin()&&row.status==="closed"
       ?`<button class="small danger" type="button" onclick="reopenAccountsPayablePeriod('${esc(row.id)}')">締め解除</button>`:"";
-    return `<div class="ar-closing-row ${row.status==="reopened"?"reopened":""}">
+    return `<div class="ar-closing-row ${[row.status==="reopened"?"reopened":"",selectedClosingId===row.id?"selected":""].filter(Boolean).join(" ")}">
       <b>${esc(row.supplier_code||"")}</b>
       <span>${esc(row.period_from||"")} ～ ${esc(row.period_to||"")}</span>
       <span>期限 ${esc(row.due_date||"-")}</span>
-      <span class="ar-closing-amount">残高 ¥${esc(salesRefMoney(row.closing_balance_jpy)||"0")}</span>
+      <span class="ar-closing-amount">締め残 ¥${esc(salesRefMoney(row.closing_balance_jpy)||"0")}</span>
+      <span class="ar-closing-amount">支払残 ¥${esc(salesRefMoney(currentBalance)||"0")}</span>
       <span class="ar-status ${row.status==="closed"?"paid":""}">${esc(status)}</span>
       <span title="${esc(note)}">${esc(note)}</span>
-      ${reopenButton}
+      <span>${paymentButton}${reopenButton?` ${reopenButton}`:""}</span>
     </div>`;
   }).join("");
 }
@@ -10081,6 +10104,7 @@ function selectPayableForPayment(id){
   const row=payableRows.find(item=>item.id===id);
   if(!row)return;
   const state=apRecordState(row);
+  document.getElementById("ap-payment-closing-id").value="";
   document.getElementById("ap-payment-payable-id").value=id;
   document.getElementById("ap-payment-target").textContent=`${row.supplier_code} ${row.supplier_name||""} / ${row.invoice_no||"管理番号なし"} / 買掛残 ¥${salesRefMoney(state.balance)||"0"}`;
   document.getElementById("ap-payment-amount").value=state.balance>0?String(state.balance):"";
@@ -10088,36 +10112,62 @@ function selectPayableForPayment(id){
   renderPayablePaymentHistory();
   document.getElementById("ap-payment-amount").focus();
 }
+function selectPayableClosingForPayment(id){
+  const closing=payableClosings.find(item=>item.id===id&&item.status==="closed");
+  if(!closing)return;
+  const supplier=lookupSupplierByCode(closing.supplier_code);
+  const balance=apClosingCurrentBalance(closing);
+  document.getElementById("ap-payment-payable-id").value="";
+  document.getElementById("ap-payment-closing-id").value=id;
+  document.getElementById("ap-payment-target").textContent=`買掛締め / ${closing.supplier_code} ${supplier?.name||""} / ${closing.period_from} ～ ${closing.period_to} / 支払残 ¥${salesRefMoney(balance)||"0"}`;
+  document.getElementById("ap-payment-amount").value=balance>0?String(balance):"";
+  renderPayables();
+  renderPayableClosingHistory();
+  renderPayablePaymentHistory();
+  document.getElementById("ap-payment-amount").focus();
+}
 function clearPayablePaymentForm(){
   document.getElementById("ap-payment-payable-id").value="";
+  document.getElementById("ap-payment-closing-id").value="";
   ["ap-payment-amount","ap-payment-reference","ap-payment-memo"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("ap-payment-fee").value="0";
-  document.getElementById("ap-payment-target").textContent="一覧から対象の「支払」を押してください。";
+  document.getElementById("ap-payment-target").textContent="買掛締め履歴または買掛一覧から対象の「支払」を押してください。";
   renderPayables();
+  renderPayableClosingHistory();
   renderPayablePaymentHistory();
 }
 async function savePayablePayment(){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
   const payableId=val("ap-payment-payable-id");
+  const closingId=val("ap-payment-closing-id");
   const row=payableRows.find(item=>item.id===payableId);
+  const closing=payableClosings.find(item=>item.id===closingId&&item.status==="closed");
   const amount=arNumber(val("ap-payment-amount"));
   const fee=arNumber(val("ap-payment-fee"));
   const paymentDate=val("ap-payment-date");
-  if(!row||!paymentDate||amount<=0||fee<0){alert("対象の買掛・支払日・支払額を確認してください。");return}
-  const balance=apRecordState(row).balance;
-  if(amount>balance&&!confirm(`買掛残 ¥${salesRefMoney(balance)||"0"} を超える支払です。登録しますか？`))return;
+  if((!row&&!closing)||!paymentDate||amount<=0||fee<0){alert("対象の買掛締めまたは買掛・支払日・支払額を確認してください。");return}
+  const balance=closing?apClosingCurrentBalance(closing):apRecordState(row).balance;
+  if(closing&&amount>balance){alert(`この買掛締めの支払残は ¥${salesRefMoney(balance)||"0"} です。支払額を確認してください。`);return}
+  if(!closing&&amount>balance&&!confirm(`買掛残 ¥${salesRefMoney(balance)||"0"} を超える支払です。登録しますか？`))return;
   setAppBusy(true,"支払を登録しています...");
   try{
-    const {error}=await initSupabase().from("accounts_payable_payments").insert({
-      payable_id:payableId,payment_date:paymentDate,amount_jpy:amount,bank_fee_jpy:fee,
-      reference_no:val("ap-payment-reference").trim()||null,memo:val("ap-payment-memo").trim()||null,
-      created_by:user.id,updated_by:user.id
-    });
+    const referenceNo=val("ap-payment-reference").trim()||null;
+    const memo=val("ap-payment-memo").trim()||null;
+    const result=closing
+      ?await initSupabase().rpc("register_accounts_payable_closing_payment",{
+        p_closing_id:closingId,p_payment_date:paymentDate,p_amount_jpy:amount,p_bank_fee_jpy:fee,
+        p_reference_no:referenceNo,p_memo:memo
+      })
+      :await initSupabase().from("accounts_payable_payments").insert({
+        payable_id:payableId,payment_date:paymentDate,amount_jpy:amount,bank_fee_jpy:fee,
+        reference_no:referenceNo,memo,created_by:user.id,updated_by:user.id
+      });
+    const {error}=result;
     if(error)throw error;
     await loadPayables();
     clearPayablePaymentForm();
-    alert("支払を登録しました。");
+    alert(closing?"買掛締めに対する支払を登録しました。":"支払を登録しました。");
   }catch(error){alert(apDbErrorMessage(error))}
   finally{setAppBusy(false)}
 }
@@ -10125,7 +10175,29 @@ function renderPayablePaymentHistory(){
   const box=document.getElementById("ap-payment-history");
   if(!box)return;
   const payableId=val("ap-payment-payable-id");
-  if(!payableId){box.innerHTML='<div class="sales-empty">買掛を選択すると支払履歴を表示します。</div>';return}
+  const closingId=val("ap-payment-closing-id");
+  if(closingId){
+    const rows=apPaymentsForTargetClosing(closingId);
+    if(!rows.length){box.innerHTML='<div class="sales-empty">この買掛締めに対する支払履歴はありません。</div>';return}
+    const groups=new Map();
+    rows.forEach(payment=>{
+      const key=payment.payment_group_id||payment.id;
+      if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push(payment);
+    });
+    box.innerHTML=[...groups.entries()]
+      .sort((a,b)=>String(b[1][0]?.payment_date||"").localeCompare(String(a[1][0]?.payment_date||"")))
+      .map(([groupId,payments])=>{
+        const first=payments[0];
+        const amount=payments.reduce((sum,payment)=>sum+arNumber(payment.amount_jpy),0);
+        const fee=payments.reduce((sum,payment)=>sum+arNumber(payment.bank_fee_jpy),0);
+        const locked=payments.some(payment=>apClosingIsActive(payment.closing_id));
+        const action=locked?'<span class="ar-lock">締め済</span>':(currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deletePayablePaymentGroup('${esc(groupId)}')">削除</button>`:"<span></span>");
+        return `<div class="ar-payment-row"><span>${esc(first.payment_date||"")}</span><span class="ar-money">¥${esc(salesRefMoney(amount)||"0")}</span><span>手数料 ¥${esc(salesRefMoney(fee)||"0")}</span><span>${esc(first.reference_no||first.memo||"-")}</span>${action}</div>`;
+      }).join("");
+    return;
+  }
+  if(!payableId){box.innerHTML='<div class="sales-empty">買掛締めまたは買掛を選択すると支払履歴を表示します。</div>';return}
   const rows=apPaymentsFor(payableId).sort((a,b)=>String(b.payment_date).localeCompare(String(a.payment_date))||String(b.created_at).localeCompare(String(a.created_at)));
   if(!rows.length){box.innerHTML='<div class="sales-empty">支払履歴はありません。</div>';return}
   box.innerHTML=rows.map(payment=>{
@@ -10133,6 +10205,18 @@ function renderPayablePaymentHistory(){
     const action=locked?'<span class="ar-lock">締め済</span>':(currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deletePayablePayment('${esc(payment.id)}')">削除</button>`:"<span></span>");
     return `<div class="ar-payment-row"><span>${esc(payment.payment_date||"")}</span><span class="ar-money">¥${esc(salesRefMoney(payment.amount_jpy)||"0")}</span><span>手数料 ¥${esc(salesRefMoney(payment.bank_fee_jpy)||"0")}</span><span>${esc(payment.reference_no||payment.memo||"-")}</span>${action}</div>`;
   }).join("");
+}
+async function deletePayablePaymentGroup(groupId){
+  if(!currentUserIsAdmin()){alert("支払を削除できるのは管理者のみです。");return}
+  const rows=payablePayments.filter(payment=>payment.payment_group_id===groupId);
+  if(!rows.length)return;
+  if(rows.some(payment=>apClosingIsActive(payment.closing_id))){alert("次の買掛締めに含まれた支払は削除できません。先に該当する締めを解除してください。");return}
+  if(!confirm("この締めに対する支払登録を削除しますか？"))return;
+  const {error}=await initSupabase().from("accounts_payable_payments").delete().in("id",rows.map(row=>row.id));
+  if(error){alert(apDbErrorMessage(error));return}
+  const closingId=val("ap-payment-closing-id");
+  await loadPayables();
+  if(closingId)selectPayableClosingForPayment(closingId);
 }
 async function deletePayablePayment(id){
   if(!currentUserIsAdmin()){alert("支払を削除できるのは管理者のみです。");return}
