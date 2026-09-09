@@ -1415,6 +1415,7 @@ let payablesLoaded=false;
 let payableClosingDbReady=true;
 let payableSupplierProfile=null;
 let payableSupplierProfiles=[];
+let payablePaymentClosingId="";
 const payableClosingSelections=new Set();
 let payableClosingSelectionContext="";
 let auditEvents=[];
@@ -9378,6 +9379,12 @@ function apClosingCurrentBalance(closing){
 function apPaymentsForTargetClosing(closingId){
   return payablePayments.filter(payment=>payment.target_closing_id===closingId);
 }
+function apSelectedPaymentClosingId(){
+  const inputId=val("ap-payment-closing-id");
+  if(inputId)payablePaymentClosingId=inputId;
+  if(payablePaymentClosingId&&!payableClosings.some(row=>row.id===payablePaymentClosingId&&row.status==="closed"))payablePaymentClosingId="";
+  return payablePaymentClosingId;
+}
 function apClosingIsActive(closingId){
   if(!closingId)return false;
   const closing=payableClosings.find(row=>row.id===closingId);
@@ -9808,7 +9815,7 @@ function renderPayableClosingHistory(){
     .sort((a,b)=>String(b.period_to||"").localeCompare(String(a.period_to||""))||String(b.closed_at||"").localeCompare(String(a.closed_at||"")))
     .slice(0,100);
   if(!rows.length){container.innerHTML='<div class="sales-empty">買掛締め履歴はありません。</div>';return}
-  const selectedClosingId=val("ap-payment-closing-id");
+  const selectedClosingId=apSelectedPaymentClosingId();
   container.innerHTML=rows.map(row=>{
     const status=row.status==="closed"?"締め済":"解除済";
     const note=row.status==="reopened"?`解除理由: ${row.reopen_reason||"-"}`:`締め日時: ${String(row.closed_at||"").replace("T"," ").slice(0,16)}`;
@@ -10104,6 +10111,7 @@ function selectPayableForPayment(id){
   const row=payableRows.find(item=>item.id===id);
   if(!row)return;
   const state=apRecordState(row);
+  payablePaymentClosingId="";
   document.getElementById("ap-payment-closing-id").value="";
   document.getElementById("ap-payment-payable-id").value=id;
   document.getElementById("ap-payment-target").textContent=`${row.supplier_code} ${row.supplier_name||""} / ${row.invoice_no||"管理番号なし"} / 買掛残 ¥${salesRefMoney(state.balance)||"0"}`;
@@ -10117,6 +10125,7 @@ function selectPayableClosingForPayment(id){
   if(!closing)return;
   const supplier=lookupSupplierByCode(closing.supplier_code);
   const balance=apClosingCurrentBalance(closing);
+  payablePaymentClosingId=id;
   document.getElementById("ap-payment-payable-id").value="";
   document.getElementById("ap-payment-closing-id").value=id;
   document.getElementById("ap-payment-target").textContent=`買掛締め / ${closing.supplier_code} ${supplier?.name||""} / ${closing.period_from} ～ ${closing.period_to} / 支払残 ¥${salesRefMoney(balance)||"0"}`;
@@ -10127,6 +10136,7 @@ function selectPayableClosingForPayment(id){
   document.getElementById("ap-payment-amount").focus();
 }
 function clearPayablePaymentForm(){
+  payablePaymentClosingId="";
   document.getElementById("ap-payment-payable-id").value="";
   document.getElementById("ap-payment-closing-id").value="";
   ["ap-payment-amount","ap-payment-reference","ap-payment-memo"].forEach(id=>document.getElementById(id).value="");
@@ -10140,7 +10150,7 @@ async function savePayablePayment(){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
   const payableId=val("ap-payment-payable-id");
-  const closingId=val("ap-payment-closing-id");
+  const closingId=apSelectedPaymentClosingId();
   const row=payableRows.find(item=>item.id===payableId);
   const closing=payableClosings.find(item=>item.id===closingId&&item.status==="closed");
   const amount=arNumber(val("ap-payment-amount"));
@@ -10175,7 +10185,7 @@ function renderPayablePaymentHistory(){
   const box=document.getElementById("ap-payment-history");
   if(!box)return;
   const payableId=val("ap-payment-payable-id");
-  const closingId=val("ap-payment-closing-id");
+  const closingId=apSelectedPaymentClosingId();
   if(closingId){
     const rows=apPaymentsForTargetClosing(closingId);
     if(!rows.length){box.innerHTML='<div class="sales-empty">この買掛締めに対する支払履歴はありません。</div>';return}
@@ -10214,7 +10224,7 @@ async function deletePayablePaymentGroup(groupId){
   if(!confirm("この締めに対する支払登録を削除しますか？"))return;
   const {error}=await initSupabase().from("accounts_payable_payments").delete().in("id",rows.map(row=>row.id));
   if(error){alert(apDbErrorMessage(error));return}
-  const closingId=val("ap-payment-closing-id");
+  const closingId=apSelectedPaymentClosingId();
   await loadPayables();
   if(closingId)selectPayableClosingForPayment(closingId);
 }
