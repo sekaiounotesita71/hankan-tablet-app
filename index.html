@@ -16,6 +16,8 @@ if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").repl
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="./i18n.js"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
+<script src="./work-paper.js?v=20260910-1" defer></script>
+<link rel="stylesheet" href="./work-paper.css?v=20260910-1">
 <style>
 :root{
   --bg:#f6f4ef;--surface:#fff;--surface-2:#fbfaf7;--border:#ded9cf;--border-strong:#bfb7aa;
@@ -246,6 +248,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       <button class="phase-btn p15" id="btn-p15" onclick="switchPhase(1.5)">Phase 1.5 産地・売価</button>
       <button class="phase-btn p2" id="btn-p2" onclick="switchPhase(2)">Phase 2 箱一覧</button>
     </div>
+    <button class="btn" id="work-paper-btn" disabled onclick="openWorkPaper()">作業票</button>
     <button class="btn btn-primary" id="export-btn" disabled onclick="exportExcel()">Excel出力</button>
     </div>
   </div>
@@ -7062,6 +7065,25 @@ async function createWorkSessionFromConfirmedOrders(){
   applyWorkAppLeanMode();
 }
 applyWorkAppLeanMode();
+function openWorkPaper(){
+  if(!currentUser||!rows.length){toast("先に作業データを開いてください");return}
+  if(!window.WorkPaper){toast("作業票を読み込めません。画面を再読み込みしてください");return}
+  WorkPaper.open({
+    workDate:currentSessionWorkDate||"",
+    activeImporter:currentPhase===1?activeCountry:activeImporter,
+    printedAt:new Date().toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}),
+    rows:rows.map((r,i)=>({
+      id:String(i),sourceNo:r._idx+1,importerCode:importerCode(r.importer_id)||r.country||"",
+      importerName:importerDisplayName(importerCode(r.importer_id)||r.country||""),
+      customerCode:r.customer_code||"",customerName:r.customer||"",productCode:r.product_id||"",productName:r.product_name||"",
+      orderQty:r.csv_qty??"",orderUnit:r.unit||"",qty:r._qty??"",unit:r._unit||"",net:r._net??"",boxNo:r._box??"",
+      origin:r.origin||"",memo:r._memo||"",stockout:!!r._stockout
+    })),
+    boxes:Object.entries(boxMap).flatMap(([importerCode,boxes])=>Object.entries(boxes).map(([boxNo,b])=>({
+      importerCode,boxNo,gross:b.gross??"",dryIceEnabled:b.dry_ice_enabled,dryIce:b.dry_ice??"",size:b.box_size||""
+    })))
+  });
+}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 </body>
