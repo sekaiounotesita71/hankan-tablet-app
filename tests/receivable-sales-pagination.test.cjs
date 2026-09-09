@@ -101,3 +101,88 @@ test("closing checks individual work even when total amounts happen to match",()
   assert.equal(context.arClosingSalesMismatch([...groups,{amount:0}],charges),"");
   assert.equal(context.arClosingSalesMismatch(groups,[...charges,{source_type:"adjustment",amount_jpy:-50}]),"");
 });
+
+function breakdownContext(){
+  const context={
+    arRoundJpy:value=>Math.sign(Number(value)||0)*Math.round(Math.abs(Number(value)||0)),
+    salesRefMoney:value=>Number(value||0).toLocaleString("en-US"),
+    esc:value=>String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+  };
+  vm.runInNewContext(sourceBetween("function arClosingDailyBreakdown(","function renderClosingPreview("),context);
+  return context;
+}
+
+test("August 3 day total includes the credit while preserving original work amounts",()=>{
+  const context=breakdownContext();
+  const groups=[{invoiceDate:"2026-08-03",sessionName:"2026-08-03",lineCount:91,netSales:1066770,shipping:133976,amount:1200746}];
+  const adjustments=[{work_date:"2026-08-03",product_name:"Credit",amount:-23100}];
+  const before=JSON.stringify({groups,adjustments});
+  const [day]=context.arClosingDailyBreakdown(groups,adjustments);
+  assert.equal(day.netSales,1043670);
+  assert.equal(day.shipping,133976);
+  assert.equal(day.amount,1177646);
+  assert.equal(day.workCount,1);
+  assert.equal(day.lineCount,91);
+  assert.deepEqual(Array.from(day.rows,row=>row.amount),[1200746,-23100]);
+  assert.equal(JSON.stringify({groups,adjustments}),before);
+});
+
+test("daily breakdown combines same-day work and handles credit-only days and shipping adjustments",()=>{
+  const context=breakdownContext();
+  const groups=[
+    {invoiceDate:"2026-08-06",sessionName:"B",lineCount:2,netSales:100,shipping:10,amount:110},
+    {invoiceDate:"2026-08-06",sessionName:"A",lineCount:3,netSales:200,shipping:20,amount:220}
+  ];
+  const adjustments=[
+    {work_date:"2026-08-06",amount:0,_shipping_adjustment_amount:-5},
+    {work_date:"2026-08-03",amount:-50},
+    {work_date:"2026-08-06",amount:40}
+  ];
+  const days=context.arClosingDailyBreakdown(groups,adjustments);
+  assert.deepEqual(Array.from(days,day=>day.date),["2026-08-03","2026-08-06"]);
+  assert.equal(days[0].workCount,0);
+  assert.equal(days[0].amount,-50);
+  assert.equal(days[1].workCount,2);
+  assert.equal(days[1].lineCount,5);
+  assert.equal(days[1].netSales,340);
+  assert.equal(days[1].shipping,25);
+  assert.equal(days[1].amount,365);
+  assert.equal(days.reduce((sum,day)=>sum+day.amount,0),315);
+  assert.equal(context.arClosingDailyBreakdown().length,0);
+});
+
+test("closing breakdown renders adjusted daily totals and escapes adjustment labels",()=>{
+  const context=breakdownContext();
+  const table=context.arClosingBreakdownTable({
+    groups:[{invoiceDate:"2026-08-03",sessionName:"Work",lineCount:91,netSales:1066770,shipping:133976,amount:1200746}],
+    adjustmentRows:[{work_date:"2026-08-03",product_name:"<Credit>",store_name:"A&B",amount:-23100}],
+    netSales:1043670,shippingSales:133976,amount:1177646
+  });
+  assert.match(table,/ar-closing-day-total[^]*1,177,646/);
+  assert.match(table,/1,200,746/);
+  assert.match(table,/-23,100/);
+  assert.match(table,/&lt;Credit&gt; \/ A&amp;B/);
+  assert.match(table,/<tfoot>[^]*1,043,670[^]*133,976[^]*1,177,646/);
+});
+
+test("closing preview retains normalized adjustments for the day breakdown",async()=>{
+  const calculation={importerCode:"01",range:{from:"2026-08-01",to:"2026-08-31"}};
+  const adjustments=[{importer_code:"01",work_date:"2026-08-03",amount:-23100},{importer_code:"02",amount:-999}];
+  const context={
+    receivableClosingSalesPreview:{key:"",status:"idle"},
+    arClosingCalculation:()=>calculation,arClosingPreviewKey:()=>"01|2026-08-01|2026-08-31",
+    renderClosingPreview:()=>{},initSupabase:()=>({}),
+    arReadSalesRows:async()=>[],arReadAll:async()=>[],
+    salesRefReadAppliedPendingRows:async()=>adjustments,
+    arBuildSalesGroups:()=>[{importerCode:"01",rawNetSales:1066770,shipping:133976}],
+    salesRefPendingToRow:row=>row,arSameImporter:sameImporter,
+    arRoundJpy:Math.round,salesRefNum:Number,salesRefShippingAdjustmentForRows:()=>0,
+    arDbErrorMessage:error=>error.message
+  };
+  vm.runInNewContext(sourceBetween("async function refreshClosingSalesPreview(","function arClosingDailyBreakdown("),context);
+  await context.refreshClosingSalesPreview({force:true});
+  assert.equal(context.receivableClosingSalesPreview.status,"loaded");
+  assert.equal(context.receivableClosingSalesPreview.amount,1177646);
+  assert.equal(context.receivableClosingSalesPreview.adjustmentRows.length,1);
+  assert.equal(context.receivableClosingSalesPreview.adjustmentRows[0].amount,-23100);
+});

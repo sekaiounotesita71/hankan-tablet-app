@@ -571,7 +571,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             </div>
           </div>
           <div class="hint" id="ar-closing-state">対象月と輸入社を選択してください。</div>
-          <details id="ar-closing-work-details" hidden><summary>対象作業の内訳</summary><div id="ar-closing-work-list" style="overflow:auto;max-height:360px"></div></details>
+          <details id="ar-closing-work-details" hidden><summary>日別・作業内訳（赤伝・調整込み）</summary><div id="ar-closing-work-list" style="overflow:auto;max-height:360px"></div></details>
           <div class="ar-closing-history" id="ar-closing-history"><div class="sales-empty">請求締め履歴は売掛読込後に表示されます。</div></div>
         </div>
       </details>
@@ -8065,6 +8065,7 @@ async function refreshClosingSalesPreview(options={}){
       netSales,
       shippingSales,
       groups,
+      adjustmentRows,
       groupCount:groups.length,
       adjustmentCount:adjustmentRows.length,
       error:""
@@ -8074,6 +8075,40 @@ async function refreshClosingSalesPreview(options={}){
     receivableClosingSalesPreview={key,status:"error",amount:0,netSales:0,shippingSales:0,groupCount:0,adjustmentCount:0,error:arDbErrorMessage(error)};
   }
   renderClosingPreview();
+}
+function arClosingDailyBreakdown(groups=[],adjustmentRows=[]){
+  const days=new Map();
+  const add=(date,row)=>{
+    const day=days.get(date)||{date,rows:[],workCount:0,lineCount:0,netSales:0,shipping:0,amount:0};
+    day.rows.push(row);
+    if(row.kind==="work"){
+      day.workCount++;
+      day.lineCount+=row.lineCount;
+    }
+    day.netSales+=row.netSales;
+    day.shipping+=row.shipping;
+    day.amount+=row.amount;
+    days.set(date,day);
+  };
+  for(const group of groups){
+    add(group.invoiceDate,{kind:"work",label:group.sessionName||"作業",lineCount:group.lineCount||0,
+      netSales:arRoundJpy(group.netSales),shipping:arRoundJpy(group.shipping),amount:arRoundJpy(group.amount)});
+  }
+  for(const row of adjustmentRows){
+    const netSales=arRoundJpy(row.amount),shipping=arRoundJpy(row._shipping_adjustment_amount);
+    add(row.work_date,{kind:"adjustment",label:[row.product_name||"赤伝・調整",row.store_name].filter(Boolean).join(" / "),
+      lineCount:0,netSales,shipping,amount:arRoundJpy(netSales+shipping)});
+  }
+  return [...days.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+}
+function arClosingBreakdownTable(preview){
+  const money=value=>salesRefMoney(value)||"0";
+  const amounts=row=>`<td class="ar-money">${money(row.netSales)}</td><td class="ar-money">${money(row.shipping)}</td><td class="ar-money">${money(row.amount)}</td>`;
+  const days=arClosingDailyBreakdown(preview.groups,preview.adjustmentRows);
+  return `<table class="ar-table"><thead><tr><th>日付</th><th>内容</th><th>明細数</th><th>純売上</th><th>送料</th><th>売上合計</th></tr></thead><tbody>${days.map(day=>`
+    <tr class="ar-closing-day-total" style="font-weight:700;background:#f1f5f9"><th scope="row">${esc(day.date)}</th><td>日計（${day.workCount}作業・赤伝調整込み）</td><td>${day.lineCount}</td>${amounts(day)}</tr>
+    ${day.rows.map(row=>`<tr><td></td><td>${row.kind==="work"?"作業：":""}${esc(row.label)}</td><td>${row.kind==="work"?row.lineCount:"-"}</td>${amounts(row)}</tr>`).join("")}`).join("")}</tbody>
+    <tfoot><tr style="font-weight:700"><th colspan="3" scope="row">期間合計（赤伝・調整込み）</th>${amounts({netSales:preview.netSales,shipping:preview.shippingSales,amount:preview.amount})}</tr></tfoot></table>`;
 }
 function renderClosingPreview(){
   const period=document.getElementById("ar-closing-period");
@@ -8103,8 +8138,7 @@ function renderClosingPreview(){
     ?receivableClosingSalesPreview
     :null;
   if(workDetails&&sourcePreview?.status==="loaded"){
-    const groups=[...(sourcePreview.groups||[])].sort((a,b)=>a.invoiceDate.localeCompare(b.invoiceDate)||a.sessionName.localeCompare(b.sessionName,"ja"));
-    document.getElementById("ar-closing-work-list").innerHTML=`<table class="ar-table"><thead><tr><th>作業日</th><th>作業名</th><th>明細数</th><th>純売上</th><th>送料</th><th>売上合計</th></tr></thead><tbody>${groups.map(group=>`<tr><td>${esc(group.invoiceDate)}</td><td>${esc(group.sessionName)}</td><td>${group.lineCount}</td><td class="ar-money">${salesRefMoney(group.netSales)||"0"}</td><td class="ar-money">${salesRefMoney(group.shipping)||"0"}</td><td class="ar-money">${salesRefMoney(group.amount)||"0"}</td></tr>`).join("")}</tbody></table>`;
+    document.getElementById("ar-closing-work-list").innerHTML=arClosingBreakdownTable(sourcePreview);
     workDetails.hidden=false;
   }
   const chargeAmount=sourcePreview?.status==="loaded"
