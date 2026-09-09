@@ -571,6 +571,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             </div>
           </div>
           <div class="hint" id="ar-closing-state">対象月と輸入社を選択してください。</div>
+          <details id="ar-closing-work-details" hidden><summary>対象作業の内訳</summary><div id="ar-closing-work-list" style="overflow:auto;max-height:360px"></div></details>
           <div class="ar-closing-history" id="ar-closing-history"><div class="sales-empty">請求締め履歴は売掛読込後に表示されます。</div></div>
         </div>
       </details>
@@ -7515,6 +7516,8 @@ function arBuildSalesGroups(salesRows,sessions){
     const session=sessionMap.get(row.session_id);
     const group=groups.get(key)||{
       sessionId:row.session_id,
+      sessionName:session.name||"",
+      lineCount:0,
       importerKey:identity.key,
       importerCode:identity.code,
       importerName:identity.name,
@@ -7523,6 +7526,7 @@ function arBuildSalesGroups(salesRows,sessions){
       customers:new Set()
     };
     const directAmount=row.amount!==null&&row.amount!==undefined&&row.amount!=="";
+    group.lineCount++;
     group.netSales+=arRoundJpy(directAmount?row.amount:arNumber(row.input_qty)*arNumber(row.unit_price));
     if(row.store_name)group.customers.add(String(row.store_name).trim());
     groups.set(key,group);
@@ -7558,8 +7562,8 @@ async function arReadSalesRows(options={}){
     if(range.to)query=query.lte("work_date",range.to);
     const {data,error}=await query.range(offset,offset+pageSize-1);
     if(error)throw error;
-    const page=(data||[]).filter(row=>row.revenue_recognition_mode!=="customs_only");
-    rows.push(...page);
+    const page=data||[];
+    rows.push(...page.filter(row=>row.revenue_recognition_mode!=="customs_only"));
     if(page.length<pageSize)break;
   }
   return rows;
@@ -7571,6 +7575,7 @@ async function syncSalesToReceivables(options={}){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
   await loadReceivableSettings();
+  const importerCode=arCanonicalImporterCode(options.importerCode||val("ar-importer"));
   if(!options.from&&!options.to&&!val("ar-date-range").trim()){
     alert("再同期する売上日を 20250701-20250731 の形式で指定してください。初期残高との二重計上を防ぐため、期間未指定では実行できません。");
     return false;
@@ -7583,6 +7588,7 @@ async function syncSalesToReceivables(options={}){
       arReadAll("work_sessions","updated_at")
     ]);
     const groups=arBuildSalesGroups(salesRows,sessionRows)
+      .filter(group=>!importerCode||arSameImporter(group.importerCode,importerCode))
       .filter(group=>!group.invoiceDate||group.invoiceDate>=receivableOperationStartDate);
     const payloads=groups.map(group=>{
       const customers=[...group.customers].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ja"));
@@ -8058,6 +8064,7 @@ async function refreshClosingSalesPreview(options={}){
       amount:arRoundJpy(netSales+shippingSales),
       netSales,
       shippingSales,
+      groups,
       groupCount:groups.length,
       adjustmentCount:adjustmentRows.length,
       error:""
@@ -8077,6 +8084,8 @@ function renderClosingPreview(){
   const state=document.getElementById("ar-closing-state");
   if(!period||!dueDate||!charge||!payment||!balance||!state)return;
   const calculation=arClosingCalculation();
+  const workDetails=document.getElementById("ar-closing-work-details");
+  if(workDetails)workDetails.hidden=true;
   if(calculation.error){
     period.textContent="-";
     dueDate.textContent="-";
@@ -8093,6 +8102,11 @@ function renderClosingPreview(){
   const sourcePreview=!calculation.existing&&receivableClosingSalesPreview.key===previewKey
     ?receivableClosingSalesPreview
     :null;
+  if(workDetails&&sourcePreview?.status==="loaded"){
+    const groups=[...(sourcePreview.groups||[])].sort((a,b)=>a.invoiceDate.localeCompare(b.invoiceDate)||a.sessionName.localeCompare(b.sessionName,"ja"));
+    document.getElementById("ar-closing-work-list").innerHTML=`<table class="ar-table"><thead><tr><th>作業日</th><th>作業名</th><th>明細数</th><th>純売上</th><th>送料</th><th>売上合計</th></tr></thead><tbody>${groups.map(group=>`<tr><td>${esc(group.invoiceDate)}</td><td>${esc(group.sessionName)}</td><td>${group.lineCount}</td><td class="ar-money">${salesRefMoney(group.netSales)||"0"}</td><td class="ar-money">${salesRefMoney(group.shipping)||"0"}</td><td class="ar-money">${salesRefMoney(group.amount)||"0"}</td></tr>`).join("")}</tbody></table>`;
+    workDetails.hidden=false;
+  }
   const chargeAmount=sourcePreview?.status==="loaded"
     ?sourcePreview.amount
     :(calculation.snapshot?.chargeAmount||0);
@@ -8196,6 +8210,25 @@ function arClosingSnapshotPayload(snapshot,issue,dueDate){
     }))
   };
 }
+function arClosingSalesMismatch(groups,charges){
+  groups=groups.filter(group=>Math.abs(group.amount)>.005);
+  const salesCharges=charges.filter(row=>row.source_type==="sales");
+  if(salesCharges.length!==groups.length)return "対象作業の件数が一致していません。";
+  const seen=new Set();
+  for(const group of groups){
+    const rows=salesCharges.filter(row=>row.source_session_id===group.sessionId&&arSameImporter(row,group.importerCode));
+    if(rows.length!==1||seen.has(rows[0]?.id))return "対象作業に重複または未反映があります。";
+    const row=rows[0];
+    seen.add(row.id);
+    if(row.invoice_date!==group.invoiceDate||
+      Math.abs(arNumber(row.net_sales_jpy)-group.netSales)>.005||
+      Math.abs(arNumber(row.shipping_amount_jpy)-group.shipping)>.005||
+      Math.abs(arNumber(row.amount_jpy)-group.amount)>.005){
+      return `${group.invoiceDate} ${group.sessionName||""} の売上金額または日付が一致していません。`;
+    }
+  }
+  return "";
+}
 async function closeAccountsReceivablePeriod(){
   const user=await ensureCurrentUser();
   if(!user){alert("ログインしてください。");return}
@@ -8219,7 +8252,8 @@ async function closeAccountsReceivablePeriod(){
   if(calculation.existing){alert("この期間はすでに請求締め済みです。");return}
   const synced=await syncSalesToReceivables({
     from:calculation.range.from,
-    to:calculation.range.to
+    to:calculation.range.to,
+    importerCode:calculation.importerCode
   });
   if(!synced)return;
   calculation=arClosingCalculation();
@@ -8229,10 +8263,12 @@ async function closeAccountsReceivablePeriod(){
   const sourcePreview=receivableClosingSalesPreview.key===arClosingPreviewKey(calculation)
     ?receivableClosingSalesPreview
     :null;
-  if(sourcePreview?.status==="error"){
-    alert(`今回売上を照合できませんでした。\n${sourcePreview.error}`);
+  if(sourcePreview?.status!=="loaded"){
+    alert(`今回売上を照合できませんでした。\n${sourcePreview?.error||"条件を再読込してください。"}`);
     return;
   }
+  const mismatch=arClosingSalesMismatch(sourcePreview.groups||[],calculation.snapshot?.charges||[]);
+  if(mismatch){alert(`${mismatch}\n請求締めを中止しました。対象作業の内訳を確認してください。`);return}
   if(sourcePreview?.status==="loaded"&&Math.abs(arNumber(calculation.snapshot?.chargeAmount)-sourcePreview.amount)>.005){
     alert("売上参照と売掛の金額が一致しないため、請求締めを中止しました。赤伝がある場合は pending-sales-integration-migration.sql をSupabase SQL Editorで実行し、「売掛読込」を押してください。");
     return;
