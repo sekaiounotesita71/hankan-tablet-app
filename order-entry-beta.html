@@ -13562,14 +13562,13 @@ function purchaseOrderPage(supplier,rows,no){
   const importerCodes=[...new Set(sortedRows.map(r=>r.importerCode||r.importerName||"").filter(Boolean))];
   const importerLabel=importers.join(" / ");
   const orderCode=importerCodes.length===1?importerCodes[0]:"ALL";
-  const siteLabel=[...new Set(sortedRows.map(reportSiteName))].sort((a,b)=>a.localeCompare(b,"ja")).join(" / ");
   return `<section class="po-page">
     <div class="po-title">発注書</div>
     <div class="po-meta"><div>発注No. ${esc(orderCode||"BETA")}-${String(no).padStart(3,"0")}</div><div>発注日 ${esc(first.orderDate||val("order-date"))}</div></div>
-    <div class="po-context"><div class="po-importer">輸入社: ${esc(importerLabel)}</div><div class="po-site-label">作業拠点: ${esc(siteLabel)}</div></div>
+    <div class="po-importer">輸入社: ${esc(importerLabel)}</div>
     <div class="po-supplier">${esc(supplierName)}</div>
-    <table><colgroup><col class="po-code"><col class="po-name"><col class="po-qty"><col class="po-unit"><col class="po-customer"><col class="po-site"><col class="po-memo"></colgroup><thead><tr><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>得意先</th><th>拠点</th><th>備考</th></tr></thead><tbody>
-      ${sortedRows.map(r=>`<tr><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.customerName||r.customerCode)}</td><td class="po-site-cell">${esc(reportSiteName(r))}</td><td>${esc(r.memo)}</td></tr>`).join("")}
+    <table><colgroup><col class="po-code"><col class="po-name"><col class="po-qty"><col class="po-unit"><col class="po-customer"><col class="po-memo"></colgroup><thead><tr><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>得意先</th><th>備考</th></tr></thead><tbody>
+      ${sortedRows.map(r=>`<tr><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.customerName||r.customerCode)}</td><td>${esc(r.memo)}</td></tr>`).join("")}
     </tbody></table>
   </section>`;
 }
@@ -13635,7 +13634,7 @@ function ticketHtml(r){
   const importer=r.importerCode||r.importerName||"";
   const [main,bg,contrast]=ticketColorForImporter(r);
   return `<div class="ticket" style="--ticket-main:${esc(main)};--ticket-bg:${esc(bg)};--ticket-contrast:${esc(contrast)}">
-    <div class="ticket-importer"><div><span>輸入社:</span><strong>${esc(importer)}</strong></div><div class="ticket-site">作業拠点: <strong>${esc(reportSiteName(r))}</strong></div></div>
+    <div class="ticket-importer"><span>輸入社:</span><strong>${esc(importer)}</strong></div>
     <div><span>得意先:</span><strong>${esc(r.customerName||r.customerCode)}</strong></div>
     <div><span>商品名:</span><strong>${esc(r.productName)}</strong></div>
     <div class="en">${esc(r.englishName)}</div>
@@ -13647,10 +13646,10 @@ function printBaseCss(){
   return `<style>@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;color:#000;font-family:Arial,"Helvetica Neue",Meiryo,sans-serif}.po-page,.ticket-page{page-break-after:always}</style>`;
 }
 function purchaseOrderCss(){
-  return printBaseCss()+`<style>.po-page{min-height:281mm;padding:3mm 4mm}.po-title{text-align:center;font-size:17pt;font-weight:900;letter-spacing:0}.po-meta{display:flex;justify-content:space-between;margin:4mm 0 2.5mm;font-size:9pt}.po-context{display:flex;justify-content:space-between;gap:2mm 5mm;flex-wrap:wrap;margin-bottom:1.2mm;font-size:9.5pt;font-weight:900}.po-importer{min-width:0;overflow-wrap:anywhere}.po-site-label{white-space:nowrap}.po-supplier{font-size:12pt;font-weight:900;margin-bottom:3mm;border-bottom:1px solid #000;padding-bottom:1.2mm}table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:8.5pt}th,td{border:1px solid #000;padding:1.4mm 1.2mm;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center;white-space:nowrap}.po-code{width:11%}.po-name{width:25%}.po-qty{width:7%}.po-unit{width:6%}.po-customer{width:20%}.po-site{width:8%}.po-memo{width:23%}.po-site-cell{font-weight:900;text-align:center;white-space:nowrap}td:nth-child(3),td:nth-child(4){text-align:center}</style>`;
+  return printBaseCss()+`<style>.po-page{min-height:281mm;padding:3mm 4mm}.po-title{text-align:center;font-size:17pt;font-weight:900;letter-spacing:0}.po-meta{display:flex;justify-content:space-between;margin:4mm 0 2.5mm;font-size:9pt}.po-importer{font-size:9.5pt;font-weight:900;margin-bottom:1.2mm;overflow-wrap:anywhere}.po-supplier{font-size:12pt;font-weight:900;margin-bottom:3mm;border-bottom:1px solid #000;padding-bottom:1.2mm}table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:8.5pt}th,td{border:1px solid #000;padding:1.4mm 1.2mm;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eee;text-align:center;white-space:nowrap}.po-code{width:12%}.po-name{width:27%}.po-qty{width:8%}.po-unit{width:7%}.po-customer{width:23%}.po-memo{width:23%}td:nth-child(3),td:nth-child(4){text-align:center}</style>`;
 }
 function ticketCss(){
-  return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm;break-after:page}.ticket-page:last-child{break-after:auto}.ticket{border:1.5px solid var(--ticket-main,#000);border-left-width:7mm;padding:2.6mm 3.6mm;overflow:hidden;font-size:10.5pt;line-height:1.16;background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:1.7mm}.ticket span{display:inline-block;min-width:18mm;font-size:9pt;font-weight:900}.ticket strong{font-weight:900;overflow-wrap:anywhere}.ticket .ticket-importer{display:flex;justify-content:space-between;align-items:baseline;gap:1mm;flex-wrap:wrap;margin:-1.2mm -2mm 2mm -2mm;padding:1.4mm 2mm;background:var(--ticket-main,#000);color:var(--ticket-contrast,#fff);border-bottom:1px solid var(--ticket-main,#000);font-size:11pt;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .ticket-importer>div{margin-bottom:0}.ticket .ticket-site{font-size:9pt;white-space:nowrap}.ticket .en{font-size:7.5pt;line-height:1.08;margin-left:18mm;min-height:7mm}.ticket .ticket-memo{display:grid;grid-template-columns:18mm minmax(0,1fr);gap:0;margin-bottom:0}.ticket .ticket-memo span{min-width:0}</style>`;
+  return printBaseCss()+`<style>.ticket-page{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:0;width:194mm;height:281mm;break-after:page}.ticket-page:last-child{break-after:auto}.ticket{border:1.5px solid var(--ticket-main,#000);border-left-width:7mm;padding:2.6mm 3.6mm;overflow:hidden;font-size:10.5pt;line-height:1.16;background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket div{margin-bottom:1.7mm}.ticket span{display:inline-block;min-width:18mm;font-size:9pt;font-weight:900}.ticket strong{font-weight:900;overflow-wrap:anywhere}.ticket .ticket-importer{margin:-1.2mm -2mm 2mm -2mm;padding:1.4mm 2mm;background:var(--ticket-main,#000);color:var(--ticket-contrast,#fff);border-bottom:1px solid var(--ticket-main,#000);font-size:11pt;print-color-adjust:exact;-webkit-print-color-adjust:exact}.ticket .en{font-size:7.5pt;line-height:1.08;margin-left:18mm;min-height:7mm}.ticket .ticket-memo{display:grid;grid-template-columns:18mm minmax(0,1fr);gap:0;margin-bottom:0}.ticket .ticket-memo span{min-width:0}</style>`;
 }
 function openPrintLoadingWindow(title){
   const w=window.open("","_blank");

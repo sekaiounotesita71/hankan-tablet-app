@@ -54,31 +54,31 @@ test("site filter combines with date, importer and supplier without merging line
   assert.equal(ctx.filterReportRows(rows,{...filter,date:""}).length,0);
 });
 
-test("purchase orders show both sites and identify each line without changing supplier grouping",()=>{
+test("purchase orders omit site labels without changing supplier grouping or product order",()=>{
   const ctx=context();
   const rows=[{...sampleRow,productCode:"010"},{...sampleRow,productCode:"002",siteCode:"OSA",importerCode:"01",importerName:"DIM"}];
   assert.equal(ctx.groupedBySupplier(rows).size,1);
   const page=ctx.purchaseOrderPage("10 確認用仕入先",rows,1);
-  assert.match(page,/作業拠点: 大阪 \/ 東京/);
-  assert.match(page,/<th>拠点<\/th>/);
-  assert.match(page,/<td class="po-site-cell">大阪<\/td>/);
-  assert.match(page,/<td class="po-site-cell">東京<\/td>/);
+  assert.doesNotMatch(page,/拠点|po-site|大阪|東京/);
+  assert.equal((page.match(/<th>/g)||[]).length,6);
+  assert.equal((page.match(/<td>/g)||[]).length,12);
   assert.ok(page.indexOf("<td>002</td>")<page.indexOf("<td>010</td>"));
-  assert.equal((page.match(/class="po-site-cell"/g)||[]).length,2);
+  assert.equal((page.match(/<tr><td>/g)||[]).length,2);
+  assert.equal(rows[0].siteCode,"TYO");
   assert.equal(rows[0].productCode,"010");
 });
 
-test("each picking ticket shows its own site and keeps importer color",()=>{
+test("picking tickets omit site labels and keep the same importer color and contents",()=>{
   const ctx=context();
   const tokyo=ctx.ticketHtml(sampleRow),osaka=ctx.ticketHtml({...sampleRow,siteCode:"OSA"});
-  assert.match(tokyo,/作業拠点: <strong>東京<\/strong>/);
-  assert.match(osaka,/作業拠点: <strong>大阪<\/strong>/);
+  assert.equal(tokyo,osaka);
+  assert.doesNotMatch(tokyo,/拠点|ticket-site|大阪|東京/);
   assert.match(tokyo,/--ticket-main:#d71920/);
   assert.match(tokyo,/Farmed red sea bream fillet/);
-  assert.match(ctx.ticketHtml({...sampleRow,siteCode:"<unknown>"}),/&lt;UNKNOWN&gt;/);
+  assert.match(ctx.ticketHtml({...sampleRow,productName:"<sample>"}),/&lt;sample&gt;/);
 });
 
-test("printing and supplier review preserve all selected rows and site metadata",async()=>{
+test("printing and supplier review preserve every selected row but do not print site metadata",async()=>{
   const outputs=[];
   const ctx=context({
     openPrintLoadingWindow:()=>({close:()=>{throw new Error("unexpected close")}}),
@@ -89,16 +89,17 @@ test("printing and supplier review preserve all selected rows and site metadata"
   ctx.reportRowsForPrint=async()=>rows;
   await ctx.printPurchaseOrders();
   await ctx.printPickingTickets();
-  assert.equal((outputs[0].output.match(/class="po-site-cell"/g)||[]).length,9);
+  assert.equal((outputs[0].output.match(/<tr><td>/g)||[]).length,9);
   assert.equal((outputs[1].output.match(/<section class="ticket-page">/g)||[]).length,2);
-  assert.equal((outputs[1].output.match(/class="ticket-site"/g)||[]).length,9);
+  assert.equal((outputs[1].output.match(/class="ticket"/g)||[]).length,9);
   vm.runInNewContext(between("async function printSupplierReviewPurchaseOrder(","async function setSupplierReviewOrdered("),ctx);
   ctx.supabaseClient={};ctx.currentUser={id:"user"};
   ctx.supplierReviewGroups=[{rows:[{line_id:"line-0",order_date:"2026-09-09",supplier_decision_status:"confirmed",supplier_code:"10",supplier_name_snapshot:"確認用仕入先"}]}];
   ctx.loadConfirmedReportBatchesFromDb=async()=>[{siteCode:"TYO",rows}];
   await ctx.printSupplierReviewPurchaseOrder(0);
-  assert.equal((outputs[2].output.match(/class="po-site-cell"/g)||[]).length,1);
-  assert.match(outputs[2].output,/作業拠点: 東京/);
+  assert.equal((outputs[2].output.match(/<tr><td>/g)||[]).length,1);
+  outputs.forEach(({output})=>assert.doesNotMatch(output,/作業拠点|po-site|ticket-site|<th>拠点<\/th>/));
+  assert.equal(rows[0].siteCode,"TYO");
 });
 
 test("site selection triggers report count refresh",()=>{
