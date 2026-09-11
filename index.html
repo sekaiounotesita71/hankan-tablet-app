@@ -18,6 +18,8 @@ if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").repl
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./work-paper.js?v=20260910-1" defer></script>
 <link rel="stylesheet" href="./work-paper.css?v=20260910-1">
+<script src="./sales-refinalize.js?v=20260911-1" defer></script>
+<link rel="stylesheet" href="./sales-refinalize.css?v=20260911-1">
 <style>
 :root{
   --bg:#f6f4ef;--surface:#fff;--surface-2:#fbfaf7;--border:#ded9cf;--border-strong:#bfb7aa;
@@ -2230,11 +2232,12 @@ function updateOrderLineFieldsToSupabase(row,fields){
   return task;
 }
 async function saveBoxToSupabase(imp,bn){
-  if(!currentSessionId||!currentUser||!supabaseClient||!boxMap[imp]?.[bn])return;
+  if(!currentSessionId||!currentUser||!supabaseClient||!boxMap[imp]?.[bn])return false;
   setSaveState("Supabase: 保存中...");
   const {error}=await supabaseClient.from("boxes").upsert(boxToPayload(imp,bn,boxMap[imp][bn]),{onConflict:"session_id,importer_code,box_no"});
-  if(error){setSaveState("Supabase: 保存失敗",true);toast("箱保存エラー: "+error.message);return}
+  if(error){setSaveState("Supabase: 保存失敗",true);toast("箱保存エラー: "+error.message);return false}
   setSaveState("Supabase: 保存済み");
+  return true;
 }
 async function saveAllBoxesToSupabase(){
   if(!currentSessionId||!currentUser||!supabaseClient)return true;
@@ -4370,8 +4373,8 @@ function updateLockUITrial(){
   const provisionalUnlockBtn=document.getElementById("provisional-unlock-btn");
   if(finalizeBtn){
     finalizeBtn.style.display=currentSessionId?"":"none";
-    finalizeBtn.disabled=!!currentSessionLocked;
-    finalizeBtn.textContent=currentSessionLocked?"売上確定済み":"売上確定";
+    finalizeBtn.disabled=!!currentSessionLocked||salesFinalizeInProgress;
+    finalizeBtn.textContent=currentSessionLocked?"売上確定済み":salesFinalizeInProgress?"売上確定中...":currentSessionFinalizedAt?"売上再確定":"売上確定";
   }
   if(unlockBtn){
     unlockBtn.style.display=currentSessionLocked&&currentUserIsAdmin()?"":"none";
@@ -4548,7 +4551,13 @@ refreshCurrentSessionFromSupabase=async function(){
 const __saveOrderLineLockBase=saveOrderLineToSupabase;
 saveOrderLineToSupabase=async function(row){if(!requireEditableTrial())return;return __saveOrderLineLockBase(row)};
 const __saveBoxLockBase=saveBoxToSupabase;
-saveBoxToSupabase=async function(imp,bn){if(!requireEditableTrial())return;return __saveBoxLockBase(imp,bn)};
+var boxSaveInFlight=new Set();
+saveBoxToSupabase=async function(imp,bn){
+  if(!requireEditableTrial())return false;
+  const task=__saveBoxLockBase(imp,bn);
+  boxSaveInFlight.add(task);
+  try{return await task}finally{boxSaveInFlight.delete(task)}
+};
 const __renderP1CellLockBase=renderP1Cell;
 renderP1Cell=function(country,customer){__renderP1CellLockBase(country,customer);applyLockToInputsTrial()};
 const __renderP2ImporterLockBase=renderP2Importer;
@@ -4609,8 +4618,8 @@ async function upsertSalesRecordsTrial(payloads){
     if(error)throw error;
     if(count!==payloads.length)throw new Error(`売上明細の保存件数が一致しません（入力 ${payloads.length}件 / DB ${count??0}件）`);
   }catch(error){
-    const {error:cleanupError}=await supabaseClient.from("sales_records").delete().eq("session_id",currentSessionId);
-    if(cleanupError)throw new Error(`売上確定に失敗し、作成途中の売上明細も取消できませんでした。管理者確認が必要です。保存: ${error.message} / 取消: ${cleanupError.message}`);
+    // Existing sales may already be referenced by receivables or domestic sales.
+    // Retain them on failure; retry the same source-row keys instead of deleting the session.
     throw error;
   }
 }
@@ -4712,6 +4721,13 @@ finalizeSalesTrial=async function(){
     }
     if(currentSessionLocked){toast("すでに売上確定済みです");return false}
     if(!(await checkSalesLockSetupTrial()))return false;
+    const checkedSessionId=currentSessionId;
+    const {data:latestLock,error:latestLockError}=await supabaseClient.from("work_sessions").select("locked,status,finalized_at,provisional_locked").eq("id",checkedSessionId).maybeSingle();
+    if(latestLockError||!latestLock){alert("作業の最新状態を確認できませんでした。再読み込みしてください。");return false}
+    if(currentSessionId!==checkedSessionId){alert("作業が切り替わったため中止しました。");return false}
+    setSessionLockStateTrial(latestLock);
+    if(latestLock.locked||latestLock.status==="closed"){toast("すでに売上確定済みです");return false}
+    if(currentSessionFinalizedAt)return await openSalesRefinalization();
     if(!(await confirmOutstandingExternalWorkBeforeSales()))return false;
     const incomplete=incompleteSalesWorkRows().length;
     if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return false;
@@ -4756,17 +4772,7 @@ finalizeSalesTrial=async function(){
       }
       return true;
     }catch(error){
-      let cleanupMessage="";
-      try{
-        const {data:sessionState}=await supabaseClient.from("work_sessions").select("locked,status").eq("id",currentSessionId).maybeSingle();
-        if(sessionState&&!(sessionState.locked||sessionState.status==="closed")){
-          const {error:cleanupError}=await supabaseClient.from("sales_records").delete().eq("session_id",currentSessionId);
-          if(cleanupError)cleanupMessage=` / 作成途中の売上明細を取消できませんでした: ${cleanupError.message}`;
-        }
-      }catch(cleanupError){
-        cleanupMessage=` / 売上明細の取消確認に失敗しました: ${cleanupError.message}`;
-      }
-      const message=salesLockSetupErrorMessage(error)+cleanupMessage;
+      const message=salesLockSetupErrorMessage(error);
       setSaveState("Supabase: 売上確定失敗",true);
       alert("売上確定エラー: "+message);
       return false;
