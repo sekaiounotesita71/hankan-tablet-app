@@ -6573,6 +6573,10 @@ function workOriginRomanize(value){
   if(WORK_ORIGIN_ROMAJI_EXACT[source])return WORK_ORIGIN_ROMAJI_EXACT[source];
   return source.split(/[・、,，\/／]+/).map(workOriginRomanizePart).filter(Boolean).join(" / ");
 }
+function workPriceOriginFormatOrigin(value){
+  const origin=workOriginRomanize(value).toLowerCase();
+  return origin.charAt(0).toUpperCase()+origin.slice(1);
+}
 let workPriceOriginEntries=[];
 let workPriceOriginFilename="";
 let workPriceOriginLoadError="";
@@ -6792,7 +6796,7 @@ function applyWorkPriceOriginToRows(targetRows){
     const entry=match.entry;
     const prices=workPriceOriginPrices(entry,row.importer_id);
     summary.matched++;
-    if(entry.origin&&!row.origin){row.origin=workOriginRomanize(entry.origin);summary.origin++}
+    if(entry.origin&&!row.origin){row.origin=workPriceOriginFormatOrigin(entry.origin);summary.origin++}
     if(prices.length&&row._priceSource!=="受注価格"){row.unit_price=prices[0];row._priceSource="添付Excel";summary.price++}
     if(entry.unit){row._unit=entry.unit;summary.unit++}
     if(prices.length>1){row._memo=workPriceOriginAppendMemo(row._memo,prices);summary.twoPrices++}
