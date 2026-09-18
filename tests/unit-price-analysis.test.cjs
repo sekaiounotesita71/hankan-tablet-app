@@ -83,6 +83,7 @@ test('UI integrations are read-only and require complete loaded current/previous
   assert.doesNotMatch(ui,/supabaseClient|\.rpc\(|fetch\(|\.upsert\(|\.update\(/);
   assert.match(html,/markUnitPriceDataLoaded\("sales",range.ranges\)/);assert.match(html,/markUnitPriceDataLoaded\("purchase",range.ranges\)/);
   assert.match(ui,/unitPriceRangeCovered\(loaded,previousRange\)/);
+  assert.doesNotMatch(ui.slice(ui.indexOf('function renderUnitPriceAnalysis'),ui.indexOf('function unitPriceOptions')),/unitPriceCloseDialog\(/);
   const context={};vm.createContext(context);
   const fn=ui.slice(ui.indexOf('function unitPriceRangeCovered'),ui.indexOf('function unitPriceSnapshot'));
   vm.runInContext(fn,context);

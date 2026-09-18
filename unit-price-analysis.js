@@ -52,7 +52,6 @@ function renderUnitPriceAnalysis(kind){
   const state=unitPriceState[kind];
   if(state.mode!=="price")return false;
   const host=unitPriceHost(kind);if(!host)return false;
-  unitPriceCloseDialog();
   const snapshot=unitPriceSnapshot(kind);
   if(snapshot.error){
     clearUnitPriceAnalysis(kind,snapshot.error);
