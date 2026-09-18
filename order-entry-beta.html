@@ -4773,6 +4773,7 @@ async function loadSalesReferenceBoard(){
   const range=salesRefDatabaseRange();
   if(range.error){if(state)state.textContent=range.error;return}
   if(state)state.textContent=`売上データを並列読込中... ${range.label}`;
+  if(typeof clearUnitPriceAnalysis==="function")clearUnitPriceAnalysis("sales","売上データを読込中...");
   try{
     const sessionsTask=salesRefReadSessions(client,range).then(rows=>({rows,warning:""})).catch(error=>({rows:[],warning:salesRefDbErrorMessage(error)}));
     const currentTask=salesRefReadCurrentRows(client,range);
@@ -4806,6 +4807,7 @@ async function loadSalesReferenceBoard(){
     const adjustmentRows=pendingResult.rows.map(row=>salesRefPendingToRow(row,salesReferenceImporterIndex));
     const provisionalRows=provisionalResult.rows.map(row=>salesRefNormalizeRowImporter(row,salesReferenceImporterIndex));
     salesReferenceRows=[...currentRows,...pastRows,...adjustmentRows,...provisionalRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
+    if(typeof markUnitPriceDataLoaded==="function")markUnitPriceDataLoaded("sales",range.ranges);
     if(val("sales-ref-supplier").trim()){
       renderSalesReferenceBoard();
       await salesRefEnsureOrderSuppliers();
@@ -4949,6 +4951,7 @@ function renderSalesReferenceBoard(){
     const message=salesRefSupplierCache.rows===salesReferenceRows&&salesRefSupplierCache.error
       ?salesRefSupplierCache.error:"発注先を読込中...";
     table.innerHTML=`<div class="sales-empty">${esc(message)}</div>`;
+    if(typeof clearUnitPriceAnalysis==="function")clearUnitPriceAnalysis("sales",message);
     return;
   }
   const inputRange=salesRefDateRangeFromInput();
@@ -4956,6 +4959,7 @@ function renderSalesReferenceBoard(){
     state.textContent="期間の形式を確認してください。例: 20250701-20250731 / 202507 / 20250701";
   }
   const rows=salesRefFilteredRows();
+  if(typeof renderUnitPriceAnalysis==="function"&&renderUnitPriceAnalysis("sales"))return;
   renderSalesReferenceForecast();
   renderSalesReferenceSummary(rows);
   renderSalesRefShippingBreakdown(rows);
@@ -10652,6 +10656,7 @@ async function loadPurchaseReceipts(){
   const range=purchaseRefDatabaseRange();
   if(range.error){state.textContent=range.error;state.className="pill warn";return}
   state.textContent=`仕入データを読込中... ${range.label}`;state.className="pill warn";
+  if(typeof clearUnitPriceAnalysis==="function")clearUnitPriceAnalysis("purchase","仕入データを読込中...");
   try{
     const receipts=await purchaseRefReadReceipts(supabaseClient,range);
     const ids=receipts.map(row=>row.id);
@@ -10664,11 +10669,13 @@ async function loadPurchaseReceipts(){
     const byReceipt=new Map();
     lines.forEach(line=>{if(!byReceipt.has(line.receipt_id))byReceipt.set(line.receipt_id,[]);byReceipt.get(line.receipt_id).push(line)});
     purchaseReceipts=receipts.map(row=>({...row,lines:byReceipt.get(row.id)||[]}));
+    if(typeof markUnitPriceDataLoaded==="function")markUnitPriceDataLoaded("purchase",range.ranges);
     purchaseRefResetPage();
     renderPurchaseReceipts();
     state.textContent=`${purchaseReceipts.length.toLocaleString("ja-JP")}伝票 / ${lines.length.toLocaleString("ja-JP")}明細を読み込みました。${range.label}`;state.className="pill blue";
   }catch(error){
     state.textContent="読込失敗";
+    if(typeof clearUnitPriceAnalysis==="function")clearUnitPriceAnalysis("purchase",sitePartnerDbError(error));
     document.getElementById("purchase-receipt-list").innerHTML=`<div class="sales-empty">${esc(sitePartnerDbError(error))}</div>`;
   }
 }
@@ -10703,6 +10710,7 @@ function renderPurchaseReceipts(){
   const input=purchaseRefDateRange();
   if(input.raw&&(!input.from||!input.to)&&state)state.textContent="期間の形式を確認してください。例: 202608 / 2026 / 20260801-20260831";
   const rows=purchaseRefFilteredReceipts();
+  if(typeof renderUnitPriceAnalysis==="function"&&renderUnitPriceAnalysis("purchase"))return;
   const metrics=purchaseRefMetrics(rows);
   summary.innerHTML=[
     ["税込仕入",salesRefMoney(metrics.total)],
@@ -16688,5 +16696,8 @@ setTimeout(()=>{
 </script>
 <link rel="stylesheet" href="./purchase-source-review.css?v=20260918-1">
 <script src="./purchase-source-review.js?v=20260918-1"></script>
+<link rel="stylesheet" href="./unit-price-analysis.css?v=20260918-1">
+<script src="./unit-price-analysis-core.js?v=20260918-1"></script>
+<script src="./unit-price-analysis.js?v=20260918-1"></script>
 </body>
 </html>
