@@ -72,6 +72,11 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .ar-closing-breakdown{min-width:680px;table-layout:fixed}
 .ar-closing-breakdown tbody th,.ar-closing-breakdown tfoot th{position:static}
 .ar-closing-breakdown td:nth-child(2),.ar-closing-breakdown tfoot th{white-space:normal;overflow-wrap:anywhere}
+.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sales-supplier-tools .sales-filter-actions{grid-column:1/-1;justify-content:flex-end}
+@media(min-width:1200px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:900px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.sales-board-tools.sales-supplier-tools{grid-template-columns:minmax(0,1fr)}.sales-supplier-tools .sales-filter-actions{flex-wrap:wrap}}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260828-2">
 </head>
@@ -389,9 +394,10 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   <section class="panel workspace-panel" data-workspace-panel="sales" id="sales-reference-panel" style="margin-top:12px">
     <div class="panel-head"><span>売上参照</span><button class="small primary admin-only-hidden" data-admin-only type="button" onclick="openPostSaleAdjustmentModal()">後日修正・追加</button></div>
     <div class="panel-body">
-      <div class="sales-board-tools">
+      <div class="sales-board-tools sales-supplier-tools">
         <label>期間<input id="sales-ref-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="2026 / 202608 / 日付範囲"></label>
         <label>輸入社<input id="sales-ref-importer" list="importer-code-list" placeholder="例 FBI"></label>
+        <label>発注先コード<input id="sales-ref-supplier" list="supplier-code-list" autocomplete="off" placeholder="空欄 = 全発注先"></label>
         <label>得意先<input id="sales-ref-customer" autocomplete="off" placeholder="コード・得意先名"></label>
         <label>商品<input id="sales-ref-product" autocomplete="off" placeholder="商品コード・商品名"></label>
         <label>その他<input id="sales-ref-search" placeholder="箱番号・産地・メモ"></label>
@@ -1331,6 +1337,7 @@ let salesReferenceImporterKeysBySession=new Map();
 let salesReferencePage=1;
 const SALES_REFERENCE_PAGE_SIZE=250;
 let salesReferenceLoadSequence=0;
+let salesRefSupplierCache={rows:null,ready:false,promise:null,error:""};
 let profitReferenceLoadSequence=0;
 let profitReferenceReady=false;
 let profitReferenceRows=[];
@@ -3139,7 +3146,7 @@ function salesRefShippingFeeForRows(rows){
   return total;
 }
 function salesRefDetailFilterActive(){
-  return ["sales-ref-customer","sales-ref-product","sales-ref-search"].some(id=>val(id).trim());
+  return ["sales-ref-supplier","sales-ref-customer","sales-ref-product","sales-ref-search"].some(id=>val(id).trim());
 }
 function salesRefVisibleShippingFeeForRows(rows){
   return salesRefDetailFilterActive()?0:salesRefShippingFeeForRows(rows);
@@ -3760,6 +3767,8 @@ function setProfitReferencePeriod(kind){
   loadProfitReferenceBoard();
 }
 function syncProfitReferenceFiltersToSales(){
+  const supplier=document.getElementById("sales-ref-supplier");
+  if(supplier)supplier.value="";
   const fields=["date-range","importer","customer","product","search"];
   fields.forEach(name=>{
     const source=document.getElementById(`profit-ref-${name}`);
@@ -3882,7 +3891,7 @@ function handleSalesRefSuggestionKey(event){
   if(event.key==="Enter"&&chooseSalesRefSuggestion())event.preventDefault();
 }
 function clearSalesReferenceDetailFilters(){
-  ["sales-ref-importer","sales-ref-customer","sales-ref-product","sales-ref-search"].forEach(id=>{const field=document.getElementById(id);if(field)field.value=""});
+  ["sales-ref-importer","sales-ref-supplier","sales-ref-customer","sales-ref-product","sales-ref-search"].forEach(id=>{const field=document.getElementById(id);if(field)field.value=""});
   salesRefResetPage();
   renderSalesReferenceBoard();
 }
@@ -3898,11 +3907,53 @@ function invalidateProfitReference(){
   if(analysis)analysis.innerHTML="";
   if(state)state.textContent="条件を指定して「粗利読込」を押してください。";
 }
+function salesRefSupplierCodeKey(value){
+  return String(value??"").normalize("NFKC").trim().toLowerCase();
+}
+function salesRefSupplierReady(){
+  return salesRefSupplierCache.rows===salesReferenceRows&&salesRefSupplierCache.ready;
+}
+async function salesRefEnsureOrderSuppliers(){
+  const rows=salesReferenceRows;
+  if(salesRefSupplierCache.rows!==rows)salesRefSupplierCache={rows,ready:false,promise:null,error:""};
+  const cache=salesRefSupplierCache;
+  if(cache.ready)return true;
+  if(cache.promise)return cache.promise;
+  cache.error="";
+  cache.promise=(async()=>{
+    try{
+      const linkedRows=rows.filter(row=>(row.source_type==="現場確定"||salesRefIsProvisional(row))&&row.session_id&&Number(row.source_row_no)>0);
+      const suppliers=linkedRows.length?await readOrderSuppliersForAdvancePurchase(linkedRows):new Map();
+      if(cache!==salesRefSupplierCache||rows!==salesReferenceRows)return false;
+      rows.forEach(row=>{row._orderSupplierCode=""});
+      linkedRows.forEach(row=>{row._orderSupplierCode=suppliers.get(advancePurchaseSaleSourceKey(row))||""});
+      cache.ready=true;
+      return true;
+    }catch(error){
+      cache.error=`発注先の読込に失敗しました。売上読込で再試行してください。${salesRefDbErrorMessage(error)}`;
+      return false;
+    }finally{
+      cache.promise=null;
+    }
+  })();
+  return cache.promise;
+}
+async function refreshSalesRefSupplierFilter(){
+  salesRefResetPage();
+  if(!val("sales-ref-supplier").trim()){renderSalesReferenceBoard();return}
+  const rows=salesReferenceRows;
+  const load=salesRefEnsureOrderSuppliers();
+  renderSalesReferenceBoard();
+  await load;
+  if(rows===salesReferenceRows)renderSalesReferenceBoard();
+}
 function salesRefFilteredRows(options={}){
   const q=val("sales-ref-search").trim().toLowerCase();
   const importer=val("sales-ref-importer").trim().toLowerCase();
   const customer=salesRefFilterKey(val("sales-ref-customer"));
   const product=salesRefFilterKey(val("sales-ref-product"));
+  const supplier=salesRefSupplierCodeKey(val("sales-ref-supplier"));
+  if(supplier&&!salesRefSupplierReady())return [];
   const status=options.ignoreStatus?"":val("sales-ref-status");
   const inputRange=salesRefDateRangeFromInput();
   if(!options.ignoreDate&&inputRange.raw&&(!inputRange.from||!inputRange.to))return [];
@@ -3919,6 +3970,7 @@ function salesRefFilteredRows(options={}){
     if(importer&&!importerIdentity.search.includes(importer))return false;
     if(customer&&!salesRefFilterKey([row.customer_code,row.store_name].filter(Boolean).join(" ")).includes(customer))return false;
     if(product&&!salesRefFilterKey([row.product_id,row.product_name].filter(Boolean).join(" ")).includes(product))return false;
+    if(supplier&&salesRefSupplierCodeKey(row._orderSupplierCode)!==supplier)return false;
     if(!q)return true;
     return [
       row.store_name,row.product_id,row.product_name,importerIdentity.label,row.origin,row.box_no,row.memo
@@ -4754,6 +4806,11 @@ async function loadSalesReferenceBoard(){
     const adjustmentRows=pendingResult.rows.map(row=>salesRefPendingToRow(row,salesReferenceImporterIndex));
     const provisionalRows=provisionalResult.rows.map(row=>salesRefNormalizeRowImporter(row,salesReferenceImporterIndex));
     salesReferenceRows=[...currentRows,...pastRows,...adjustmentRows,...provisionalRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
+    if(val("sales-ref-supplier").trim()){
+      renderSalesReferenceBoard();
+      await salesRefEnsureOrderSuppliers();
+      if(loadSequence!==salesReferenceLoadSequence)return;
+    }
     salesRefRenderFilterOptions();
     salesRefRebuildSessionIndexes();
     salesRefResetPage();
@@ -4885,6 +4942,15 @@ function renderSalesReferenceBoard(){
   const ranks=document.getElementById("sales-ref-ranks");
   const state=document.getElementById("sales-ref-state");
   if(!table||!summary||!ranks)return;
+  if(val("sales-ref-supplier").trim()&&!salesRefSupplierReady()){
+    summary.innerHTML="";
+    ranks.innerHTML="";
+    ["sales-ref-forecast-cards","sales-ref-shipping-breakdown","sales-ref-analysis"].forEach(id=>{const element=document.getElementById(id);if(element)element.innerHTML=""});
+    const message=salesRefSupplierCache.rows===salesReferenceRows&&salesRefSupplierCache.error
+      ?salesRefSupplierCache.error:"発注先を読込中...";
+    table.innerHTML=`<div class="sales-empty">${esc(message)}</div>`;
+    return;
+  }
   const inputRange=salesRefDateRangeFromInput();
   if(inputRange.raw&&(!inputRange.from||!inputRange.to)&&state){
     state.textContent="期間の形式を確認してください。例: 20250701-20250731 / 202507 / 20250701";
@@ -5404,10 +5470,11 @@ async function saveShippingCorrection(event){
 }
 function exportSalesReferenceBoardExcel(){
   if(typeof XLSX==="undefined"){alert("Excel出力ライブラリを読み込めませんでした。");return}
+  if(val("sales-ref-supplier").trim()&&!salesRefSupplierReady()){alert("発注先の読込が完了してから出力してください。");return}
   const rows=salesRefFilteredRows();
   if(!rows.length){alert("出力する売上データがありません。");return}
   const netSales=rows.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
-  const shippingSales=salesRefShippingFeeForRows(rows);
+  const shippingSales=salesRefVisibleShippingFeeForRows(rows);
   const exportGrossBoxes=new Set();
   const data=rows.map((row,index)=>({
     "区分":row.source_type||"現場確定",
@@ -16356,6 +16423,13 @@ document.addEventListener("blur",handlePendingInput,true);
     salesRefResetPage();
     renderSalesReferenceBoard();
   });
+});
+document.addEventListener("input",e=>{
+  if(e.target?.id!=="sales-ref-supplier"||e.isComposing)return;
+  refreshSalesRefSupplierFilter();
+});
+document.addEventListener("compositionend",e=>{
+  if(e.target?.id==="sales-ref-supplier")refreshSalesRefSupplierFilter();
 });
 document.addEventListener("keydown",handleSalesRefSuggestionKey);
 ["product-guide-title","product-guide-search","product-guide-limit","product-guide-sort"].forEach(id=>{
