@@ -11161,6 +11161,7 @@ async function readImportedSalesIdsForAdvancePurchase(salesRows){
   return imported;
 }
 async function importSalesIntoAdvancePurchase(){
+  if(typeof purchaseSourceReviewOpen!=="undefined"&&purchaseSourceReviewOpen)return;
   if(!dbReady||!supabaseClient||!currentUser){alert("先にログインしてください。");return}
   const siteCode=val("advance-purchase-site")||"OSA";
   let supplierCode=val("advance-purchase-supplier").trim();
@@ -11195,8 +11196,18 @@ async function importSalesIntoAdvancePurchase(){
       (data||[]).forEach(session=>sessionSites.set(session.id,session.site_code||"OSA"));
     }
     const draftSalesIds=new Set(advancePurchaseRows.flatMap(row=>Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[]));
+    const unassigned=salesRows.filter(sale=>!sale.is_stockout
+      &&(sessionSites.get(sale.session_id)||"OSA")===siteCode
+      &&(!importerCode||normalizeImporterCode(sale.importer_code||sale.importer_id)===importerCode)
+      &&!registeredSalesIds.has(sale.id)&&!draftSalesIds.has(sale.id)
+      &&!orderSupplierBySale.get(advancePurchaseSaleSourceKey(sale)));
+    if(unassigned.length){
+      setAppBusy(false);
+      if(!(await reviewUnassignedPurchaseSources(unassigned,orderSupplierBySale)))return;
+      setAppBusy(true,"設定済みの発注先から仕入明細を引用しています...");
+    }
     const grouped=new Map();
-    let differentSupplier=0,unmapped=0,invalidQty=0,draftDuplicate=0,registeredDuplicate=0,orderSupplierMatched=0,masterSupplierFallback=0;
+    let differentSupplier=0,unmapped=0,invalidQty=0,draftDuplicate=0,registeredDuplicate=0,orderSupplierMatched=0;
     salesRows.forEach(sale=>{
       if(sale.is_stockout)return;
       if((sessionSites.get(sale.session_id)||"OSA")!==siteCode)return;
@@ -11205,12 +11216,10 @@ async function importSalesIntoAdvancePurchase(){
       if(draftSalesIds.has(sale.id)){draftDuplicate++;return}
       const product=findMasterProduct(sale.product_id,sale.product_name)||{};
       const lineOrderSupplierCode=String(orderSupplierBySale.get(advancePurchaseSaleSourceKey(sale))||"").trim();
-      const masterSupplierCode=String(product.supplierCode||"").trim();
-      const effectiveSupplierCode=lineOrderSupplierCode||masterSupplierCode;
+      const effectiveSupplierCode=lineOrderSupplierCode;
       if(!effectiveSupplierCode){unmapped++;return}
       if(effectiveSupplierCode.toLowerCase()!==orderSupplierCode.toLowerCase()){differentSupplier++;return}
-      if(lineOrderSupplierCode)orderSupplierMatched++;
-      else masterSupplierFallback++;
+      orderSupplierMatched++;
       let unit=normalizeLineUnit(sale.input_unit);
       let qty=dbNumber(sale.input_qty);
       if(!["Kg","pkt","PC","CS"].includes(unit)){
@@ -11249,7 +11258,7 @@ async function importSalesIntoAdvancePurchase(){
     if(state){state.textContent=`売上引用 ${importedSalesCount}件 → ${imported.length}行`;state.className="pill blue"}
     const otherSkipped=unmapped+invalidQty+draftDuplicate;
     const modeLabel=advancePurchaseImportMode==="product"?"商品コードごと":"明細ごと";
-    alert(`${referenceRange.label}の確定売上 ${importedSalesCount}件を、${modeLabel}で ${imported.length}行へ引用しました。\n引用元発注先: ${orderSupplierCode} / 実仕入先: ${supplierCode}\n受注明細の発注先コード: ${orderSupplierMatched}明細${masterSupplierFallback?`\n商品マスタを代替使用: ${masterSupplierFallback}明細`:""}${registeredDuplicate?`\n仕入登録済みのため除外: ${registeredDuplicate}件`:""}${otherSkipped?`\nその他の確認対象外: ${otherSkipped}件`:""}${differentSupplier?`\n他の発注先: ${differentSupplier}件`:""}`);
+    alert(`${referenceRange.label}の確定売上 ${importedSalesCount}件を、${modeLabel}で ${imported.length}行へ引用しました。\n引用元発注先: ${orderSupplierCode} / 実仕入先: ${supplierCode}\n受注明細の発注先コード: ${orderSupplierMatched}明細${registeredDuplicate?`\n仕入登録済みのため除外: ${registeredDuplicate}件`:""}${otherSkipped?`\nその他の確認対象外: ${otherSkipped}件`:""}${differentSupplier?`\n他の発注先: ${differentSupplier}件`:""}`);
     requestAnimationFrame(()=>focusAdvancePurchaseCell(Math.max(0,advancePurchaseRows.length-imported.length),"unitPrice"));
   }catch(error){
     const message=advancePurchaseSalesLinkSchemaMissing(error)
@@ -16677,5 +16686,7 @@ setTimeout(()=>{
   if(draft)setTimeout(()=>applyInvoiceRuleDraft(draft),250);
 },700);
 </script>
+<link rel="stylesheet" href="./purchase-source-review.css?v=20260918-1">
+<script src="./purchase-source-review.js?v=20260918-1"></script>
 </body>
 </html>
