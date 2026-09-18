@@ -51,6 +51,10 @@ test('previous-only products and zero denominators stay visible without fake inf
   assert.equal(g.length,2);assert.ok(g.every(row=>row.delta===null));
   const zero=A.groups(sales([{}]),sales([{unit_price:0,work_date:'2025-09-01'}]))[0];
   assert.equal(zero.delta,1000);assert.equal(zero.ratio,null);
+  const ui=fs.readFileSync(path.join(__dirname,'..','unit-price-analysis.js'),'utf8'),ctx={};
+  vm.createContext(ctx);vm.runInContext(ui.slice(ui.indexOf('function unitPriceFormat'),ui.indexOf('function unitPriceCloseDialog')),ctx);
+  assert.equal(ctx.unitPriceDifference(g.find(row=>row.code==='002')),'前年 1,000');
+  assert.equal(ctx.unitPriceDifference(g.find(row=>row.code==='001')),'前年単価なし');
 });
 test('monthly year comparisons align months and retain price ranges and quantities',()=>{
   const result=A.monthly({rows:sales([{}, {id:'2',work_date:'2026-10-02',unit_price:1100}]),previousRows:sales([{work_date:'2025-09-02',unit_price:900}])});

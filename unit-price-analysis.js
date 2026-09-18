@@ -7,6 +7,7 @@ function unitPriceHost(kind){return document.getElementById(`${kind}-unit-price`
 function unitPricePanel(kind){return document.getElementById(kind==="sales"?"sales-reference-panel":"purchase-reference-panel")}
 function unitPriceFormat(value){return value===null||value===undefined?"-":Number(value).toLocaleString("ja-JP",{maximumFractionDigits:4})}
 function unitPriceDifference(group){
+  if(group.current.avg===null)return group.previous.avg===null?"比較対象なし":`前年 ${unitPriceFormat(group.previous.avg)}`;
   if(group.delta===null)return "前年単価なし";
   const sign=group.delta>0?"+":"";
   return `${sign}${unitPriceFormat(group.delta)}${group.ratio===null?"":` (${group.ratio>0?"+":""}${group.ratio.toFixed(1)}%)`}`;
