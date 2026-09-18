@@ -6,6 +6,7 @@
 <link rel="icon" type="image/jpeg" href="./yumirume-logo.jpg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
+<script src="./domestic-payment-model.js?v=20260918-1"></script>
 <title>国内販売管理</title>
 <style>
 :root{--bg:#f4f6f7;--panel:#fff;--line:#d8dde3;--line2:#b5bec8;--text:#15181c;--muted:#64707d;--accent:#0f6848;--accent-bg:#e9f5ef;--blue:#174ea6;--blue-bg:#eaf2ff;--danger:#b42318;--danger-bg:#fff0ef;--warn:#8a5700;--warn-bg:#fff7e7}
@@ -166,7 +167,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="closing-summary">
           <div class="summary-card"><span>前回繰越</span><b id="closing-carryover">0</b></div>
           <div class="summary-card"><span>今回売上</span><b id="closing-sales">0</b></div>
-          <div class="summary-card"><span>期間内入金</span><b id="closing-payment">0</b></div>
+          <div class="summary-card"><span>期間内入金・手数料</span><b id="closing-payment">0</b></div>
           <div class="summary-card"><span>今回ご請求額</span><b id="closing-total">0</b></div>
         </div>
         <div id="closing-state" class="closing-state">対象月・締め日・得意先を選択してください。</div>
@@ -177,18 +178,19 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
       <div class="panel">
         <div class="panel-head"><span>国内売掛管理</span><button class="btn small" type="button" onclick="loadReceivables()">再読込</button></div>
         <div class="panel-body">
-          <div class="filter-grid" style="grid-template-columns:190px 150px auto">
+          <div class="filter-grid" style="grid-template-columns:repeat(auto-fit,minmax(145px,1fr))">
+            <label>表示<select id="ar-view" onchange="renderReceivables()"><option value="closing">請求締め別</option><option value="detail">売掛明細</option></select></label>
             <label>得意先<input id="ar-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称"></label>
             <label>状態<select id="ar-status"><option value="open">未回収のみ</option><option value="">すべて</option><option value="unpaid">未入金</option><option value="partial">一部入金</option><option value="paid">入金済み</option></select></label>
             <button class="btn blue" type="button" onclick="loadReceivables()">検索</button>
           </div>
           <div class="summary-grid" style="grid-template-columns:repeat(3,minmax(130px,1fr))">
-            <div class="summary-card"><span>請求額</span><b id="ar-billed">0</b></div>
-            <div class="summary-card"><span>入金済</span><b id="ar-paid">0</b></div>
+            <div class="summary-card"><span id="ar-billed-label">最新締め請求額</span><b id="ar-billed">0</b></div>
+            <div class="summary-card"><span>消込済</span><b id="ar-paid">0</b></div>
             <div class="summary-card"><span>売掛残高</span><b id="ar-balance">0</b></div>
           </div>
           <div class="table-wrap">
-            <table class="data-table ar-table"><thead><tr><th>売上日</th><th>得意先</th><th>種別</th><th>支払期限</th><th class="money">請求額</th><th class="money">入金済</th><th class="money">残高</th><th>状態</th><th>操作</th></tr></thead><tbody id="ar-body"><tr><td colspan="9" class="empty">読込中です。</td></tr></tbody></table>
+            <table class="data-table ar-table"><thead id="ar-head"></thead><tbody id="ar-body"><tr><td colspan="9" class="empty">読込中です。</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -196,14 +198,15 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="panel">
           <div class="panel-head">入金登録</div>
           <div class="panel-body">
-            <div id="payment-target" class="selected-box">左の一覧から売掛を選択してください。</div>
+            <div id="payment-target" class="selected-box">請求締めの「入金」を選択してください。</div>
             <div class="form-grid" style="margin-top:9px">
               <label>入金日<input id="payment-date" type="date"></label>
-              <label>入金額<input id="payment-amount" type="number" min="1" step="1" inputmode="decimal"></label>
-              <label>振込手数料<input id="payment-fee" type="number" min="0" step="1" inputmode="decimal" value="0"></label>
+              <label>入金額（実際の受取額）<input id="payment-amount" type="number" min="0" step="0.01" inputmode="decimal" oninput="renderDomesticPaymentTotal()"></label>
+              <label>当社負担の振込手数料<input id="payment-fee" type="number" min="0" step="0.01" inputmode="decimal" value="0" oninput="renderDomesticPaymentTotal()"></label>
               <label>振込番号<input id="payment-reference" autocomplete="off"></label>
               <label class="full">メモ<input id="payment-memo" class="ime-ja" autocomplete="off"></label>
             </div>
+            <div id="payment-total" class="master-note"></div>
             <button id="payment-button" class="btn primary" style="width:100%;margin-top:9px" type="button" disabled onclick="recordPayment()">入金を登録</button>
             <div id="payment-history" class="master-note">入金履歴は売掛選択後に表示します。</div>
           </div>
@@ -313,6 +316,8 @@ let domesticClosingRows=[];
 let domesticClosingPreview=null;
 let domesticClosingDbReady=true;
 let selectedReceivable=null;
+let selectedDomesticClosingId=null;
+let domesticPaymentAttempt=null;
 let draftTimer=0;
 let appBusy=false;
 let correctionTarget=null;
@@ -396,6 +401,7 @@ document.addEventListener("submit",event=>{
 },true);
 function friendlyError(error){
   const message=String(error?.message||error||"");
+  if(/record_domestic_grouped_payment|cash_amount_jpy|payment_group_id|target_closing_id/i.test(message)&&(error?.code==="PGRST202"||/schema cache|does not exist|not found/i.test(message)))return "国内の締め単位入金用SQLが未実行です。管理者へ連絡してください。";
   if(error?.code==="42P01"||/relation .* does not exist/i.test(message))return "国内販売の初期設定が完了していません。管理者へ連絡してください。";
   if(/close_domestic_billing_period|reopen_domestic_billing_period|domestic_billing_closings/i.test(message))return "国内請求締め用SQLが未実行です。管理者へ連絡してください。";
   if(/correct_domestic_sale/i.test(message)&&(error?.code==="PGRST202"||/schema cache|not found|does not exist/i.test(message)))return "国内売上修正用SQLが未実行です。管理者へ連絡してください。";
@@ -413,6 +419,10 @@ function initSupabase(){
   return supabaseClient;
 }
 async function applySession(session){
+  if(currentUser?.id!==session?.user?.id){
+    domesticPaymentAttempt=null;selectedDomesticClosingId=null;selectedReceivable=null;
+    setDomesticPaymentRetry(false);
+  }
   currentUser=session?.user||null;
   if(!currentUser){
     currentRole="user";
@@ -981,9 +991,9 @@ async function loadReceivables(){
   setBusy(true,"国内売掛を読み込んでいます。");
   try{
     const [receivables,payments,closingsResult]=await Promise.all([
-      fetchPaged(()=>supabaseClient.from("domestic_receivables").select("*").order("invoice_date",{ascending:false}).order("created_at",{ascending:false})),
-      fetchPaged(()=>supabaseClient.from("domestic_receivable_payments").select("*").order("payment_date",{ascending:false}).order("created_at",{ascending:false})),
-      supabaseClient.from("domestic_billing_closings").select("*").order("period_to",{ascending:false}).order("closed_at",{ascending:false}).limit(300)
+      fetchPaged(()=>supabaseClient.from("domestic_receivables").select("*").order("invoice_date",{ascending:false}).order("created_at",{ascending:false}).order("id")),
+      fetchPaged(()=>supabaseClient.from("domestic_receivable_payments").select("*").order("payment_date",{ascending:false}).order("created_at",{ascending:false}).order("id")),
+      fetchPaged(()=>supabaseClient.from("domestic_billing_closings").select("*").order("period_to",{ascending:false}).order("id")).then(data=>({data,error:null})).catch(error=>({data:[],error}))
     ]);
     receivableRows=receivables;
     receivablePayments=payments;
@@ -993,6 +1003,7 @@ async function loadReceivables(){
     renderDomesticClosingDayOptions();
     refreshDomesticClosingPreview();
     renderDomesticClosingHistory();
+    restoreDomesticPaymentAttempt();
     setStatus(`国内売掛 ${receivableRows.length}件を表示中`,"ok");
   }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
 }
@@ -1006,6 +1017,25 @@ function renderReceivables(){
   const statusFilter=value("ar-status");
   const exactCustomer=findCustomer(customerQuery);
   const queryKey=normalize(customerQuery);
+  const matchesCustomer=row=>!queryKey||(exactCustomer?row.customer_code===exactCustomer.customer_code:normalize(`${row.customer_code} ${row.customer_name_snapshot}`).includes(queryKey));
+  const matchesStatus=row=>statusFilter==="open"?['unpaid','partial'].includes(row.status):!statusFilter||row.status===statusFilter;
+  const closingView=value("ar-view")!=="detail";
+  document.getElementById("ar-billed-label").textContent=closingView?"最新締め請求額":"売掛計上額";
+  document.getElementById("ar-head").innerHTML=`<tr><th>${closingView?"請求書No.":"売上日"}</th><th>得意先</th><th>${closingView?"締め期間":"種別"}</th><th>支払期限</th><th class="money">請求額</th><th class="money">消込済</th><th class="money">残高</th><th>状態</th><th>操作</th></tr>`;
+  if(closingView){
+    const closings=domesticClosingRows.filter(row=>row.status==="closed"&&matchesCustomer(row));
+    const entries=closings.map(row=>({row,state:DomesticPayments.closingState(row,receivableRows,receivablePayments)}));
+    const latestIds=new Set(DomesticPayments.latestClosings(closings).map(row=>row.id));
+    const totals=entries.filter(({row,state})=>latestIds.has(row.id)&&matchesStatus(state));
+    document.getElementById("ar-billed").textContent=money(totals.reduce((sum,{state})=>sum+state.amount,0));
+    document.getElementById("ar-paid").textContent=money(totals.reduce((sum,{state})=>sum+state.paid,0));
+    document.getElementById("ar-balance").textContent=money(totals.reduce((sum,{state})=>sum+state.balance,0));
+    document.getElementById("ar-body").innerHTML=entries.filter(({state})=>matchesStatus(state)).map(({row,state})=>{
+      const status=receivableStatus({...state,due_date:row.due_date});
+      return `<tr class="${selectedDomesticClosingId===row.id?"selected":""}"><td>${esc(row.invoice_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td>${esc(row.period_from)} ～ ${esc(row.period_to)}</td><td>${esc(row.due_date)}</td><td class="money">${money(state.amount)}</td><td class="money">${money(state.paid)}</td><td class="money">${money(state.balance)}</td><td><span class="status-chip ${status.key}">${status.label}</span></td><td><button class="btn small" type="button" onclick="selectDomesticClosingForPayment('${row.id}')">${state.balance>0?"入金":"履歴"}</button></td></tr>`;
+    }).join("")||'<tr><td colspan="9" class="empty">該当する請求締めはありません。</td></tr>';
+    return;
+  }
   const rows=receivableRows.filter(row=>{
     if(statusFilter==="open"&&!['unpaid','partial'].includes(row.status))return false;
     if(statusFilter&&statusFilter!=="open"&&row.status!==statusFilter)return false;
@@ -1026,6 +1056,8 @@ function renderReceivables(){
   }).join("");
 }
 async function selectReceivable(id){
+  if(domesticPaymentAttempt)return showToast("処理結果未確認の入金があります。同じ内容で入金を再確認してください。",true);
+  selectedDomesticClosingId=null;
   selectedReceivable=receivableRows.find(row=>row.id===id)||null;
   renderReceivables();
   const target=document.getElementById("payment-target");
@@ -1033,28 +1065,88 @@ async function selectReceivable(id){
   target.innerHTML=`<b>${esc(selectedReceivable.customer_code)} ${esc(selectedReceivable.customer_name_snapshot)}</b><span>${esc(selectedReceivable.invoice_date)} / 残高 ${money(selectedReceivable.balance_jpy)}円</span>`;
   document.getElementById("payment-date").value=today();
   document.getElementById("payment-amount").value=String(selectedReceivable.balance_jpy);
+  ["payment-fee","payment-reference","payment-memo"].forEach(id=>document.getElementById(id).value=id==="payment-fee"?"0":"");
   document.getElementById("payment-button").disabled=false;
+  renderDomesticPaymentTotal();
   await loadPaymentHistory();
 }
+function selectDomesticClosingForPayment(id){
+  if(domesticPaymentAttempt)return showToast("処理結果未確認の入金があります。同じ内容で入金を再確認してください。",true);
+  const closing=domesticClosingRows.find(row=>row.id===id&&row.status==="closed");if(!closing)return;
+  const state=DomesticPayments.closingState(closing,receivableRows,receivablePayments);
+  selectedReceivable=null;selectedDomesticClosingId=id;
+  document.getElementById("payment-target").innerHTML=`<b>${esc(closing.customer_code)} ${esc(closing.customer_name_snapshot)}</b><div>${esc(closing.invoice_no)}</div><div>${esc(closing.period_from)} ～ ${esc(closing.period_to)}</div><div>未回収 ${money(state.balance)}円 / 対象 ${state.rows.length}件</div>`;
+  document.getElementById("payment-date").value=today();
+  document.getElementById("payment-amount").value=String(state.balance);
+  ["payment-fee","payment-reference","payment-memo"].forEach(id=>document.getElementById(id).value=id==="payment-fee"?"0":"");
+  document.getElementById("payment-button").disabled=state.balance<=0;
+  renderReceivables();renderDomesticPaymentTotal();loadPaymentHistory();
+  document.getElementById("payment-target").scrollIntoView({block:"center",behavior:"smooth"});
+  if(state.balance>0)document.getElementById("payment-amount").focus({preventScroll:true});
+}
+function domesticSelectedPaymentBalance(){
+  const closing=domesticClosingRows.find(row=>row.id===selectedDomesticClosingId&&row.status==="closed");
+  return closing?DomesticPayments.closingState(closing,receivableRows,receivablePayments).balance:Number(receivableRows.find(row=>row.id===selectedReceivable?.id)?.balance_jpy||0);
+}
+function renderDomesticPaymentTotal(){
+  const amount=DomesticPayments.round(numberValue("payment-amount")+numberValue("payment-fee"));
+  document.getElementById("payment-total").textContent=selectedDomesticClosingId||selectedReceivable?`消込額 ${money(amount)}円 / 入金後残額 ${money(domesticSelectedPaymentBalance()-amount)}円`:"";
+}
 async function loadPaymentHistory(){
-  if(!selectedReceivable)return;
-  const {data,error}=await supabaseClient.from("domestic_receivable_payments").select("*").eq("receivable_id",selectedReceivable.id).order("payment_date",{ascending:false});
-  if(error){document.getElementById("payment-history").textContent=friendlyError(error);return}
-  document.getElementById("payment-history").innerHTML=(data||[]).length?`<b>入金履歴</b>${data.map(row=>`<div>${esc(row.payment_date)}　${money(row.amount_jpy)}円${row.reference_no?`　${esc(row.reference_no)}`:""}</div>`).join("")}`:"入金履歴はありません。";
+  const closing=domesticClosingRows.find(row=>row.id===selectedDomesticClosingId);
+  const ids=new Set(closing?DomesticPayments.targets(closing,receivableRows).map(row=>row.id):[selectedReceivable?.id]);
+  const payments=receivablePayments.filter(row=>closing?row.target_closing_id===closing.id||ids.has(row.receivable_id)&&row.payment_date>closing.period_to:ids.has(row.receivable_id));
+  const groups=DomesticPayments.groupedHistory(payments);
+  document.getElementById("payment-history").innerHTML=groups.length?`<b>入金履歴</b>${groups.map(row=>`<div style="padding:7px 0;border-bottom:1px solid var(--line)">${esc(row.date)}　入金 ${money(row.cash)}円 / 手数料 ${money(row.fee)}円<br>消込 ${money(row.settled)}円・${row.count}明細 ${esc(row.reference||row.memo)}</div>`).join("")}`:"入金履歴はありません。";
+}
+function domesticPaymentAttemptKey(){return `yumirume-domestic-payment:${currentUser?.id||""}`}
+function setDomesticPaymentRetry(active){
+  for(const id of ["payment-date","payment-amount","payment-fee","payment-reference","payment-memo"])document.getElementById(id).readOnly=active;
+  document.getElementById("payment-button").textContent=active?"入金結果を再確認":"入金を登録";
+}
+function restoreDomesticPaymentAttempt(){
+  if(domesticPaymentAttempt||!currentUser)return;
+  let saved;try{saved=JSON.parse(sessionStorage.getItem(domesticPaymentAttemptKey())||"null")}catch(error){return}
+  if(!saved?.p_request_id)return;
+  if(receivablePayments.some(row=>row.payment_group_id===saved.p_request_id)){sessionStorage.removeItem(domesticPaymentAttemptKey());return}
+  if(saved.p_closing_id)selectDomesticClosingForPayment(saved.p_closing_id);else selectReceivable(saved.p_receivable_id);
+  domesticPaymentAttempt=saved;
+  setDomesticPaymentRetry(true);
+  for(const [id,key] of [["payment-date","p_payment_date"],["payment-amount","p_amount_jpy"],["payment-fee","p_bank_fee_jpy"],["payment-reference","p_reference_no"],["payment-memo","p_memo"]])document.getElementById(id).value=saved[key]??"";
+  document.getElementById("payment-target").insertAdjacentHTML("beforeend",'<div>前回の処理結果が未確認です。同じ内容で再確認します。</div>');
+  document.getElementById("payment-button").disabled=false;renderDomesticPaymentTotal();
 }
 async function recordPayment(){
-  if(!selectedReceivable||appBusy)return;
+  if((!selectedReceivable&&!selectedDomesticClosingId&&!domesticPaymentAttempt)||appBusy)return;
+  if(!domesticPaymentAttempt){
+    const cash=numberValue("payment-amount"),fee=numberValue("payment-fee"),balance=domesticSelectedPaymentBalance();
+    if(!value("payment-date")||!Number.isFinite(cash)||!Number.isFinite(fee)||cash<0||fee<0||cash+fee<=0||DomesticPayments.round(cash)!==cash||DomesticPayments.round(fee)!==fee)return showToast("入金日・入金額・手数料を確認してください。",true);
+    if(DomesticPayments.round(cash+fee)>balance)return showToast("入金額と手数料の合計が未回収額を超えています。",true);
+    const customer=domesticClosingRows.find(row=>row.id===selectedDomesticClosingId)?.customer_code||selectedReceivable?.customer_code;
+    if(domesticClosingRows.some(row=>row.customer_code===customer&&row.status==="closed"&&row.period_to>=value("payment-date")))return showToast("入金日が請求締め済み期間に含まれます。締めを確認・解除してから登録してください。",true);
+    domesticPaymentAttempt={p_request_id:crypto.randomUUID(),p_closing_id:selectedDomesticClosingId,p_receivable_id:selectedReceivable?.id||null,p_payment_date:value("payment-date"),p_amount_jpy:cash,p_bank_fee_jpy:fee,p_reference_no:value("payment-reference").trim()||null,p_memo:value("payment-memo").trim()||null,p_expected_balance_jpy:balance};
+    try{sessionStorage.setItem(domesticPaymentAttemptKey(),JSON.stringify(domesticPaymentAttempt))}catch(error){domesticPaymentAttempt=null;return showToast("入金の再確認情報を端末に保存できません。ブラウザの保存設定を確認してください。",true)}
+  }
   setBusy(true,"入金を登録しています。");
   try{
-    const {error}=await supabaseClient.rpc("record_domestic_receivable_payment",{p_receivable_id:selectedReceivable.id,p_payment_date:value("payment-date"),p_amount_jpy:numberValue("payment-amount"),p_bank_fee_jpy:numberValue("payment-fee"),p_reference_no:value("payment-reference")||null,p_memo:value("payment-memo")||null});
+    const {error}=await supabaseClient.rpc("record_domestic_grouped_payment",domesticPaymentAttempt);
     if(error)throw error;
+    const closingId=selectedDomesticClosingId;
+    domesticPaymentAttempt=null;sessionStorage.removeItem(domesticPaymentAttemptKey());
+    setDomesticPaymentRetry(false);
     selectedReceivable=null;
+    selectedDomesticClosingId=null;
     document.getElementById("payment-button").disabled=true;
-    document.getElementById("payment-target").textContent="左の一覧から売掛を選択してください。";
+    document.getElementById("payment-target").textContent="請求締めの「入金」を選択してください。";
+    document.getElementById("payment-total").textContent="";
     document.getElementById("payment-history").textContent="入金履歴は売掛選択後に表示します。";
     showToast("入金を登録しました。");
     await loadReceivables();
-  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+    if(closingId)selectDomesticClosingForPayment(closingId);
+  }catch(error){
+    if(error?.code&&/^(P0001|P0002|22|23|42|PGRST)/.test(error.code)){domesticPaymentAttempt=null;sessionStorage.removeItem(domesticPaymentAttemptKey());setDomesticPaymentRetry(false);showToast(friendlyError(error),true)}
+    else{setDomesticPaymentRetry(true);showToast("入金結果を確認できません。「入金結果を再確認」を押してください。二重登録は防止されます。",true)}
+  }finally{setBusy(false)}
 }
 async function createOpeningBalance(){
   if(!isAdmin())return showToast("管理者のみ登録できます。",true);
@@ -1203,7 +1295,8 @@ function renderDomesticClosingHistory(){
   box.innerHTML=`<table class="data-table closing-table"><thead><tr><th>請求書No.</th><th>得意先</th><th>締め期間</th><th>支払期限</th><th class="money">今回売上</th><th class="money">入金</th><th class="money">請求額</th><th>状態</th><th>操作</th></tr></thead><tbody>${domesticClosingRows.map(row=>{
     const active=row.status==="closed";
     const reopen=active&&isAdmin()?`<button class="btn small danger" type="button" onclick="reopenDomesticBillingClosing('${row.id}')">締め解除</button>`:"";
-    return`<tr><td>${esc(row.invoice_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td>${esc(row.period_from)} ～ ${esc(row.period_to)}</td><td>${esc(row.due_date)}</td><td class="money">${money(row.sales_amount_jpy)}</td><td class="money">${money(row.payment_amount_jpy)}</td><td class="money">${money(row.billing_amount_jpy)}</td><td><span class="status-chip ${active?"paid":"cancelled"}">${active?"締め済":"解除済"}</span></td><td><div class="doc-actions"><button class="btn small blue" type="button" onclick="printDomesticInvoice('${row.id}')" ${active?"":"disabled"}>請求書</button>${reopen}</div></td></tr>`;
+    const paymentButton=active?`<button class="btn small primary" type="button" onclick="selectDomesticClosingForPayment('${row.id}')">${DomesticPayments.closingState(row,receivableRows,receivablePayments).balance>0?"入金":"入金履歴"}</button>`:"";
+    return`<tr><td>${esc(row.invoice_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td>${esc(row.period_from)} ～ ${esc(row.period_to)}</td><td>${esc(row.due_date)}</td><td class="money">${money(row.sales_amount_jpy)}</td><td class="money">${money(row.payment_amount_jpy)}</td><td class="money">${money(row.billing_amount_jpy)}</td><td><span class="status-chip ${active?"paid":"cancelled"}">${active?"締め済":"解除済"}</span></td><td><div class="doc-actions">${paymentButton}<button class="btn small blue" type="button" onclick="printDomesticInvoice('${row.id}')" ${active?"":"disabled"}>請求書</button>${reopen}</div></td></tr>`;
   }).join("")}</tbody></table>`;
 }
 async function reopenDomesticBillingClosing(id){
