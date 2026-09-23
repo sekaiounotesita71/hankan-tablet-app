@@ -1423,6 +1423,7 @@ let reportFilterCountTimer=null;
 let reportFilterCountRequest=0;
 let supplierReviewRows=[];
 let supplierReviewGroups=[];
+let supplierReviewLoadRequest=0;
 let activeSupplierReviewKey="__all__";
 let supplierReviewTabScrollLeft=0;
 let externalAssignments=[];
@@ -8989,6 +8990,8 @@ function sitePartnerDbError(error){
 }
 function supplierReviewDbError(error){
   const message=String(error?.message||error||"");
+  if(error?.code==="PGRST301"||error?.code==="PGRST303"||/JWT expired|invalid JWT|refresh token/i.test(message))return "ログイン認証を確認できませんでした。再ログイン後に「一覧更新」を押してください。";
+  if(/Internal access is required|permission denied/i.test(message))return "このアカウントには発注先確認の権限がありません。管理者に確認してください。";
   if(error?.code==="42883"||error?.code==="PGRST202"||/list_order_supplier_review|update_order_supplier_review|unconfirm_order_supplier_review|set_order_lines_purchase_ordered/i.test(message)&&/schema cache|not found|does not exist|could not find/i.test(message))return "発注先確認用SQLが未実行です。order-supplier-review-migration.sql をSupabaseへ反映してください。";
   if(message.includes("External work has already been published"))return "この明細は問屋へ公開済みのため発注先を変更できません。先に外部作業を差し戻し・取消してください。";
   if(message.includes("Supplier not found"))return "仕入先マスタに登録済みの発注先コードを指定してください。";
@@ -9107,20 +9110,46 @@ function renderSupplierReviewBoard(){
 async function loadSupplierReviewBoard(){
   const host=document.getElementById("supplier-review-list");
   const summary=document.getElementById("supplier-review-summary");
-  if(!dbReady||!supabaseClient||!currentUser){if(summary)summary.innerHTML='<span class="pill warn">ログイン後に利用できます</span>';return}
+  const tabs=document.getElementById("supplier-review-tabs");
+  const request=++supplierReviewLoadRequest;
   const orderDate=val("supplier-review-date")||null;
   let onlyUnordered=!orderDate;
   if(!orderDate&&val("supplier-review-status")!=="unordered"){
     document.getElementById("supplier-review-status").value="unordered";
     onlyUnordered=true;
   }
-  if(summary)summary.innerHTML='<span class="pill warn">読込中...</span>';
+  if(summary)summary.innerHTML='<span class="pill warn">認証を確認中...</span>';
+  let requestUserId=null;
   try{
-    const {data,error}=await supabaseClient.rpc("list_order_supplier_review",{p_order_date:orderDate,p_only_unordered:onlyUnordered});
+    // This board needs a valid session, not the unrelated full order/master preload.
+    const client=initSupabase();
+    if(!client)throw new Error("認証サービスを読み込めません。ネット接続を確認して「一覧更新」を押してください。");
+    const {data:authData,error:authError}=await client.auth.getSession();
+    if(request!==supplierReviewLoadRequest)return;
+    if(authError)throw authError;
+    currentUser=authData?.session?.user||null;
+    updateAuthStatus();
+    if(!currentUser){
+      supplierReviewRows=[];supplierReviewGroups=[];
+      if(tabs)tabs.innerHTML="";
+      if(summary)summary.innerHTML='<span class="pill warn">ログイン後に利用できます</span>';
+      if(host)host.innerHTML='<div class="sales-empty">ログイン後に「一覧更新」を押してください。</div>';
+      return;
+    }
+    requestUserId=currentUser.id;
+    if(summary)summary.innerHTML='<span class="pill warn">読込中...</span>';
+    const {data,error}=await client.rpc("list_order_supplier_review",{p_order_date:orderDate,p_only_unordered:onlyUnordered});
+    if(request!==supplierReviewLoadRequest||currentUser?.id!==requestUserId)return;
     if(error)throw error;
     supplierReviewRows=data||[];
     renderSupplierReviewBoard();
-  }catch(error){supplierReviewRows=[];supplierReviewGroups=[];if(summary)summary.innerHTML='<span class="pill warn">読込失敗</span>';if(host)host.innerHTML=`<div class="sales-empty">${esc(supplierReviewDbError(error))}</div>`}
+  }catch(error){
+    if(request!==supplierReviewLoadRequest||(requestUserId&&currentUser?.id!==requestUserId))return;
+    supplierReviewRows=[];supplierReviewGroups=[];
+    if(tabs)tabs.innerHTML="";
+    if(summary)summary.innerHTML='<span class="pill warn">読込失敗</span>';
+    if(host)host.innerHTML=`<div class="sales-empty">${esc(supplierReviewDbError(error))}</div>`;
+  }
 }
 function loadAllUnorderedSupplierReview(){
   document.getElementById("supplier-review-date").value="";
