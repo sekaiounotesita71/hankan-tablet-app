@@ -1,0 +1,9 @@
+.work-profile-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.work-profile-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;min-width:0}
+.work-profile-form .full{grid-column:1/-1}
+.work-profile-form textarea,.work-profile-form input,.work-profile-form select{width:100%;min-width:0;resize:vertical;font:inherit}
+.work-report-overrides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.work-report-overrides label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.work-report-overrides .full{grid-column:1/-1}
+.work-report-overrides textarea{width:100%;min-width:0;resize:vertical}
+@media(max-width:700px){.work-profile-form,.work-report-overrides{grid-template-columns:minmax(0,1fr)}}

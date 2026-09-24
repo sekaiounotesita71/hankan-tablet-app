@@ -63,12 +63,12 @@ test("xlsx roundtrip retains exact rows, leading zeros, decimals, editable cells
   const model=report.build(rows,settings);const original=report.createWorkbook(ExcelJS,model.suppliers[0],model.options);
   const buffer=await original.xlsx.writeBuffer();const loaded=new ExcelJS.Workbook();await loaded.xlsx.load(buffer);
   assert.equal(loaded.worksheets.length,1);const sheet=loaded.worksheets[0];
-  assert.equal(sheet.getCell("C9").value,"0002");assert.equal(sheet.getCell("C9").numFmt,"@");
-  assert.equal(sheet.getCell("D9").value,"=NO_FORMULA()");assert.equal(sheet.getCell("D9").type,3);
-  assert.equal(sheet.getCell("F9").value,2.5);assert.ok(sheet.getCell("I2").value instanceof Date);
-  assert.equal(sheet.getCell("M9").value,null);assert.equal(sheet.getCell("M9").dataValidation.type,"decimal");
-  assert.equal(sheet.getCell("N9").dataValidation.formulae[0],'"Kg,pkt,PC,CS"');assert.equal(sheet.views[0].ySplit,8);
-  assert.equal(sheet.pageSetup.orientation,"landscape");assert.equal(sheet.pageSetup.printTitlesRow,"1:8");
+  assert.equal(sheet.getCell("C10").value,"0002");assert.equal(sheet.getCell("C10").numFmt,"@");
+  assert.equal(sheet.getCell("D10").value,"=NO_FORMULA()");assert.equal(sheet.getCell("D10").type,3);
+  assert.equal(sheet.getCell("F10").value,2.5);assert.ok(sheet.getCell("I2").value instanceof Date);
+  assert.equal(sheet.getCell("M10").value,null);assert.equal(sheet.getCell("M10").dataValidation.type,"decimal");
+  assert.equal(sheet.getCell("N10").dataValidation.formulae[0],'"Kg,pkt,PC,CS"');assert.equal(sheet.views[0].ySplit,9);
+  assert.equal(sheet.pageSetup.orientation,"landscape");assert.equal(sheet.pageSetup.printTitlesRow,"1:9");
   const values=[];sheet.eachRow(row=>row.eachCell(cell=>values.push(cell.value)));
   const serialized=JSON.stringify(values);for(const secret of ["987654321","87654321","他社限定商品","別の問屋"])assert.ok(!serialized.includes(secret),secret);
   assert.equal(values.filter(v=>v==="0010").length,2);
@@ -80,7 +80,7 @@ function adapterContext(overrides={}){
   const popup={closed:false,close(){this.closed=true},document:{open(){},write(value){outputs.push(value)},close(){}}};
   const context={window:{},SupplierWorkReport:report,URL,Blob,setTimeout,clearTimeout,
     document:{getElementById:()=>null},location:{href:"https://example.test/order-entry-beta"},
-    reportFilter:()=>filter,getMasters:()=>settings,reportRowsForPrint:async()=>[sample],
+    reportFilter:()=>filter,getMasters:()=>settings,reportRowsForPrint:async()=>[sample],SupplierWorkProfilesApp:{read:async()=>[]},
     openPrintLoadingWindow:()=>popup,setAppBusy:(...args)=>busy.push(args),alert:message=>alerts.push(message),...overrides};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,"..","supplier-work-report-app.js"),"utf8"),context);
   return {context,filter,popup,alerts,busy,outputs};
@@ -98,6 +98,7 @@ test("missing date, changed filters, empty result and network failure release bu
   const none=adapterContext({reportFilter:()=>({date:""})});await none.context.window.printSupplierWorkStatements();assert.equal(none.busy.length,0);assert.match(none.alerts[0],/日付/);
   const empty=adapterContext({reportRowsForPrint:async()=>[]});await empty.context.window.printSupplierWorkStatements();assert.equal(empty.popup.closed,true);assert.deepEqual(empty.busy.at(-1),[false]);
   const failed=adapterContext({reportRowsForPrint:async()=>{throw new Error("network")}});await failed.context.window.printSupplierWorkStatements();assert.deepEqual(failed.alerts,["network"]);
+  const profileFailed=adapterContext({SupplierWorkProfilesApp:{read:async()=>{throw new Error("設定を取得できません")}}});await profileFailed.context.window.printSupplierWorkStatements();assert.deepEqual(profileFailed.alerts,["設定を取得できません"]);assert.equal(profileFailed.outputs.length,0);assert.deepEqual(profileFailed.busy.at(-1),[false]);
   const changed=adapterContext();changed.context.reportRowsForPrint=async()=>{changed.filter.supplier="11";return [sample]};await changed.context.window.printSupplierWorkStatements();assert.match(changed.alerts[0],/条件が変更/);assert.equal(changed.outputs.length,0);
 });
 test("Excel button produces a separate workbook for each supplier inside one ZIP",{skip:!ExcelJS},async()=>{
@@ -114,8 +115,8 @@ test("Excel button produces a separate workbook for each supplier inside one ZIP
   const zip=await JSZip.loadAsync(await blobs[0].arrayBuffer());const files=Object.values(zip.files).filter(f=>!f.dir);assert.equal(files.length,2);
   for(const [index,file] of files.entries()){
     const book=new ExcelJS.Workbook();await book.xlsx.load(await file.async("nodebuffer"));const sheet=book.worksheets[0];
-    assert.equal(sheet.getCell("D9").value,index===0?sample.productName:"他社限定商品");assert.equal(sheet.getCell("A10").value,"箱別重量　箱記号 "+(index===0?"IYH-":""));
-    assert.equal(sheet.getCell("M9").value,null);
+    assert.equal(sheet.getCell("D10").value,index===0?sample.productName:"他社限定商品");assert.equal(sheet.getCell("A11").value,"箱別重量　箱記号 "+(index===0?"IYH-":""));
+    assert.equal(sheet.getCell("M10").value,null);
   }
 });
 

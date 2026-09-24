@@ -1,7 +1,7 @@
 (function(){
   "use strict";
   let exporting=false;const libraryLoads=new Map();
-  const reportScriptUrl=new URL("./supplier-work-report.js?v=20260923-1",document.currentScript?.src||location.href).href;
+  const reportScriptUrl=new URL("./supplier-work-report.js?v=20260924-2",document.currentScript?.src||location.href).href;
   function library(name,url){
     if(window[name])return Promise.resolve(window[name]);if(libraryLoads.has(name))return libraryLoads.get(name);
     const promise=new Promise((resolve,reject)=>{
@@ -11,7 +11,13 @@
       script.onload=()=>{clearTimeout(timer);window[name]?resolve(window[name]):fail()};script.onerror=fail;document.head.append(script);
     });libraryLoads.set(name,promise);return promise;
   }
-  function options(){return {suppliers:getMasters().suppliers||[],destination:document.getElementById("work-report-destination")?.value||"",contact:document.getElementById("work-report-contact")?.value||"",note:document.getElementById("work-report-note")?.value||""}}
+  function options(){
+    const value=id=>document.getElementById(id)?.value||"";
+    return {suppliers:getMasters().suppliers||[],note:value("work-report-note"),header:{
+      cargo_location:value("work-report-destination"),contact:value("work-report-contact"),destination_name:value("work-report-destination-name"),
+      cargo_cut_time:value("work-report-cargo-cut"),document_cut_time:value("work-report-document-cut"),document_method:value("work-report-document-method")
+    }};
+  }
   function download(buffer,name,type){
     const url=URL.createObjectURL(new Blob([buffer],{type}));const link=document.createElement("a");link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
@@ -21,7 +27,7 @@
     let popup=null;if(kind==="pdf"){popup=openPrintLoadingWindow("作業明細書");if(!popup)return}
     exporting=true;setAppBusy(true,"作業明細書を作成中...");
     try{
-      const settings=options();const source=await reportRowsForPrint(false);
+      const settings=options();const [source,profiles]=await Promise.all([reportRowsForPrint(false),SupplierWorkProfilesApp.read()]);settings.profiles=profiles;
       if(JSON.stringify(filter)!==JSON.stringify(reportFilter()))throw new Error("出力条件が変更されました。もう一度出力してください。");
       const rows=SupplierWorkReport.selectSupplier(source,filter.supplier,settings.suppliers);const model=SupplierWorkReport.build(rows,settings);
       if(kind==="pdf"){
