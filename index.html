@@ -15,6 +15,9 @@ if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").repl
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="./i18n.js"></script>
+<script src="./work-box-number.js?v=20260924-1"></script>
+<script src="./work-box-routing.js?v=20260924-1"></script>
+<link rel="stylesheet" href="./work-box-number.css?v=20260924-1">
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./work-paper.js?v=20260910-1" defer></script>
 <link rel="stylesheet" href="./work-paper.css?v=20260910-1">
@@ -531,7 +534,21 @@ function undoStockout(i){rows[i]._stockout=false;renderP1Cell(rows[i].country,ro
 function showMemo(){document.getElementById("np-disp-wrap").style.display="none";document.getElementById("np-grid").style.display="none";document.getElementById("np-next").style.display="none";document.getElementById("unit-input-wrap").classList.remove("show");document.getElementById("memo-input-wrap").classList.add("show");const ta=document.getElementById("memo-textarea");ta.value=rows[curRow]?._memo||"";updateMemoCount();document.querySelectorAll(".np-tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-memo")?.classList.add("active");setTimeout(()=>ta.focus(),100)}
 function nk(v){if(v==="."&&npVal.includes("."))return;npVal=(npVal===""||npVal==="0")&&v!=="."?v:npVal+v;document.getElementById("np-val").textContent=npVal}
 function ndel(){npVal=npVal.slice(0,-1);document.getElementById("np-val").textContent=npVal||"0"}
-function saveNP(){if(npMode==="p1"){if(curRow===null)return;if(P1_KEY[curF])rows[curRow][P1_KEY[curF]]=npVal}else{if(!curP2Imp||!curP2Box)return;if(boxMap[curP2Imp]?.[curP2Box])boxMap[curP2Imp][curP2Box][curF]=npVal}}
+function saveNP(){
+  if(npMode==="p1"){
+    if(curRow===null)return;
+    const row=rows[curRow];
+    if(curF==="box"&&currentSessionSiteCode==="TYO"){
+      const info=WorkBoxNumber.describe(row._box,currentSessionSiteCode,row._boxRouting);
+      if(info.blocked){toast(info.error);return}
+      if(String(npVal??"")===info.sequence||String(npVal??"")===info.stored)return;
+      row._box=WorkBoxNumber.compose(info.prefix,npVal);
+    }else if(P1_KEY[curF])row[P1_KEY[curF]]=npVal;
+  }else{
+    if(!curP2Imp||!curP2Box)return;
+    if(boxMap[curP2Imp]?.[curP2Box])boxMap[curP2Imp][curP2Box][curF]=npVal;
+  }
+}
 function saveMemoCur(){if(curRow!==null)rows[curRow]._memo=document.getElementById("memo-textarea").value.trim()}
 function confirmF(){saveNP();if(npMode==="p1"){const idx=P1_FIELDS.indexOf(curF);if(idx<P1_FIELDS.length-1){curF=P1_FIELDS[idx+1];npVal=rows[curRow]?.[P1_KEY[curF]]||"";updateP1NP()}else{closeNP();toast("入力を保存しました")}}else{closeNP();toast("箱情報を保存しました")}}
 function confirmMemo(){saveMemoCur();closeNP();if(currentSessionId&&curRow!==null)saveOrderLineToSupabase(rows[curRow]);toast("メモを保存しました")}
@@ -2060,6 +2077,7 @@ function orderLineToLocalRow(dbRow,indexFallback=0){
   return{
     _idx:(dbRow.source_row_no||indexFallback+1)-1,
     _sourceOrderLineId:dbRow.source_order_line_id||null,
+    _boxRouting:dbRow._boxRouting||null,
     _qty:dbRow.input_qty??"",
     _net:dbRow.net_weight??"",
     _box:dbRow.box_no||"",
@@ -2103,6 +2121,8 @@ function upsertRemoteOrderLine(dbRow,indexFallback=0){
     return {changed:true,added:true};
   }
   const r=rows[idx],oldCountry=r.country,oldCustomer=r.customer;
+  if(dbRow._boxRouting)r._boxRouting=dbRow._boxRouting;
+  r._sourceOrderLineId=dbRow.source_order_line_id||r._sourceOrderLineId||null;
   r._qty=dbRow.input_qty??"";
   r._unit=dbRow.input_unit||"Kg";
   r._net=dbRow.net_weight??"";
@@ -2157,8 +2177,9 @@ async function readAllWorkRows(buildPage,pageSize=1000){
   }
   return data;
 }
-function loadWorkSessionOrderLines(sessionId){
-  return readAllWorkRows((from,to)=>supabaseClient.from("order_lines").select("*").eq("session_id",sessionId).order("source_row_no",{ascending:true}).range(from,to));
+async function loadWorkSessionOrderLines(sessionId,siteCode=currentSessionSiteCode){
+  const data=await readAllWorkRows((from,to)=>supabaseClient.from("order_lines").select("*").eq("session_id",sessionId).order("source_row_no",{ascending:true}).range(from,to));
+  return loadWorkBoxRouting(data,siteCode);
 }
 function loadWorkSessionBoxes(sessionId){
   return readAllWorkRows((from,to)=>supabaseClient.from("boxes").select("*").eq("session_id",sessionId).order("importer_code",{ascending:true}).order("box_no",{ascending:true}).range(from,to));
@@ -2329,7 +2350,7 @@ async function openSavedSession(sessionId){
   if(sessionError){toast("作業読込エラー: "+sessionError.message);return}
   let lineData,boxData;
   try{
-    [lineData,boxData]=await Promise.all([loadWorkSessionOrderLines(sessionId),loadWorkSessionBoxes(sessionId)]);
+    [lineData,boxData]=await Promise.all([loadWorkSessionOrderLines(sessionId,session.site_code||"OSA"),loadWorkSessionBoxes(sessionId)]);
   }catch(error){
     toast("作業データ読込エラー: "+error.message);
     return;
@@ -2350,6 +2371,7 @@ async function openSavedSession(sessionId){
   rows=(lineData||[]).map((r,i)=>({
     _idx:(r.source_row_no||i+1)-1,
     _sourceOrderLineId:r.source_order_line_id||null,
+    _boxRouting:r._boxRouting||null,
     _qty:r.input_qty??"",
     _net:r.net_weight??"",
     _box:r.box_no||"",
@@ -2384,7 +2406,7 @@ function sessionRowsUiSignature(){
   return JSON.stringify(rows.map(r=>[
     r._idx,r._qty,r._unit,r._net,r._box,r._memo,!!r._stockout,
     r.customer,r.product_id,r.product_name,r.unit,r.csv_qty,r.en_name,r.sci_name,
-    r.origin,r.unit_price,r.importer_id,r.country
+    r.origin,r.unit_price,r.importer_id,r.country,r._boxRouting?.prefix,r._boxRouting?.error
   ]));
 }
 function sessionBoxesUiSignature(){
@@ -2878,6 +2900,7 @@ async function saveCurrentSessionToSupabase(){
   }
 }
 function boxInput(row){
+  if(currentSessionSiteCode==="TYO")return workBoxInput(row);
   return `<input class="inline-box-input" data-row-idx="${row._idx}" inputmode="numeric" pattern="[0-9]*" lang="en" autocomplete="off" value="${esc(row._box)}" placeholder="箱" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleInlineBoxKey(event,${row._idx})" onblur="updateInlineBox(${row._idx},this.value)">`;
 }
 let p1InlineRefreshTimer=null;
@@ -4069,6 +4092,13 @@ function configureNativeNumberInput(){
   input.pattern=integerOnly?"[0-9]*":"[0-9.]*";
   input.enterKeyHint=npMode==="p1"&&curF!=="box"?"next":"done";
   input.value=npVal||"";
+  input.disabled=false;
+  if(integerOnly&&currentSessionSiteCode==="TYO"&&rows[curRow]){
+    const info=WorkBoxNumber.describe(rows[curRow]._box,currentSessionSiteCode,rows[curRow]._boxRouting);
+    input.value=String(npVal??"")===info.stored?info.sequence:WorkBoxNumber.digits(npVal);
+    npVal=input.value;
+    input.disabled=info.blocked;
+  }
 }
 function focusNativeNumberInput(){
   const input=nativeNumberInput();
@@ -4118,7 +4148,8 @@ openP2NP=function(imp,bn,startField){
 };
 updateP1NP=function(){
   showNumpad();
-  document.getElementById("np-unit").textContent=P1_UNIT[curF]||"";
+  const boxInfo=curF==="box"&&currentSessionSiteCode==="TYO"?WorkBoxNumber.describe(rows[curRow]?._box,currentSessionSiteCode,rows[curRow]?._boxRouting):null;
+  document.getElementById("np-unit").textContent=boxInfo?(boxInfo.prefix||"コード未設定"):(P1_UNIT[curF]||"");
   P1_FIELDS.forEach(f=>{
     document.getElementById("tab-"+f)?.classList.toggle("active",f===curF);
     const tick=document.getElementById("tick-"+f);
@@ -4175,6 +4206,7 @@ function sanitizeInlineNumber(value,integerOnly){
   return dot<0?next:next.slice(0,dot+1)+next.slice(dot+1).replace(/\./g,"");
 }
 function inlineP1Input(row,field,label){
+  if(field==="box"&&currentSessionSiteCode==="TYO")return workBoxInput(row);
   const key=P1_KEY[field],value=row[key]||"",integerOnly=field==="box";
   return `<input class="inline-work-input${field==="net"?" weight":""}" data-row-idx="${row._idx}" data-field="${field}" inputmode="${integerOnly?"numeric":"decimal"}" pattern="${integerOnly?"[0-9]*":"[0-9.]*"}" autocomplete="off" enterkeyhint="next" value="${esc(value)}" placeholder="${esc(label)}" onclick="event.stopPropagation()" oninput="updateInlineP1Draft(this)" onblur="commitInlineP1Field(this)" onkeydown="handleInlineWorkKey(event)">`;
 }
@@ -4184,6 +4216,14 @@ function inlineP1MemoInput(row){
 function updateInlineP1Draft(input){
   const row=rows[Number(input.dataset.rowIdx)],field=input.dataset.field;
   if(!row||!P1_KEY[field])return;
+  if(field==="box"&&input.dataset.boxPrefix!==undefined){
+    if(input.disabled)return;
+    const value=WorkBoxNumber.digits(input.value);
+    if(input.value!==value)input.value=value;
+    input.dataset.boxDirty="1";
+    row._box=WorkBoxNumber.compose(input.dataset.boxPrefix,value);
+    return;
+  }
   const value=sanitizeInlineNumber(input.value,field==="box");
   if(input.value!==value)input.value=value;
   row[P1_KEY[field]]=value;
@@ -4195,6 +4235,7 @@ function updateInlineP1MemoDraft(input){
   if(input.value!==row._memo)input.value=row._memo;
 }
 function commitInlineP1Field(input){
+  if(input.dataset.boxPrefix!==undefined&&(input.disabled||input.dataset.boxDirty!=="1"))return;
   updateInlineP1Draft(input);
   const row=rows[Number(input.dataset.rowIdx)];
   if(!row)return;
@@ -4212,6 +4253,7 @@ function handleInlineWorkKey(event){
   if(event.key!=="Enter")return;
   event.preventDefault();
   const current=event.currentTarget;
+  if(current.dataset.boxPrefix!==undefined)current.dataset.boxDirty="1";
   if(current.dataset.rowIdx!==undefined){
     if(current.dataset.field==="memo")commitInlineP1Memo(current);
     else commitInlineP1Field(current);
@@ -4252,7 +4294,7 @@ renderP1Cell=function(country,customer){
   }).join("");
 };
 renderP2Importer=function(imp){
-  const bm=boxMap[imp]||{},boxNos=Object.keys(bm).sort();
+  const bm=boxMap[imp]||{},boxNos=Object.keys(bm).sort((a,b)=>a.localeCompare(b,"ja",{numeric:true}));
   const done=boxNos.filter(bn=>bm[bn].gross!==""&&bm[bn].box_size).length,total=boxNos.length,pct=total?Math.round(done/total*100):0;
   const badge=document.getElementById("p2imp-badge-"+cid(imp));
   if(badge){badge.textContent=`${done}/${total}箱`;badge.className="cbadge "+(done===total?"all-done":done===0?"has-pending":"partial")}
@@ -4401,7 +4443,7 @@ function updateLockUITrial(){
 function applyLockToInputsTrial(){
   const locked=!!(currentSessionLocked||currentSessionProvisionalLocked);
   document.querySelectorAll(".inline-work-input,.inline-box-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.box-size-select,.di-toggle input").forEach(el=>{
-    el.disabled=locked;
+    el.disabled=locked||el.dataset.boxRoutingBlocked==="true";
     if(locked)el.title=currentSessionLocked?"売上確定済みのため編集できません":"仮締め中のため編集できません";
     else el.removeAttribute("title");
   });
@@ -6830,6 +6872,7 @@ function orderEntryLineToWorkRow(batch,line,index,externalWork=null){
   return {
     _idx:index,
     _sourceOrderLineId:line.id||null,
+    _boxRouting:line._boxRouting||null,
     _qty:externalWork?.input_qty??"",
     _net:externalWork?.net_weight??"",
     _box:externalWork?.boxLabel||"",
@@ -7004,6 +7047,7 @@ async function createWorkSessionFromConfirmedOrders(){
   let lines;
   try{
     lines=await loadConfirmedOrderLinesForWork(ids);
+    lines=await loadWorkBoxRouting(lines,siteCode,"id");
   }catch(error){
     setSaveState("受注明細読込失敗",true);
     toast("受注明細読込エラー: "+error.message);
@@ -7097,6 +7141,6 @@ function openWorkPaper(){
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 <link rel="stylesheet" href="./work-additional-orders.css?v=20260918-1">
-<script src="./work-additional-orders.js?v=20260918-1"></script>
+<script src="./work-additional-orders.js?v=20260924-1"></script>
 </body>
 </html>

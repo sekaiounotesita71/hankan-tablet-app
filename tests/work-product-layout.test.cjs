@@ -14,6 +14,7 @@ function source(start,end){
 function fixture(){
   const nodes=new Map();
   const ctx={
+    currentSessionSiteCode:"OSA",
     document:{getElementById:id=>{if(!nodes.has(id))nodes.set(id,{});return nodes.get(id)}},
     cid:value=>value,esc:value=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll('"',"&quot;"),
     P1_KEY:{qty:"_qty",net:"_net",box:"_box"},

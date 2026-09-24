@@ -1,0 +1,5 @@
+.work-box-input{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:116px;max-width:230px}
+.work-box-prefix{font-family:Consolas,monospace;font-weight:800;font-size:14px;overflow-wrap:anywhere}
+.work-box-input .work-box-sequence{width:72px;min-width:56px;flex:1 1 56px}
+.work-box-legacy{width:100%;font-size:11px;color:#a23c14;font-weight:700}
+.work-box-input input[data-box-routing-blocked]{background:#fff0eb;border-color:#cb4a31}

@@ -157,6 +157,10 @@ async function addManualOrder(){
       throw error;
     }
     if(!data?.id||data.source_order_line_id!==attempt.requestId)throw new Error("保存結果を確認できません。同じ内容で再試行してください。");
+    if(currentSessionId===attempt.sessionId&&currentSessionSiteCode==="TYO"){
+      const [routed]=await loadWorkBoxRouting([data],currentSessionSiteCode);
+      data._boxRouting=routed._boxRouting;
+    }
     if(currentSessionId===attempt.sessionId){
       upsertRemoteOrderLine(data);
       const row=rows.find(r=>r._sourceOrderLineId===attempt.requestId)||orderLineToLocalRow(data);
