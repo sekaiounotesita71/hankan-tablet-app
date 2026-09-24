@@ -85,6 +85,23 @@ function adapterContext(overrides={}){
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,"..","supplier-work-report-app.js"),"utf8"),context);
   return {context,filter,popup,alerts,busy,outputs};
 }
+function guardedDownloadContext(overrides={}){
+  const blobs=[],names=[],listeners=[];
+  class DownloadURL extends URL{static createObjectURL(blob){blobs.push(blob);return "blob:test"}static revokeObjectURL(){}}
+  const state=adapterContext({URL:DownloadURL,appBusy:false,
+    document:{getElementById:()=>null,body:{append(){}},addEventListener(type,listener){listeners.push(listener)},createElement:()=>({remove(){},click(){
+      const event={preventDefault(){this.defaultPrevented=true},stopImmediatePropagation(){}};
+      for(const listener of listeners)listener(event);
+      if(!event.defaultPrevented)names.push(this.download);
+    }})},
+    setTimeout:(fn,ms)=>{const handle=setTimeout(fn,ms);handle.unref();return handle},...overrides});
+  state.context.setAppBusy=(active)=>{state.context.appBusy=active;state.busy.push([active])};
+  const html=fs.readFileSync(path.join(__dirname,"..","order-entry-beta.html"),"utf8");
+  const guard=html.match(/document\.addEventListener\("click",e=>\{\s*if\(!appBusy\)return;[\s\S]*?\},true\);/);
+  assert.ok(guard,"use the production busy click guard so downloads cannot bypass it in tests");
+  vm.runInNewContext(guard[0],state.context);
+  return {...state,blobs,names};
+}
 test("double click is blocked during loading and export does not mutate DB or masters",async()=>{
   let resolve,calls=0;const pending=new Promise(r=>{resolve=r});
   const state=adapterContext({reportRowsForPrint:()=>{calls++;return pending}});
@@ -103,14 +120,11 @@ test("missing date, changed filters, empty result and network failure release bu
 });
 test("Excel button produces a separate workbook for each supplier inside one ZIP",{skip:!ExcelJS},async()=>{
   const JSZip=require(require.resolve("jszip",{paths:[process.env.EXCELJS_PATH||__dirname]}));
-  const blobs=[],names=[];
-  class DownloadURL extends URL{static createObjectURL(blob){blobs.push(blob);return "blob:test"}static revokeObjectURL(){}}
-  const state=adapterContext({window:{ExcelJS,JSZip},URL:DownloadURL,
+  const state=guardedDownloadContext({window:{ExcelJS,JSZip},
     reportFilter:()=>({date:"2026-09-18",supplier:""}),
-    reportRowsForPrint:async()=>[sample,{...sample,supplierCode:"11",supplierName:"別の問屋",productName:"他社限定商品"}],
-    document:{getElementById:()=>null,body:{append(){}},createElement:()=>({remove(){},click(){names.push(this.download)}})},
-    setTimeout:(fn,ms)=>{const handle=setTimeout(fn,ms);handle.unref();return handle}
+    reportRowsForPrint:async()=>[sample,{...sample,supplierCode:"11",supplierName:"別の問屋",productName:"他社限定商品"}]
   });
+  const {blobs,names}=state;
   await state.context.window.exportSupplierWorkStatements();assert.deepEqual(state.alerts,[]);assert.equal(names.length,1);assert.match(names[0],/\.zip$/);
   const zip=await JSZip.loadAsync(await blobs[0].arrayBuffer());const files=Object.values(zip.files).filter(f=>!f.dir);assert.equal(files.length,2);
   for(const [index,file] of files.entries()){
@@ -118,6 +132,19 @@ test("Excel button produces a separate workbook for each supplier inside one ZIP
     assert.equal(sheet.getCell("D10").value,index===0?sample.productName:"他社限定商品");assert.equal(sheet.getCell("A11").value,"箱別重量　箱記号 "+(index===0?"IYH-":""));
     assert.equal(sheet.getCell("M10").value,null);
   }
+});
+
+test("single supplier Excel downloads after the busy guard is released and ignores repeat clicks while generating",{skip:!ExcelJS},async()=>{
+  let resolve,calls=0;const pending=new Promise(r=>{resolve=r});
+  const state=guardedDownloadContext({window:{ExcelJS},reportRowsForPrint:()=>{calls++;return pending}});
+  const first=state.context.window.exportSupplierWorkStatements();
+  assert.equal(state.context.appBusy,true);await state.context.window.exportSupplierWorkStatements();assert.equal(calls,1);
+  resolve([sample]);await first;
+  assert.deepEqual(state.alerts,[]);assert.equal(state.names.length,1);assert.match(state.names[0],/\.xlsx$/);
+  assert.equal(state.context.appBusy,false);
+  const book=new ExcelJS.Workbook();await book.xlsx.load(await state.blobs[0].arrayBuffer());
+  assert.equal(book.worksheets[0].getCell("D10").value,sample.productName);
+  await state.context.window.exportSupplierWorkStatements();assert.equal(state.names.length,2);
 });
 
 if(process.env.WORK_REPORT_PREVIEW_DIR){

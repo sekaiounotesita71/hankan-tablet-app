@@ -35,11 +35,15 @@
       }else{
         const ExcelJS=await library("ExcelJS","https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js");const multiple=model.suppliers.length>1;
         const Zip=multiple?await library("JSZip","https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"):null;const zip=multiple?new Zip():null;
+        let file;
         for(let i=0;i<model.suppliers.length;i++){
           const supplier=model.suppliers[i];const book=SupplierWorkReport.createWorkbook(ExcelJS,supplier,model.options);const buffer=await book.xlsx.writeBuffer();const name=SupplierWorkReport.filename(supplier,i,filter.date);
-          if(zip)zip.file(name,buffer);else download(buffer,name,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+          if(zip)zip.file(name,buffer);else file={buffer,name,type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"};
         }
-        if(zip)download(await zip.generateAsync({type:"uint8array",compression:"DEFLATE"}),`作業明細書_${filter.date}_発注先別.zip`,"application/zip");
+        if(zip)file={buffer:await zip.generateAsync({type:"uint8array",compression:"DEFLATE"}),name:`作業明細書_${filter.date}_発注先別.zip`,type:"application/zip"};
+        // The app-wide busy click guard also cancels programmatic download clicks.
+        setAppBusy(false);
+        download(file.buffer,file.name,file.type);
       }
     }catch(error){if(popup&&!popup.closed)popup.close();alert(error?.message||"作業明細書の出力に失敗しました。")}
     finally{exporting=false;setAppBusy(false)}
