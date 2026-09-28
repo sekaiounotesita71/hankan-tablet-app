@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./i18n.js?v=20260805-ap"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
+<script src="./reference-sites.js?v=20260928-1"></script>
 <script src="./supplier-work-profile.js?v=20260924-2" defer></script>
 <script src="./supplier-work-profile-app.js?v=20260924-2" defer></script>
 <link rel="stylesheet" href="./supplier-work-profile.css?v=20260924-2">
@@ -79,7 +80,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .ar-closing-breakdown td:nth-child(2),.ar-closing-breakdown tfoot th{white-space:normal;overflow-wrap:anywhere}
 .sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(3,minmax(0,1fr))}
 .sales-supplier-tools .sales-filter-actions{grid-column:1/-1;justify-content:flex-end}
-@media(min-width:1200px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(min-width:1200px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:900px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.sales-board-tools.sales-supplier-tools{grid-template-columns:minmax(0,1fr)}.sales-supplier-tools .sales-filter-actions{flex-wrap:wrap}}
 </style>
@@ -291,6 +292,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   <section class="panel workspace-panel active" data-workspace-panel="orders" id="import-drafts-panel" style="margin-top:12px">
     <div class="panel-head"><span>取込下書き</span></div>
     <div class="panel-body">
+      <label>拠点<select id="draft-filter-site" onchange="renderImportDrafts()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
       <div id="import-drafts"></div>
     </div>
   </section>
@@ -341,8 +343,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   <section class="panel workspace-panel active" data-workspace-panel="orders" style="margin-top:12px">
     <div class="panel-head"><span>確定済み受注</span></div>
     <div class="panel-body">
-      <div class="form-grid" style="grid-template-columns:180px 220px auto">
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
         <label>日付<input id="confirmed-filter-date" type="date"></label>
+        <label>拠点<select id="confirmed-filter-site" onchange="renderConfirmedOrders()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label>輸入社<input id="confirmed-filter-importer" list="importer-code-list" placeholder="例 DIM / FBI"></label>
         <div class="actions" style="align-items:end"><button class="btn" onclick="clearConfirmedFilters()">絞込解除</button></div>
       </div>
@@ -403,6 +406,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             <option value="cancelled">取消</option>
           </select>
         </label>
+        <label>拠点<select id="pending-filter-site" onchange="renderPendingEntries()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
         <label>輸入社<input id="pending-filter-importer" list="importer-code-list" placeholder="例 DIM / FBI"></label>
         <label>得意先<input id="pending-filter-customer" placeholder="コード・店名"></label>
         <div class="actions" style="align-items:end"><button class="btn" onclick="loadPendingEntries()">再読込</button><button class="btn" onclick="clearPendingFilters()">絞込解除</button></div>
@@ -417,6 +421,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-body">
       <div class="sales-board-tools sales-supplier-tools">
         <label>期間<input id="sales-ref-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="2026 / 202608 / 日付範囲"></label>
+        <label>拠点<select id="sales-ref-site" onchange="hideSalesRefSuggestions();salesRefResetPage();renderSalesReferenceBoard()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
         <label>輸入社<input id="sales-ref-importer" list="importer-code-list" placeholder="例 FBI"></label>
         <label>発注先コード<input id="sales-ref-supplier" list="supplier-code-list" autocomplete="off" placeholder="空欄 = 全発注先"></label>
         <label>得意先<input id="sales-ref-customer" autocomplete="off" placeholder="コード・得意先名"></label>
@@ -472,8 +477,9 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
   <section class="panel workspace-panel" data-workspace-panel="profit" id="profit-reference-panel" style="margin-top:12px">
     <div class="panel-head"><span>粗利参照</span><span class="pill blue">マスタ仕入単価で計算</span></div>
     <div class="panel-body">
-      <div class="sales-board-tools">
+      <div class="sales-board-tools sales-supplier-tools">
         <label>期間<input id="profit-ref-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="2026 / 202608 / 日付範囲" oninput="delete this.dataset.periodAll;syncProfitReferencePeriodButtons('');invalidateProfitReference()"></label>
+        <label>拠点<select id="profit-ref-site" onchange="invalidateProfitReference()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
         <label>輸入社<input id="profit-ref-importer" list="importer-code-list" placeholder="例 FBI" oninput="invalidateProfitReference()"></label>
         <label>得意先<input id="profit-ref-customer" list="profit-ref-customer-list" autocomplete="off" placeholder="コード・得意先名" oninput="invalidateProfitReference()"></label>
         <label>商品<input id="profit-ref-product" list="profit-ref-product-list" autocomplete="off" placeholder="商品コード・商品名" oninput="invalidateProfitReference()"></label>
@@ -509,6 +515,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       </div>
       <div class="ar-tools">
         <label id="ar-date-filter" hidden>請求日<input id="ar-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="renderReceivables()"></label>
+        <label id="ar-site-filter">参照拠点<select id="ar-site" onchange="renderReceivables()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
         <label id="ar-importer-filter">輸入社<input id="ar-importer" list="importer-code-list" placeholder="空欄=ALL" oninput="renderReceivables();scheduleClosingPreview()"></label>
         <label id="ar-status-filter" hidden>状態
           <select id="ar-status" onchange="renderReceivables()">
@@ -775,6 +782,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-body">
       <div class="ar-tools">
         <label>請求書日<input id="ap-date-range" type="text" inputmode="numeric" autocomplete="off" placeholder="例 20250701-20250731" oninput="document.querySelectorAll('[data-payable-period]').forEach(button=>button.classList.remove('active'));renderPayables()"></label>
+        <label>参照拠点<select id="ap-site" onchange="renderPayables()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
         <label>仕入先<input id="ap-supplier" list="supplier-code-list" autocomplete="off" placeholder="空欄=ALL" oninput="renderPayables()"></label>
         <label>状態
           <select id="ap-status" onchange="renderPayables()">
@@ -2523,7 +2531,7 @@ function renderImportDrafts(){
     box.innerHTML=`<div class="hint">取込下書きはありません。</div>`;
     return;
   }
-  box.innerHTML=importDraftGroups.map((group,index)=>{
+  box.innerHTML=importDraftGroups.map((group,index)=>({group,index})).filter(({group})=>!val("draft-filter-site")||ReferenceSites.matches({_referenceSite:ReferenceSites.customerSite(group,getMasters().customers)},val("draft-filter-site"))).map(({group,index})=>{
     const rows=group.rows||[];
     const source=(group.sourceNames||[]).join(", ");
     const sourceLabel=source?`/ ${esc(source)}`:"";
@@ -2985,6 +2993,7 @@ async function setPendingStatus(id,status){
   }
 }
 function clearPendingFilters(){
+  const site=document.getElementById("pending-filter-site");if(site)site.value="";
   document.getElementById("pending-filter-status").value="";
   document.getElementById("pending-filter-importer").value="";
   document.getElementById("pending-filter-customer").value="";
@@ -2997,6 +3006,7 @@ function renderPendingEntries(){
   const importer=val("pending-filter-importer").trim().toLowerCase();
   const customer=val("pending-filter-customer").trim().toLowerCase();
   const list=pendingEntries.filter(entry=>{
+    if(val("pending-filter-site")&&!ReferenceSites.matches({_referenceSite:ReferenceSites.customerSite(entry,getMasters().customers)},val("pending-filter-site")))return false;
     if(status&&entry.status!==status)return false;
     const importerText=[entry.importerCode,entry.importerName].filter(Boolean).join(" ").toLowerCase();
     const customerText=[entry.customerCode,entry.customerName].filter(Boolean).join(" ").toLowerCase();
@@ -3793,7 +3803,7 @@ function setProfitReferencePeriod(kind){
 function syncProfitReferenceFiltersToSales(){
   const supplier=document.getElementById("sales-ref-supplier");
   if(supplier)supplier.value="";
-  const fields=["date-range","importer","customer","product","search"];
+  const fields=["date-range","site","importer","customer","product","search"];
   fields.forEach(name=>{
     const source=document.getElementById(`profit-ref-${name}`);
     const target=document.getElementById(`sales-ref-${name}`);
@@ -3810,7 +3820,7 @@ function syncProfitReferenceFiltersToSales(){
   salesRefResetPage();
 }
 function syncSalesReferenceFiltersToProfit(options={}){
-  const fields=["date-range","importer","customer","product","search"];
+  const fields=["date-range","site","importer","customer","product","search"];
   fields.forEach(name=>{
     const source=document.getElementById(`sales-ref-${name}`);
     const target=document.getElementById(`profit-ref-${name}`);
@@ -3915,16 +3925,19 @@ function handleSalesRefSuggestionKey(event){
   if(event.key==="Enter"&&chooseSalesRefSuggestion())event.preventDefault();
 }
 function clearSalesReferenceDetailFilters(){
+  const site=document.getElementById("sales-ref-site");if(site)site.value="";
   ["sales-ref-importer","sales-ref-supplier","sales-ref-customer","sales-ref-product","sales-ref-search"].forEach(id=>{const field=document.getElementById(id);if(field)field.value=""});
   salesRefResetPage();
   renderSalesReferenceBoard();
 }
 function clearProfitReferenceFilters(){
+  const site=document.getElementById("profit-ref-site");if(site)site.value="";
   ["profit-ref-importer","profit-ref-customer","profit-ref-product","profit-ref-search"].forEach(id=>{const field=document.getElementById(id);if(field)field.value=""});
   syncProfitReferencePeriodButtons("");
   invalidateProfitReference();
 }
 function invalidateProfitReference(){
+  profitReferenceLoadSequence++;
   profitReferenceReady=false;
   const analysis=document.getElementById("profit-ref-analysis");
   const state=document.getElementById("profit-ref-state");
@@ -3972,6 +3985,7 @@ async function refreshSalesRefSupplierFilter(){
   if(rows===salesReferenceRows)renderSalesReferenceBoard();
 }
 function salesRefFilteredRows(options={}){
+  const site=options.site??val("sales-ref-site");
   const q=val("sales-ref-search").trim().toLowerCase();
   const importer=val("sales-ref-importer").trim().toLowerCase();
   const customer=salesRefFilterKey(val("sales-ref-customer"));
@@ -3985,6 +3999,7 @@ function salesRefFilteredRows(options={}){
   const to=options.ignoreDate?"":(options.to??inputRange.to);
   const sourceRows=Array.isArray(options.rows)?options.rows:salesReferenceRows;
   return sourceRows.filter(row=>{
+    if(site&&!ReferenceSites.matches(row,site))return false;
     const d=salesRefRowDate(row);
     const importerIdentity=salesRefRowImporter(row);
     if(status==="confirmed"&&salesRefIsProvisional(row))return false;
@@ -4686,7 +4701,7 @@ async function salesRefReadSessions(client,range){
   return salesRefReadChunks(range.ranges,1,async parts=>{
     const part=parts[0];
     return salesRefReadPaged(includeCount=>{
-    let query=client.from("work_sessions").select("id,name,work_date,shipping_fee,shipping_fees,locked,status,finalized_at,updated_at,created_at",includeCount?{count:"exact"}:undefined).order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
+    let query=client.from("work_sessions").select("id,name,site_code,work_date,shipping_fee,shipping_fees,locked,status,finalized_at,updated_at,created_at",includeCount?{count:"exact"}:undefined).order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("work_date",part.from);
     if(part.to)query=query.lte("work_date",part.to);
     return query;
@@ -4698,7 +4713,7 @@ async function salesRefReadDomesticRows(client,range){
     const part=parts[0];
     return salesRefReadPaged(includeCount=>{
       let query=client.from("domestic_sales")
-        .select("id,sale_no,sale_date,customer_code,customer_name_snapshot,status,memo,confirmed_at,created_at,source_type,source_importer_code",includeCount?{count:"exact"}:undefined)
+        .select("id,sale_no,sale_date,customer_code,customer_name_snapshot,status,memo,confirmed_at,created_at,source_type,source_importer_code,source_session_id",includeCount?{count:"exact"}:undefined)
         .eq("status","confirmed")
         .order("sale_date",{ascending:false})
         .order("sale_no",{ascending:false});
@@ -4713,7 +4728,7 @@ async function salesRefReadDomesticRows(client,range){
     .in("sale_id",ids)
     .order("sale_id",{ascending:true})
     .order("line_no",{ascending:true})),4);
-  const saleById=new Map(sales.map(row=>[row.id,row]));
+  const saleById=new Map((await ReferenceSites.sessions(client,sales,salesReferenceSessions)).map(row=>[row.id,row]));
   return lines.map(line=>{
     const sale=saleById.get(line.sale_id)||{};
     const unit=normalizeLineUnit(line.unit)||line.unit||"";
@@ -4737,6 +4752,7 @@ async function salesRefReadDomesticRows(client,range){
       importer_name:sale.source_type==="export_intermediary"?`国内売上 (${sale.source_importer_code||"輸出"})`:"国内売上",
       is_stockout:false,
       _domesticSale:true,
+      _referenceSite:sale._referenceSite,
       _domesticSaleId:line.sale_id,
       _domesticSaleNo:sale.sale_no||""
     },salesReferenceImporterIndex);
@@ -4828,9 +4844,11 @@ async function loadSalesReferenceBoard(){
       return salesRefNormalizeRowImporter({...row,amount,source_type:"現場確定",work_date:workDate,finalized_at:finalizedAt},salesReferenceImporterIndex);
     });
     const pastRows=historicalResult.rows.map(row=>salesRefNormalizeRowImporter({...row,amount:row.amount===null||row.amount===undefined||row.amount===""?null:salesRefJpyAmount(row.amount),source_type:"過去データ",work_date:row.work_date||salesRefDateOnly(row.finalized_at),session_id:row.session_id||""},salesReferenceImporterIndex));
-    const adjustmentRows=pendingResult.rows.map(row=>salesRefPendingToRow(row,salesReferenceImporterIndex));
+    const adjustmentRows=pendingResult.rows.map(row=>({...salesRefPendingToRow(row,salesReferenceImporterIndex),_referenceSite:ReferenceSites.customerSite(row,getMasters().customers)}));
     const provisionalRows=provisionalResult.rows.map(row=>salesRefNormalizeRowImporter(row,salesReferenceImporterIndex));
-    salesReferenceRows=[...currentRows,...pastRows,...adjustmentRows,...provisionalRows].sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
+    const locatedRows=await ReferenceSites.sessions(client,[...currentRows,...pastRows,...adjustmentRows,...provisionalRows],salesReferenceSessions);
+    if(loadSequence!==salesReferenceLoadSequence)return;
+    salesReferenceRows=locatedRows.sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
     if(typeof markUnitPriceDataLoaded==="function")markUnitPriceDataLoaded("sales",range.ranges);
     if(val("sales-ref-supplier").trim()){
       renderSalesReferenceBoard();
@@ -4860,7 +4878,7 @@ function renderProfitReferenceBoard(){
     target.innerHTML="";
     return;
   }
-  const rows=salesRefFilteredRows({rows:profitReferenceRows}).filter(row=>!salesRefIsProvisional(row));
+  const rows=salesRefFilteredRows({rows:profitReferenceRows,site:val("profit-ref-site")}).filter(row=>!salesRefIsProvisional(row));
   if(!rows.length){
     target.innerHTML=`<div class="sales-empty">表示対象の確定売上データはありません。</div>`;
     return;
@@ -4868,7 +4886,7 @@ function renderProfitReferenceBoard(){
   target.innerHTML=salesRefProfitAnalysisHtml(rows,profitReferencePurchaseSummary);
 }
 async function salesRefReadPurchaseSummary(client,range){
-  const receipts=(await purchaseRefReadReceipts(client,range)).filter(receipt=>receipt.status==="confirmed");
+  const receipts=(await purchaseRefReadReceipts(client,range)).filter(receipt=>receipt.status==="confirmed"&&(!val("profit-ref-site")||ReferenceSites.matches(receipt,val("profit-ref-site"))));
   const subtotal=receipts.reduce((sum,receipt)=>sum+purchaseJpyAmount(receipt.subtotal),0);
   const fees=receipts.reduce((sum,receipt)=>sum+purchaseJpyAmount(receipt.shipping_fee)+purchaseJpyAmount(receipt.other_fee),0);
   return {subtotal,fees,cost:subtotal+fees,receiptCount:receipts.length};
@@ -5507,6 +5525,7 @@ function exportSalesReferenceBoardExcel(){
   const data=rows.map((row,index)=>({
     "区分":row.source_type||"現場確定",
     "日付":salesRefRowDate(row),
+    "拠点":ReferenceSites.label(row),
     "輸入社":salesRefRowImporter(row).label,
     "得意先":row.store_name||"",
     "商品コード":row.product_id||"",
@@ -7344,6 +7363,7 @@ function arFilteredRows(){
   const search=isDetail?val("ar-search").trim().toLowerCase():"";
   if(range.raw&&(!range.from||!range.to))return {rows:[],range,error:"日付は 20250701-20250731 の形式で入力してください。"};
   const rows=receivableRows.filter(row=>{
+    if(val("ar-site")&&!ReferenceSites.matches(row,val("ar-site")))return false;
     if(!arIsOperationRow(row))return false;
     if(!arIsPostedReceivable(row))return false;
     const invoiceDate=String(row.invoice_date||"").slice(0,10);
@@ -7392,6 +7412,7 @@ function setReceivableView(view,options={}){
   if(payment)payment.hidden=receivableView!=="detail";
   if(closing)closing.hidden=receivableView!=="closing";
   const visibility={
+    "ar-site-filter":showResults,
     "ar-date-filter":receivableView==="detail",
     "ar-importer-filter":receivableView!=="setup",
     "ar-status-filter":receivableView==="detail",
@@ -7555,7 +7576,7 @@ async function loadReceivables(){
       arReadAll("accounts_receivable_closings","period_to"),
       loadReceivableSettings()
     ]);
-    receivableRows=rows;
+    receivableRows=await ReferenceSites.sessions(client,rows);
     receivablePayments=payments;
     receivableClosings=closings;
     receivablesLoaded=true;
@@ -8779,6 +8800,8 @@ function openAccountingReportWindow(message){
   return reportWindow;
 }
 function writeAccountingReport(reportWindow,{title,subtitle="",meta=[],summary=[],headers=[],rows=[],orientation="landscape"}){
+  const siteField=["売掛一覧表","得意先明細"].includes(title)?"ar-site":"ap-site";
+  if(val(siteField))meta=[...meta,`拠点 ${ReferenceSites.label(val(siteField))}`];
   const summaryHtml=summary.map(item=>`<div class="summary-item"><span>${esc(item.label)}</span><b>${esc(item.value)}</b></div>`).join("");
   const metaHtml=meta.filter(Boolean).map(item=>`<span>${esc(item)}</span>`).join("");
   const headerHtml=headers.map(header=>`<th class="${esc(header.className||"")}">${esc(header.label||header)}</th>`).join("");
@@ -8865,7 +8888,7 @@ async function printReceivableListPdf(){
   }catch(error){reportWindow.close();alert(arDbErrorMessage(error))}
 }
 function receivableLedgerRows(importer,range){
-  const charges=receivableRows.filter(row=>arIsOperationRow(row)&&arIsPostedReceivable(row)&&arSameImporter(row,importer));
+  const charges=receivableRows.filter(row=>arIsOperationRow(row)&&arIsPostedReceivable(row)&&arSameImporter(row,importer)&&(!val("ar-site")||ReferenceSites.matches(row,val("ar-site"))));
   const chargeIds=new Set(charges.map(row=>row.id));
   const payments=receivablePayments.filter(payment=>chargeIds.has(payment.receivable_id));
   const beforeFrom=date=>range.from&&String(date||"").slice(0,10)<range.from;
@@ -8951,7 +8974,7 @@ async function printPayableListPdf(){
 }
 function payableLedgerRows(supplierCode,range){
   const code=String(supplierCode||"").trim().toLowerCase();
-  const charges=payableRows.filter(row=>String(row.supplier_code||"").trim().toLowerCase()===code);
+  const charges=payableRows.filter(row=>String(row.supplier_code||"").trim().toLowerCase()===code&&(!val("ap-site")||ReferenceSites.matches(row,val("ap-site"))));
   const chargeIds=new Set(charges.map(row=>row.id));
   const payments=payablePayments.filter(payment=>chargeIds.has(payment.payable_id));
   const beforeFrom=date=>range.from&&String(date||"").slice(0,10)<range.from;
@@ -9620,6 +9643,7 @@ function apFilteredRows(){
   const status=val("ap-status");
   const search=val("ap-search").trim().toLowerCase();
   const rows=payableRows.filter(row=>{
+    if(val("ap-site")&&!ReferenceSites.matches(row,val("ap-site")))return false;
     if(range.from&&String(row.invoice_date||"")<range.from)return false;
     if(range.to&&String(row.invoice_date||"")>range.to)return false;
     if(supplier&&!String(row.supplier_code||"").toLowerCase().includes(supplier)&&!String(row.supplier_name||"").toLowerCase().includes(supplier))return false;
@@ -9715,7 +9739,7 @@ async function loadPayables(){
         payableClosingDbReady=false;
       }else throw error;
     }
-    payableRows=rows;
+    payableRows=await ReferenceSites.payables(client,rows);
     payablePayments=payments;
     payableClosings=closings;
     payableSupplierProfiles=profiles;
@@ -10525,7 +10549,7 @@ function purchaseRefFilteredReceipts(options={}){
     const date=String(receipt.purchase_date||"");
     if(from&&date<from)return false;
     if(to&&date>to)return false;
-    if(site&&receipt.site_code!==site)return false;
+    if(site&&!ReferenceSites.matches(receipt,site))return false;
     if(status&&receipt.status!==status)return false;
     if(supplier&&![receipt.supplier_code,receipt.supplier_name_snapshot].some(value=>String(value||"").toLowerCase().includes(supplier)))return false;
     if(search&&!purchaseRefReceiptText(receipt).includes(search))return false;
@@ -12679,8 +12703,9 @@ function renderConfirmedOrders(){
   if(!box)return;
   const dateFilter=val("confirmed-filter-date");
   const importerFilter=val("confirmed-filter-importer").trim().toLowerCase();
-  if(!dateFilter&&!importerFilter){
-    box.innerHTML=`<div class="hint">日付または輸入社を指定すると、確定済み受注を表示します。</div>`;
+  const siteFilter=val("confirmed-filter-site");
+  if(!dateFilter&&!importerFilter&&!siteFilter){
+    box.innerHTML=`<div class="hint">日付・拠点・輸入社を指定すると、確定済み受注を表示します。</div>`;
     return;
   }
   if(!confirmedBatches.length){
@@ -12691,7 +12716,7 @@ function renderConfirmedOrders(){
     const dateOk=!dateFilter||(batch.orderDate||"")===dateFilter;
     const importerText=[batch.importer?.code,batch.importer?.name].filter(Boolean).join(" ").toLowerCase();
     const importerOk=!importerFilter||importerText.includes(importerFilter);
-    return dateOk&&importerOk;
+    return dateOk&&importerOk&&(!siteFilter||ReferenceSites.matches(batch,siteFilter));
   });
   if(!batches.length){
     box.innerHTML=`<div class="hint">条件に一致する確定済み受注はありません。</div>`;
@@ -12719,6 +12744,7 @@ function renderConfirmedOrders(){
   }).join("");
 }
 function clearConfirmedFilters(){
+  const site=document.getElementById("confirmed-filter-site");if(site)site.value="";
   const date=document.getElementById("confirmed-filter-date");
   const importer=document.getElementById("confirmed-filter-importer");
   if(date)date.value="";

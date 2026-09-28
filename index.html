@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/jpeg" href="./yumirume-logo.jpg">
 <title>オーダー管理 P1/P2</title>
+<script src="./reference-sites.js?v=20260928-1"></script>
 <script>
 if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").replace(/^#/,""))){
   location.replace(`./order-entry-beta.html?setup=1${location.hash}`);
@@ -24,6 +25,7 @@ if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").repl
 <script src="./sales-refinalize.js?v=20260911-1" defer></script>
 <link rel="stylesheet" href="./sales-refinalize.css?v=20260911-1">
 <style>
+.session-filter-bar select{height:38px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:inherit;background:#fff;color:var(--text)}
 :root{
   --bg:#f6f4ef;--surface:#fff;--surface-2:#fbfaf7;--border:#ded9cf;--border-strong:#bfb7aa;
   --text:#1d1b18;--muted:#736d64;--accent:#22201d;--accent-fg:#fff;
@@ -274,6 +276,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
       <label>一覧の日付（任意）
         <input id="session-list-date" type="date" onchange="loadSessionList()">
       </label>
+      <label>拠点<select id="session-list-site" onchange="loadSessionList()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
       <button class="btn" type="button" onclick="clearSessionListDate()">全件表示</button>
       <span class="session-filter-summary" id="session-list-summary">全期間</span>
     </div>
@@ -4903,6 +4906,7 @@ function openSessionList(){
   loadSessionList();
 }
 function clearSessionListDate(){
+  const site=document.getElementById("session-list-site");if(site)site.value="";
   const input=document.getElementById("session-list-date");
   if(input)input.value="";
   loadSessionList();
@@ -4911,6 +4915,7 @@ loadSessionList=async function(){
   if(!(await requireSupabaseLogin()))return;
   await loadCurrentUserRoleTrial();
   const selectedDate=workSessionListDateFilterValue();
+  const selectedSite=document.getElementById("session-list-site")?.value||"";
   let data;
   try{
     data=await readAllWorkRows((from,to)=>supabaseClient
@@ -4923,12 +4928,13 @@ loadSessionList=async function(){
     toast("作業一覧エラー: "+salesLockSetupErrorMessage(error));
     return;
   }
-  const sessions=(data||[]).filter(session=>workSessionMatchesDate(session,selectedDate));
+  if(selectedDate!==workSessionListDateFilterValue()||selectedSite!==(document.getElementById("session-list-site")?.value||""))return;
+  const sessions=(data||[]).filter(session=>workSessionMatchesDate(session,selectedDate)&&ReferenceSites.matches(session,selectedSite));
   const active=sessions.filter(s=>!(s.locked||s.status==="closed"));
   const finalized=sessions.filter(s=>s.locked||s.status==="closed").sort((a,b)=>new Date(b.finalized_at||b.updated_at||b.created_at)-new Date(a.finalized_at||a.updated_at||a.created_at));
   const wrap=document.getElementById("session-options");
   const summary=document.getElementById("session-list-summary");
-  if(summary)summary.textContent=`${selectedDate||"全期間"} / ${sessions.length}件`;
+  if(summary)summary.textContent=`${selectedDate||"全期間"} / ${ReferenceSites.label(selectedSite)} / ${sessions.length}件`;
   wrap.innerHTML=[
     `<div class="session-section-title"><span>${selectedDate?esc(selectedDate)+" ":""}作業中</span><span class="session-section-count">${active.length}件</span></div>`,
     active.length?active.map(s=>sessionListItemHtmlTrial(s,false)).join(""):sessionListEmptyHtmlTrial("作業中のデータはありません"),

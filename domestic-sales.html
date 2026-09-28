@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./domestic-payment-model.js?v=20260918-1"></script>
+<script src="./reference-sites.js?v=20260928-1"></script>
 <title>国内販売管理</title>
 <style>
 :root{--bg:#f4f6f7;--panel:#fff;--line:#d8dde3;--line2:#b5bec8;--text:#15181c;--muted:#64707d;--accent:#0f6848;--accent-bg:#e9f5ef;--blue:#174ea6;--blue-bg:#eaf2ff;--danger:#b42318;--danger-bg:#fff0ef;--warn:#8a5700;--warn-bg:#fff7e7}
@@ -127,6 +128,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="filter-grid">
           <label>開始日<input id="sales-from" type="date" oninput="syncDomesticSalesPeriodButtons('')"></label>
           <label>終了日<input id="sales-to" type="date" oninput="syncDomesticSalesPeriodButtons('')"></label>
+          <label>拠点<select id="sales-site" onchange="loadSalesReference()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
           <label>得意先<input id="sales-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称"></label>
           <label>商品<input id="sales-product" autocomplete="off" data-domestic-suggest="product-filter" placeholder="商品コード・商品名"></label>
           <button class="btn blue" type="button" onclick="loadSalesReference()">検索</button>
@@ -179,7 +181,8 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
         <div class="panel-head"><span>国内売掛管理</span><button class="btn small" type="button" onclick="loadReceivables()">再読込</button></div>
         <div class="panel-body">
           <div class="filter-grid" style="grid-template-columns:repeat(auto-fit,minmax(145px,1fr))">
-            <label>表示<select id="ar-view" onchange="renderReceivables()"><option value="closing">請求締め別</option><option value="detail">売掛明細</option></select></label>
+            <label>参照拠点<select id="ar-site" onchange="renderReceivables()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
+            <label>表示<select id="ar-view" onchange="renderReceivables()"><option value="closing">請求締め別（全拠点）</option><option value="detail">売掛明細</option></select></label>
             <label>得意先<input id="ar-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称"></label>
             <label>状態<select id="ar-status"><option value="open">未回収のみ</option><option value="">すべて</option><option value="unpaid">未入金</option><option value="partial">一部入金</option><option value="paid">入金済み</option></select></label>
             <button class="btn blue" type="button" onclick="loadReceivables()">検索</button>
@@ -791,6 +794,7 @@ async function loadSalesReference(){
   const to=value("sales-to");
   const customerQuery=value("sales-customer").trim();
   const productQuery=normalize(value("sales-product"));
+  const site=value("sales-site");
   setBusy(true,"国内売上を読み込んでいます。");
   try{
     let rows=await fetchPaged(()=>{
@@ -804,6 +808,7 @@ async function loadSalesReference(){
       }
       return query;
     });
+    rows=(await ReferenceSites.sessions(supabaseClient,rows)).filter(row=>ReferenceSites.matches(row,site));
     const lineMap=new Map(rows.map(row=>[row.id,[]]));
     for(let index=0;index<rows.length;index+=100){
       const ids=rows.slice(index,index+100).map(row=>row.id);
@@ -814,6 +819,7 @@ async function loadSalesReference(){
     }
     rows=rows.map(row=>({...row,lines:lineMap.get(row.id)||[]}));
     if(productQuery)rows=rows.filter(row=>row.lines.some(line=>normalize(line.product_code).includes(productQuery)||normalize(line.product_name_snapshot).includes(productQuery)));
+    if(site!==value("sales-site"))return;
     salesRows=rows;
     renderSalesReference();
     setStatus(`国内売上 ${rows.length}伝票を表示中`,"ok");
@@ -995,7 +1001,7 @@ async function loadReceivables(){
       fetchPaged(()=>supabaseClient.from("domestic_receivable_payments").select("*").order("payment_date",{ascending:false}).order("created_at",{ascending:false}).order("id")),
       fetchPaged(()=>supabaseClient.from("domestic_billing_closings").select("*").order("period_to",{ascending:false}).order("id")).then(data=>({data,error:null})).catch(error=>({data:[],error}))
     ]);
-    receivableRows=receivables;
+    receivableRows=await ReferenceSites.domesticReceivables(supabaseClient,receivables);
     receivablePayments=payments;
     domesticClosingDbReady=!closingsResult.error;
     domesticClosingRows=closingsResult.error?[]:(closingsResult.data||[]);
@@ -1013,6 +1019,10 @@ function receivableStatus(row){
   return{key:row.status,label:{unpaid:"未入金",partial:"一部入金",paid:"入金済",cancelled:"取消済"}[row.status]||row.status};
 }
 function renderReceivables(){
+  const site=value("ar-site");
+  const view=document.getElementById("ar-view");
+  view.querySelector('option[value="closing"]').disabled=!!site;
+  if(site)view.value="detail";
   const customerQuery=value("ar-customer").trim();
   const statusFilter=value("ar-status");
   const exactCustomer=findCustomer(customerQuery);
@@ -1037,6 +1047,7 @@ function renderReceivables(){
     return;
   }
   const rows=receivableRows.filter(row=>{
+    if(site&&!ReferenceSites.matches(row,site))return false;
     if(statusFilter==="open"&&!['unpaid','partial'].includes(row.status))return false;
     if(statusFilter&&statusFilter!=="open"&&row.status!==statusFilter)return false;
     if(!queryKey)return true;
