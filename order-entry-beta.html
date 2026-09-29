@@ -830,7 +830,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
                 <div class="ar-summary-card"><div class="ar-summary-label">前回繰越</div><div class="ar-summary-value" id="ap-closing-opening">¥0</div></div>
                 <div class="ar-summary-card"><div class="ar-summary-label">今回仕入</div><div class="ar-summary-value" id="ap-closing-purchase">¥0</div></div>
                 <div class="ar-summary-card"><div class="ar-summary-label">期間内支払</div><div class="ar-summary-value" id="ap-closing-payment">¥0</div></div>
-                <div class="ar-summary-card balance"><div class="ar-summary-label">締め後買掛残高</div><div class="ar-summary-value" id="ap-closing-balance">¥0</div></div>
+                <div class="ar-summary-card balance"><div class="ar-summary-label">締め後買掛残高（税込）</div><div class="ar-summary-value" id="ap-closing-balance">¥0</div></div>
+                <div class="ar-summary-card"><div class="ar-summary-label">締め後買掛残高（税抜・参考）</div><div class="ar-summary-value" id="ap-closing-net-balance">¥0</div><div class="hint" id="ap-closing-net-note"></div></div>
               </div>
             </div>
             <div class="hint" id="ap-closing-state">対象月と締め日グループを選択してください。</div>
@@ -8825,8 +8826,9 @@ function writeAccountingReport(reportWindow,{title,subtitle="",meta=[],summary=[
   .meta{display:flex;flex-wrap:wrap;gap:2mm 7mm;margin:0 0 3mm}.meta span{white-space:nowrap}.summary{display:grid;grid-template-columns:repeat(${Math.min(Math.max(summary.length,1),4)},1fr);gap:2mm;margin:0 0 4mm}.summary-item{border:1px solid #777;padding:2.5mm 3mm}.summary-item span{display:block;font-size:8pt;color:#444}.summary-item b{display:block;text-align:right;font-size:13pt;margin-top:.5mm}
   table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{break-inside:avoid}th,td{border:1px solid #777;padding:1.6mm 1.8mm;vertical-align:top;overflow-wrap:anywhere}th{background:#e9edf2;text-align:left;font-size:8pt}.money{text-align:right;white-space:nowrap}.center{text-align:center}.code{font-family:Consolas,"Courier New",monospace}.negative{color:#b42318}.muted{color:#555}.total-row td{font-weight:700;border-top:2px solid #111}.portrait th:nth-child(1){width:21mm}.portrait th:nth-child(2){width:20mm}.portrait th:nth-child(3){width:32mm}.portrait th:nth-child(5),.portrait th:nth-child(6),.portrait th:nth-child(7){width:25mm}
   footer{margin-top:3mm;text-align:right;color:#555;font-size:7.5pt}
+  .payable-report th.money,.payable-report td.money{white-space:normal}
   @media print{.print-actions{display:none}body{font-size:8.5pt}a{color:inherit;text-decoration:none}}
-  </style></head><body class="${esc(orientation)}">
+  </style></head><body class="${esc(orientation)}${title==="買掛一覧表"?" payable-report":""}">
   <div class="print-actions"><button onclick="window.print()">印刷 / PDF保存</button><button onclick="window.close()">閉じる</button></div>
   <header><div><h1>${esc(title)}</h1>${subtitle?`<div class="subtitle">${esc(subtitle)}</div>`:""}</div><div class="report-brand"><img src="${esc(logoUrl)}" alt="YUMIRUME INC."><div class="company">株式会社ゆみるめ</div></div></header>
   ${metaHtml?`<div class="meta">${metaHtml}</div>`:""}
@@ -8964,15 +8966,15 @@ async function printPayableListPdf(){
     const items=[...groups.values()].map(group=>{
       const openRows=group.rows.filter(row=>row._state.balance>0);
       const dueDates=openRows.map(row=>String(row.due_date||"")).filter(Boolean).sort();
-      return {...group,amount:group.rows.reduce((sum,row)=>sum+row._state.amount,0),paid:group.rows.reduce((sum,row)=>sum+row._state.paid,0),balance:group.rows.reduce((sum,row)=>sum+row._state.balance,0),overdue:group.rows.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0),count:openRows.length,oldestDue:dueDates[0]||""};
+      return {...group,netBalance:apNetBalanceSummary(group.rows),amount:group.rows.reduce((sum,row)=>sum+row._state.amount,0),paid:group.rows.reduce((sum,row)=>sum+row._state.paid,0),balance:group.rows.reduce((sum,row)=>sum+row._state.balance,0),overdue:group.rows.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0),count:openRows.length,oldestDue:dueDates[0]||""};
     }).sort((a,b)=>String(a.code).localeCompare(String(b.code),"ja",{numeric:true}));
     if(!items.length)throw new Error("現在の条件で出力する買掛がありません。");
     writeAccountingReport(reportWindow,{
       title:"買掛一覧表",subtitle:"仕入先別の買掛残高",
-      meta:[`基準日 ${accountingReportDate(today())}`,`期間 ${accountingReportRangeLabel(result.range)}`,`状態 ${accountingReportSelectLabel("ap-status","未払すべて")}`,val("ap-supplier").trim()?`仕入先 ${val("ap-supplier").trim()}`:"仕入先 全件"],
-      summary:[{label:"仕入先数",value:`${items.length}件`},{label:"買掛残高",value:accountingReportMoney(items.reduce((sum,item)=>sum+item.balance,0))},{label:"期限超過",value:accountingReportMoney(items.reduce((sum,item)=>sum+item.overdue,0))}],
-      headers:[{label:"コード",className:"code"},"仕入先名",{label:"対象請求額",className:"money"},{label:"支払済",className:"money"},{label:"買掛残高",className:"money"},{label:"期限超過",className:"money"},"最古支払期限",{label:"未払",className:"money"}],
-      rows:items.map(item=>[{text:item.code||"未設定",className:"code"},item.name||"-",{text:accountingReportMoney(item.amount),className:"money"},{text:accountingReportMoney(item.paid),className:"money"},{text:accountingReportMoney(item.balance),className:`money${item.balance<0?" negative":""}`},{text:accountingReportMoney(item.overdue),className:`money${item.overdue>0?" negative":""}`},accountingReportDate(item.oldestDue),{text:String(item.count),className:"money"}])
+      meta:[`基準日 ${accountingReportDate(today())}`,`期間 ${accountingReportRangeLabel(result.range)}`,`状態 ${accountingReportSelectLabel("ap-status","未払すべて")}`,val("ap-supplier").trim()?`仕入先 ${val("ap-supplier").trim()}`:"仕入先 全件","税抜は参考値（一部支払は比例按分・未算出分を除く）。支払金額は税込。"],
+      summary:[{label:"仕入先数",value:`${items.length}件`},{label:"買掛残高（税込）",value:accountingReportMoney(items.reduce((sum,item)=>sum+item.balance,0))},{label:"買掛残高（税抜・参考）",value:apNetBalanceText(apMergeNetBalances(items.map(item=>item.netBalance)))},{label:"期限超過（税込）",value:accountingReportMoney(items.reduce((sum,item)=>sum+item.overdue,0))}],
+      headers:[{label:"コード",className:"code"},"仕入先名",{label:"対象請求額（税込）",className:"money"},{label:"支払済（税込）",className:"money"},{label:"買掛残高（税込）",className:"money"},{label:"買掛残高（税抜・参考）",className:"money"},{label:"期限超過（税込）",className:"money"},"最古支払期限",{label:"未払",className:"money"}],
+      rows:items.map(item=>[{text:item.code||"未設定",className:"code"},item.name||"-",{text:accountingReportMoney(item.amount),className:"money"},{text:accountingReportMoney(item.paid),className:"money"},{text:accountingReportMoney(item.balance),className:`money${item.balance<0?" negative":""}`},{text:apNetBalanceText(item.netBalance),className:"money"},{text:accountingReportMoney(item.overdue),className:`money${item.overdue>0?" negative":""}`},accountingReportDate(item.oldestDue),{text:String(item.count),className:"money"}])
     });
   }catch(error){reportWindow.close();alert(apDbErrorMessage(error))}
 }
@@ -9643,6 +9645,42 @@ function apRecordState(row){
   if(overdue){key="overdue";label="期限超過"}
   return {amount,paid,balance,key,label};
 }
+// Tax-exclusive balances are display-only; settlement always uses gross yen.
+function apNetBalance(row,state){
+  const {amount,paid,balance}=state||apRecordState(row);
+  if(balance===0)return {net:0,estimated:false,reason:""};
+  const rawTax=row.tax_amount_jpy;
+  const tax=Number(rawTax);
+  const known=rawTax!==null&&rawTax!==undefined&&rawTax!==""&&Number.isFinite(tax)&&(row.source_type==="purchase"||tax!==0);
+  if(!known)return {net:null,estimated:false,reason:"税内訳不明"};
+  if(!amount||tax*amount<0||Math.abs(tax)>Math.abs(amount)||paid<0||paid>0&&amount<=0||amount>0&&balance<0)return {net:null,estimated:false,reason:"税抜残高を算出できません"};
+  return {net:arRound(balance*(amount-tax)/amount),estimated:paid!==0,reason:""};
+}
+function apMergeNetBalances(summaries){
+  return summaries.reduce((total,item)=>({net:arRound(total.net+item.net),knownCount:total.knownCount+item.knownCount,unknownCount:total.unknownCount+item.unknownCount,estimatedCount:total.estimatedCount+item.estimatedCount}),{net:0,knownCount:0,unknownCount:0,estimatedCount:0});
+}
+function apNetBalanceSummary(rows,stateForRow=row=>row._state||apRecordState(row)){
+  return apMergeNetBalances(rows.map(row=>{
+    const state=stateForRow(row),result=apNetBalance(row,state);
+    return {net:result.net??0,knownCount:result.net!==null&&state.balance!==0?1:0,unknownCount:result.net===null?1:0,estimatedCount:result.estimated?1:0};
+  }));
+}
+function apNetBalanceText(summary){
+  if(summary.unknownCount&&!summary.knownCount)return "税抜未算出";
+  return `${accountingReportMoney(summary.net)}${summary.unknownCount?"（判明分）":""}`;
+}
+function apNetBalanceNote(summary){
+  return [summary.estimatedCount?"一部支払分は税額を比例按分":"",summary.unknownCount?`税抜未算出 ${summary.unknownCount}件`:""].filter(Boolean).join(" / ");
+}
+function apClosingNetBalance(supplierCode,periodTo){
+  const rows=payableRows.filter(row=>apSameSupplier(row.supplier_code,supplierCode)&&String(row.invoice_date||"")<=periodTo);
+  const paidById=new Map();
+  payablePayments.filter(payment=>String(payment.payment_date||"")<=periodTo).forEach(payment=>paidById.set(payment.payable_id,(paidById.get(payment.payable_id)||0)+arNumber(payment.amount_jpy)));
+  return apNetBalanceSummary(rows,row=>{
+    const amount=arNumber(row.amount_jpy),paid=paidById.get(row.id)||0;
+    return {amount,paid,balance:arRound(amount-paid)};
+  });
+}
 function apFilteredRows(){
   const range=salesRefDateRangeFromText(val("ap-date-range"));
   if(range.raw&&(!range.from||!range.to))return {rows:[],range,error:"日付は 20250701-20250731 の形式で入力してください。"};
@@ -9682,13 +9720,15 @@ function renderPayables(){
   const total=enriched.reduce((sum,row)=>sum+row._state.amount,0);
   const paid=enriched.reduce((sum,row)=>sum+row._state.paid,0);
   const balance=enriched.reduce((sum,row)=>sum+row._state.balance,0);
+  const netBalance=apNetBalanceSummary(enriched);
   const overdue=enriched.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0);
   summary.innerHTML=[
-    ["仕入・請求総額",total],
-    ["支払済",paid],
-    ["買掛残",balance],
-    ["期限超過",overdue]
+    ["仕入・請求総額（税込）",total],
+    ["支払済（税込）",paid],
+    ["買掛残高（税込）",balance],
+    ["期限超過（税込）",overdue]
   ].map(([label,value])=>`<div class="ar-summary-card"><div class="ar-summary-label">${esc(label)}</div><div class="ar-summary-value">¥${esc(salesRefMoney(value)||"0")}</div></div>`).join("");
+  summary.innerHTML+=`<div class="ar-summary-card"><div class="ar-summary-label">買掛残高（税抜・参考）</div><div class="ar-summary-value">${esc(apNetBalanceText(netBalance))}</div><div class="hint">${esc(apNetBalanceNote(netBalance))}</div></div>`;
   if(payablesLoaded)state.textContent=`買掛 ${payableRows.length}件中 ${enriched.length}件を表示しています。`;
   if(!enriched.length){
     table.innerHTML=`<div class="sales-empty">${payablesLoaded?"条件に合う買掛はありません。":"「買掛読込」を押してください。"}</div>`;
@@ -9696,12 +9736,13 @@ function renderPayables(){
   }
   const selectedId=val("ap-payment-payable-id");
   table.innerHTML=`<table class="ar-table">
-    <thead><tr><th>請求書日</th><th>管理番号</th><th>仕入先</th><th>仕入期間</th><th>請求額</th><th>支払済</th><th>買掛残</th><th>支払期限</th><th>状態</th><th>締め</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
+    <thead><tr><th>請求書日</th><th>管理番号</th><th>仕入先</th><th>仕入期間</th><th>請求額（税込）</th><th>支払済（税込）</th><th>買掛残高（税込）</th><th>買掛残高（税抜・参考）</th><th>支払期限</th><th>状態</th><th>締め</th><th>区分</th><th>freee</th><th>操作</th></tr></thead>
     <tbody>${enriched.slice(0,2000).map(row=>{
       const locked=apClosingIsActive(row.closing_id);
       const canDelete=currentUserIsAdmin()&&!locked&&["opening","manual","adjustment"].includes(row.source_type);
       const freee=row.freee_excluded?"計上済":(row.freee_exported_at?"出力済":"未出力");
       const period=[row.period_from,row.period_to].filter(Boolean).join(" ～ ")||"-";
+      const net=apNetBalance(row,row._state);
       return `<tr class="${[selectedId===row.id?"selected":"",locked?"locked":""].filter(Boolean).join(" ")}">
         <td>${esc(row.invoice_date||"")}</td>
         <td>${esc(row.invoice_no||"-")}</td>
@@ -9710,6 +9751,7 @@ function renderPayables(){
         <td class="ar-money">${esc(salesRefMoney(row._state.amount)||"0")}</td>
         <td class="ar-money">${esc(salesRefMoney(row._state.paid)||"0")}</td>
         <td class="ar-money">${esc(salesRefMoney(row._state.balance)||"0")}</td>
+        <td class="ar-money" title="${esc(net.reason||(net.estimated?"一部支払分は税額を比例按分":"登録済み消費税額から算出"))}">${net.net===null?esc(net.reason):esc(salesRefMoney(net.net)||"0")}</td>
         <td>${esc(row.due_date||"-")}</td>
         <td><span class="ar-status ${esc(row._state.key)}">${esc(row._state.label)}</span></td>
         <td>${locked?'<span class="ar-lock">締め済</span>':'未締め'}</td>
@@ -10036,6 +10078,10 @@ function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
   purchase.textContent=`¥${salesRefMoney(arRound(totals.purchase))||"0"}`;
   payment.textContent=`¥${salesRefMoney(arRound(totals.payment))||"0"}`;
   balance.textContent=`¥${salesRefMoney(arRound(totals.balance))||"0"}`;
+  const netBalance=apMergeNetBalances(selected.map(row=>apClosingNetBalance(row.supplierCode,row.range.to)));
+  const netValue=document.getElementById("ap-closing-net-balance"),netNote=document.getElementById("ap-closing-net-note");
+  if(netValue)netValue.textContent=apNetBalanceText(netBalance);
+  if(netNote)netNote.textContent=apNetBalanceNote(netBalance);
   execute.disabled=!payableClosingDbReady||selected.length===0;
 
   if(!apClosingGroupContextValid(context)){
@@ -10054,7 +10100,7 @@ function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
     state.textContent=`${apClosingGroupLabel(context)}締め ${calculations.length}社中 ${selected.length}社を選択しています。金額は選択中の合計です。${defaultProfileCount?` 支払条件未登録 ${defaultProfileCount}社は末締め初期値を適用しています。`:""}`;
     const allSelected=eligible.length>0&&eligible.every(row=>payableClosingSelections.has(row.supplierCode));
     list.innerHTML=`<table class="ar-table">
-      <thead><tr><th><input type="checkbox" aria-label="締め対象を全選択" ${allSelected?"checked":""} onchange="toggleAllPayableClosingSuppliers(this.checked)"></th><th>仕入先</th><th>締め期間</th><th>支払期限</th><th>前回繰越</th><th>今回仕入</th><th>期間内支払</th><th>締め後残高</th><th>状態</th></tr></thead>
+      <thead><tr><th><input type="checkbox" aria-label="締め対象を全選択" ${allSelected?"checked":""} onchange="toggleAllPayableClosingSuppliers(this.checked)"></th><th>仕入先</th><th>締め期間</th><th>支払期限</th><th>前回繰越（税込）</th><th>今回仕入（税込）</th><th>期間内支払（税込）</th><th>締め後残高（税込）</th><th>締め後残高（税抜・参考）</th><th>状態</th></tr></thead>
       <tbody>${calculations.map(row=>{
         const snapshot=row.snapshot||{openingBalance:0,purchaseAmount:0,paymentAmount:0,closingBalance:0};
         const disabled=!!row.error||!!row.existing||!row.snapshot;
@@ -10069,6 +10115,7 @@ function renderPayableClosingGroup(calculations=apClosingGroupCalculations()){
           <td class="ar-money">${esc(salesRefMoney(snapshot.purchaseAmount)||"0")}</td>
           <td class="ar-money">${esc(salesRefMoney(snapshot.paymentAmount)||"0")}</td>
           <td class="ar-money">${esc(salesRefMoney(snapshot.closingBalance)||"0")}</td>
+          <td class="ar-money">${row.range?esc(apNetBalanceText(apClosingNetBalance(row.supplierCode,row.range.to))):"-"}</td>
           <td>${row.existing?'<span class="ar-lock">締め済</span>':row.profileIsDefault?`<span class="pill warn">${esc(status)}</span>`:esc(status)}</td>
         </tr>`;
       }).join("")}</tbody>
