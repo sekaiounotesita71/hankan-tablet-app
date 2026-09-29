@@ -41,6 +41,7 @@ async function payments(db){return(await db.query('select * from accounts_receiv
 function source(from,to){return html.slice(html.indexOf(from),html.indexOf(to,html.indexOf(from)))}
 function model(rows,pays,closings){
   const ctx={receivableRows:rows,receivablePayments:pays,receivableClosings:closings,
+    salesReferenceImporterIndex:null,salesRefBuildImporterIndex:()=>({}),
     arNumber:v=>Number(v)||0,arRound:v=>Math.round(v*100)/100,today:()=> '2026-09-29',
     arSameImporter:(r,c)=>['DIM','01'].includes(r.importer_code||r)&&['DIM','01'].includes(c),
     arIsOperationRow:r=>r.source_type==='opening'||String(r.invoice_date).slice(0,10)>='2026-08-01'};
@@ -153,4 +154,10 @@ test('UI rejects double clicks before authentication resolves and resends the sa
   await context.saveReceivablePayment();assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);
   assert.equal(context.receivablePaymentAttempt,null);assert.equal(saved.size,0);assert.equal(context.receivablePaymentSaving,false);
   assert.equal(element('ar-payment-amount').readOnly,false);assert.equal(element('ar-payment-amount').value,'');
+});
+test('one importer index is reused for every invoice in the closing',()=>{
+  const rows=Array.from({length:3000},(_,i)=>({id:id(i+100),importer_code:'01',source_type:'sales',invoice_date:'2026-08-15',amount_jpy:10,created_at:'2026-08-15'}));
+  const closing={id:id(10),importer_code:'01',period_to:'2026-08-31',closed_at:'2026-09-01',closing_balance_jpy:30000};
+  const ctx=model(rows,[],[closing]);let builds=0;ctx.salesRefBuildImporterIndex=()=>{builds++;return {}};
+  assert.equal(ctx.arClosingPaymentState(closing).balance,30000);assert.equal(builds,1);
 });

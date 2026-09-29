@@ -7907,13 +7907,13 @@ function downloadOpeningReceivableSample(){
   link.click();
   URL.revokeObjectURL(link.href);
 }
-function arClosingPaymentTargets(closing){
+function arClosingPaymentTargets(closing,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
   const ids=new Set((closing.snapshot?.charges||[]).map(row=>row.id));
-  return receivableRows.filter(row=>arSameImporter(row,closing.importer_code)&&arIsOperationRow(row)&&row.invoice_date<=closing.period_to&&
+  return receivableRows.filter(row=>arSameImporter(row,closing.importer_code,index)&&arIsOperationRow(row)&&row.invoice_date<=closing.period_to&&
     (Date.parse(row.created_at)<=Date.parse(closing.closed_at)||row.closing_id===closing.id||ids.has(row.id)));
 }
-function arClosingPaymentState(closing){
-  const rows=arClosingPaymentTargets(closing),ids=new Set(rows.map(row=>row.id));
+function arClosingPaymentState(closing,index=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  const rows=arClosingPaymentTargets(closing,index),ids=new Set(rows.map(row=>row.id));
   const amount=arNumber(closing.closing_balance_jpy);
   const later=receivablePayments.filter(row=>ids.has(row.receivable_id)&&row.payment_date>closing.period_to)
     .reduce((sum,row)=>sum+arNumber(row.amount_jpy)+arNumber(row.bank_fee_jpy),0);
@@ -7923,13 +7923,15 @@ function arClosingPaymentState(closing){
 }
 function arRenderClosingPaymentTable(){
   const importer=val("ar-importer").trim();
-  const rows=receivableClosings.filter(row=>row.status==="closed"&&(!importer||arSameImporter(row.importer_code,importer)))
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  const rows=receivableClosings.filter(row=>row.status==="closed"&&(!importer||arSameImporter(row.importer_code,importer,index)))
     .sort((a,b)=>b.period_to.localeCompare(a.period_to)||a.importer_code.localeCompare(b.importer_code));
-  const openings=receivableRows.filter(row=>row.source_type==="opening"&&arRecordState(row).balance>0&&(!importer||arSameImporter(row,importer))&&
-    !rows.some(closing=>arClosingPaymentTargets(closing).some(target=>target.id===row.id)));
+  const states=new Map(rows.map(row=>[row.id,arClosingPaymentState(row,index)]));
+  const coveredIds=new Set([...states.values()].flatMap(state=>state.rows.map(row=>row.id)));
+  const openings=receivableRows.filter(row=>row.source_type==="opening"&&arRecordState(row).balance>0&&(!importer||arSameImporter(row,importer,index))&&!coveredIds.has(row.id));
   if(!rows.length&&!openings.length)return '<div class="sales-empty">該当する請求締めはありません。</div>';
   return `<table class="ar-table"><thead><tr><th>輸入社</th><th>締め期間</th><th>SOA No.</th><th>今回請求</th><th>消込済</th><th>未回収</th><th>支払期限</th><th>状態</th><th>操作</th></tr></thead><tbody>${rows.map(row=>{
-    const state=arClosingPaymentState(row),importer=arImporterIdentity(row.importer_code);
+    const state=states.get(row.id),importer=arImporterIdentity(row.importer_code,index);
     return `<tr class="${val("ar-payment-closing-id")===row.id?"selected":""}"><td>${esc(importer.code)} ${esc(importer.name)}</td><td>${esc(row.period_from)} ～ ${esc(row.period_to)}</td><td>${esc(row.snapshot?.statement_no||"-")}</td><td class="ar-money">${salesRefMoney(state.amount)}</td><td class="ar-money">${salesRefMoney(state.settled)}</td><td class="ar-money">${salesRefMoney(state.balance)}</td><td>${esc(row.due_date)}</td><td>${state.balance<=0?"入金済":state.settled>0?"一部入金":"未入金"}</td><td><button class="small primary" type="button" onclick="selectReceivableClosingForPayment('${esc(row.id)}')">${state.balance>0?"入金":"履歴"}</button></td></tr>`;
   }).join("")}${openings.map(row=>`<tr><td>${esc(arImporterIdentity(row).label||row.importer_code)}</td><td>移行残高 ${esc(row.invoice_date)}</td><td>-</td><td class="ar-money">${salesRefMoney(row.amount_jpy)}</td><td class="ar-money">${salesRefMoney(arRecordState(row).settled)}</td><td class="ar-money">${salesRefMoney(arRecordState(row).balance)}</td><td>${esc(row.due_date||"-")}</td><td>未入金</td><td><button class="small primary" type="button" onclick="selectReceivableForPayment('${esc(row.id)}')">入金</button></td></tr>`).join("")}</tbody></table>`;
 }
