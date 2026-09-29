@@ -54,6 +54,7 @@ set search_path = public, pg_temp
 as $$
 declare
   profile public.accounts_payable_supplier_profiles;
+  pending_date date;
 begin
   if new.status <> 'closed' then return new; end if;
   select * into profile from public.accounts_payable_supplier_profiles
@@ -68,6 +69,19 @@ begin
     end if;
     if new.due_date is distinct from new.period_to + profile.payment_days_after_closing then
       raise exception '支払期限が7日間隔の支払条件と一致しません。再読み込みしてください。';
+    end if;
+    select min(p.invoice_date) into pending_date
+    from public.accounts_payable p
+    where p.supplier_code = new.supplier_code and p.source_type <> 'opening'
+      and p.closing_id is null and p.invoice_date < new.period_from
+      and not exists (
+        select 1 from public.accounts_payable_closings c
+        where c.supplier_code = p.supplier_code and c.status = 'closed'
+          and p.invoice_date between c.period_from and c.period_to
+      );
+    if pending_date is not null then
+      raise exception '先に%締めを完了してください。',
+        public.accounts_payable_weekly_closing_date(pending_date,profile.closing_anchor_date);
     end if;
   end if;
   return new;

@@ -47,9 +47,14 @@ test('selected week alone is current purchase; older amounts and payments remain
   c.payablePayments=[{id:'p',payable_id:'a',payment_date:'2026-09-20',amount_jpy:100}];
   const result=c.apWeeklyClosingCalculation({code:'45'},profile,'2026-09-26');
   assert.equal(result.snapshot.openingBalance,100);assert.equal(result.snapshot.purchaseAmount,500);assert.equal(result.snapshot.paymentAmount,100);assert.equal(result.snapshot.closingBalance,500);
+  assert.match(result.error,/2026-09-19/);
+  c.payableRows[0].source_type='opening';
+  assert.equal(c.apWeeklyClosingCalculation({code:'45'},profile,'2026-09-26').error,'');
+  assert.match(c.apWeeklyClosingCalculation({code:'45'},profile,'2026-10-03').error,/2026-09-26/);
   c.payableClosings=[{supplier_code:'45',status:'closed',period_from:'2026-09-20',period_to:'2026-09-26'}];
   assert.ok(c.apWeeklyClosingCalculation({code:'45'},profile,'2026-09-26').existing);
   assert.equal(c.apWeeklyClosingCalculation({code:'45'},profile,'2026-10-03').existing,undefined);
+  assert.equal(c.apWeeklyClosingCalculation({code:'45'},profile,'2026-10-03').error,'');
   c.payableClosings[0].status='reopened';
   assert.equal(c.apWeeklyClosingCalculation({code:'45'},profile,'2026-09-26').existing,undefined);
 });
@@ -94,6 +99,7 @@ test('SQL migration preserves historical records and protects both sync due date
     await assert.rejects(()=>db.exec("insert into accounts_payable_closings values('bad','45','closed','2026-09-01','2026-09-07','2026-09-07')"),/締め期間/);
     await assert.rejects(()=>db.exec("insert into accounts_payable_closings values('bad','45','closed','2026-09-20','2026-09-26','2026-10-03')"),/支払期限/);
     await db.exec("insert into accounts_payable_closings values('valid','45','closed','2026-09-20','2026-09-26','2026-10-02')");
+    await assert.rejects(()=>db.exec("insert into accounts_payable_closings values('skipped','45','closed','2026-10-04','2026-10-10','2026-10-16')"),/2026-10-03/);
     await db.exec("update accounts_payable set closing_id='valid',due_date='2026-10-02' where id='new'");
     assert.equal((await db.query("select due_date::text d from accounts_payable where id='new'")).rows[0].d,'2026-10-02');
     await db.exec("update accounts_payable_closings set status='reopened' where id='closed'");

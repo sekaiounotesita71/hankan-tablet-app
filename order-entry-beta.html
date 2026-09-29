@@ -9833,7 +9833,9 @@ function apWeeklyClosingCalculation(supplier,profile,date){
   range.raw=`${range.from}-${range.to}`;
   const existing=payableClosings.find(row=>apSameSupplier(row.supplier_code,supplierCode)&&row.status==="closed"&&!(row.period_to<range.from||row.period_from>range.to));
   const snapshot=payablesLoaded?apClosingSnapshot(supplierCode,range):null;
-  return {...base,error:"",month:date.slice(0,7),range,dueDate:arShiftDate(date,Number(profile.payment_days_after_closing)),snapshot,existing};
+  const pending=payablesLoaded?payableRows.filter(row=>apSameSupplier(row.supplier_code,supplierCode)&&row.source_type!=="opening"&&row.invoice_date<range.from&&!row.closing_id&&!payableClosings.some(closing=>apSameSupplier(closing.supplier_code,supplierCode)&&closing.status==="closed"&&row.invoice_date>=closing.period_from&&row.invoice_date<=closing.period_to)).sort((a,b)=>a.invoice_date.localeCompare(b.invoice_date))[0]:null;
+  const prerequisite=pending?`先に${apWeeklyClosingOnOrAfter(pending.invoice_date,profile.closing_anchor_date)}締めを完了してください。`:"";
+  return {...base,error:prerequisite,month:date.slice(0,7),range,dueDate:arShiftDate(date,Number(profile.payment_days_after_closing)),snapshot,existing};
 }
 function apIsRecurringClosingProfile(profile){
   return profile?.payment_mode!=="cash_on_entry"&&[10,15].includes(apClosingDay(profile));
