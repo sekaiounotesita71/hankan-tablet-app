@@ -76,6 +76,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 @media (max-width:900px){.supplier-review-tools{grid-template-columns:1fr 1fr}.supplier-review-group-head{grid-template-columns:1fr 1fr}.supplier-review-group-title{grid-column:1/-1}.supplier-review-table-wrap{max-height:460px}}
 @media (max-width:900px){.ar-closing-grid,.ar-closing-preview{grid-template-columns:1fr 1fr}.ar-closing-row{min-width:850px}}
 .ar-closing-breakdown{min-width:680px;table-layout:fixed}
+#ar-closing-history .ar-closing-row{grid-template-columns:70px 180px 115px 145px 70px minmax(170px,1fr) 80px 80px;min-width:1010px}
 .ar-closing-breakdown tbody th,.ar-closing-breakdown tfoot th{position:static}
 .ar-closing-breakdown td:nth-child(2),.ar-closing-breakdown tfoot th{white-space:normal;overflow-wrap:anywhere}
 .sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -509,6 +510,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-body">
       <div class="ar-mode-tabs" role="tablist" aria-label="売掛管理メニュー">
         <button class="ar-mode-tab active" type="button" data-ar-view="summary" onclick="setReceivableView('summary',{clearImporter:true})">残高一覧</button>
+        <button class="ar-mode-tab" type="button" data-ar-view="payments" onclick="setReceivableView('payments')">締め別入金</button>
         <button class="ar-mode-tab" type="button" data-ar-view="detail" onclick="setReceivableView('detail')">請求・入金明細</button>
         <button class="ar-mode-tab" type="button" data-ar-view="closing" onclick="setReceivableView('closing')">請求締め</button>
         <button class="ar-mode-tab" type="button" data-ar-view="setup" onclick="setReceivableView('setup')">初期残高</button>
@@ -576,18 +578,20 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
           <summary>入金を登録</summary>
           <div class="ar-entry-body">
             <input id="ar-payment-receivable-id" type="hidden">
-            <div class="hint" id="ar-payment-target">一覧から対象の「入金」を押してください。</div>
+            <input id="ar-payment-closing-id" type="hidden">
+            <div class="hint" id="ar-payment-target">請求締めの「入金」を選択してください。</div>
             <div class="ar-form">
               <label>入金日<input id="ar-payment-date" type="date"></label>
-              <label>入金額<input id="ar-payment-amount" inputmode="decimal"></label>
-              <label>振込手数料<input id="ar-payment-fee" inputmode="decimal" value="0"></label>
+              <label>入金額<input id="ar-payment-amount" inputmode="decimal" oninput="renderReceivablePaymentTotal()"></label>
+              <label>振込手数料<input id="ar-payment-fee" inputmode="decimal" value="0" oninput="renderReceivablePaymentTotal()"></label>
               <label>振込番号・摘要<input id="ar-payment-reference" class="ime-en" autocomplete="off"></label>
               <label class="wide">メモ<input id="ar-payment-memo" class="ime-ja" autocomplete="off"></label>
             </div>
             <div class="actions" style="margin-top:8px">
-              <button class="btn primary" type="button" onclick="saveReceivablePayment()">入金を登録</button>
+              <button class="btn primary" id="ar-payment-save" type="button" disabled onclick="saveReceivablePayment()">入金を登録</button>
               <button class="btn" type="button" onclick="clearReceivablePaymentForm()">選択解除</button>
             </div>
+            <div class="hint" id="ar-payment-total"></div>
             <div class="ar-payment-history" id="ar-payment-history"><div class="sales-empty">売掛を選択すると入金履歴を表示します。</div></div>
           </div>
         </details>
@@ -1392,6 +1396,8 @@ let receivablePayments=[];
 let receivableClosings=[];
 let receivablesLoaded=false;
 let receivableView="summary";
+let receivablePaymentAttempt=null;
+let receivablePaymentSaving=false;
 let receivableOperationStartDate="2026-08-01";
 let receivableOpeningBalanceAsOf="2026-07-31";
 let receivableStatementProfile=null;
@@ -7284,6 +7290,7 @@ function arNewSourceKey(prefix){
 }
 function arDbErrorMessage(error){
   const message=String(error?.message||error||"");
+  if(/record_receivable_grouped_payment|delete_receivable_payment_group|target_closing_id|payment_group_id/i.test(message)&&/schema cache|does not exist|not found|column/i.test(message))return "締め単位の入金用SQLが未反映です。accounts-receivable-closing-payment-migration.sql を実行してください。";
   if(error?.code==="PGRST202"||/close_accounts_receivable_period|reopen_accounts_receivable_period/i.test(message)){
     return "請求締め用SQLが未反映です。accounts-receivable-migration.sql をSupabase SQL Editorで再実行してください。";
   }
@@ -7391,7 +7398,7 @@ function arSourceLabel(sourceType){
   return {sales:"売上確定",opening:"初期残高",manual:"手入力",adjustment:"調整"}[sourceType]||sourceType||"";
 }
 function setReceivableView(view,options={}){
-  receivableView=["summary","detail","closing","setup"].includes(view)?view:"summary";
+  receivableView=["summary","detail","payments","closing","setup"].includes(view)?view:"summary";
   if(options.clearImporter){
     const importer=document.getElementById("ar-importer");
     if(importer)importer.value="";
@@ -7410,14 +7417,14 @@ function setReceivableView(view,options={}){
   const opening=document.getElementById("ar-opening-section");
   const payment=document.getElementById("ar-payment-section");
   const closing=document.getElementById("ar-closing-section");
-  const showResults=receivableView==="summary"||receivableView==="detail";
+  const showResults=["summary","detail","payments"].includes(receivableView);
   if(results)results.hidden=!showResults;
-  if(entryGrid)entryGrid.style.display=(receivableView==="detail"||receivableView==="setup")?"grid":"none";
+  if(entryGrid)entryGrid.style.display=["detail","payments","setup"].includes(receivableView)?"grid":"none";
   if(opening)opening.hidden=receivableView!=="setup";
-  if(payment)payment.hidden=receivableView!=="detail";
+  if(payment){payment.hidden=!["detail","payments"].includes(receivableView);payment.style.gridColumn="1 / -1"}
   if(closing)closing.hidden=receivableView!=="closing";
   const visibility={
-    "ar-site-filter":showResults,
+    "ar-site-filter":showResults&&receivableView!=="payments",
     "ar-date-filter":receivableView==="detail",
     "ar-importer-filter":receivableView!=="setup",
     "ar-status-filter":receivableView==="detail",
@@ -7473,7 +7480,7 @@ function arRenderGroupedTable(enriched){
       <td class="ar-money">${esc(salesRefMoney(item.balance)||"0")}</td>
       <td>${esc(item.latestClosing)}</td>
       <td class="ar-money">${item.rows.length}</td>
-      <td><button class="small primary" type="button" data-importer="${esc(item.importer.code)}" onclick="openReceivableImporterDetail(this)">明細</button></td>
+      <td><button class="small primary" type="button" data-importer="${esc(item.importer.code)}" onclick="setReceivableView('payments',{importerCode:this.dataset.importer})">入金</button> <button class="small" type="button" data-importer="${esc(item.importer.code)}" onclick="openReceivableImporterDetail(this)">明細</button></td>
     </tr>`).join("")}</tbody>
   </table>`;
 }
@@ -7509,6 +7516,12 @@ function renderReceivables(){
   const summary=document.getElementById("ar-summary");
   const state=document.getElementById("ar-state");
   if(!table||!summary)return;
+  if(receivableView==="payments"){
+    summary.innerHTML="";
+    table.innerHTML=arRenderClosingPaymentTable();
+    if(state)state.textContent=receivablesLoaded?"請求締めごとの未回収額を表示しています。":"売掛データを読み込んでいます。";
+    return;
+  }
   const result=arFilteredRows();
   if(result.error){
     if(state)state.textContent=result.error;
@@ -7521,7 +7534,7 @@ function renderReceivables(){
   if(state&&receivablesLoaded){
     const importerCount=new Set(enriched.map(row=>arImporterIdentity(row).key)).size;
     state.textContent=receivableView==="summary"
-      ?`輸入社 ${importerCount}社、売掛明細 ${enriched.length}件です。入金登録は輸入社の「明細」から行います。`
+      ?`輸入社 ${importerCount}社、売掛明細 ${enriched.length}件です。`
       :`売掛 ${receivableRows.length}件中 ${enriched.length}件を表示しています。`;
   }
   if(!enriched.length){
@@ -7585,10 +7598,12 @@ async function loadReceivables(){
     receivablePayments=payments;
     receivableClosings=closings;
     receivablesLoaded=true;
+    restoreReceivablePaymentAttempt();
     renderReceivables();
     renderReceivablePaymentHistory();
     renderClosingHistory();
     renderClosingPreview();
+    renderReceivablePaymentTotal();
     if(val("ar-importer").trim()&&val("ar-closing-month"))refreshClosingSalesPreview({force:true});
   }catch(error){
     receivableRows=[];
@@ -7892,10 +7907,68 @@ function downloadOpeningReceivableSample(){
   link.click();
   URL.revokeObjectURL(link.href);
 }
+function arClosingPaymentTargets(closing){
+  const ids=new Set((closing.snapshot?.charges||[]).map(row=>row.id));
+  return receivableRows.filter(row=>arSameImporter(row,closing.importer_code)&&arIsOperationRow(row)&&row.invoice_date<=closing.period_to&&
+    (Date.parse(row.created_at)<=Date.parse(closing.closed_at)||row.closing_id===closing.id||ids.has(row.id)));
+}
+function arClosingPaymentState(closing){
+  const rows=arClosingPaymentTargets(closing),ids=new Set(rows.map(row=>row.id));
+  const amount=arNumber(closing.closing_balance_jpy);
+  const later=receivablePayments.filter(row=>ids.has(row.receivable_id)&&row.payment_date>closing.period_to)
+    .reduce((sum,row)=>sum+arNumber(row.amount_jpy)+arNumber(row.bank_fee_jpy),0);
+  const open=rows.reduce((sum,row)=>sum+arRecordState(row).balance,0);
+  const balance=Math.max(0,arRound(Math.min(open,amount-later)));
+  return {rows,amount,balance,settled:arRound(Math.max(0,amount-balance))};
+}
+function arRenderClosingPaymentTable(){
+  const importer=val("ar-importer").trim();
+  const rows=receivableClosings.filter(row=>row.status==="closed"&&(!importer||arSameImporter(row.importer_code,importer)))
+    .sort((a,b)=>b.period_to.localeCompare(a.period_to)||a.importer_code.localeCompare(b.importer_code));
+  const openings=receivableRows.filter(row=>row.source_type==="opening"&&arRecordState(row).balance>0&&(!importer||arSameImporter(row,importer))&&
+    !rows.some(closing=>arClosingPaymentTargets(closing).some(target=>target.id===row.id)));
+  if(!rows.length&&!openings.length)return '<div class="sales-empty">該当する請求締めはありません。</div>';
+  return `<table class="ar-table"><thead><tr><th>輸入社</th><th>締め期間</th><th>SOA No.</th><th>今回請求</th><th>消込済</th><th>未回収</th><th>支払期限</th><th>状態</th><th>操作</th></tr></thead><tbody>${rows.map(row=>{
+    const state=arClosingPaymentState(row),importer=arImporterIdentity(row.importer_code);
+    return `<tr class="${val("ar-payment-closing-id")===row.id?"selected":""}"><td>${esc(importer.code)} ${esc(importer.name)}</td><td>${esc(row.period_from)} ～ ${esc(row.period_to)}</td><td>${esc(row.snapshot?.statement_no||"-")}</td><td class="ar-money">${salesRefMoney(state.amount)}</td><td class="ar-money">${salesRefMoney(state.settled)}</td><td class="ar-money">${salesRefMoney(state.balance)}</td><td>${esc(row.due_date)}</td><td>${state.balance<=0?"入金済":state.settled>0?"一部入金":"未入金"}</td><td><button class="small primary" type="button" onclick="selectReceivableClosingForPayment('${esc(row.id)}')">${state.balance>0?"入金":"履歴"}</button></td></tr>`;
+  }).join("")}${openings.map(row=>`<tr><td>${esc(arImporterIdentity(row).label||row.importer_code)}</td><td>移行残高 ${esc(row.invoice_date)}</td><td>-</td><td class="ar-money">${salesRefMoney(row.amount_jpy)}</td><td class="ar-money">${salesRefMoney(arRecordState(row).settled)}</td><td class="ar-money">${salesRefMoney(arRecordState(row).balance)}</td><td>${esc(row.due_date||"-")}</td><td>未入金</td><td><button class="small primary" type="button" onclick="selectReceivableForPayment('${esc(row.id)}')">入金</button></td></tr>`).join("")}</tbody></table>`;
+}
+function arSelectedPaymentBalance(){
+  const closing=receivableClosings.find(row=>row.id===val("ar-payment-closing-id")&&row.status==="closed");
+  const row=receivableRows.find(row=>row.id===val("ar-payment-receivable-id"));
+  return closing?arClosingPaymentState(closing).balance:row?arRecordState(row).balance:0;
+}
+function renderReceivablePaymentTotal(){
+  const selected=val("ar-payment-closing-id")||val("ar-payment-receivable-id");
+  const amount=arRound(arNumber(val("ar-payment-amount"))+arNumber(val("ar-payment-fee")));
+  document.getElementById("ar-payment-total").textContent=selected?`消込額 ¥${salesRefMoney(amount)||"0"} / 入金後残額 ¥${salesRefMoney(arSelectedPaymentBalance()-amount)||"0"}`:"";
+  document.getElementById("ar-payment-save").disabled=receivablePaymentSaving||(!receivablePaymentAttempt&&(!selected||arSelectedPaymentBalance()<=0));
+}
+function selectReceivableClosingForPayment(id){
+  if(receivablePaymentAttempt||receivablePaymentSaving){alert("処理結果未確認の入金があります。同じ内容で再確認してください。");return}
+  const closing=receivableClosings.find(row=>row.id===id&&row.status==="closed");if(!closing)return;
+  const state=arClosingPaymentState(closing);
+  document.getElementById("ar-payment-closing-id").value=id;
+  document.getElementById("ar-payment-receivable-id").value="";
+  setReceivableView("payments",{importerCode:closing.importer_code});
+  document.getElementById("ar-payment-date").value=today();
+  document.getElementById("ar-payment-amount").value=state.balance>0?state.balance:"";
+  document.getElementById("ar-payment-fee").value="0";
+  document.getElementById("ar-payment-reference").value="";
+  document.getElementById("ar-payment-memo").value="";
+  document.getElementById("ar-payment-target").textContent=`${arImporterIdentity(closing.importer_code).label} / ${closing.period_from} ～ ${closing.period_to} / SOA No.${closing.snapshot?.statement_no||"-"} / 未回収 ¥${salesRefMoney(state.balance)||"0"}`;
+  renderReceivablePaymentHistory();renderReceivablePaymentTotal();
+  document.getElementById("ar-payment-section").open=true;
+  document.getElementById("ar-payment-section").scrollIntoView({block:"center"});
+  if(state.balance>0)document.getElementById("ar-payment-amount").focus({preventScroll:true});
+}
 function selectReceivableForPayment(id){
+  if(receivablePaymentAttempt||receivablePaymentSaving){alert("処理結果未確認の入金があります。同じ内容で再確認してください。");return}
   const row=receivableRows.find(item=>item.id===id);
   if(!row)return;
+  if(receivableClosings.some(closing=>closing.id===row.closing_id&&closing.status==="closed"))return selectReceivableClosingForPayment(row.closing_id);
   const state=arRecordState(row);
+  document.getElementById("ar-payment-closing-id").value="";
   document.getElementById("ar-payment-receivable-id").value=id;
   document.getElementById("ar-payment-date").value=today();
   document.getElementById("ar-payment-amount").value=state.balance>0?arRound(state.balance):"";
@@ -7906,26 +7979,43 @@ function selectReceivableForPayment(id){
   if(target)target.textContent=`${row.invoice_no||"Invoice未設定"} / ${row.importer_code} ${row.importer_name||""} / 売掛残 ¥${salesRefMoney(state.balance)||"0"}`;
   renderReceivables();
   renderReceivablePaymentHistory();
+  renderReceivablePaymentTotal();
+  document.getElementById("ar-payment-section").open=true;
   document.getElementById("ar-payment-amount")?.focus();
 }
 function clearReceivablePaymentForm(){
+  if(receivablePaymentAttempt||receivablePaymentSaving){alert("処理結果未確認の入金があります。同じ内容で再確認してください。");return}
+  document.getElementById("ar-payment-closing-id").value="";
   const id=document.getElementById("ar-payment-receivable-id");
   if(id)id.value="";
   ["ar-payment-amount","ar-payment-reference","ar-payment-memo"].forEach(key=>{const input=document.getElementById(key);if(input)input.value=""});
   const fee=document.getElementById("ar-payment-fee");if(fee)fee.value="0";
-  const target=document.getElementById("ar-payment-target");if(target)target.textContent="一覧から対象の「入金」を押してください。";
+  const target=document.getElementById("ar-payment-target");if(target)target.textContent="請求締めの「入金」を選択してください。";
   renderReceivables();
   renderReceivablePaymentHistory();
+  renderReceivablePaymentTotal();
 }
 function renderReceivablePaymentHistory(){
   const container=document.getElementById("ar-payment-history");
   if(!container)return;
   const receivableId=val("ar-payment-receivable-id");
-  if(!receivableId){
-    container.innerHTML='<div class="sales-empty">売掛を選択すると入金履歴を表示します。</div>';
+  const closing=receivableClosings.find(row=>row.id===val("ar-payment-closing-id"));
+  if(!receivableId&&!closing){
+    container.innerHTML='<div class="sales-empty">請求締めを選択すると入金履歴を表示します。</div>';
     return;
   }
-  const payments=receivablePayments.filter(item=>item.receivable_id===receivableId).sort((a,b)=>String(b.payment_date).localeCompare(String(a.payment_date)));
+  const ids=new Set(closing?arClosingPaymentTargets(closing).map(row=>row.id):[receivableId]);
+  const selected=receivablePayments.filter(row=>closing?row.target_closing_id===closing.id||ids.has(row.receivable_id)&&row.payment_date>closing.period_to:row.receivable_id===receivableId);
+  const groupIds=new Set(selected.map(row=>row.payment_group_id).filter(Boolean));
+  const groups=new Map();
+  // Display the whole receipt even when only one allocation belongs to this view.
+  receivablePayments.filter(row=>selected.includes(row)||groupIds.has(row.payment_group_id)).forEach(row=>{
+    const key=row.payment_group_id||row.id;
+    const group=groups.get(key)||{...row,amount_jpy:0,bank_fee_jpy:0,count:0,locked:false};
+    group.amount_jpy+=arNumber(row.amount_jpy);group.bank_fee_jpy+=arNumber(row.bank_fee_jpy);group.count++;
+    group.locked ||= receivableClosings.some(closing=>closing.id===row.closing_id&&closing.status==="closed");groups.set(key,group);
+  });
+  const payments=[...groups.values()].sort((a,b)=>String(b.payment_date).localeCompare(String(a.payment_date)));
   if(!payments.length){
     container.innerHTML='<div class="sales-empty">入金履歴はありません。</div>';
     return;
@@ -7934,45 +8024,56 @@ function renderReceivablePaymentHistory(){
     <span>${esc(payment.payment_date||"")}</span>
     <span>入金 ¥${esc(salesRefMoney(payment.amount_jpy)||"0")}</span>
     <span>手数料 ¥${esc(salesRefMoney(payment.bank_fee_jpy)||"0")}</span>
-    <span>${esc(payment.reference_no||payment.memo||"-")}</span>
-    ${currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deleteReceivablePayment('${esc(payment.id)}')">削除</button>`:"<span></span>"}
+    <span>${esc(payment.reference_no||payment.memo||"-")} / ${payment.count}明細</span>
+    ${currentUserIsAdmin()&&!payment.locked?`<button class="small danger" type="button" onclick="deleteReceivablePayment('${esc(payment.id)}')">取消</button>`:"<span></span>"}
   </div>`).join("");
 }
+function arPaymentAttemptKey(){return `yumirume-export-payment:${currentUser?.id||""}`}
+function setReceivablePaymentRetry(active){
+  ["ar-payment-date","ar-payment-amount","ar-payment-fee","ar-payment-reference","ar-payment-memo"].forEach(id=>document.getElementById(id).readOnly=active);
+  document.getElementById("ar-payment-save").textContent=active?"入金結果を再確認":"入金を登録";
+}
+function restoreReceivablePaymentAttempt(){
+  if(receivablePaymentAttempt||receivablePaymentSaving||!currentUser)return;
+  let saved;try{saved=JSON.parse(sessionStorage.getItem(arPaymentAttemptKey())||"null")}catch(e){return}
+  if(!saved?.p_request_id)return;
+  if(receivablePayments.some(row=>row.payment_group_id===saved.p_request_id)){sessionStorage.removeItem(arPaymentAttemptKey());return}
+  if(saved.p_closing_id)selectReceivableClosingForPayment(saved.p_closing_id);else{setReceivableView("detail");selectReceivableForPayment(saved.p_receivable_id)}
+  receivablePaymentAttempt=saved;setReceivablePaymentRetry(true);
+  for(const [id,key] of [["date","p_payment_date"],["amount","p_amount_jpy"],["fee","p_bank_fee_jpy"],["reference","p_reference_no"],["memo","p_memo"]])document.getElementById(`ar-payment-${id}`).value=saved[key]??"";
+  renderReceivablePaymentTotal();
+}
 async function saveReceivablePayment(){
-  const receivableId=val("ar-payment-receivable-id");
-  const paymentDate=val("ar-payment-date");
-  const amount=arNumber(val("ar-payment-amount"));
-  const fee=arNumber(val("ar-payment-fee"));
-  if(!receivableId||!paymentDate||amount<=0||fee<0){
-    alert("対象売掛・入金日・入金額を確認してください。");
-    return;
-  }
-  const row=receivableRows.find(item=>item.id===receivableId);
-  if(!row){alert("対象の売掛を再読込してください。");return}
-  const state=arRecordState(row);
-  if(amount+fee>state.balance+.005&&!confirm("売掛残より消込額が大きくなります。過入金として登録しますか？"))return;
-  const user=await ensureCurrentUser();
-  if(!user){alert("ログインしてください。");return}
-  const payload={
-    receivable_id:receivableId,
-    payment_date:paymentDate,
-    amount_jpy:arRound(amount),
-    bank_fee_jpy:arRound(fee),
-    currency:"JPY",
-    reference_no:val("ar-payment-reference").trim(),
-    memo:val("ar-payment-memo").trim(),
-    created_by:user.id,
-    updated_by:user.id
-  };
-  const {error}=await initSupabase().from("accounts_receivable_payments").insert(payload);
-  if(error){alert(arDbErrorMessage(error));return}
-  await loadReceivables();
-  selectReceivableForPayment(receivableId);
+  if(receivablePaymentSaving)return;
+  receivablePaymentSaving=true;
+  setAppBusy(true,"入金を登録しています。");renderReceivablePaymentTotal();
+  try{
+    const user=await ensureCurrentUser();if(!user)throw new Error("ログインしてください。");
+    if(!receivablePaymentAttempt){
+      const cash=Number(val("ar-payment-amount").normalize("NFKC").replace(/[,\s￥¥]/g,"")),fee=Number(val("ar-payment-fee").normalize("NFKC").replace(/[,\s￥¥]/g,""));
+      const balance=arSelectedPaymentBalance(),closingId=val("ar-payment-closing-id")||null,receivableId=val("ar-payment-receivable-id")||null;
+      if((!closingId&&!receivableId)||!val("ar-payment-date")||!Number.isFinite(cash)||!Number.isFinite(fee)||cash<0||fee<0||cash+fee<=0||arRound(cash)!==cash||arRound(fee)!==fee)throw new Error("対象・入金日・入金額・手数料を確認してください。");
+      if(arRound(cash+fee)>balance)throw new Error("入金額と手数料の合計が未回収額を超えています。");
+      const attempt={p_request_id:crypto.randomUUID(),p_closing_id:closingId,p_receivable_id:receivableId,p_payment_date:val("ar-payment-date"),p_amount_jpy:cash,p_bank_fee_jpy:fee,p_reference_no:val("ar-payment-reference").trim()||null,p_memo:val("ar-payment-memo").trim()||null,p_expected_balance_jpy:balance};
+      sessionStorage.setItem(arPaymentAttemptKey(),JSON.stringify(attempt));receivablePaymentAttempt=attempt;
+    }
+    const {error}=await initSupabase().rpc("record_receivable_grouped_payment",receivablePaymentAttempt);if(error)throw error;
+    receivablePaymentAttempt=null;sessionStorage.removeItem(arPaymentAttemptKey());setReceivablePaymentRetry(false);
+    document.getElementById("ar-payment-amount").value="";document.getElementById("ar-payment-fee").value="0";
+    await loadReceivables();renderReceivablePaymentHistory();
+    document.getElementById("ar-payment-target").textContent=receivablesLoaded?`入金を登録しました。未回収 ¥${salesRefMoney(arSelectedPaymentBalance())||"0"}`:"入金は保存済みです。最新残額を確認するため再読込してください。";
+  }catch(error){
+    if(!receivablePaymentAttempt||error?.code&&/^(P0001|P0002|22|23|42|PGRST)/.test(error.code)){
+      receivablePaymentAttempt=null;sessionStorage.removeItem(arPaymentAttemptKey());setReceivablePaymentRetry(false);alert(arDbErrorMessage(error));
+    }else{setReceivablePaymentRetry(true);alert("入金結果を確認できません。「入金結果を再確認」を押してください。同じ受付番号で確認し、二重登録を防ぎます。")}
+  }finally{receivablePaymentSaving=false;setAppBusy(false);renderReceivablePaymentTotal()}
 }
 async function deleteReceivablePayment(id){
   if(!currentUserIsAdmin()){alert("入金履歴を削除できるのは管理者のみです。");return}
-  if(!confirm("この入金履歴を削除しますか？"))return;
-  const {error}=await initSupabase().from("accounts_receivable_payments").delete().eq("id",id);
+  if(receivablePaymentAttempt||receivablePaymentSaving){alert("処理結果未確認の入金を先に確認してください。");return}
+  const payment=receivablePayments.find(row=>row.id===id);if(!payment)return;
+  if(!confirm(payment.payment_group_id?"この入金を明細への配分も含めてすべて取り消しますか？":"この入金履歴を取り消しますか？"))return;
+  const {error}=payment.payment_group_id?await initSupabase().rpc("delete_receivable_payment_group",{p_group_id:payment.payment_group_id}):await initSupabase().from("accounts_receivable_payments").delete().eq("id",id);
   if(error){alert(arDbErrorMessage(error));return}
   await loadReceivables();
 }
@@ -8340,6 +8441,7 @@ function renderClosingHistory(){
       <span class="ar-closing-amount">今回請求 ¥${esc(salesRefMoney(row.closing_balance_jpy)||"0")}</span>
       <span class="ar-status ${row.status==="closed"?"paid":""}">${esc(status)}</span>
       <span title="${esc(note)}">SOA No.${esc(statementNo)} / ${esc(note)}</span>
+      ${row.status==="closed"?`<button class="small primary" type="button" onclick="selectReceivableClosingForPayment('${esc(row.id)}')">${arClosingPaymentState(row).balance>0?"入金":"入金履歴"}</button>`:""}
       ${reopenButton}
     </div>`;
   }).join("");
