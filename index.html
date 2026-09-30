@@ -152,6 +152,10 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 .touch-input-cell:active{transform:scale(.97)}
 .p15-input{width:100%;min-width:110px;min-height:40px;border:1px solid var(--border-strong);border-radius:8px;background:#fff;color:var(--text);font-weight:800;padding:0 10px}
 .p15-price{max-width:120px;text-align:right;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.p15-quantity-line{display:flex;align-items:center;gap:6px;min-width:132px}
+.p15-quantity{width:96px;min-width:96px;text-align:right;font-variant-numeric:tabular-nums}
+.p15-quantity-unit{font-size:12px;color:var(--muted);white-space:nowrap}
+.p15-input:disabled{background:#f0f2f4;color:var(--muted);cursor:not-allowed}
 .p15-input:focus{outline:2px solid rgba(163,109,0,.22);border-color:var(--warn)}
 .p15-source{font-size:12px;color:var(--muted);white-space:nowrap}
 .p15-incomplete>td{background:var(--danger-bg)!important}.p15-incomplete>td:first-child{border-left:4px solid var(--danger)!important}.p15-input.p15-input-missing{border-color:var(--danger);background:#fff;color:var(--danger)}.p15-input.p15-input-missing::placeholder{color:var(--danger);opacity:1}.p15-input.p15-input-missing:focus{outline:2px solid rgba(184,50,42,.2);border-color:var(--danger)}.p15-status{display:inline-flex;align-items:center;min-height:26px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:900}.p15-status.complete{background:var(--success-bg);color:var(--success)}.p15-status.incomplete{border:1px solid var(--danger-border);background:#fff;color:var(--danger)}
@@ -2233,8 +2237,8 @@ function saveOrderLineToSupabase(row){
 function updateOrderLineFieldsToSupabase(row,fields){
   if(!requireEditableTrial())return Promise.resolve(false);
   if(!currentSessionId||!currentUser||!supabaseClient)return Promise.resolve(false);
-  const sourceRowNo=row._idx+1;
-  const key=`${currentSessionId}:${sourceRowNo}`;
+  const sourceRowNo=row._idx+1,sessionId=currentSessionId;
+  const key=`${sessionId}:${sourceRowNo}`;
   const payload={...fields,updated_by:currentUser.id};
   const previous=orderLineSaveQueues.get(key)||Promise.resolve();
   const task=previous.catch(()=>{}).then(async()=>{
@@ -2242,7 +2246,7 @@ function updateOrderLineFieldsToSupabase(row,fields){
     const {data,error}=await supabaseClient
       .from("order_lines")
       .update(payload)
-      .eq("session_id",currentSessionId)
+      .eq("session_id",sessionId)
       .eq("source_row_no",sourceRowNo)
       .select("source_row_no")
       .maybeSingle();
@@ -3382,28 +3386,36 @@ function p15RowState(row){
   const label=complete?"完了":missingOrigin&&missingPrice?"産地・売価 未入力":missingOrigin?"産地 未入力":"売価 未入力";
   return {missingOrigin,missingPrice,complete,label};
 }
+function p15QuantityInput(row,order){
+  return `<div class="p15-quantity-line"><input class="p15-input p15-quantity" data-row-idx="${row._idx}" data-p15-order="${order}" data-p15-col="_qty" data-stockout="${!!row._stockout}" inputmode="decimal" lang="en" autocomplete="off" enterkeyhint="next" aria-label="実績数量" value="${esc(row._qty??"")}" placeholder="${row._stockout?"欠品":"数量"}" ${row._stockout?"disabled":""} onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${row._idx},'_qty')" onblur="saveP15Field(${row._idx},'_qty',this.value)"><span class="p15-quantity-unit">${esc(row._unit||"Kg")}</span></div>`;
+}
 function renderP15Importer(imp){
   const impRows=rows.filter(r=>importerCode(r.importer_id)===imp);
   const done=impRows.filter(r=>p15RowState(r).complete).length,total=impRows.length,pct=total?Math.round(done/total*100):0;
   const body=impRows.map((r,i)=>{
     const state=p15RowState(r);
     const rowClasses=[p15MasterPriceSelections.has(r._idx)?"p15-master-selected":"",state.complete?"":"p15-incomplete"].filter(Boolean).join(" ");
-    return `<tr id="p15-master-row-${r._idx}" class="${rowClasses}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td><td><input class="p15-input${state.missingOrigin?" p15-input-missing":""}" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*2}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地 未入力" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td><td class="p15-price-cell"><div class="p15-price-line"><input class="p15-input p15-price${state.missingPrice?" p15-input-missing":""}" data-row-idx="${r._idx}" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*2+1}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価 未入力" onclick="event.stopPropagation();showP15History(${r._idx},this)" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"><button class="p15-history-toggle" type="button" onclick="event.stopPropagation();toggleP15History(${r._idx})">履歴</button></div><div class="p15-history-suggestion" id="p15history-suggestion-${r._idx}">${p15HistorySuggestionHtml(r)}</div></td><td class="p15-source"><span class="p15-status ${state.complete?"complete":"incomplete"}">${state.label}</span></td><td><label class="p15-master-check"><input type="checkbox" ${p15MasterPriceSelections.has(r._idx)?"checked":""} onchange="toggleP15MasterPriceSelection(${r._idx},this.checked)"><span>候補</span></label></td></tr><tr class="p15-history-detail-row${p15HistoryOpenRowIdx===r._idx?" open":""}" id="p15history-row-${r._idx}"><td colspan="8" id="p15history-detail-${r._idx}">${p15HistoryDetailHtml(r)}</td></tr>`;
+    return `<tr id="p15-master-row-${r._idx}" class="${rowClasses}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td>
+      <td>${p15QuantityInput(r,i*3)}</td>
+      <td><input class="p15-input${state.missingOrigin?" p15-input-missing":""}" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*3+1}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地 未入力" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td>
+      <td class="p15-price-cell"><div class="p15-price-line"><input class="p15-input p15-price${state.missingPrice?" p15-input-missing":""}" data-row-idx="${r._idx}" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*3+2}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価 未入力" onclick="event.stopPropagation();showP15History(${r._idx},this)" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"><button class="p15-history-toggle" type="button" onclick="event.stopPropagation();toggleP15History(${r._idx})">履歴</button></div><div class="p15-history-suggestion" id="p15history-suggestion-${r._idx}">${p15HistorySuggestionHtml(r)}</div></td><td class="p15-source"><span class="p15-status ${state.complete?"complete":"incomplete"}">${state.label}</span></td><td><label class="p15-master-check"><input type="checkbox" ${p15MasterPriceSelections.has(r._idx)?"checked":""} onchange="toggleP15MasterPriceSelection(${r._idx},this.checked)"><span>候補</span></label></td></tr><tr class="p15-history-detail-row${p15HistoryOpenRowIdx===r._idx?" open":""}" id="p15history-row-${r._idx}"><td colspan="9" id="p15history-detail-${r._idx}">${p15HistoryDetailHtml(r)}</td></tr>`;
   }).join("");
   const wrap=document.getElementById("p15content-"+cid(imp));
   if(!wrap)return;
   const scope=p15MasterPriceScope(imp),selectedCount=p15MasterSelectedRows(imp).length;
-  wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">産地・売価入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="p15-master-tools"><label>登録先<select class="p15-master-scope" onchange="setP15MasterPriceScope('${esc(imp)}',this.value)"><option value="contract" ${scope==="contract"?"selected":""}>輸入社別価格（${esc(importerDisplayName(imp))}）</option><option value="base" ${scope==="base"?"selected":""}>商品マスタ価格</option></select></label><button class="p15-master-save" id="p15-master-save-${cid(imp)}" type="button" onclick="saveSelectedP15MasterPrices('${esc(imp)}')">選択単価をマスタ登録</button><span class="p15-master-count" id="p15-master-count-${cid(imp)}">${selectedCount}件選択</span></div><div class="table-scroll"><table><thead><tr><th>#</th><th>店舗名</th><th>商品名</th><th>商品コード</th><th>産地</th><th>売価</th><th>状態</th><th>マスタ候補</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">全件</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">産地・売価入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="p15-master-tools"><label>登録先<select class="p15-master-scope" onchange="setP15MasterPriceScope('${esc(imp)}',this.value)"><option value="contract" ${scope==="contract"?"selected":""}>輸入社別価格（${esc(importerDisplayName(imp))}）</option><option value="base" ${scope==="base"?"selected":""}>商品マスタ価格</option></select></label><button class="p15-master-save" id="p15-master-save-${cid(imp)}" type="button" onclick="saveSelectedP15MasterPrices('${esc(imp)}')">選択単価をマスタ登録</button><span class="p15-master-count" id="p15-master-count-${cid(imp)}">${selectedCount}件選択</span></div><div class="table-scroll"><table><thead><tr><th>#</th><th>店舗名</th><th>商品名</th><th>商品コード</th><th>実績数量</th><th>産地</th><th>売価</th><th>状態</th><th>マスタ候補</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  applyLockToInputsTrial();
 }
 function moveP15Focus(current,step,sameCol){
   const selector=sameCol?`.p15-input[data-p15-col="${current.dataset.p15Col}"]`:".p15-input";
-  const inputs=[...document.querySelectorAll(selector)].filter(el=>el.offsetParent!==null).sort((a,b)=>Number(a.dataset.p15Order)-Number(b.dataset.p15Order));
+  const inputs=[...document.querySelectorAll(selector)].filter(el=>el.offsetParent!==null&&!el.disabled).sort((a,b)=>Number(a.dataset.p15Order)-Number(b.dataset.p15Order));
   const pos=inputs.indexOf(current);
   if(pos<0)return;
   const next=inputs[Math.max(0,Math.min(inputs.length-1,pos+step))];
   if(next&&next!==current)setTimeout(()=>{next.focus();next.select()},0);
 }
 function handleP15Key(event,rowIdx,field){
+  if(event.isComposing||event.keyCode===229)return;
   if(event.key==="Escape"){
     event.preventDefault();
     closeP15History(rowIdx);
@@ -3437,17 +3449,55 @@ function scheduleP15Refresh(){
   };
   p15RefreshTimer=setTimeout(refresh,250);
 }
+// Keep the last acknowledged value when consecutive edits are still saving.
+const p15PendingFields=new WeakMap();
+let p15QuantityChanged=false;
 async function saveP15Field(rowIdx,field,value){
-  const row=rows[rowIdx];
-  if(!row||!(field==="origin"||field==="unit_price"))return;
-  const next=String(value||"").trim();
-  if(row[field]===next)return;
-  const previous=row[field];
+  const row=rows.find(r=>r._idx===rowIdx);
+  if(!row||!["origin","unit_price","_qty"].includes(field))return false;
+  let next=String(value??"").trim();
+  if(field==="_qty"){
+    if(row._stockout)return false;
+    next=next.normalize("NFKC");
+    if(next!==""&&(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(next)||!Number.isFinite(Number(next)))){
+      toast("数量は0以上の数値で入力してください");
+      scheduleP15Refresh();
+      return false;
+    }
+  }
+  if(String(row[field]??"")===next)return true;
+  if(!requireEditableTrial())return false;
+  const sessionId=currentSessionId;
+  let fields=p15PendingFields.get(row);
+  if(!fields){fields=new Map();p15PendingFields.set(row,fields)}
+  const state=fields.get(field)||{confirmed:row[field],revision:0};
+  fields.set(field,state);
+  const revision=++state.revision;
   row[field]=next;
-  const dbValue=field==="unit_price"?numberOrNull(next):(next||null);
-  const saved=await updateOrderLineFieldsToSupabase(row,{[field]:dbValue});
-  if(!saved)row[field]=previous;
-  scheduleP15Refresh();
+  if(field==="_qty")p15QuantityChanged=true;
+  const dbField=field==="_qty"?"input_qty":field;
+  const dbValue=field==="origin"?(next||null):numberOrNull(next);
+  let saved=false;
+  try{
+    saved=!sessionId||await updateOrderLineFieldsToSupabase(row,{[dbField]:dbValue});
+    if(saved)state.confirmed=next;
+    return saved;
+  }catch(error){
+    toast("明細保存エラー: "+String(error?.message||error));
+    return false;
+  }finally{
+    if(state.revision===revision){
+      if(!saved&&row[field]===next)row[field]=state.confirmed;
+      fields.delete(field);
+    }
+    if(currentSessionId===sessionId&&rows.includes(row)){
+      if(field==="_qty"){
+        p15QuantityChanged=true;
+        scheduleP1InlineRefresh(row);
+      }
+      scheduleP15Refresh();
+    }
+  }
 }
 function setImportPanelVisible(visible){
   const grid=document.querySelector(".import-grid");
@@ -3476,6 +3526,7 @@ function switchPhase(n){
   document.getElementById("btn-p1").classList.toggle("active",n===1);
   document.getElementById("btn-p15").classList.toggle("active",n===1.5);
   document.getElementById("btn-p2").classList.toggle("active",n===2);
+  if(n===1&&p15QuantityChanged){buildP1Tabs();p15QuantityChanged=false}
   if(n===1.5)buildP15();
   if(n===2){
     buildP2();
@@ -4445,8 +4496,8 @@ function updateLockUITrial(){
 }
 function applyLockToInputsTrial(){
   const locked=!!(currentSessionLocked||currentSessionProvisionalLocked);
-  document.querySelectorAll(".inline-work-input,.inline-box-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.box-size-select,.di-toggle input").forEach(el=>{
-    el.disabled=locked||el.dataset.boxRoutingBlocked==="true";
+  document.querySelectorAll(".inline-work-input,.inline-box-input,.p15-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.box-size-select,.di-toggle input").forEach(el=>{
+    el.disabled=locked||el.dataset.boxRoutingBlocked==="true"||el.dataset.stockout==="true";
     if(locked)el.title=currentSessionLocked?"売上確定済みのため編集できません":"仮締め中のため編集できません";
     else el.removeAttribute("title");
   });

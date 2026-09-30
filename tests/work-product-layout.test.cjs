@@ -22,7 +22,7 @@ function fixture(){
     importerCode:value=>value,importerDisplayName:()=>"JKT",p15MasterPriceSelections:new Set(),
     p15HistoryOpenRowIdx:1,p15HistorySuggestionHtml:()=>'<span>直近候補</span><button class="p15-history-apply">1,200</button><span>2026-09-01</span>',
     p15HistoryDetailHtml:()=>'<div class="p15-history-band">単価履歴</div>',
-    p15MasterPriceScope:()=>"contract",p15MasterSelectedRows:()=>[]
+    p15MasterPriceScope:()=>"contract",p15MasterSelectedRows:()=>[],applyLockToInputsTrial:()=>{}
   };
   for(const [start,end] of [["function inlineP1Input(","function updateInlineP1Draft("],["function p1TouchCell(","function openP1NP("],["renderP1Cell=function(country,customer){","renderP2Importer=function(imp){"],["function p15RowState(","function moveP15Focus("]])vm.runInNewContext(source(start,end),ctx);
   ctx.renderP1Cell("07","ALL");ctx.renderP15Importer("07");
