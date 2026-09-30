@@ -13,26 +13,28 @@ function sourceBetween(start,end){
   return html.slice(from,to);
 }
 
-test("売上参照では原価を読まず粗利参照はマスタ価格だけを判定する",()=>{
+test("売上参照では原価を読まず粗利参照だけで仕入実績を取得する",()=>{
   const salesSource=sourceBetween("async function loadSalesReferenceBoard()","function renderProfitReferenceBoard");
   const profitSource=sourceBetween("async function loadProfitReferenceBoard()","function salesRefResetPage");
   assert.match(salesSource,/renderSalesReferenceBoard\(\);/);
   assert.doesNotMatch(salesSource,/salesRefAttachPurchaseCosts/);
-  assert.match(profitSource,/await salesRefAttachMasterCostContext\(currentRows\)/);
-  assert.doesNotMatch(profitSource,/salesRefAttachPurchaseCosts/);
+  assert.match(profitSource,/await salesRefAttachPurchaseCosts\(client,filteredRows\)/);
+  assert.doesNotMatch(profitSource,/salesRefAttachMasterCostContext/);
   assert.match(profitSource,/renderProfitReferenceBoard\(\)/);
   assert.match(html,/data-workspace-tab="profit"/);
   assert.match(html,/data-workspace-panel="profit"/);
 });
 
-test("発注先別マスタ単価の分割問い合わせを制限付きで並列実行する",()=>{
+test("仕入実績と発注先の分割問い合わせを制限付きで並列実行する",()=>{
   const helper=sourceBetween("async function salesRefReadChunks","async function salesRefAttachPurchaseCosts");
   const attach=sourceBetween("async function salesRefAttachPurchaseCosts","function salesRefMetrics");
   const suppliers=sourceBetween("async function readOrderSuppliersForAdvancePurchase","function advancePurchaseSalesLinkSchemaMissing");
   assert.match(helper,/Math\.min\(concurrency,chunks\.length\)/);
   assert.match(helper,/await Promise\.all\(workers\)/);
-  assert.match(attach,/salesRefReadChunks\(salesIds,200/);
-  assert.match(attach,/salesRefReadChunks\(lineIds,200/);
+  assert.match(attach,/salesRefReadChunks\(ids,200/);
+  assert.match(attach,/salesRefReadPaged\(includeCount/);
+  assert.match(attach,/"sales_record_id",salesIds/);
+  assert.match(attach,/"purchase_line_id",lineIds/);
   assert.match(suppliers,/salesRefReadChunks\(sessionIds,100/);
   assert.match(suppliers,/salesRefReadChunks\(sourceIds,200/);
   const masterContext=sourceBetween("async function salesRefAttachMasterCostContext","function salesRefQuantityByUnit");

@@ -62,26 +62,27 @@ test("PDF一括取込以外の通常事前仕入は自動配分しない",()=>{
   assert.equal(sales[0]._purchaseCostActual,undefined);
 });
 
-test("粗利画面はマスタ仕入単価を基準に表示する",()=>{
-  assert.match(html,/商品別粗利はマスタ仕入単価で計算/);
+test("粗利画面は確定仕入実績を基準に表示する",()=>{
+  assert.match(html,/確定仕入実績で計算/);
   assert.match(html,/全体粗利は、期間内の純売上から仕入確定/);
-  assert.match(html,/原価未設定商品（売上金額順）/);
-  assert.doesNotMatch(html,/明細リンク \$\{metrics\.linkedCostCount\}件/);
+  assert.match(html,/仕入実績未反映の商品（売上金額順）/);
+  assert.doesNotMatch(html,/商品別粗利はマスタ仕入単価で計算/);
 });
 
 test("粗利画面は国内商品売上を読み込み輸出と合算する",()=>{
   const domestic=sourceBetween("async function salesRefReadDomesticRows","async function salesRefReadProvisionalRows");
   const profitLoad=sourceBetween("async function loadProfitReferenceBoard","function salesRefResetPage");
-  const attach=sourceBetween("async function salesRefAttachMasterCostContext","function salesRefQuantityByUnit");
+  const attach=sourceBetween("async function salesRefAttachPurchaseCosts","async function salesRefAttachMasterCostContext");
   assert.match(domestic,/from\("domestic_sales"\)/);
   assert.match(domestic,/from\("domestic_sale_lines"\)/);
   assert.match(domestic,/amount:salesRefJpyAmount\(line\.net_amount_jpy\)/);
   assert.match(domestic,/_domesticSale:true/);
   assert.match(profitLoad,/profitReferenceRows=\[\.\.\.salesReferenceRows,\.\.\.domesticRows\]/);
-  assert.match(profitLoad,/salesRefAttachMasterCostContext\(currentRows\)/);
-  assert.doesNotMatch(profitLoad,/salesRefAttachPurchaseCosts/);
-  assert.match(attach,/activeRows=\(rows\|\|\[\]\)\.filter\(row=>row\.id&&!row\.is_stockout&&!row\._domesticSale\)/);
-  assert.match(attach,/readOrderSuppliersForAdvancePurchase\(activeRows\)/);
+  assert.match(profitLoad,/salesRefAttachPurchaseCosts\(client,filteredRows\)/);
+  assert.doesNotMatch(profitLoad,/salesRefAttachMasterCostContext/);
+  assert.match(domestic,/_sourceSalesRecordId:line\.source_sales_record_id/);
+  assert.match(attach,/row\._domesticSale\?row\._sourceSalesRecordId/);
+  assert.doesNotMatch(attach,/readOrderSuppliersForAdvancePurchase/);
   assert.doesNotMatch(attach,/salesRefAllocateImportedPurchaseCosts/);
   assert.match(html,/合算純売上/);
   assert.match(html,/輸出・国内別粗利/);

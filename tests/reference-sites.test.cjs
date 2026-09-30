@@ -95,13 +95,15 @@ test('sales filter composes site with date, status, supplier and product; all re
 test('profit purchase totals include only the selected branch with unchanged fees and rounding',async()=>{
   const fields={'profit-ref-site':'TYO'};
   const ctx={ReferenceSites:sites,val:id=>fields[id]||'',purchaseJpyAmount:v=>Math.round(Number(v)||0),purchaseRefReadReceipts:async()=>[
-    {site_code:'OSA',status:'confirmed',subtotal:500,shipping_fee:20},
-    {site_code:'TYO',status:'confirmed',subtotal:100,shipping_fee:10,other_fee:5},
-    {site_code:'TYO',status:'draft',subtotal:900}
+    {purchase_date:'2026-09-01',site_code:'OSA',status:'confirmed',subtotal:500,shipping_fee:20},
+    {purchase_date:'2026-09-01',site_code:'TYO',status:'confirmed',subtotal:100,shipping_fee:10,other_fee:5},
+    {purchase_date:'2026-09-01',site_code:'TYO',status:'draft',subtotal:900},
+    {purchase_date:'2025-09-01',site_code:'TYO',status:'confirmed',subtotal:9999}
   ]};
   vm.runInNewContext(source('async function salesRefReadPurchaseSummary(','async function loadProfitReferenceBoard('),ctx);
-  assert.equal((await ctx.salesRefReadPurchaseSummary(null,{})).cost,115);
-  fields['profit-ref-site']='';assert.equal((await ctx.salesRefReadPurchaseSummary(null,{})).cost,635);
+  const range={ranges:[{from:'2026-09-01',to:'2026-09-30'}]};
+  assert.equal((await ctx.salesRefReadPurchaseSummary(null,range)).cost,115);
+  fields['profit-ref-site']='';assert.equal((await ctx.salesRefReadPurchaseSummary(null,range)).cost,635);
 });
 test('changing profit filters invalidates in-flight reads so another site cannot restore stale cost totals',()=>{
   const nodes=new Map([['profit-ref-analysis',{innerHTML:'old totals'}],['profit-ref-state',{}]]);

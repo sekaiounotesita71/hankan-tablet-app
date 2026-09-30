@@ -76,10 +76,12 @@ const cost = new Function(
   pricing.productPurchasePriceForSupplier
 );
 
-assert.equal(cost.salesRefCostInfo({ input_qty: 3, input_unit: "PC", _purchaseSupplierCode: "S002" }).amount, 720);
-assert.equal(cost.salesRefCostInfo({ net_weight: 2.5, input_unit: "PC", _purchaseSupplierCode: "S001" }).amount, 2450);
-assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001", _purchaseCostActual: 777 }).amount, 1960);
-assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001", _purchaseCostActual: 777 }).source, "supplier");
+assert.equal(cost.salesRefCostQuantity({ input_qty: 3, input_unit: "PC" }, "PC"), 3);
+assert.equal(cost.salesRefCostQuantity({ net_weight: 2.5, input_unit: "PC" }, "Kg"), 2.5);
+assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001", _purchaseCostActual: 777, _purchaseCostSource: "linked" }).amount, 777);
+assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001", _purchaseCostActual: 777, _purchaseCostSource: "linked" }).source, "linked");
+assert.equal(cost.salesRefCostInfo({ net_weight: 2, _purchaseSupplierCode: "S001" }).priced, false);
+assert.equal(cost.salesRefCostInfo({ _purchaseCostActual: 0, _purchaseCostSource: "linked" }).priced, true);
 activeProduct = null;
 assert.equal(cost.salesRefCostInfo({ input_qty: 1, input_unit: "PC" }).priced, false);
 
@@ -113,8 +115,8 @@ assert.match(html, /productPurchasePriceForSupplier\(product,supplierCode\)/);
 assert.match(html, /商品別粗利/);
 assert.match(html, /得意先別粗利/);
 assert.match(html, /輸入社・国内別粗利/);
-assert.match(html, /原価未設定商品（売上金額順）/);
-assert.match(html, /原価未設定売上/);
+assert.match(html, /仕入実績未反映の商品（売上金額順）/);
+assert.match(html, /実績原価未反映売上/);
 assert.match(html, /全体粗利/);
 assert.match(html, /算出不可/);
 assert.match(html, /期間仕入（税抜）/);
