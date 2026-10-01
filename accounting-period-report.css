@@ -1,0 +1,7 @@
+.accounting-report-tools{display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px 12px;padding:12px 0;margin:8px 0 12px;border-top:1px solid var(--line,#d7dde2);border-bottom:1px solid var(--line,#d7dde2)}
+.accounting-report-tools>strong{align-self:center;font-size:13px}
+.accounting-report-tools label{display:grid;gap:4px;font-size:12px;font-weight:700}
+.accounting-report-tools input{width:240px;max-width:100%;min-height:38px;padding:8px;border:1px solid #bcc6ce;border-radius:4px;font:inherit;font-variant-numeric:tabular-nums}
+.accounting-report-tools select{min-height:38px;padding:8px;border:1px solid #bcc6ce;border-radius:4px;background:#fff;font:inherit}
+.accounting-period-buttons{display:flex;gap:4px;align-items:center;min-height:38px}
+@media(max-width:600px){.accounting-report-tools>strong{width:100%}.accounting-report-tools input{width:220px}}

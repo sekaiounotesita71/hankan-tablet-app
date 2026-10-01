@@ -8944,15 +8944,16 @@ function openAccountingReportWindow(message){
   reportWindow.document.close();
   return reportWindow;
 }
-function writeAccountingReport(reportWindow,{title,subtitle="",meta=[],summary=[],headers=[],rows=[],orientation="landscape"}){
+function writeAccountingReport(reportWindow,{title,subtitle="",meta=[],summary=[],headers=[],rows=[],orientation="landscape",layout="",siteCode}){
   const siteField=["売掛一覧表","得意先明細"].includes(title)?"ar-site":"ap-site";
-  if(val(siteField))meta=[...meta,`拠点 ${ReferenceSites.label(val(siteField))}`];
+  const selectedSite=siteCode===undefined?val(siteField):siteCode;
+  meta=[...meta,selectedSite?`拠点 ${ReferenceSites.label(selectedSite)}`:"全拠点"];
   const summaryHtml=summary.map(item=>`<div class="summary-item"><span>${esc(item.label)}</span><b>${esc(item.value)}</b></div>`).join("");
   const metaHtml=meta.filter(Boolean).map(item=>`<span>${esc(item)}</span>`).join("");
-  const headerHtml=headers.map(header=>`<th class="${esc(header.className||"")}">${esc(header.label||header)}</th>`).join("");
-  const bodyHtml=rows.map(row=>`<tr>${row.map(cell=>{
+  const headerHtml=headers.map(header=>`<th class="${esc(header.className||"")}"${header.width?` style="width:${esc(header.width)}"`:""}>${esc(header.label||header)}</th>`).join("");
+  const bodyHtml=rows.map(row=>`<tr${row.total?' class="total-row"':""}>${(row.cells||row).map(cell=>{
     const data=cell&&typeof cell==="object"?cell:{text:cell};
-    return `<td class="${esc(data.className||"")}">${esc(data.text??"")}</td>`;
+    return `<td class="${esc(data.className||"")}">${data.lines?data.lines.map(line=>`<div class="report-cell-line">${esc(line)}</div>`).join(""):esc(data.text??"")}</td>`;
   }).join("")}</tr>`).join("");
   const issuedAt=new Date().toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
   const logoUrl=new URL("./yumirume-logo.jpg",location.href).href;
@@ -8967,8 +8968,10 @@ function writeAccountingReport(reportWindow,{title,subtitle="",meta=[],summary=[
   table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{break-inside:avoid}th,td{border:1px solid #777;padding:1.6mm 1.8mm;vertical-align:top;overflow-wrap:anywhere}th{background:#e9edf2;text-align:left;font-size:8pt}.money{text-align:right;white-space:nowrap}.center{text-align:center}.code{font-family:Consolas,"Courier New",monospace}.negative{color:#b42318}.muted{color:#555}.total-row td{font-weight:700;border-top:2px solid #111}.portrait th:nth-child(1){width:21mm}.portrait th:nth-child(2){width:20mm}.portrait th:nth-child(3){width:32mm}.portrait th:nth-child(5),.portrait th:nth-child(6),.portrait th:nth-child(7){width:25mm}
   footer{margin-top:3mm;text-align:right;color:#555;font-size:7.5pt}
   .payable-report th.money,.payable-report td.money{white-space:normal}
+  .period-report{max-width:277mm;margin:0 auto;padding:5mm 0}.period-report th{white-space:pre-line!important;font-size:8pt;background:#fff;border-left:0;border-right:0;border-top:1.5px solid #111;border-bottom:1.5px solid #111}.period-report td{border-left:0;border-right:0;padding-top:2mm;padding-bottom:2mm}.report-cell-line{min-height:1.65em;white-space:nowrap}.period-report .summary{display:flex;flex-wrap:wrap;gap:4mm}.period-report .summary-item{flex:1;min-width:36mm;border:0;border-bottom:1px solid #777;padding:1mm}.period-report .summary-item b{font-size:11pt}.period-report .meta span{white-space:normal}.period-report .total-row td{border-bottom:2px solid #111}.period-report .money{font-variant-numeric:tabular-nums}.period-report h1{font-size:17pt}
   @media print{.print-actions{display:none}body{font-size:8.5pt}a{color:inherit;text-decoration:none}}
-  </style></head><body class="${esc(orientation)}${title==="買掛一覧表"?" payable-report":""}">
+  @media print{.period-report{max-width:none;padding:0;margin:0}thead{display:table-header-group}}
+  </style></head><body class="${esc(orientation)}${title==="買掛一覧表"?" payable-report":""}${layout==="period"?" period-report":""}">
   <div class="print-actions"><button onclick="window.print()">印刷 / PDF保存</button><button onclick="window.close()">閉じる</button></div>
   <header><div><h1>${esc(title)}</h1>${subtitle?`<div class="subtitle">${esc(subtitle)}</div>`:""}</div><div class="report-brand"><img src="${esc(logoUrl)}" alt="YUMIRUME INC."><div class="company">株式会社ゆみるめ</div></div></header>
   ${metaHtml?`<div class="meta">${metaHtml}</div>`:""}
@@ -8988,50 +8991,7 @@ async function ensurePayablesForReport(){
   if(!payablesLoaded)throw new Error("買掛データを読み込めません。");
 }
 async function printReceivableListPdf(){
-  const reportWindow=openAccountingReportWindow("売掛一覧表");
-  if(!reportWindow)return;
-  try{
-    await ensureReceivablesForReport();
-    const result=arFilteredRows();
-    if(result.error)throw new Error(result.error);
-    const groups=new Map();
-    result.rows.forEach(row=>{
-      const importer=arImporterIdentity(row);
-      const key=importer.key||`raw:${row.importer_code||""}`;
-      const group=groups.get(key)||{importer,rows:[]};
-      group.rows.push({...row,_state:arRecordState(row)});
-      groups.set(key,group);
-    });
-    const items=[...groups.values()].map(group=>{
-      const openRows=group.rows.filter(row=>row._state.balance>.005);
-      const dueDates=openRows.map(row=>String(row.due_date||"")).filter(Boolean).sort();
-      return {
-        ...group,
-        amount:group.rows.reduce((sum,row)=>sum+row._state.amount,0),
-        settled:group.rows.reduce((sum,row)=>sum+row._state.settled,0),
-        balance:group.rows.reduce((sum,row)=>sum+row._state.balance,0),
-        overdue:group.rows.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0),
-        count:openRows.length,
-        oldestDue:dueDates[0]||""
-      };
-    }).sort((a,b)=>String(a.importer.code||"").localeCompare(String(b.importer.code||""),"ja",{numeric:true}));
-    if(!items.length)throw new Error("現在の条件で出力する売掛がありません。");
-    const total=items.reduce((sum,item)=>sum+item.balance,0);
-    const overdue=items.reduce((sum,item)=>sum+item.overdue,0);
-    writeAccountingReport(reportWindow,{
-      title:"売掛一覧表",
-      subtitle:"請求締め済みの売掛残高",
-      meta:[`基準日 ${accountingReportDate(today())}`,`期間 ${accountingReportRangeLabel(result.range)}`,`状態 ${accountingReportSelectLabel("ar-status","未回収すべて")}`,val("ar-importer").trim()?`得意先 ${arImporterIdentity(val("ar-importer")).label}`:"得意先 全件"],
-      summary:[{label:"得意先数",value:`${items.length}件`},{label:"売掛残高",value:accountingReportMoney(total)},{label:"期限超過",value:accountingReportMoney(overdue)}],
-      headers:[{label:"コード",className:"code"},"得意先名",{label:"対象請求額",className:"money"},{label:"入金・消込",className:"money"},{label:"売掛残高",className:"money"},{label:"期限超過",className:"money"},"最古支払期限",{label:"未回収",className:"money"}],
-      rows:items.map(item=>[
-        {text:item.importer.code||"未設定",className:"code"},item.importer.name||"-",
-        {text:accountingReportMoney(item.amount),className:"money"},{text:accountingReportMoney(item.settled),className:"money"},
-        {text:accountingReportMoney(item.balance),className:`money${item.balance<0?" negative":""}`},{text:accountingReportMoney(item.overdue),className:`money${item.overdue>0?" negative":""}`},
-        accountingReportDate(item.oldestDue),{text:String(item.count),className:"money"}
-      ])
-    });
-  }catch(error){reportWindow.close();alert(arDbErrorMessage(error))}
+  return AccountingReports.print("ar",false);
 }
 function receivableLedgerRows(importer,range){
   const charges=receivableRows.filter(row=>arIsOperationRow(row)&&arIsPostedReceivable(row)&&arSameImporter(row,importer)&&(!val("ar-site")||ReferenceSites.matches(row,val("ar-site"))));
@@ -9067,56 +9027,10 @@ function receivableLedgerRows(importer,range){
   return {charges,payments,events,opening,balance,rows};
 }
 async function printCustomerLedgerPdf(){
-  const importerInput=val("ar-importer").trim();
-  if(!importerInput){alert("得意先明細PDFは、先に輸入社欄で得意先を選択してください。");return}
-  const reportWindow=openAccountingReportWindow("得意先明細");
-  if(!reportWindow)return;
-  try{
-    await ensureReceivablesForReport();
-    const range=receivableView==="detail"?salesRefDateRangeFromText(val("ar-date-range")):{from:"",to:"",raw:""};
-    if(range.raw&&(!range.from||!range.to))throw new Error("日付は 20250701-20250731 の形式で入力してください。");
-    const importer=arImporterIdentity(importerInput);
-    const ledger=receivableLedgerRows(importer,range);
-    if(!ledger.charges.length)throw new Error("選択した得意先の売掛明細がありません。");
-    if(!ledger.events.length&&!Math.abs(ledger.opening))throw new Error("指定期間に得意先明細がありません。");
-    const chargeTotal=ledger.events.reduce((sum,event)=>sum+event.debit,0);
-    const paymentTotal=ledger.events.reduce((sum,event)=>sum+event.credit,0);
-    writeAccountingReport(reportWindow,{
-      title:"得意先明細",
-      subtitle:`${importer.code||""} ${importer.name||importerInput}`.trim(),orientation:"portrait",
-      meta:[`対象期間 ${accountingReportRangeLabel(range)}`,`基準日 ${accountingReportDate(today())}`],
-      summary:[{label:"繰越残高",value:accountingReportMoney(ledger.opening)},{label:"期間請求",value:accountingReportMoney(chargeTotal)},{label:"入金・消込",value:accountingReportMoney(paymentTotal)},{label:"期末残高",value:accountingReportMoney(ledger.balance)}],
-      headers:["日付","区分","Invoice・摘要","内容",{label:"請求",className:"money"},{label:"入金・消込",className:"money"},{label:"残高",className:"money"}],rows:ledger.rows
-    });
-  }catch(error){reportWindow.close();alert(arDbErrorMessage(error))}
+  return AccountingReports.print("ar",true);
 }
 async function printPayableListPdf(){
-  const reportWindow=openAccountingReportWindow("買掛一覧表");
-  if(!reportWindow)return;
-  try{
-    await ensurePayablesForReport();
-    const result=apFilteredRows();
-    if(result.error)throw new Error(result.error);
-    const groups=new Map();
-    result.rows.forEach(row=>{
-      const key=String(row.supplier_code||"").trim().toLowerCase()||`name:${String(row.supplier_name||"").trim().toLowerCase()}`;
-      const group=groups.get(key)||{code:row.supplier_code||"",name:row.supplier_name||"",rows:[]};
-      group.rows.push({...row,_state:apRecordState(row)});groups.set(key,group);
-    });
-    const items=[...groups.values()].map(group=>{
-      const openRows=group.rows.filter(row=>row._state.balance>0);
-      const dueDates=openRows.map(row=>String(row.due_date||"")).filter(Boolean).sort();
-      return {...group,netBalance:apNetBalanceSummary(group.rows),amount:group.rows.reduce((sum,row)=>sum+row._state.amount,0),paid:group.rows.reduce((sum,row)=>sum+row._state.paid,0),balance:group.rows.reduce((sum,row)=>sum+row._state.balance,0),overdue:group.rows.filter(row=>row._state.key==="overdue").reduce((sum,row)=>sum+row._state.balance,0),count:openRows.length,oldestDue:dueDates[0]||""};
-    }).sort((a,b)=>String(a.code).localeCompare(String(b.code),"ja",{numeric:true}));
-    if(!items.length)throw new Error("現在の条件で出力する買掛がありません。");
-    writeAccountingReport(reportWindow,{
-      title:"買掛一覧表",subtitle:"仕入先別の買掛残高",
-      meta:[`基準日 ${accountingReportDate(today())}`,`期間 ${accountingReportRangeLabel(result.range)}`,`状態 ${accountingReportSelectLabel("ap-status","未払すべて")}`,val("ap-supplier").trim()?`仕入先 ${val("ap-supplier").trim()}`:"仕入先 全件","税抜は参考値（一部支払は比例按分・未算出分を除く）。支払金額は税込。"],
-      summary:[{label:"仕入先数",value:`${items.length}件`},{label:"買掛残高（税込）",value:accountingReportMoney(items.reduce((sum,item)=>sum+item.balance,0))},{label:"買掛残高（税抜・参考）",value:apNetBalanceText(apMergeNetBalances(items.map(item=>item.netBalance)))},{label:"期限超過（税込）",value:accountingReportMoney(items.reduce((sum,item)=>sum+item.overdue,0))}],
-      headers:[{label:"コード",className:"code"},"仕入先名",{label:"対象請求額（税込）",className:"money"},{label:"支払済（税込）",className:"money"},{label:"買掛残高（税込）",className:"money"},{label:"買掛残高（税抜・参考）",className:"money"},{label:"期限超過（税込）",className:"money"},"最古支払期限",{label:"未払",className:"money"}],
-      rows:items.map(item=>[{text:item.code||"未設定",className:"code"},item.name||"-",{text:accountingReportMoney(item.amount),className:"money"},{text:accountingReportMoney(item.paid),className:"money"},{text:accountingReportMoney(item.balance),className:`money${item.balance<0?" negative":""}`},{text:apNetBalanceText(item.netBalance),className:"money"},{text:accountingReportMoney(item.overdue),className:`money${item.overdue>0?" negative":""}`},accountingReportDate(item.oldestDue),{text:String(item.count),className:"money"}])
-    });
-  }catch(error){reportWindow.close();alert(apDbErrorMessage(error))}
+  return AccountingReports.print("ap",false);
 }
 function payableLedgerRows(supplierCode,range){
   const code=String(supplierCode||"").trim().toLowerCase();
@@ -9136,29 +9050,7 @@ function payableLedgerRows(supplierCode,range){
   return {charges,payments,events,opening,balance,rows};
 }
 async function printSupplierLedgerPdf(){
-  const supplierInput=val("ap-supplier").trim();
-  if(!supplierInput){alert("仕入先明細PDFは、先に仕入先欄で仕入先コードを選択してください。");return}
-  const reportWindow=openAccountingReportWindow("仕入先明細");
-  if(!reportWindow)return;
-  try{
-    await ensurePayablesForReport();
-    const master=lookupSupplierByCode(supplierInput);
-    const supplierCode=master?.code||supplierInput;
-    const range=salesRefDateRangeFromText(val("ap-date-range"));
-    if(range.raw&&(!range.from||!range.to))throw new Error("日付は 20250701-20250731 の形式で入力してください。");
-    const ledger=payableLedgerRows(supplierCode,range);
-    if(!ledger.charges.length)throw new Error("仕入先コードを正しく選択してください。対象の買掛明細がありません。");
-    if(!ledger.events.length&&!Math.abs(ledger.opening))throw new Error("指定期間に仕入先明細がありません。");
-    const supplierName=master?.name||ledger.charges.find(row=>row.supplier_name)?.supplier_name||"";
-    const chargeTotal=ledger.events.reduce((sum,event)=>sum+event.debit,0);
-    const paymentTotal=ledger.events.reduce((sum,event)=>sum+event.credit,0);
-    writeAccountingReport(reportWindow,{
-      title:"仕入先明細",subtitle:`${supplierCode} ${supplierName}`.trim(),orientation:"portrait",
-      meta:[`対象期間 ${accountingReportRangeLabel(range)}`,`基準日 ${accountingReportDate(today())}`],
-      summary:[{label:"繰越残高",value:accountingReportMoney(ledger.opening)},{label:"期間仕入・請求",value:accountingReportMoney(chargeTotal)},{label:"期間支払",value:accountingReportMoney(paymentTotal)},{label:"期末残高",value:accountingReportMoney(ledger.balance)}],
-      headers:["日付","区分","管理番号・摘要","内容",{label:"仕入・請求",className:"money"},{label:"支払",className:"money"},{label:"残高",className:"money"}],rows:ledger.rows
-    });
-  }catch(error){reportWindow.close();alert(apDbErrorMessage(error))}
+  return AccountingReports.print("ap",true);
 }
 function siteNameFromCode(code){return code==="TYO"?"東京":"大阪"}
 function externalStatusLabel(status){return {draft:"下書き",published:"未着手",in_progress:"入力中",submitted:"提出済み",accepted:"本社確認済み",returned:"差し戻し",cancelled:"取消"}[status]||status||""}
@@ -17050,5 +16942,8 @@ setTimeout(()=>{
 <link rel="stylesheet" href="./unit-price-analysis.css?v=20260918-1">
 <script src="./unit-price-analysis-core.js?v=20260918-1"></script>
 <script src="./unit-price-analysis.js?v=20260918-3"></script>
+<link rel="stylesheet" href="./accounting-period-report.css?v=20261001-1">
+<script src="./accounting-period-report.js?v=20261001-1"></script>
+<script src="./accounting-period-report-app.js?v=20261001-1"></script>
 </body>
 </html>

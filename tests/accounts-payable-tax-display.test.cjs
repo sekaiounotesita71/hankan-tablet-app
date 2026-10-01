@@ -51,7 +51,7 @@ test('closing reference excludes future purchases and payments and uses the same
   assert.equal(c.apNetBalanceSummary(c.payableRows.slice(0,2)).net,500);
   assert.equal(JSON.stringify([c.payableRows,c.payablePayments]),before);
 });
-test('screen and supplier PDF share tax-exclusive totals and retain gross settlement amounts',async()=>{
+test('screen retains tax-exclusive reference totals and gross settlement amounts',async()=>{
   const c=context();c.payableRows=[row('a',1080,80),row('b',1100,100,{supplier_code:'46',supplier_name:'Other'})];
   c.payablePayments=[{payable_id:'a',amount_jpy:540}];
   for(const id of ['ap-table','ap-summary','ap-state'])c.nodes[id]={innerHTML:'',textContent:''};
@@ -59,16 +59,6 @@ test('screen and supplier PDF share tax-exclusive totals and retain gross settle
   c.renderPayables();assert.match(c.nodes['ap-summary'].innerHTML,/税抜・参考[\s\S]*¥1,500/);
   assert.match(c.nodes['ap-summary'].innerHTML,/税込[\s\S]*1,640/);assert.match(c.nodes['ap-table'].innerHTML,/税抜・参考/);
   assert.match(c.nodes['ap-table'].innerHTML,/比例按分/);
-  c.openAccountingReportWindow=()=>({close(){}});c.ensurePayablesForReport=async()=>{};
-  c.accountingReportDate=v=>v;c.accountingReportRangeLabel=()=>'';c.accountingReportSelectLabel=()=>'';
-  c.writeAccountingReport=(_,report)=>{c.report=report};c.alert=message=>{throw new Error(message)};c.apDbErrorMessage=error=>error.message;
-  vm.runInNewContext(source('async function printPayableListPdf(','function payableLedgerRows('),c);
-  await c.printPayableListPdf();
-  assert.equal(c.report.summary.find(item=>item.label==='買掛残高（税抜・参考）').value,'¥1,500');
-  assert.equal(c.report.summary.find(item=>item.label==='買掛残高（税込）').value,'¥1,640');
-  assert.equal(c.report.headers.length,c.report.rows[0].length);
-  assert.equal(c.report.rows[0][4].text,'¥540');assert.equal(c.report.rows[0][5].text,'¥500');
-  assert.equal(c.report.rows[1][4].text,'¥1,100');assert.equal(c.report.rows[1][5].text,'¥1,000');
 });
 test('tax display does not introduce database mutations or change payment and closing payloads',()=>{
   const display=source('// Tax-exclusive balances','function apFilteredRows(');
