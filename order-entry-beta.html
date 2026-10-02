@@ -534,7 +534,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="ar-search-filter" hidden>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
         <button class="btn" id="ar-reload-button" type="button" onclick="loadReceivables()">再読込</button>
         <button class="btn primary" id="ar-sync-button" type="button" onclick="syncSalesToReceivables()">対象期間を再同期</button>
-        <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">選択月までのSOA出力</button>
+        <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">選択月のSOA出力</button>
         <button class="btn" id="ar-list-pdf-button" type="button" onclick="printReceivableListPdf()">売掛一覧PDF</button>
         <button class="btn" id="ar-ledger-pdf-button" type="button" title="輸入社欄で請求先を選択して出力" onclick="printCustomerLedgerPdf()">得意先明細PDF</button>
       </div>
@@ -8703,7 +8703,7 @@ function arStatementSnapshot(importerCode,range,profile){
     totalAmount:arRound(carryover+chargeAmount-paymentAmount)
   };
 }
-function arClosingStatementSnapshot(importerCode,selectedClosing,profile,asOfDate=today()){
+function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile){
   const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
   if(!selectedClosing||selectedClosing.status!=="closed"||!arSameImporter(selectedClosing.importer_code,importerCode,index))throw new Error("確定済みの請求締めを選択してください。");
   const closings=receivableClosings
@@ -8711,11 +8711,9 @@ function arClosingStatementSnapshot(importerCode,selectedClosing,profile,asOfDat
     .sort((a,b)=>String(a.period_to).localeCompare(String(b.period_to)));
   if(!closings.some(row=>row.id===selectedClosing.id))throw new Error("請求締めを再読込してください。");
   for(let i=1;i<closings.length;i++)if(closings[i].period_from<=closings[i-1].period_to)throw new Error("請求締め期間が重複しています。締め履歴を確認してください。");
-  const groups=closings.map(closing=>({closing,charges:[],payments:[],chargeAmount:0,paymentAmount:0,balance:0}));
-  const byClosingId=new Map(groups.map(group=>[group.closing.id,group]));
   const allClosings=new Map(receivableClosings.map(closing=>[closing.id,closing]));
-  const byChargeId=new Map(groups.flatMap(group=>(group.closing.snapshot?.charges||[]).map(row=>[row.id,group])));
-  const chargeGroup=new Map();
+  const range={from:selectedClosing.period_from,to:selectedClosing.period_to};
+  const asOfDate=range.to;
   const records=arStatementRecords(importerCode)
     .filter(row=>{
       if(String(row.invoice_date||"")>selectedClosing.period_to)return false;
@@ -8725,34 +8723,30 @@ function arClosingStatementSnapshot(importerCode,selectedClosing,profile,asOfDat
       if(postedClosing&&(!arSameImporter(postedClosing.importer_code,importerCode,index)||postedClosing.status!=="closed"))return false;
       return !postedClosing||String(postedClosing.period_to)<=selectedClosing.period_to;
     });
-  for(const row of records){
-    const group=row.source_type==="opening"?groups[0]:
-      byClosingId.get(row.closing_id)||byChargeId.get(row.id)||
-      groups.find(item=>String(row.invoice_date)>=item.closing.period_from&&String(row.invoice_date)<=item.closing.period_to);
-    if(!group)throw new Error(`${row.invoice_date||"日付不明"} の売掛に対応する請求締めがありません。`);
-    group.charges.push(row);
-    group.chargeAmount+=arNumber(row.amount_jpy);
-    chargeGroup.set(row.id,group);
-  }
-  const payments=receivablePayments.filter(payment=>
-    chargeGroup.has(payment.receivable_id)&&String(payment.payment_date||"")<=asOfDate
-  );
-  for(const payment of payments){
-    const group=chargeGroup.get(payment.receivable_id);
-    group.payments.push(payment);
-    group.paymentAmount+=arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy);
-  }
-  for(const group of groups)group.balance=arRound(group.chargeAmount-group.paymentAmount);
-  const closingRows=groups.filter(group=>Math.abs(group.balance)>.005||group.closing.id===selectedClosing.id);
-  const charges=groups.flatMap(group=>group.charges);
+  // Use the shared integer-cent report calculation; never change stored closing amounts on export.
+  const calculation=AccountingPeriodReport.build({
+    records:records.map(row=>({id:row.id,key:importerCode,code:importerCode,date:row.invoice_date,amount:row.amount_jpy,sourceType:row.source_type,taxKnown:true})),
+    payments:receivablePayments.map(row=>({id:row.id,recordId:row.receivable_id,date:row.payment_date,cash:row.amount_jpy,fee:row.bank_fee_jpy})),
+    range:{from:range.from,to:asOfDate},kind:"ar"
+  });
+  const charges=records.filter(row=>row.invoice_date>=range.from&&row.source_type!=="opening");
+  const invoiceRows=charges.filter(row=>row.source_type!=="adjustment").map(row=>{
+    const amount=arNumber(row.amount_jpy),shipping=arNumber(row.shipping_amount_jpy),adjustment=arNumber(row.adjustment_amount_jpy);
+    return {id:row.id,date:row.invoice_date,invoiceNo:row.invoice_no||arInvoiceNumber(row.invoice_date,row,index),
+      net:arRound(amount-shipping-adjustment),shipping,amount:arRound(amount-adjustment)};
+  }).sort((a,b)=>a.date.localeCompare(b.date)||a.invoiceNo.localeCompare(b.invoiceNo)||String(a.id).localeCompare(String(b.id)));
+  const invoiceAmount=arRound(invoiceRows.reduce((sum,row)=>sum+row.amount,0));
+  const currentAdjustments=arRound(calculation.totals.charges-invoiceAmount);
+  const beforeIds=new Set(records.filter(row=>row.invoice_date<range.from).map(row=>row.id));
+  const priorSettled=arRound(receivablePayments.filter(row=>beforeIds.has(row.receivable_id)&&row.payment_date>=range.from&&row.payment_date<=asOfDate)
+    .reduce((sum,row)=>sum+arNumber(row.amount_jpy)+arNumber(row.bank_fee_jpy),0));
+  const paymentAmount=arRound(calculation.totals.cash+calculation.totals.fee-priorSettled);
   return {
-    importerCode:arCanonicalImporterCode(importerCode),
-    range:{from:selectedClosing.period_from,to:selectedClosing.period_to},
-    profile,asOfDate,closingRows,charges,payments,
-    carryover:0,
-    chargeAmount:arRound(groups.reduce((sum,group)=>sum+group.chargeAmount,0)),
-    paymentAmount:arRound(groups.reduce((sum,group)=>sum+group.paymentAmount,0)),
-    totalAmount:arRound(groups.reduce((sum,group)=>sum+group.balance,0))
+    importerCode:arCanonicalImporterCode(importerCode,index),range,profile,asOfDate,charges,invoiceRows,invoiceAmount,
+    carryover:arRound(calculation.totals.opening-priorSettled),
+    chargeAmount:calculation.totals.charges,paymentAmount,currentAdjustments,
+    settlementAmount:arRound(currentAdjustments-paymentAmount),
+    totalAmount:calculation.totals.balance
   };
 }
 async function arSaveStatementIssue(snapshot,user){
@@ -8832,18 +8826,19 @@ async function arSaveStatementIssue(snapshot,user){
   return data;
 }
 function arStatementRowsHtml(snapshot){
-  const rows=snapshot.closingRows.map(group=>{
-    const closing=group.closing;
-    const period=`${arStatementDate(closing.period_from)} - ${arStatementDate(closing.period_to)}`;
-    return `<tr><td>${esc(arStatementDate(closing.period_to))}</td><td>Sales Closing ${esc(period)}</td><td class="amount">${esc(arStatementMoney(group.balance))}</td></tr>`;
+  const rows=snapshot.invoiceRows.map(row=>{
+    const date=esc(arStatementDate(row.date));
+    return `<tbody class="invoice-group"><tr><td>${date}</td><td>Export Invoice No.${esc(row.invoiceNo)}</td><td class="amount">${esc(arStatementMoney(row.net))}</td></tr>
+      <tr><td>${date}</td><td>Shipping Fee</td><td class="amount">${esc(arStatementMoney(row.shipping))}</td></tr>
+      <tr class="subtotal"><td></td><td>【TOTAL】</td><td class="amount">&lt; ${esc(arStatementMoney(row.amount))} &gt;</td></tr></tbody>`;
   });
-  rows.push(`<tr class="grand-total"><td></td><td>【TOTAL AMOUNT】</td><td class="amount">${esc(arStatementMoney(snapshot.totalAmount))}</td></tr>`);
+  rows.push(`<tbody><tr class="grand-total"><td></td><td>【TOTAL AMOUNT】</td><td class="amount">${esc(arStatementMoney(snapshot.totalAmount))}</td></tr></tbody>`);
   return rows.join("");
 }
 function arStatementDocumentHtml(snapshot,issue){
   const profile=snapshot.profile;
   const address=String(profile.address_text||"").split(/\r?\n/).map(line=>esc(line)).join("<br>");
-  const compact=snapshot.closingRows.length>10?" compact":"";
+  const compact=snapshot.invoiceRows.length>10?" compact":"";
   const logoUrl=new URL("./yumirume-logo.jpg",location.href).href;
   return `<!doctype html><html><head><meta charset="utf-8"><title>SOA ${esc(snapshot.importerCode)} ${esc(snapshot.range.from)}-${esc(snapshot.range.to)}</title>
   <style>
@@ -8851,24 +8846,25 @@ function arStatementDocumentHtml(snapshot,issue){
   *{box-sizing:border-box}
   body{margin:0;color:#111;background:#fff;font-family:"Courier New","Yu Gothic",monospace;font-size:9.5pt;line-height:1.17}
   .print-action{margin:0 0 5mm;padding:8px 14px;font-weight:700}
-  .sheet{position:relative;min-height:277mm;padding:3mm 5mm 0}
-  .title{text-align:center;font-family:"Times New Roman",serif;font-size:18pt;letter-spacing:7px;margin:0 0 5mm}
+  .sheet{position:relative;width:192mm;max-width:100%;min-height:277mm;margin:0 auto;padding:7mm 5mm 0}
+  .title{text-align:center;font-family:"Times New Roman",serif;font-size:18pt;letter-spacing:0;margin:0 0 5mm}
   .serial{position:absolute;right:5mm;top:0;font-family:"Times New Roman",serif;font-size:11pt}
-  .header{display:grid;grid-template-columns:58% 42%;gap:4mm;min-height:55mm}
+  .header{display:grid;grid-template-columns:minmax(0,58fr) minmax(0,42fr);gap:4mm;min-height:55mm}
   .customer{display:grid;grid-template-columns:25mm 1fr;gap:2mm}.customer-label{padding-top:1px}.customer-name{font-size:11pt;margin-bottom:2mm}.customer-address{min-height:16mm;line-height:1.24}.customer-phone{margin-top:2mm}
   .logo{text-align:right;height:25mm}.logo img{width:33mm;height:auto}.bank{margin-top:0;font-size:8.3pt;line-height:1.15}
-  .company{margin:1mm 0 2mm 15mm;font-size:8.5pt;line-height:1.2}.company-name{font-family:"Times New Roman",serif;font-size:12pt;letter-spacing:4px;margin-bottom:1mm}
-  .balance-head{display:grid;grid-template-columns:1fr auto;gap:8mm;align-items:end;margin:0 0 3mm}.total-label{font-size:11pt}.total-value{font-size:11pt;white-space:nowrap}.as-of{font-size:8pt;margin-top:1mm}
+  .company{margin:1mm 0 2mm 15mm;font-size:8.5pt;line-height:1.2}.company-name{font-family:"Times New Roman",serif;font-size:12pt;letter-spacing:0;margin-bottom:1mm}
+  .balance-head{margin:0 0 3mm}.balance-line{display:flex;justify-content:space-between;gap:4mm;margin-bottom:1mm}.total-label{font-size:11pt}.total-value{font-size:11pt;white-space:nowrap}.as-of{font-size:8pt;margin-top:1mm}
   table{width:100%;border-collapse:separate;border-spacing:0;border:1.4px solid #111;border-radius:3px;overflow:hidden}
   th,td{padding:.8mm 2.5mm;vertical-align:top}th{font-family:"Times New Roman",serif;font-weight:400;text-align:center;border-bottom:1px solid #111}
   th+th,td+td{border-left:1px solid #111}th:nth-child(1){width:24mm}th:nth-child(3){width:39mm}
   td.amount{text-align:right;white-space:nowrap}.subtotal td{padding-top:.2mm;padding-bottom:1.25mm}.subtotal td:nth-child(2){text-align:center;font-weight:700}.grand-total td{padding-top:1.4mm;font-weight:700}.grand-total td:nth-child(2){text-align:center}
+  thead{display:table-header-group}.invoice-group{break-inside:avoid;page-break-inside:avoid}.customer-address,.company,.bank{overflow-wrap:anywhere}
   .compact{font-size:8.8pt}.compact .header{min-height:52mm}.compact th,.compact td{padding-top:.6mm;padding-bottom:.6mm}.compact .subtotal td{padding-top:.15mm;padding-bottom:.9mm}
   @media print{.print-action{display:none}.sheet{min-height:0}}
   </style></head><body class="${compact.trim()}">
   <button class="print-action" onclick="window.print()">Print / Save PDF</button>
   <main class="sheet">
-    <div class="serial">No. ${esc(issue.statement_no)} &nbsp;&nbsp;&nbsp;&nbsp; Page. 1</div>
+    <div class="serial">No. ${esc(issue.statement_no)}</div>
     <h1 class="title">STATEMENT OF ACCOUNT</h1>
     <section class="header">
       <div>
@@ -8903,15 +8899,14 @@ function arStatementDocumentHtml(snapshot,issue){
       </div>
     </section>
     <div class="balance-head">
-      <div>
-        <div class="total-label">TOTAL AMOUNT</div>
-        <div class="as-of">Outstanding as of ${esc(snapshot.asOfDate)}</div>
-      </div>
-      <div class="total-value">${esc(arStatementMoney(snapshot.totalAmount))} ${esc(profile.currency||"JPY")}</div>
+      <div class="balance-line"><span>【Carryover amount】</span><span>${esc(arStatementMoney(snapshot.carryover))} JPY</span></div>
+      ${Math.abs(snapshot.settlementAmount)>.005?`<div class="balance-line"><span>Payments / Adjustments (total)</span><span>${esc(arStatementMoney(snapshot.settlementAmount))} JPY</span></div>`:""}
+      <div class="balance-line"><span class="total-label">TOTAL AMOUNT</span><span class="total-value">${esc(arStatementMoney(snapshot.totalAmount))} JPY</span></div>
+      <div class="as-of">Period: ${esc(snapshot.range.from)} - ${esc(snapshot.range.to)} / Balance as of ${esc(snapshot.asOfDate)}</div>
     </div>
     <table>
-      <thead><tr><th>Closing Date</th><th>Sales Closing Period</th><th>Balance</th></tr></thead>
-      <tbody>${arStatementRowsHtml(snapshot)}</tbody>
+      <thead><tr><th>Date</th><th>Invoice No.</th><th>Amount</th></tr></thead>
+      ${arStatementRowsHtml(snapshot)}
     </table>
   </main></body></html>`;
 }
@@ -8949,7 +8944,7 @@ async function printStatementOfAccount(){
     if(!closing)throw new Error(`${closingMonth} の請求締めがありません。対象月を確認してください。`);
     const profile=await loadStatementProfile(importerCode,{silent:true});
     if(!profile)throw new Error(`${importerCode} のSOA請求先情報を先に登録してください。`);
-    const snapshot=arClosingStatementSnapshot(importerCode,closing,profile);
+    const snapshot=arInvoiceStatementSnapshot(importerCode,closing,profile);
     const issue=await arReadStatementIssue(closing);
     printWindow.document.open();
     printWindow.document.write(arStatementDocumentHtml(snapshot,issue));
