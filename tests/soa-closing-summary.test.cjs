@@ -93,6 +93,31 @@ test('invoice-level corrections stay in their original invoice amount, never a s
   assert.doesNotMatch(model.arStatementDocumentHtml(snapshot,{statement_no:191}),/Payments \/ Adjustments/);
 });
 
+test('separate correction records with the same unique invoice reproduce every reference subtotal',()=>{
+  const rows=referenceRows.map(row=>({...row}));
+  for(const [amount,i] of [[-23100,0],[-1,2],[-1600,7],[200900,8],[-3500,8]]){
+    rows[i].net_sales_jpy-=amount;rows[i].amount_jpy-=amount;
+    rows.push({id:'correction-'+rows.length,importer_code:'01',source_type:'adjustment',closing_id:aug.id,
+      invoice_date:rows[i].invoice_date,invoice_no:rows[i].invoice_no,amount_jpy:amount});
+  }
+  const model=statementModel(rows,[],[aug]);const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  assert.equal(snapshot.totalAmount,9590443);assert.equal(snapshot.invoiceRows.length,9);assert.equal(snapshot.settlementAmount,0);
+  assert.deepEqual(Array.from(snapshot.invoiceRows,row=>[row.net,row.shipping,row.amount]),referenceRows.map(row=>[row.net_sales_jpy,row.shipping_amount_jpy,row.amount_jpy]));
+  assert.doesNotMatch(model.arStatementDocumentHtml(snapshot,{statement_no:191}),/Payments \/ Adjustments/);
+});
+
+test('ambiguous corrections stay in aggregate; explicit session links select the right same-day invoice',()=>{
+  const a={...sale('a','2026-08-03',1000,100),source_session_id:'one'},b={...sale('b','2026-08-03',2000,200),source_session_id:'two'};
+  const correction={id:'c',importer_code:'01',source_type:'adjustment',closing_id:'aug',invoice_date:a.invoice_date,invoice_no:a.invoice_no,amount_jpy:-50};
+  const model=statementModel([a,b,correction],[],[aug]);
+  let snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  assert.equal(snapshot.invoiceRows.length,2);assert.equal(snapshot.settlementAmount,-50);assert.equal(snapshot.invoiceRows[0].amount,1100);
+  correction.source_session_id='two';correction.shipping_amount_jpy=-50;
+  snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  assert.equal(snapshot.settlementAmount,0);assert.equal(snapshot.invoiceRows[1].net,2000);
+  assert.equal(snapshot.invoiceRows[1].shipping,150);assert.equal(snapshot.totalAmount,3250);
+});
+
 test('opening balances, overpayment, same-date invoices and other importers stay distinct',()=>{
   const rows=[{id:'opening',importer_code:'01',source_type:'opening',invoice_date:'2026-07-31',amount_jpy:1000},
     sale('a','2026-08-03',2000),sale('b','2026-08-03',500),{...sale('other','2026-08-03',999),importer_code:'02'}];

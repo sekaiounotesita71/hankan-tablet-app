@@ -8732,9 +8732,20 @@ function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile){
   const charges=records.filter(row=>row.invoice_date>=range.from&&row.source_type!=="opening");
   const invoiceRows=charges.filter(row=>row.source_type!=="adjustment").map(row=>{
     const amount=arNumber(row.amount_jpy),shipping=arNumber(row.shipping_amount_jpy);
-    return {id:row.id,date:row.invoice_date,invoiceNo:row.invoice_no||arInvoiceNumber(row.invoice_date,row,index),
+    return {id:row.id,sessionId:row.source_session_id,date:row.invoice_date,invoiceNo:row.invoice_no||arInvoiceNumber(row.invoice_date,row,index),
       net:arRound(amount-shipping),shipping,amount:arRound(amount)};
   }).sort((a,b)=>a.date.localeCompare(b.date)||a.invoiceNo.localeCompare(b.invoiceNo)||String(a.id).localeCompare(String(b.id)));
+  // Fold separately stored corrections only when their invoice can be identified unambiguously.
+  for(const row of charges.filter(row=>row.source_type==="adjustment")){
+    const invoiceNo=row.invoice_no||arInvoiceNumber(row.invoice_date,row,index);
+    const candidates=row.source_session_id?invoiceRows.filter(item=>item.sessionId===row.source_session_id):
+      invoiceRows.filter(item=>invoiceNo&&item.invoiceNo===invoiceNo&&item.date===row.invoice_date);
+    if(candidates.length!==1)continue;
+    const invoice=candidates[0],amount=arNumber(row.amount_jpy),shipping=arNumber(row.shipping_amount_jpy);
+    invoice.net=arRound(invoice.net+amount-shipping);
+    invoice.shipping=arRound(invoice.shipping+shipping);
+    invoice.amount=arRound(invoice.amount+amount);
+  }
   const invoiceAmount=arRound(invoiceRows.reduce((sum,row)=>sum+row.amount,0));
   const currentAdjustments=arRound(calculation.totals.charges-invoiceAmount);
   const beforeIds=new Set(records.filter(row=>row.invoice_date<range.from).map(row=>row.id));
