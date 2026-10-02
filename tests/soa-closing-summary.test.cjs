@@ -36,6 +36,32 @@ const referenceRows=[
   ['24',867483,128590],['27',1202235,137905],['31',1221372,156375]
 ].map(([day,net,shipping])=>sale('aug-'+day,'2026-08-'+day,net,shipping));
 
+test('SOA month is next to its export button, outside collapsible closing details',()=>{
+  const toolbar=source('<section class="panel workspace-panel" data-workspace-panel="receivables"','<div class="hint" id="ar-state"');
+  assert.equal((html.match(/id="ar-closing-month"/g)||[]).length,1);
+  assert.match(toolbar,/<label id="ar-closing-month-filter" hidden>SOA・請求締め対象月<input id="ar-closing-month" type="month" onchange="refreshClosingSalesPreview\(\{force:true\}\)"><\/label>\s*<button[^>]*id="ar-soa-button"/);
+  assert.doesNotMatch(source('<details class="ar-entry ar-statement-profile" id="ar-closing-section"','<section class="panel workspace-panel" data-workspace-panel="guide"'),/id="ar-closing-month"/);
+});
+
+test('SOA month and button stay visible together, retaining the month across view changes',async()=>{
+  const nodes=new Map(),loads=[];
+  const node=id=>{
+    if(!nodes.has(id))nodes.set(id,{hidden:false,style:{},value:id==='ar-closing-month'?'2026-08':''});
+    return nodes.get(id);
+  };
+  const ctx={document:{getElementById:node,querySelectorAll:()=>[]},renderReceivables(){},
+    async loadStatementProfileFromSelectedImporter(silent){loads.push(silent)},async refreshClosingSalesPreview(){}};
+  vm.runInNewContext(source('function setReceivableView(','function openReceivableImporterDetail('),ctx);
+  for(const view of ['closing','detail','summary','payments','setup','closing']){
+    ctx.setReceivableView(view);
+    assert.equal(node('ar-closing-month-filter').hidden,view!=='closing');
+    assert.equal(node('ar-soa-button').hidden,view!=='closing');
+    assert.equal(node('ar-closing-month').value,'2026-08');
+  }
+  await Promise.resolve();
+  assert.deepEqual(loads,[true,true],'entering the view must not open a blocking missing-importer alert');
+});
+
 test('reference August SOA: nine invoices, shipping and subtotals total exactly 9,590,443',()=>{
   const model=statementModel(referenceRows,[],[aug]);
   const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);

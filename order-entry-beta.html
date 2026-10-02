@@ -534,6 +534,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="ar-search-filter" hidden>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
         <button class="btn" id="ar-reload-button" type="button" onclick="loadReceivables()">再読込</button>
         <button class="btn primary" id="ar-sync-button" type="button" onclick="syncSalesToReceivables()">対象期間を再同期</button>
+        <label id="ar-closing-month-filter" hidden>SOA・請求締め対象月<input id="ar-closing-month" type="month" onchange="refreshClosingSalesPreview({force:true})"></label>
         <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">選択月のSOA出力</button>
         <button class="btn" id="ar-list-pdf-button" type="button" onclick="printReceivableListPdf()">売掛一覧PDF</button>
         <button class="btn" id="ar-ledger-pdf-button" type="button" title="輸入社欄で請求先を選択して出力" onclick="printCustomerLedgerPdf()">得意先明細PDF</button>
@@ -600,8 +601,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <summary>請求締め</summary>
         <div class="ar-entry-body">
           <div class="ar-closing-grid">
-            <label>対象月<input id="ar-closing-month" type="month" onchange="refreshClosingSalesPreview({force:true})"></label>
-            <div class="hint">上部の輸入社を選択すると、マスタの締め条件から期間と支払期限を自動計算します。</div>
+            <div class="hint" style="grid-column:span 2">上部の輸入社と対象月から、締め期間と支払期限を表示します。</div>
             <button class="btn" type="button" onclick="loadStatementProfileFromSelectedImporter().then(()=>refreshClosingSalesPreview({force:true}))">条件を再読込</button>
             <button class="btn primary" type="button" onclick="closeAccountsReceivablePeriod()">請求締めを実行</button>
             <div class="ar-closing-preview">
@@ -7467,6 +7467,7 @@ function setReceivableView(view,options={}){
     "ar-search-filter":receivableView==="detail",
     "ar-reload-button":true,
     "ar-sync-button":receivableView==="detail",
+    "ar-closing-month-filter":receivableView==="closing",
     "ar-soa-button":receivableView==="closing"
   };
   Object.entries(visibility).forEach(([id,visible])=>{
@@ -7475,7 +7476,7 @@ function setReceivableView(view,options={}){
   });
   renderReceivables();
   if(receivableView==="closing"){
-    loadStatementProfileFromSelectedImporter().then(()=>refreshClosingSalesPreview({force:true}));
+    loadStatementProfileFromSelectedImporter(true).then(()=>refreshClosingSalesPreview({force:true}));
   }
 }
 function openReceivableImporterDetail(button){
