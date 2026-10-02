@@ -21,7 +21,7 @@ function statementModel(rows,payments,closings){
     today:()=> '2026-10-02',esc:value=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;'),
     URL,location:{href:'https://example.com/order-entry-beta.html'}};
   vm.runInNewContext(source('function arStatementDate(','async function arAssignInvoiceNumbers(')+
-    source('function arInvoiceStatementSnapshot(','async function arSaveStatementIssue(')+
+    source('function arStatementAdjustmentCandidates(','async function arSaveStatementIssue(')+
     source('function arStatementRowsHtml(','async function printStatementOfAccount('),ctx);
   return ctx;
 }
@@ -31,6 +31,95 @@ const sale=(id,date,net,shipping=0,closing=aug)=>({id,importer_code:'01',source_
   invoice_date:date,invoice_no:date.replaceAll('-','')+'001',net_sales_jpy:net,shipping_amount_jpy:shipping,amount_jpy:net+shipping});
 const receipt=(id,recordId,date,amount,fee=0)=>({id,receivable_id:recordId,payment_date:date,amount_jpy:amount,bank_fee_jpy:fee});
 const profile={customer_name:'DIM Pte,Ltd.',currency:'JPY'};
+function readOnlySoaClient(tables,calls=[],failTable=''){
+  return {from(table){
+    assert.ok(Object.hasOwn(tables,table),`unexpected table ${table}`);
+    let key,values;
+    const query={select(columns){calls.push({table,columns});return query},
+      in(field,ids){key=field;values=ids;return query},order(){return query},
+      async range(from,to){return table===failTable?{error:new Error('read failed')}:
+        {data:tables[table].filter(row=>values.includes(row[key])).slice(from,to+1)}}};
+    return query;
+  }};
+}
+function customerSiteFixture(){
+  return {pending_entries:[],order_lines:[],order_entry_lines:[],order_entry_batches:[],customer_master:[]};
+}
+function twoSiteCredits(){
+  return [{...sale('osaka','2026-09-28',923720,128765,sep),source_session_id:'o',_referenceSite:'OSA'},
+    {...sale('tokyo','2026-09-28',621416,93745,sep),source_session_id:'t',_referenceSite:'TYO'},
+    ...[['s1','010001',-7200],['s2','010001',-8000],['o1','010002',-5610],['o2','010002',-1350]]
+      .map(([id,code,amount])=>({id,importer_code:'01',source_type:'adjustment',closing_id:'sep',invoice_date:'2026-09-28',
+        customer_code:code,customer_name:'same display name',amount_jpy:amount,site_code:'OSA'}))];
+}
+
+test('same-number invoices fold four credits by customer code without changing the billing total',async()=>{
+  const rows=twoSiteCredits(),before=JSON.stringify(rows),tables=customerSiteFixture();
+  tables.customer_master=[{id:'s',customer_code:'010001',customer_name:'same display name',importer_code:'01',site_code:'TYO'},
+    {id:'o',customer_code:'010002',customer_name:'same display name',importer_code:'01',site_code:'OSA'}];
+  const model=statementModel(rows,[],[sep]);model.initSupabase=()=>readOnlySoaClient(tables);
+  const beforeSnapshot=model.arInvoiceStatementSnapshot('01',sep,profile);
+  const matches=await model.arStatementAdjustmentInvoices(beforeSnapshot);
+  assert.equal(matches.size,4);assert.equal(matches.get('s1'),'tokyo');assert.equal(matches.get('o2'),'osaka');
+  const snapshot=model.arInvoiceStatementSnapshot('01',sep,profile,matches);
+  assert.equal(snapshot.invoiceRows.find(row=>row.id==='tokyo').amount,699961);
+  assert.equal(snapshot.invoiceRows.find(row=>row.id==='osaka').amount,1045525);
+  assert.equal(snapshot.currentAdjustments,0);assert.equal(snapshot.invoiceAmount,snapshot.totalAmount);
+  assert.equal(snapshot.totalAmount,beforeSnapshot.totalAmount);assert.equal(JSON.stringify(rows),before);
+});
+
+test('original order customer code wins over a changed customer master site',async()=>{
+  const rows=twoSiteCredits(),tables=customerSiteFixture(),calls=[];
+  tables.order_lines=[{id:'wl',session_id:'t',importer_code:'01',source_order_line_id:'el'}];
+  tables.order_entry_lines=[{id:'el',batch_id:'batch'}];
+  tables.order_entry_batches=[{id:'batch',importer_code:'01',customer_code:'010001'}];
+  tables.customer_master=[{id:'s',customer_code:'010001',importer_code:'01',site_code:'OSA'}];
+  const model=statementModel(rows,[],[sep]);model.initSupabase=()=>readOnlySoaClient(tables,calls);
+  const matches=await model.arStatementAdjustmentInvoices(model.arInvoiceStatementSnapshot('01',sep,profile));
+  assert.equal(matches.get('s1'),'tokyo');assert.equal(matches.get('s2'),'tokyo');assert.equal(matches.size,2);
+  assert.equal(calls.filter(call=>call.table==='order_lines').length,1);
+});
+
+test('legacy adjustment obtains its code from its exact linked pending entry, not a name',async()=>{
+  const rows=twoSiteCredits(),tables=customerSiteFixture();
+  const id='12345678-1234-1234-1234-123456789abc';
+  rows[2].customer_code=null;rows[2].source_key='pending:'+id;
+  rows[3].customer_code=null;rows[3].source_key='pending:invalid';
+  tables.pending_entries=[{id,importer_code:'01',customer_code:'010001'}];
+  tables.customer_master=[{id:'s',customer_code:'010001',importer_code:'01',site_code:'TYO'}];
+  const model=statementModel(rows,[],[sep]);model.initSupabase=()=>readOnlySoaClient(tables);
+  const snapshot=model.arInvoiceStatementSnapshot('01',sep,profile);
+  let matches=await model.arStatementAdjustmentInvoices(snapshot);
+  assert.equal(matches.get('s1'),'tokyo');assert.equal(matches.has('s2'),false);
+  tables.pending_entries[0].importer_code='02';
+  matches=await model.arStatementAdjustmentInvoices(snapshot);assert.equal(matches.size,0);
+});
+
+test('ambiguous historical codes, duplicate masters, foreign importers and missing sites stay unallocated',async()=>{
+  const rows=twoSiteCredits(),tables=customerSiteFixture();
+  tables.order_lines=['o','t'].map(session=>({id:session,session_id:session,importer_code:'01',source_order_line_id:session}));
+  tables.order_entry_lines=['o','t'].map(id=>({id,batch_id:id}));
+  tables.order_entry_batches=['o','t'].map(id=>({id,importer_code:'01',customer_code:'010001'}));
+  tables.customer_master=[{id:'s',customer_code:'010001',importer_code:'01',site_code:'TYO'},
+    {id:'o',customer_code:'010002',importer_code:'01',site_code:'OSA'},
+    {id:'other',customer_code:'010002',importer_code:'01',site_code:'TYO'}];
+  const model=statementModel(rows,[],[sep]);model.initSupabase=()=>readOnlySoaClient(tables);
+  const snapshot=model.arInvoiceStatementSnapshot('01',sep,profile);
+  assert.equal((await model.arStatementAdjustmentInvoices(snapshot)).size,0);
+  tables.customer_master=[{id:'foreign',customer_code:'010002',importer_code:'02',site_code:'OSA'},
+    {id:'no-site',customer_code:'010002',importer_code:'01',site_code:null},
+    {id:'different-code',customer_code:'10002',importer_code:'01',site_code:'OSA'}];
+  assert.equal((await model.arStatementAdjustmentInvoices(snapshot)).size,0);
+});
+
+test('failed customer evidence reads abort output; already unique invoices need no extra reads',async()=>{
+  const rows=twoSiteCredits(),tables=customerSiteFixture();
+  const model=statementModel(rows,[],[sep]);model.initSupabase=()=>readOnlySoaClient(tables,[],'order_lines');
+  await assert.rejects(model.arStatementAdjustmentInvoices(model.arInvoiceStatementSnapshot('01',sep,profile)),/read failed/);
+  rows.filter(row=>row.source_type==='adjustment').forEach(row=>{row.source_session_id='t'});
+  assert.equal((await model.arStatementAdjustmentInvoices(model.arInvoiceStatementSnapshot('01',sep,profile))).size,0);
+});
+
 const referenceRows=[
   ['03',1043670,133976],['06',1100024,120527],['10',641103,119807],
   ['13',864385,116916],['17',774892,125050],['20',718368,117765],

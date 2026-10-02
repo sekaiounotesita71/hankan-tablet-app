@@ -8704,7 +8704,65 @@ function arStatementSnapshot(importerCode,range,profile){
     totalAmount:arRound(carryover+chargeAmount-paymentAmount)
   };
 }
-function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile){
+function arStatementAdjustmentCandidates(row,invoiceRows,index){
+  const invoiceNo=row.invoice_no||arInvoiceNumber(row.invoice_date,row,index);
+  return row.source_session_id?invoiceRows.filter(item=>item.sessionId===row.source_session_id):
+    invoiceRows.filter(item=>invoiceNo&&item.invoiceNo===invoiceNo&&item.date===row.invoice_date);
+}
+async function arStatementAdjustmentInvoices(snapshot){
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  const ambiguous=snapshot.charges.filter(row=>row.source_type==="adjustment"&&!row.source_session_id&&
+    arStatementAdjustmentCandidates(row,snapshot.invoiceRows,index).length>1);
+  const resolved=new Map();
+  if(!ambiguous.length)return resolved;
+  const client=initSupabase();
+  const normalize=value=>String(value||"").normalize("NFKC").trim();
+  const pendingId=row=>String(row.source_key||"").match(/^pending:([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})$/i)?.[1];
+  const pending=await ReferenceSites.readLinked(client,"pending_entries","id,importer_code,customer_code","id",
+    ambiguous.filter(row=>!normalize(row.customer_code)).map(pendingId));
+  const pendingById=new Map(pending.map(row=>[row.id,row]));
+  const customerCode=row=>{
+    if(normalize(row.customer_code))return normalize(row.customer_code);
+    const entry=pendingById.get(pendingId(row));
+    return entry&&arSameImporter(entry.importer_code,snapshot.importerCode,index)?normalize(entry.customer_code):"";
+  };
+  const coded=ambiguous.filter(row=>customerCode(row));
+  if(!coded.length)return resolved;
+  const sessions=coded.flatMap(row=>arStatementAdjustmentCandidates(row,snapshot.invoiceRows,index).map(item=>item.sessionId));
+  const workLines=await ReferenceSites.readLinked(client,"order_lines","id,session_id,importer_code,source_order_line_id","session_id",sessions);
+  const sourceLines=await ReferenceSites.readLinked(client,"order_entry_lines","id,batch_id","id",workLines.map(row=>row.source_order_line_id));
+  const batches=await ReferenceSites.readLinked(client,"order_entry_batches","id,importer_code,customer_code","id",sourceLines.map(row=>row.batch_id));
+  const batchesById=new Map(batches.map(row=>[row.id,row]));
+  const batchByLine=new Map(sourceLines.map(row=>[row.id,batchesById.get(row.batch_id)]));
+  const codesBySession=new Map();
+  for(const line of workLines){
+    const batch=batchByLine.get(line.source_order_line_id);
+    if(!batch||!arSameImporter(batch.importer_code,snapshot.importerCode,index)||
+      (line.importer_code&&!arSameImporter(line.importer_code,snapshot.importerCode,index)))continue;
+    const code=normalize(batch.customer_code);
+    if(!code)continue;
+    if(!codesBySession.has(line.session_id))codesBySession.set(line.session_id,new Set());
+    codesBySession.get(line.session_id).add(code);
+  }
+  const unmatched=[];
+  for(const row of coded){
+    const matches=arStatementAdjustmentCandidates(row,snapshot.invoiceRows,index)
+      .filter(invoice=>codesBySession.get(invoice.sessionId)?.has(customerCode(row)));
+    if(matches.length===1)resolved.set(row.id,matches[0].id);
+    else if(!matches.length)unmatched.push(row);
+  }
+  // Legacy PDF/CSV work may have no order link. Use an exact customer code's unique site, never its name.
+  const customers=await ReferenceSites.readLinked(client,"customer_master","id,customer_code,importer_code,site_code","customer_code",unmatched.map(customerCode));
+  for(const row of unmatched){
+    const matches=customers.filter(customer=>normalize(customer.customer_code)===customerCode(row)&&
+      arSameImporter(customer.importer_code,snapshot.importerCode,index));
+    if(matches.length!==1||!["OSA","TYO"].includes(matches[0].site_code))continue;
+    const invoices=arStatementAdjustmentCandidates(row,snapshot.invoiceRows,index).filter(invoice=>invoice.siteCode===matches[0].site_code);
+    if(invoices.length===1)resolved.set(row.id,invoices[0].id);
+  }
+  return resolved;
+}
+function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile,adjustmentInvoices=new Map()){
   const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
   if(!selectedClosing||selectedClosing.status!=="closed"||!arSameImporter(selectedClosing.importer_code,importerCode,index))throw new Error("確定済みの請求締めを選択してください。");
   const closings=receivableClosings
@@ -8739,9 +8797,8 @@ function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile){
   }).sort((a,b)=>a.date.localeCompare(b.date)||a.invoiceNo.localeCompare(b.invoiceNo)||String(a.id).localeCompare(String(b.id)));
   // Fold separately stored corrections only when their invoice can be identified unambiguously.
   for(const row of charges.filter(row=>row.source_type==="adjustment")){
-    const invoiceNo=row.invoice_no||arInvoiceNumber(row.invoice_date,row,index);
-    const candidates=row.source_session_id?invoiceRows.filter(item=>item.sessionId===row.source_session_id):
-      invoiceRows.filter(item=>invoiceNo&&item.invoiceNo===invoiceNo&&item.date===row.invoice_date);
+    let candidates=arStatementAdjustmentCandidates(row,invoiceRows,index);
+    if(candidates.length>1&&adjustmentInvoices.has(row.id))candidates=candidates.filter(item=>item.id===adjustmentInvoices.get(row.id));
     if(candidates.length!==1)continue;
     const invoice=candidates[0],amount=arNumber(row.amount_jpy),shipping=arNumber(row.shipping_amount_jpy);
     invoice.net=arRound(invoice.net+amount-shipping);
@@ -8971,7 +9028,9 @@ async function printStatementOfAccount(){
     if(!closing)throw new Error(`${closingMonth} の請求締めがありません。対象月を確認してください。`);
     const profile=await loadStatementProfile(importerCode,{silent:true});
     if(!profile)throw new Error(`${importerCode} のSOA請求先情報を先に登録してください。`);
-    const snapshot=arInvoiceStatementSnapshot(importerCode,closing,profile);
+    let snapshot=arInvoiceStatementSnapshot(importerCode,closing,profile);
+    const adjustmentInvoices=await arStatementAdjustmentInvoices(snapshot);
+    if(adjustmentInvoices.size)snapshot=arInvoiceStatementSnapshot(importerCode,closing,profile,adjustmentInvoices);
     const issue=await arReadStatementIssue(closing);
     printWindow.document.open();
     printWindow.document.write(arStatementDocumentHtml(snapshot,issue));
