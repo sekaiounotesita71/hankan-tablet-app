@@ -534,7 +534,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="ar-search-filter" hidden>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
         <button class="btn" id="ar-reload-button" type="button" onclick="loadReceivables()">再読込</button>
         <button class="btn primary" id="ar-sync-button" type="button" onclick="syncSalesToReceivables()">対象期間を再同期</button>
-        <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">選択月のSOA出力</button>
+        <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">選択月までのSOA出力</button>
         <button class="btn" id="ar-list-pdf-button" type="button" onclick="printReceivableListPdf()">売掛一覧PDF</button>
         <button class="btn" id="ar-ledger-pdf-button" type="button" title="輸入社欄で請求先を選択して出力" onclick="printCustomerLedgerPdf()">得意先明細PDF</button>
       </div>
@@ -8654,8 +8654,9 @@ function arStatementMoney(value){
   return arNumber(value).toLocaleString("en-US",{maximumFractionDigits:2});
 }
 function arStatementRecords(importerCode){
-  const code=arCanonicalImporterCode(importerCode);
-  return receivableRows.filter(row=>arIsOperationRow(row)&&arSameImporter(row,code));
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  const code=arCanonicalImporterCode(importerCode,index);
+  return receivableRows.filter(row=>arIsOperationRow(row)&&arSameImporter(row,code,index));
 }
 async function arAssignInvoiceNumbers(rows){
   const salesRows=rows.filter(row=>row.source_type==="sales");
@@ -8703,17 +8704,25 @@ function arStatementSnapshot(importerCode,range,profile){
   };
 }
 function arClosingStatementSnapshot(importerCode,selectedClosing,profile,asOfDate=today()){
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  if(!selectedClosing||selectedClosing.status!=="closed"||!arSameImporter(selectedClosing.importer_code,importerCode,index))throw new Error("確定済みの請求締めを選択してください。");
   const closings=receivableClosings
-    .filter(row=>row.status==="closed"&&arSameImporter(row.importer_code,importerCode)&&String(row.period_to)<=selectedClosing.period_to)
+    .filter(row=>row.status==="closed"&&arSameImporter(row.importer_code,importerCode,index)&&String(row.period_to)<=selectedClosing.period_to)
     .sort((a,b)=>String(a.period_to).localeCompare(String(b.period_to)));
+  if(!closings.some(row=>row.id===selectedClosing.id))throw new Error("請求締めを再読込してください。");
+  for(let i=1;i<closings.length;i++)if(closings[i].period_from<=closings[i-1].period_to)throw new Error("請求締め期間が重複しています。締め履歴を確認してください。");
   const groups=closings.map(closing=>({closing,charges:[],payments:[],chargeAmount:0,paymentAmount:0,balance:0}));
   const byClosingId=new Map(groups.map(group=>[group.closing.id,group]));
+  const allClosings=new Map(receivableClosings.map(closing=>[closing.id,closing]));
   const byChargeId=new Map(groups.flatMap(group=>(group.closing.snapshot?.charges||[]).map(row=>[row.id,group])));
   const chargeGroup=new Map();
   const records=arStatementRecords(importerCode)
     .filter(row=>{
-      if(!arIsPostedReceivable(row)||String(row.invoice_date||"")>selectedClosing.period_to)return false;
-      const postedClosing=receivableClosings.find(item=>item.id===row.closing_id);
+      if(String(row.invoice_date||"")>selectedClosing.period_to)return false;
+      if(row.source_type!=="opening"&&!row.closing_id)return false;
+      const postedClosing=allClosings.get(row.closing_id);
+      if(row.closing_id&&!postedClosing)throw new Error("売掛に紐づく締め履歴がありません。再読込して確認してください。");
+      if(postedClosing&&(!arSameImporter(postedClosing.importer_code,importerCode,index)||postedClosing.status!=="closed"))return false;
       return !postedClosing||String(postedClosing.period_to)<=selectedClosing.period_to;
     });
   for(const row of records){
@@ -8746,7 +8755,7 @@ function arClosingStatementSnapshot(importerCode,selectedClosing,profile,asOfDat
     totalAmount:arRound(groups.reduce((sum,group)=>sum+group.balance,0))
   };
 }
-async function arSaveStatementIssue(snapshot,user,options={}){
+async function arSaveStatementIssue(snapshot,user){
   const client=initSupabase();
   const activeClosing=receivableClosings.find(row=>
     arSameImporter(row.importer_code,snapshot.importerCode)&&
@@ -8754,7 +8763,7 @@ async function arSaveStatementIssue(snapshot,user,options={}){
     row.period_to===snapshot.range.to&&
     row.status==="closed"
   );
-  if(activeClosing?.statement_id&&!options.refresh){
+  if(activeClosing?.statement_id){
     const {data,error}=await client.from("accounts_receivable_statements")
       .select("*")
       .eq("id",activeClosing.statement_id)
@@ -8794,26 +8803,15 @@ async function arSaveStatementIssue(snapshot,user,options={}){
         amount_jpy:payment.amount_jpy,
         bank_fee_jpy:payment.bank_fee_jpy,
         reference_no:payment.reference_no
-      })),
-      ...(snapshot.closingRows?{
-        as_of_date:snapshot.asOfDate,
-        closings:snapshot.closingRows.map(group=>({
-          closing_id:group.closing.id,
-          period_from:group.closing.period_from,
-          period_to:group.closing.period_to,
-          charge_amount_jpy:arRound(group.chargeAmount),
-          payment_amount_jpy:arRound(group.paymentAmount),
-          balance_jpy:group.balance
-        }))
-      }:{})
+      }))
     },
     issued_by:user.id,
     issued_at:new Date().toISOString()
   };
-  if(activeClosing?.statement_id||existingResult.data){
+  if(existingResult.data){
     const {data,error}=await client.from("accounts_receivable_statements")
       .update(payload)
-      .eq("id",activeClosing?.statement_id||existingResult.data.id)
+      .eq("id",existingResult.data.id)
       .select("*")
       .single();
     if(error)throw error;
@@ -8917,9 +8915,24 @@ function arStatementDocumentHtml(snapshot,issue){
     </table>
   </main></body></html>`;
 }
+function arSelectedStatementClosing(importerCode,month){
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  return receivableClosings.filter(row=>row.status==="closed"&&arSameImporter(row.importer_code,importerCode,index)&&String(row.period_to||"").slice(0,7)===month)
+    .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to)))[0];
+}
+async function arReadStatementIssue(closing){
+  if(!closing.statement_id)throw new Error("この締めのSOA保存情報がありません。締め履歴を確認してください。");
+  const {data,error}=await initSupabase().from("accounts_receivable_statements").select("*").eq("id",closing.statement_id).single();
+  if(error)throw error;
+  if(!data||!arSameImporter(data.importer_code,closing.importer_code)||data.period_from!==closing.period_from||data.period_to!==closing.period_to)throw new Error("SOAの保存情報と請求締めが一致しません。");
+  return data;
+}
+let arStatementPrinting=false;
 async function printStatementOfAccount(){
+  if(arStatementPrinting)return;
   const printWindow=window.open("","_blank");
   if(!printWindow){alert("印刷画面を開けません。ポップアップを許可してください。");return}
+  arStatementPrinting=true;
   printWindow.document.write('<!doctype html><html><body style="font-family:sans-serif;padding:24px">SOAを作成しています...</body></html>');
   printWindow.document.close();
   try{
@@ -8929,17 +8942,15 @@ async function printStatementOfAccount(){
     const closingMonth=val("ar-closing-month");
     if(!importerCode)throw new Error("SOAを出力する輸入社コードを選択してください。");
     if(!closingMonth)throw new Error("SOAを出力する締め対象月を選択してください。");
+    receivablesLoaded=false;
     await loadReceivables();
     if(!receivablesLoaded)throw new Error("売掛データを読み込めません。");
-    const closing=receivableClosings.find(row=>
-      row.status==="closed"&&arSameImporter(row.importer_code,importerCode)&&
-      String(row.period_to||"").slice(0,7)===closingMonth
-    );
+    const closing=arSelectedStatementClosing(importerCode,closingMonth);
     if(!closing)throw new Error(`${closingMonth} の請求締めがありません。対象月を確認してください。`);
     const profile=await loadStatementProfile(importerCode,{silent:true});
     if(!profile)throw new Error(`${importerCode} のSOA請求先情報を先に登録してください。`);
     const snapshot=arClosingStatementSnapshot(importerCode,closing,profile);
-    const issue=await arSaveStatementIssue(snapshot,user,{refresh:true});
+    const issue=await arReadStatementIssue(closing);
     printWindow.document.open();
     printWindow.document.write(arStatementDocumentHtml(snapshot,issue));
     printWindow.document.close();
@@ -8947,6 +8958,8 @@ async function printStatementOfAccount(){
   }catch(error){
     printWindow.close();
     alert(arDbErrorMessage(error));
+  }finally{
+    arStatementPrinting=false;
   }
 }
 function accountingReportDate(value){
