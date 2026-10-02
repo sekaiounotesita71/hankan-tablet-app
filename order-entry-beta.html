@@ -8731,9 +8731,9 @@ function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile){
   });
   const charges=records.filter(row=>row.invoice_date>=range.from&&row.source_type!=="opening");
   const invoiceRows=charges.filter(row=>row.source_type!=="adjustment").map(row=>{
-    const amount=arNumber(row.amount_jpy),shipping=arNumber(row.shipping_amount_jpy),adjustment=arNumber(row.adjustment_amount_jpy);
+    const amount=arNumber(row.amount_jpy),shipping=arNumber(row.shipping_amount_jpy);
     return {id:row.id,date:row.invoice_date,invoiceNo:row.invoice_no||arInvoiceNumber(row.invoice_date,row,index),
-      net:arRound(amount-shipping-adjustment),shipping,amount:arRound(amount-adjustment)};
+      net:arRound(amount-shipping),shipping,amount:arRound(amount)};
   }).sort((a,b)=>a.date.localeCompare(b.date)||a.invoiceNo.localeCompare(b.invoiceNo)||String(a.id).localeCompare(String(b.id)));
   const invoiceAmount=arRound(invoiceRows.reduce((sum,row)=>sum+row.amount,0));
   const currentAdjustments=arRound(calculation.totals.charges-invoiceAmount);

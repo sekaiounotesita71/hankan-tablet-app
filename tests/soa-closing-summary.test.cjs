@@ -74,12 +74,23 @@ test('partial receipts, fees, credit notes and embedded adjustments reconcile wi
   const payments=[receipt('p1','a','2026-08-20',480,20),receipt('future','a','2026-09-01',500)];
   const model=statementModel([a,credit],payments,[aug]);
   const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
-  assert.equal(snapshot.invoiceRows[0].net,2000);assert.equal(snapshot.invoiceRows[0].amount,2300);
-  assert.equal(snapshot.currentAdjustments,-300);assert.equal(snapshot.paymentAmount,500);
-  assert.equal(snapshot.settlementAmount,-800);assert.equal(snapshot.totalAmount,1500);
+  assert.equal(snapshot.invoiceRows[0].net,1900);assert.equal(snapshot.invoiceRows[0].amount,2200);
+  assert.equal(snapshot.currentAdjustments,-200);assert.equal(snapshot.paymentAmount,500);
+  assert.equal(snapshot.settlementAmount,-700);assert.equal(snapshot.totalAmount,1500);
   const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
-  assert.match(report,/Payments \/ Adjustments \(total\)/);assert.match(report,/-800 JPY/);
+  assert.match(report,/Payments \/ Adjustments \(total\)/);assert.match(report,/-700 JPY/);
   assert.doesNotMatch(report,/Private credit reason|<td>Payment|<td>Adjustment/);
+});
+
+test('invoice-level corrections stay in their original invoice amount, never a separate adjustment line',()=>{
+  const corrected=referenceRows.map(row=>({...row}));
+  const changes=[[-23100,0],[-1,2],[-1600,7],[197400,8]];
+  for(const [adjustment,i] of changes){corrected[i].adjustment_amount_jpy=adjustment;corrected[i].net_sales_jpy-=adjustment}
+  const model=statementModel(corrected,[],[aug]);
+  const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  assert.equal(snapshot.totalAmount,9590443);assert.equal(snapshot.settlementAmount,0);
+  assert.deepEqual(Array.from(snapshot.invoiceRows,row=>row.net),referenceRows.map(row=>row.net_sales_jpy));
+  assert.doesNotMatch(model.arStatementDocumentHtml(snapshot,{statement_no:191}),/Payments \/ Adjustments/);
 });
 
 test('opening balances, overpayment, same-date invoices and other importers stay distinct',()=>{
