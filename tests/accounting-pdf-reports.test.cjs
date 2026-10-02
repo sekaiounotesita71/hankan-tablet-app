@@ -30,7 +30,7 @@ assert.match(html, /arNumber\(payment\.amount_jpy\)\+arNumber\(payment\.bank_fee
 assert.match(html, /function payableLedgerRows\(supplierCode,range\)/);
 assert.match(html, /payments\.filter\(payment=>beforeFrom\(payment\.payment_date\)\)\.reduce\(\(sum,payment\)=>sum\+arNumber\(payment\.amount_jpy\),0\)/);
 assert.match(html, /期間開始前残高/);
-assert.match(html, /async function printStatementOfAccount\(\)[\s\S]*?const range=salesRefDateRangeFromText\(val\("ar-date-range"\)\)/);
+assert.match(html, /async function printStatementOfAccount\(\)[\s\S]*?const closingMonth=val\("ar-closing-month"\)/);
 assert.match(html, /async function printCustomerLedgerPdf\(\)\{\s*return AccountingReports\.print\("ar",true\)/);
 
 console.log("Accounting PDF report tests passed");

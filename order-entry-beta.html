@@ -534,7 +534,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label id="ar-search-filter" hidden>検索<input id="ar-search" placeholder="Invoice・輸入社・得意先・メモ" oninput="renderReceivables()"></label>
         <button class="btn" id="ar-reload-button" type="button" onclick="loadReceivables()">再読込</button>
         <button class="btn primary" id="ar-sync-button" type="button" onclick="syncSalesToReceivables()">対象期間を再同期</button>
-        <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">SOA出力</button>
+        <button class="btn blue" id="ar-soa-button" type="button" onclick="printStatementOfAccount()">選択月までのSOA出力</button>
         <button class="btn" id="ar-list-pdf-button" type="button" onclick="printReceivableListPdf()">売掛一覧PDF</button>
         <button class="btn" id="ar-ledger-pdf-button" type="button" title="輸入社欄で請求先を選択して出力" onclick="printCustomerLedgerPdf()">得意先明細PDF</button>
       </div>
@@ -8654,8 +8654,9 @@ function arStatementMoney(value){
   return arNumber(value).toLocaleString("en-US",{maximumFractionDigits:2});
 }
 function arStatementRecords(importerCode){
-  const code=arCanonicalImporterCode(importerCode);
-  return receivableRows.filter(row=>arIsOperationRow(row)&&arSameImporter(row,code));
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  const code=arCanonicalImporterCode(importerCode,index);
+  return receivableRows.filter(row=>arIsOperationRow(row)&&arSameImporter(row,code,index));
 }
 async function arAssignInvoiceNumbers(rows){
   const salesRows=rows.filter(row=>row.source_type==="sales");
@@ -8700,6 +8701,58 @@ function arStatementSnapshot(importerCode,range,profile){
     chargeAmount:arRound(chargeAmount),
     paymentAmount:arRound(paymentAmount),
     totalAmount:arRound(carryover+chargeAmount-paymentAmount)
+  };
+}
+function arClosingStatementSnapshot(importerCode,selectedClosing,profile,asOfDate=today()){
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  if(!selectedClosing||selectedClosing.status!=="closed"||!arSameImporter(selectedClosing.importer_code,importerCode,index))throw new Error("確定済みの請求締めを選択してください。");
+  const closings=receivableClosings
+    .filter(row=>row.status==="closed"&&arSameImporter(row.importer_code,importerCode,index)&&String(row.period_to)<=selectedClosing.period_to)
+    .sort((a,b)=>String(a.period_to).localeCompare(String(b.period_to)));
+  if(!closings.some(row=>row.id===selectedClosing.id))throw new Error("請求締めを再読込してください。");
+  for(let i=1;i<closings.length;i++)if(closings[i].period_from<=closings[i-1].period_to)throw new Error("請求締め期間が重複しています。締め履歴を確認してください。");
+  const groups=closings.map(closing=>({closing,charges:[],payments:[],chargeAmount:0,paymentAmount:0,balance:0}));
+  const byClosingId=new Map(groups.map(group=>[group.closing.id,group]));
+  const allClosings=new Map(receivableClosings.map(closing=>[closing.id,closing]));
+  const byChargeId=new Map(groups.flatMap(group=>(group.closing.snapshot?.charges||[]).map(row=>[row.id,group])));
+  const chargeGroup=new Map();
+  const records=arStatementRecords(importerCode)
+    .filter(row=>{
+      if(String(row.invoice_date||"")>selectedClosing.period_to)return false;
+      if(row.source_type!=="opening"&&!row.closing_id)return false;
+      const postedClosing=allClosings.get(row.closing_id);
+      if(row.closing_id&&!postedClosing)throw new Error("売掛に紐づく締め履歴がありません。再読込して確認してください。");
+      if(postedClosing&&(!arSameImporter(postedClosing.importer_code,importerCode,index)||postedClosing.status!=="closed"))return false;
+      return !postedClosing||String(postedClosing.period_to)<=selectedClosing.period_to;
+    });
+  for(const row of records){
+    const group=row.source_type==="opening"?groups[0]:
+      byClosingId.get(row.closing_id)||byChargeId.get(row.id)||
+      groups.find(item=>String(row.invoice_date)>=item.closing.period_from&&String(row.invoice_date)<=item.closing.period_to);
+    if(!group)throw new Error(`${row.invoice_date||"日付不明"} の売掛に対応する請求締めがありません。`);
+    group.charges.push(row);
+    group.chargeAmount+=arNumber(row.amount_jpy);
+    chargeGroup.set(row.id,group);
+  }
+  const payments=receivablePayments.filter(payment=>
+    chargeGroup.has(payment.receivable_id)&&String(payment.payment_date||"")<=asOfDate
+  );
+  for(const payment of payments){
+    const group=chargeGroup.get(payment.receivable_id);
+    group.payments.push(payment);
+    group.paymentAmount+=arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy);
+  }
+  for(const group of groups)group.balance=arRound(group.chargeAmount-group.paymentAmount);
+  const closingRows=groups.filter(group=>Math.abs(group.balance)>.005||group.closing.id===selectedClosing.id);
+  const charges=groups.flatMap(group=>group.charges);
+  return {
+    importerCode:arCanonicalImporterCode(importerCode),
+    range:{from:selectedClosing.period_from,to:selectedClosing.period_to},
+    profile,asOfDate,closingRows,charges,payments,
+    carryover:0,
+    chargeAmount:arRound(groups.reduce((sum,group)=>sum+group.chargeAmount,0)),
+    paymentAmount:arRound(groups.reduce((sum,group)=>sum+group.paymentAmount,0)),
+    totalAmount:arRound(groups.reduce((sum,group)=>sum+group.balance,0))
   };
 }
 async function arSaveStatementIssue(snapshot,user){
@@ -8779,37 +8832,10 @@ async function arSaveStatementIssue(snapshot,user){
   return data;
 }
 function arStatementRowsHtml(snapshot){
-  const events=[];
-  snapshot.charges.forEach(row=>events.push({date:row.invoice_date,type:"charge",row}));
-  snapshot.payments.forEach(payment=>events.push({date:payment.payment_date,type:"payment",payment}));
-  events.sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.type==="charge"?-1:1));
-  const rows=[];
-  events.forEach(event=>{
-    if(event.type==="payment"){
-      const payment=event.payment;
-      const reference=payment.reference_no?` - ${payment.reference_no}`:"";
-      const settled=arNumber(payment.amount_jpy)+arNumber(payment.bank_fee_jpy);
-      rows.push(`<tr><td>${esc(arStatementDate(payment.payment_date))}</td><td>Payment${esc(reference)}</td><td class="amount">-${esc(arStatementMoney(settled))}</td></tr>`);
-      return;
-    }
-    const row=event.row;
-    const isOpening=row.source_type==="opening";
-    if(isOpening){
-      rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Opening Balance${row.invoice_no?` No.${esc(row.invoice_no)}`:""}</td><td class="amount">${esc(arStatementMoney(row.amount_jpy))}</td></tr>`);
-      return;
-    }
-    if(row.source_type==="adjustment"){
-      const label=row.memo||`Adjustment${row.invoice_no?` No.${row.invoice_no}`:""}`;
-      rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>${esc(label)}</td><td class="amount">${esc(arStatementMoney(row.amount_jpy))}</td></tr>`);
-      return;
-    }
-    const net=arNumber(row.net_sales_jpy);
-    const shipping=arNumber(row.shipping_amount_jpy);
-    const adjustment=arNumber(row.adjustment_amount_jpy);
-    rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Export Invoice No.${esc(row.invoice_no||"")}</td><td class="amount">${esc(arStatementMoney(net))}</td></tr>`);
-    if(Math.abs(shipping)>.005)rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Shipping Fee</td><td class="amount">${esc(arStatementMoney(shipping))}</td></tr>`);
-    if(Math.abs(adjustment)>.005)rows.push(`<tr><td>${esc(arStatementDate(row.invoice_date))}</td><td>Adjustment</td><td class="amount">${esc(arStatementMoney(adjustment))}</td></tr>`);
-    rows.push(`<tr class="subtotal"><td></td><td>【TOTAL】</td><td class="amount">＜ ${esc(arStatementMoney(row.amount_jpy))} ＞</td></tr>`);
+  const rows=snapshot.closingRows.map(group=>{
+    const closing=group.closing;
+    const period=`${arStatementDate(closing.period_from)} - ${arStatementDate(closing.period_to)}`;
+    return `<tr><td>${esc(arStatementDate(closing.period_to))}</td><td>Sales Closing ${esc(period)}</td><td class="amount">${esc(arStatementMoney(group.balance))}</td></tr>`;
   });
   rows.push(`<tr class="grand-total"><td></td><td>【TOTAL AMOUNT】</td><td class="amount">${esc(arStatementMoney(snapshot.totalAmount))}</td></tr>`);
   return rows.join("");
@@ -8817,7 +8843,7 @@ function arStatementRowsHtml(snapshot){
 function arStatementDocumentHtml(snapshot,issue){
   const profile=snapshot.profile;
   const address=String(profile.address_text||"").split(/\r?\n/).map(line=>esc(line)).join("<br>");
-  const compact=snapshot.charges.length+snapshot.payments.length>10?" compact":"";
+  const compact=snapshot.closingRows.length>10?" compact":"";
   const logoUrl=new URL("./yumirume-logo.jpg",location.href).href;
   return `<!doctype html><html><head><meta charset="utf-8"><title>SOA ${esc(snapshot.importerCode)} ${esc(snapshot.range.from)}-${esc(snapshot.range.to)}</title>
   <style>
@@ -8832,7 +8858,7 @@ function arStatementDocumentHtml(snapshot,issue){
   .customer{display:grid;grid-template-columns:25mm 1fr;gap:2mm}.customer-label{padding-top:1px}.customer-name{font-size:11pt;margin-bottom:2mm}.customer-address{min-height:16mm;line-height:1.24}.customer-phone{margin-top:2mm}
   .logo{text-align:right;height:25mm}.logo img{width:33mm;height:auto}.bank{margin-top:0;font-size:8.3pt;line-height:1.15}
   .company{margin:1mm 0 2mm 15mm;font-size:8.5pt;line-height:1.2}.company-name{font-family:"Times New Roman",serif;font-size:12pt;letter-spacing:4px;margin-bottom:1mm}
-  .balance-head{display:grid;grid-template-columns:1fr auto;gap:8mm;align-items:end;margin:0 0 3mm}.carry{display:flex;justify-content:space-between;max-width:108mm}.total-label{font-size:11pt}.total-value{font-size:11pt;white-space:nowrap}
+  .balance-head{display:grid;grid-template-columns:1fr auto;gap:8mm;align-items:end;margin:0 0 3mm}.total-label{font-size:11pt}.total-value{font-size:11pt;white-space:nowrap}.as-of{font-size:8pt;margin-top:1mm}
   table{width:100%;border-collapse:separate;border-spacing:0;border:1.4px solid #111;border-radius:3px;overflow:hidden}
   th,td{padding:.8mm 2.5mm;vertical-align:top}th{font-family:"Times New Roman",serif;font-weight:400;text-align:center;border-bottom:1px solid #111}
   th+th,td+td{border-left:1px solid #111}th:nth-child(1){width:24mm}th:nth-child(3){width:39mm}
@@ -8878,40 +8904,53 @@ function arStatementDocumentHtml(snapshot,issue){
     </section>
     <div class="balance-head">
       <div>
-        <div class="carry"><span>【Carryover amount】</span><span>${esc(arStatementMoney(snapshot.carryover))} ${esc(profile.currency||"JPY")}</span></div>
         <div class="total-label">TOTAL AMOUNT</div>
+        <div class="as-of">Outstanding as of ${esc(snapshot.asOfDate)}</div>
       </div>
       <div class="total-value">${esc(arStatementMoney(snapshot.totalAmount))} ${esc(profile.currency||"JPY")}</div>
     </div>
     <table>
-      <thead><tr><th>Date</th><th>Invoice No.</th><th>Amount</th></tr></thead>
+      <thead><tr><th>Closing Date</th><th>Sales Closing Period</th><th>Balance</th></tr></thead>
       <tbody>${arStatementRowsHtml(snapshot)}</tbody>
     </table>
   </main></body></html>`;
 }
+function arSelectedStatementClosing(importerCode,month){
+  const index=salesReferenceImporterIndex||salesRefBuildImporterIndex();
+  return receivableClosings.filter(row=>row.status==="closed"&&arSameImporter(row.importer_code,importerCode,index)&&String(row.period_to||"").slice(0,7)===month)
+    .sort((a,b)=>String(b.period_to).localeCompare(String(a.period_to)))[0];
+}
+async function arReadStatementIssue(closing){
+  if(!closing.statement_id)throw new Error("この締めのSOA保存情報がありません。締め履歴を確認してください。");
+  const {data,error}=await initSupabase().from("accounts_receivable_statements").select("*").eq("id",closing.statement_id).single();
+  if(error)throw error;
+  if(!data||!arSameImporter(data.importer_code,closing.importer_code)||data.period_from!==closing.period_from||data.period_to!==closing.period_to)throw new Error("SOAの保存情報と請求締めが一致しません。");
+  return data;
+}
+let arStatementPrinting=false;
 async function printStatementOfAccount(){
+  if(arStatementPrinting)return;
   const printWindow=window.open("","_blank");
   if(!printWindow){alert("印刷画面を開けません。ポップアップを許可してください。");return}
+  arStatementPrinting=true;
   printWindow.document.write('<!doctype html><html><body style="font-family:sans-serif;padding:24px">SOAを作成しています...</body></html>');
   printWindow.document.close();
   try{
     const user=await ensureCurrentUser();
     if(!user)throw new Error("ログインしてください。");
-    const range=salesRefDateRangeFromText(val("ar-date-range"));
     const importerCode=arCanonicalImporterCode(val("ar-importer"));
-    if(!range.from||!range.to)throw new Error("請求期間を 20260701-20260731 の形式で入力してください。");
+    const closingMonth=val("ar-closing-month");
     if(!importerCode)throw new Error("SOAを出力する輸入社コードを選択してください。");
-    if(!receivablesLoaded)await loadReceivables();
+    if(!closingMonth)throw new Error("SOAを出力する締め対象月を選択してください。");
+    receivablesLoaded=false;
+    await loadReceivables();
     if(!receivablesLoaded)throw new Error("売掛データを読み込めません。");
-    const records=arStatementRecords(importerCode);
-    await arAssignInvoiceNumbers(records.filter(row=>String(row.invoice_date||"")<=range.to));
+    const closing=arSelectedStatementClosing(importerCode,closingMonth);
+    if(!closing)throw new Error(`${closingMonth} の請求締めがありません。対象月を確認してください。`);
     const profile=await loadStatementProfile(importerCode,{silent:true});
     if(!profile)throw new Error(`${importerCode} のSOA請求先情報を先に登録してください。`);
-    const snapshot=arStatementSnapshot(importerCode,range,profile);
-    if(!snapshot.charges.length&&!snapshot.payments.length&&Math.abs(snapshot.carryover)<.005){
-      throw new Error("指定期間にSOAへ出力する売掛・入金がありません。");
-    }
-    const issue=await arSaveStatementIssue(snapshot,user);
+    const snapshot=arClosingStatementSnapshot(importerCode,closing,profile);
+    const issue=await arReadStatementIssue(closing);
     printWindow.document.open();
     printWindow.document.write(arStatementDocumentHtml(snapshot,issue));
     printWindow.document.close();
@@ -8919,6 +8958,8 @@ async function printStatementOfAccount(){
   }catch(error){
     printWindow.close();
     alert(arDbErrorMessage(error));
+  }finally{
+    arStatementPrinting=false;
   }
 }
 function accountingReportDate(value){
