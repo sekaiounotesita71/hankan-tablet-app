@@ -104,8 +104,27 @@ test('partial receipts, fees, credit notes and embedded adjustments reconcile wi
   assert.equal(snapshot.currentAdjustments,-200);assert.equal(snapshot.paymentAmount,500);
   assert.equal(snapshot.settlementAmount,-700);assert.equal(snapshot.totalAmount,1500);
   const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
-  assert.match(report,/Payments \/ Adjustments \(total\)/);assert.match(report,/-700 JPY/);
+  assert.doesNotMatch(report,/Payments \/ Adjustments|-700 JPY/);assert.match(report,/1,500 JPY/);
   assert.doesNotMatch(report,/Private credit reason|<td>Payment|<td>Adjustment/);
+});
+
+test('SOA hides the settlement summary for either sign without changing totals or source data',()=>{
+  for(const adjustment of [-200,100,200]){
+    const rows=[sale('a','2026-08-03',1000,300),
+      {id:'credit',importer_code:'01',source_type:'adjustment',closing_id:'aug',invoice_date:'2026-08-04',amount_jpy:adjustment}];
+    const payments=[receipt('paid','a','2026-08-20',100)];
+    const before=JSON.stringify([rows,payments]);
+    const model=statementModel(rows,payments,[aug]);
+    const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+    const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+    assert.equal(snapshot.settlementAmount,adjustment-100);
+    assert.equal(snapshot.totalAmount,1200+adjustment);
+    assert.equal(snapshot.invoiceRows[0].amount,1300);
+    assert.equal((report.match(/class="balance-line"/g)||[]).length,2);
+    assert.doesNotMatch(report,/Payments \/ Adjustments/);
+    assert.match(report,new RegExp(`${(1200+adjustment).toLocaleString('en-US')} JPY`));
+    assert.equal(JSON.stringify([rows,payments]),before);
+  }
 });
 
 test('invoice-level corrections stay in their original invoice amount, never a separate adjustment line',()=>{

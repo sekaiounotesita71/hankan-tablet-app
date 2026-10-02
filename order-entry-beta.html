@@ -8912,7 +8912,6 @@ function arStatementDocumentHtml(snapshot,issue){
     </section>
     <div class="balance-head">
       <div class="balance-line"><span>【Carryover amount】</span><span>${esc(arStatementMoney(snapshot.carryover))} JPY</span></div>
-      ${Math.abs(snapshot.settlementAmount)>.005?`<div class="balance-line"><span>Payments / Adjustments (total)</span><span>${esc(arStatementMoney(snapshot.settlementAmount))} JPY</span></div>`:""}
       <div class="balance-line"><span class="total-label">TOTAL AMOUNT</span><span class="total-value">${esc(arStatementMoney(snapshot.totalAmount))} JPY</span></div>
       <div class="as-of">Period: ${esc(snapshot.range.from)} - ${esc(snapshot.range.to)} / Balance as of ${esc(snapshot.asOfDate)}</div>
     </div>
