@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const AccountingPeriodReport=require('../accounting-period-report.js');
+const ReferenceSites=require('../reference-sites.js');
 const html=fs.readFileSync(path.join(__dirname,'..','order-entry-beta.html'),'utf8');
 function source(from,to){
   const start=html.indexOf(from),end=html.indexOf(to,start);
@@ -11,7 +12,7 @@ function source(from,to){
   return html.slice(start,end);
 }
 function statementModel(rows,payments,closings){
-  const ctx={receivableRows:rows,receivablePayments:payments,receivableClosings:closings,AccountingPeriodReport,
+  const ctx={receivableRows:rows,receivablePayments:payments,receivableClosings:closings,AccountingPeriodReport,ReferenceSites,
     salesReferenceImporterIndex:null,salesRefBuildImporterIndex:()=>({}),
     arCanonicalImporterCode:value=>value,
     arSameImporter:(row,code)=>(row.importer_code||row)===code,
@@ -74,6 +75,55 @@ test('reference August SOA: nine invoices, shipping and subtotals total exactly 
   assert.equal((report.match(/class="subtotal"/g)||[]).length,9);
   assert.match(report,/Date<\/th><th>Invoice No\.<\/th><th>Amount/);
   assert.match(report,/9,590,443/);assert.doesNotMatch(report,/Sales Closing|Closing Date|Payments \/ Adjustments/);
+  assert.doesNotMatch(report,/class="site-heading"|class="site-subtotal"/);
+});
+
+test('two sites retain distinct same-day invoice numbers, shipping and subtotals without changing billing',()=>{
+  const rows=[{...sale('tokyo','2026-08-03',2000,200),source_session_id:'t',_referenceSite:'TYO',site_code:'OSA'},
+    {...sale('osaka-later','2026-08-06',3000,300),_referenceSite:'OSA'},
+    {...sale('osaka','2026-08-03',1000,100),source_session_id:'o',_referenceSite:'OSA'},
+    {id:'credit',importer_code:'01',source_type:'adjustment',closing_id:'aug',invoice_date:'2026-08-03',source_session_id:'t',amount_jpy:-50}];
+  const before=JSON.stringify(rows);
+  const model=statementModel(rows,[],[aug]);
+  const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  assert.equal(snapshot.totalAmount,6550);assert.equal(snapshot.invoiceRows.length,3);
+  assert.equal(snapshot.invoiceRows.find(row=>row.id==='tokyo').siteCode,'TYO');
+  assert.equal(snapshot.invoiceRows.find(row=>row.id==='tokyo').amount,2150);
+  const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+  assert.equal((report.match(/Export Invoice No\.20260803001/g)||[]).length,2);
+  assert.equal((report.match(/Shipping Fee/g)||[]).length,3);
+  assert.match(report,/OSAKA INVOICE SUBTOTAL<\/td><td class="amount">4,400/);
+  assert.match(report,/TOKYO INVOICE SUBTOTAL<\/td><td class="amount">2,150/);
+  assert.match(report,/【TOTAL AMOUNT】<\/td><td class="amount">6,550/);
+  assert.ok(report.indexOf('(OSAKA)')<report.indexOf('Export Invoice No.20260806001'));
+  assert.ok(report.indexOf('OSAKA INVOICE SUBTOTAL')<report.indexOf('(TOKYO)'));
+  assert.equal(JSON.stringify(rows),before);
+});
+
+test('a single Tokyo site is identified and unresolved work is never silently labelled Osaka',()=>{
+  for(const [site,label] of [['TYO','TOKYO'],['UNASSIGNED','SITE UNASSIGNED'],['MIXED','SITE UNASSIGNED']]){
+    const model=statementModel([{...sale('a','2026-08-03',1000,100),_referenceSite:site}],[],[aug]);
+    const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+    const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+    assert.match(report,new RegExp(`${label} INVOICE SUBTOTAL</td><td class="amount">1,100`));
+    assert.doesNotMatch(report,/OSAKA INVOICE SUBTOTAL/);
+    assert.equal(snapshot.totalAmount,1100);
+  }
+});
+
+test('site display never allocates carryover, payments or ambiguous adjustments to an arbitrary invoice',()=>{
+  const rows=[{...sale('o','2026-08-03',1000,100),_referenceSite:'OSA'},
+    {...sale('t','2026-08-03',2000,200),_referenceSite:'TYO'},
+    {id:'opening',importer_code:'01',source_type:'opening',invoice_date:'2026-07-31',amount_jpy:500},
+    {id:'credit',importer_code:'01',source_type:'adjustment',closing_id:'aug',invoice_date:'2026-08-03',amount_jpy:-50}];
+  const model=statementModel(rows,[receipt('paid','o','2026-08-20',100)], [aug]);
+  const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+  assert.equal(snapshot.carryover,500);assert.equal(snapshot.currentAdjustments,-50);assert.equal(snapshot.paymentAmount,100);
+  assert.equal(snapshot.totalAmount,3650);
+  assert.match(report,/OSAKA INVOICE SUBTOTAL<\/td><td class="amount">1,100/);
+  assert.match(report,/TOKYO INVOICE SUBTOTAL<\/td><td class="amount">2,200/);
+  assert.doesNotMatch(report,/Payments \/ Adjustments/);
 });
 
 test('later-month receipts do not change a closed-month SOA',()=>{

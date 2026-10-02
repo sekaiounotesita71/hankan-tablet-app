@@ -8733,8 +8733,9 @@ function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile){
   const charges=records.filter(row=>row.invoice_date>=range.from&&row.source_type!=="opening");
   const invoiceRows=charges.filter(row=>row.source_type!=="adjustment").map(row=>{
     const amount=arNumber(row.amount_jpy),shipping=arNumber(row.shipping_amount_jpy);
+    const siteCode=ReferenceSites.code(row);
     return {id:row.id,sessionId:row.source_session_id,date:row.invoice_date,invoiceNo:row.invoice_no||arInvoiceNumber(row.invoice_date,row,index),
-      net:arRound(amount-shipping),shipping,amount:arRound(amount)};
+      siteCode:["OSA","TYO"].includes(siteCode)?siteCode:"UNASSIGNED",net:arRound(amount-shipping),shipping,amount:arRound(amount)};
   }).sort((a,b)=>a.date.localeCompare(b.date)||a.invoiceNo.localeCompare(b.invoiceNo)||String(a.id).localeCompare(String(b.id)));
   // Fold separately stored corrections only when their invoice can be identified unambiguously.
   for(const row of charges.filter(row=>row.source_type==="adjustment")){
@@ -8838,12 +8839,26 @@ async function arSaveStatementIssue(snapshot,user){
   return data;
 }
 function arStatementRowsHtml(snapshot){
-  const rows=snapshot.invoiceRows.map(row=>{
-    const date=esc(arStatementDate(row.date));
-    return `<tbody class="invoice-group"><tr><td>${date}</td><td>Export Invoice No.${esc(row.invoiceNo)}</td><td class="amount">${esc(arStatementMoney(row.net))}</td></tr>
-      <tr><td>${date}</td><td>Shipping Fee</td><td class="amount">${esc(arStatementMoney(row.shipping))}</td></tr>
-      <tr class="subtotal"><td></td><td>【TOTAL】</td><td class="amount">&lt; ${esc(arStatementMoney(row.amount))} &gt;</td></tr></tbody>`;
+  const sites=new Map();
+  snapshot.invoiceRows.forEach(row=>{
+    const code=row.siteCode||"UNASSIGNED";
+    if(!sites.has(code))sites.set(code,[]);
+    sites.get(code).push(row);
   });
+  const showSites=sites.size>1||sites.has("TYO")||sites.has("UNASSIGNED");
+  const rows=[];
+  for(const [code,label] of [["OSA","OSAKA"],["TYO","TOKYO"],["UNASSIGNED","SITE UNASSIGNED"]]){
+    const invoices=sites.get(code)||[];
+    const subtotal=arRound(invoices.reduce((sum,row)=>sum+row.amount,0));
+    invoices.forEach((row,index)=>{
+      const date=esc(arStatementDate(row.date));
+      const heading=showSites&&index===0?`<tr class="site-heading"><td colspan="3">${label}</td></tr>`:"";
+      const siteTotal=showSites&&index===invoices.length-1?`<tr class="site-subtotal"><td colspan="2">${label} INVOICE SUBTOTAL</td><td class="amount">${esc(arStatementMoney(subtotal))}</td></tr>`:"";
+      rows.push(`<tbody class="invoice-group">${heading}<tr><td>${date}</td><td>Export Invoice No.${esc(row.invoiceNo)}${showSites?`<span class="invoice-site"> (${label})</span>`:""}</td><td class="amount">${esc(arStatementMoney(row.net))}</td></tr>
+        <tr><td>${date}</td><td>Shipping Fee</td><td class="amount">${esc(arStatementMoney(row.shipping))}</td></tr>
+        <tr class="subtotal"><td></td><td>【TOTAL】</td><td class="amount">&lt; ${esc(arStatementMoney(row.amount))} &gt;</td></tr>${siteTotal}</tbody>`);
+    });
+  }
   rows.push(`<tbody><tr class="grand-total"><td></td><td>【TOTAL AMOUNT】</td><td class="amount">${esc(arStatementMoney(snapshot.totalAmount))}</td></tr></tbody>`);
   return rows.join("");
 }
@@ -8870,6 +8885,7 @@ function arStatementDocumentHtml(snapshot,issue){
   th,td{padding:.8mm 2.5mm;vertical-align:top}th{font-family:"Times New Roman",serif;font-weight:400;text-align:center;border-bottom:1px solid #111}
   th+th,td+td{border-left:1px solid #111}th:nth-child(1){width:24mm}th:nth-child(3){width:39mm}
   td.amount{text-align:right;white-space:nowrap}.subtotal td{padding-top:.2mm;padding-bottom:1.25mm}.subtotal td:nth-child(2){text-align:center;font-weight:700}.grand-total td{padding-top:1.4mm;font-weight:700}.grand-total td:nth-child(2){text-align:center}
+  .site-heading td{padding-top:1.4mm;padding-bottom:1.4mm;border-top:1px solid #111;border-bottom:1px solid #111;font-weight:700;background:#f3f3f3}.site-subtotal td{padding-top:1.4mm;padding-bottom:1.4mm;border-top:1px solid #111;font-weight:700}.site-subtotal td:first-child{text-align:right}.invoice-site{font-size:8pt;white-space:nowrap}
   thead{display:table-header-group}.invoice-group{break-inside:avoid;page-break-inside:avoid}.customer-address,.company,.bank{overflow-wrap:anywhere}
   .compact{font-size:8.8pt}.compact .header{min-height:52mm}.compact th,.compact td{padding-top:.6mm;padding-bottom:.6mm}.compact .subtotal td{padding-top:.15mm;padding-bottom:.9mm}
   @media print{.print-action{display:none}.sheet{min-height:0}}
