@@ -90,7 +90,7 @@ test('queued field patches retain the work session they were created for',async(
   const queue=new Promise(r=>release=r);
   const ctx={currentSessionId:'session-A',currentUser:{id:'user'},requireEditableTrial:()=>true,
     orderLineSaveQueues:new Map([['session-A:13',queue]]),setSaveState:()=>{},toast:()=>{},
-    supabaseClient:{from:()=>({update(payload){calls.push(payload);return this},eq(k,v){calls.push([k,v]);return this},select(){return this},async maybeSingle(){return {data:{source_row_no:13},error:null}}})}};
+    supabaseClient:{from:()=>({update(payload){calls.push(payload);return this},eq(k,v){calls.push([k,v]);return this},is(k,v){calls.push([k,v]);return this},select(){return this},async maybeSingle(){return {data:{source_row_no:13},error:null}}})}};
   vm.createContext(ctx);vm.runInContext(source('function updateOrderLineFieldsToSupabase(', 'async function saveBoxToSupabase('),ctx);
   const task=ctx.updateOrderLineFieldsToSupabase({_idx:12},{input_qty:3});ctx.currentSessionId='session-B';release();
   assert.equal(await task,true);assert.ok(calls.some(v=>v[0]==='session_id'&&v[1]==='session-A'));
@@ -150,6 +150,7 @@ if(process.env.P15_FIXTURE_PATH){
   const script=`
     const rows=${JSON.stringify(rows)};
     const esc=v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+    const workProductCell=row=>esc(row.product_name);
     const cid=v=>v,importerCode=v=>v,importerDisplayName=()=>"DIM";
     const p15MasterPriceSelections=new Set(),p15HistoryOpenRowIdx=null;
     const p15MasterPriceScope=()=>"contract",p15MasterSelectedRows=()=>[];

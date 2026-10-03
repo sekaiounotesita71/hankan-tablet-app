@@ -424,6 +424,8 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 </div>
 <div class="confirm-bg" id="confirm-bg"><div class="confirm-box"><div class="confirm-title">欠品にしますか？</div><div class="confirm-sub">入力済みの数量、NET、箱番号はクリアされます。</div><div class="confirm-product" id="confirm-product-name"></div><div class="confirm-btns"><button class="confirm-cancel" onclick="cancelStockout()">キャンセル</button><button class="confirm-ok" onclick="executeStockout()">欠品にする</button></div></div></div>
 <div class="toast" id="toast"></div>
+<link rel="stylesheet" href="./work-product-change.css?v=20261003-1">
+<script src="./work-product-change.js?v=20261003-1"></script>
 <script>
 let orderRows=[],masterMap={},rows=[];
 let activeCountry=null,activeCustomer={},activeImporter=null,boxMap={},currentPhase=1;
@@ -2141,8 +2143,8 @@ function upsertRemoteOrderLine(dbRow,indexFallback=0){
   r.product_name=dbRow.product_name||r.product_name;
   r.unit=dbRow.ordered_unit||r.unit;
   r.csv_qty=dbRow.ordered_qty??r.csv_qty;
-  r.en_name=dbRow.english_name||r.en_name;
-  r.sci_name=dbRow.scientific_name||r.sci_name;
+  r.en_name=dbRow.english_name??"";
+  r.sci_name=dbRow.scientific_name??"";
   r.origin=dbRow.origin||"";
   r.unit_price=dbRow.unit_price??"";
   r.importer_id=dbRow.importer_id||dbRow.importer_code||r.importer_id;
@@ -2224,9 +2226,14 @@ function saveOrderLineToSupabase(row){
   const previous=orderLineSaveQueues.get(key)||Promise.resolve();
   const task=previous.catch(()=>{}).then(async()=>{
     setSaveState("Supabase: 保存中...");
-    const {data,error}=await supabaseClient.from("order_lines").upsert(payload,{onConflict:"session_id,source_row_no"}).select("source_row_no").maybeSingle();
+    // Field work must never write an old product or price back over a product change.
+    const fields=Object.fromEntries(["input_qty","input_unit","net_weight","box_no","memo","is_stockout","store_name","updated_by"].map(key=>[key,payload[key]]));
+    let query=supabaseClient.from("order_lines").update(fields).eq("session_id",payload.session_id).eq("source_row_no",payload.source_row_no);
+    query=payload.product_id===null?query.is("product_id",null):query.eq("product_id",payload.product_id);
+    query=payload.product_name===null?query.is("product_name",null):query.eq("product_name",payload.product_name);
+    const {data,error}=await query.select("source_row_no").maybeSingle();
     if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return false}
-    if(!data){setSaveState("Supabase: 保存失敗",true);toast("明細を保存できませんでした。権限と接続を確認してください");return false}
+    if(!data){setSaveState("Supabase: 保存失敗",true);toast("明細が変更されたか、保存権限がありません。再読込して確認してください");return false}
     setSaveState("Supabase: 保存済み");
     return true;
   });
@@ -2239,17 +2246,18 @@ function updateOrderLineFieldsToSupabase(row,fields){
   if(!currentSessionId||!currentUser||!supabaseClient)return Promise.resolve(false);
   const sourceRowNo=row._idx+1,sessionId=currentSessionId;
   const key=`${sessionId}:${sourceRowNo}`;
-  const payload={...fields,updated_by:currentUser.id};
+  const payload={...fields,updated_by:currentUser.id},expectedProduct=row.product_id||null,expectedName=row.product_name||null;
   const previous=orderLineSaveQueues.get(key)||Promise.resolve();
   const task=previous.catch(()=>{}).then(async()=>{
     setSaveState("Supabase: 保存中...");
-    const {data,error}=await supabaseClient
+    let query=supabaseClient
       .from("order_lines")
       .update(payload)
       .eq("session_id",sessionId)
-      .eq("source_row_no",sourceRowNo)
-      .select("source_row_no")
-      .maybeSingle();
+      .eq("source_row_no",sourceRowNo);
+    query=expectedProduct===null?query.is("product_id",null):query.eq("product_id",expectedProduct);
+    query=expectedName===null?query.is("product_name",null):query.eq("product_name",expectedName);
+    const {data,error}=await query.select("source_row_no").maybeSingle();
     if(error){setSaveState("Supabase: 保存失敗",true);toast("明細保存エラー: "+error.message);return false}
     if(!data){setSaveState("Supabase: 保存失敗",true);toast("明細を保存できませんでした。作業一覧から開き直してください");return false}
     setSaveState("Supabase: 保存済み");
@@ -3395,7 +3403,7 @@ function renderP15Importer(imp){
   const body=impRows.map((r,i)=>{
     const state=p15RowState(r);
     const rowClasses=[p15MasterPriceSelections.has(r._idx)?"p15-master-selected":"",state.complete?"":"p15-incomplete"].filter(Boolean).join(" ");
-    return `<tr id="p15-master-row-${r._idx}" class="${rowClasses}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td>${esc(r.product_id)}</td>
+    return `<tr id="p15-master-row-${r._idx}" class="${rowClasses}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${workProductCell(r)}</td><td>${esc(r.product_id)}</td>
       <td>${p15QuantityInput(r,i*3)}</td>
       <td><input class="p15-input${state.missingOrigin?" p15-input-missing":""}" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*3+1}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地 未入力" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td>
       <td class="p15-price-cell"><div class="p15-price-line"><input class="p15-input p15-price${state.missingPrice?" p15-input-missing":""}" data-row-idx="${r._idx}" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*3+2}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価 未入力" onclick="event.stopPropagation();showP15History(${r._idx},this)" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"><button class="p15-history-toggle" type="button" onclick="event.stopPropagation();toggleP15History(${r._idx})">履歴</button></div><div class="p15-history-suggestion" id="p15history-suggestion-${r._idx}">${p15HistorySuggestionHtml(r)}</div></td><td class="p15-source"><span class="p15-status ${state.complete?"complete":"incomplete"}">${state.label}</span></td><td><label class="p15-master-check"><input type="checkbox" ${p15MasterPriceSelections.has(r._idx)?"checked":""} onchange="toggleP15MasterPriceSelection(${r._idx},this.checked)"><span>候補</span></label></td></tr><tr class="p15-history-detail-row${p15HistoryOpenRowIdx===r._idx?" open":""}" id="p15history-row-${r._idx}"><td colspan="9" id="p15history-detail-${r._idx}">${p15HistoryDetailHtml(r)}</td></tr>`;
@@ -3642,6 +3650,7 @@ function shouldSkipAutoRefresh(){
   if(Date.now()<horizontalScrollInteractionUntil)return true;
   if(document.getElementById("modal-bg")?.classList.contains("open"))return true;
   if(document.getElementById("confirm-bg")?.classList.contains("open"))return true;
+  if(document.getElementById("work-product-dialog")?.open)return true;
   const active=document.activeElement;
   if(active&&["INPUT","TEXTAREA","SELECT"].includes(active.tagName))return true;
   return false;
@@ -4342,9 +4351,9 @@ renderP1Cell=function(country,customer){
   const tbody=document.getElementById("p1cusbody-"+key);
   if(!tbody)return;
   tbody.innerHTML=cRows.map((r,i)=>{
-    if(r._stockout)return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;text-decoration:line-through;color:var(--muted)">${esc(r.product_name)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
+    if(r._stockout)return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;color:var(--muted)">${workProductCell(r)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
     const complete=r._qty&&r._net&&r._box,partial=!complete&&(r._qty||r._net||r._box);
-    return `<tr class="${complete?"done":partial?"partial":"pending"}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${esc(r.product_name)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${inlineP1Input(r,"qty","数量")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${inlineP1Input(r,"net","NET")}</td><td>${inlineP1Input(r,"box","箱")}</td><td>${inlineP1MemoInput(r)}</td><td>${complete?'<span class="badge badge-done">完了</span>':partial?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
+    return `<tr class="${complete?"done":partial?"partial":"pending"}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${workProductCell(r)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${inlineP1Input(r,"qty","数量")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${inlineP1Input(r,"net","NET")}</td><td>${inlineP1Input(r,"box","箱")}</td><td>${inlineP1MemoInput(r)}</td><td>${complete?'<span class="badge badge-done">完了</span>':partial?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
   }).join("");
 };
 renderP2Importer=function(imp){
@@ -4496,7 +4505,7 @@ function updateLockUITrial(){
 }
 function applyLockToInputsTrial(){
   const locked=!!(currentSessionLocked||currentSessionProvisionalLocked);
-  document.querySelectorAll(".inline-work-input,.inline-box-input,.p15-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.box-size-select,.di-toggle input").forEach(el=>{
+  document.querySelectorAll(".inline-work-input,.inline-box-input,.p15-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.work-product-edit,.box-size-select,.di-toggle input").forEach(el=>{
     el.disabled=locked||el.dataset.boxRoutingBlocked==="true"||el.dataset.stockout==="true";
     if(locked)el.title=currentSessionLocked?"売上確定済みのため編集できません":"仮締め中のため編集できません";
     else el.removeAttribute("title");

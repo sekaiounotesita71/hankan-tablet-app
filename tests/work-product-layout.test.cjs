@@ -5,7 +5,7 @@ const vm=require("node:vm");
 const test=require("node:test");
 
 const app=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
-const css=app.match(/<style>([\s\S]*?)<\/style>/)[1];
+const css=app.match(/<style>([\s\S]*?)<\/style>/)[1]+fs.readFileSync(path.join(__dirname,"..","work-product-change.css"),"utf8");
 function source(start,end){
   const a=app.indexOf(start),b=app.indexOf(end,a+start.length);
   assert.ok(a>=0&&b>a);
@@ -15,6 +15,7 @@ function fixture(){
   const nodes=new Map();
   const ctx={
     currentSessionSiteCode:"OSA",
+    currentSessionLocked:false,currentSessionProvisionalLocked:false,
     document:{getElementById:id=>{if(!nodes.has(id))nodes.set(id,{});return nodes.get(id)}},
     cid:value=>value,esc:value=>String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll('"',"&quot;"),
     P1_KEY:{qty:"_qty",net:"_net",box:"_box"},
@@ -24,6 +25,8 @@ function fixture(){
     p15HistoryDetailHtml:()=>'<div class="p15-history-band">単価履歴</div>',
     p15MasterPriceScope:()=>"contract",p15MasterSelectedRows:()=>[],applyLockToInputsTrial:()=>{}
   };
+  const productJs=fs.readFileSync(path.join(__dirname,"..","work-product-change.js"),"utf8");
+  vm.runInNewContext(productJs.slice(productJs.indexOf("function workProductCell("),productJs.indexOf("function workProductMessage(")),ctx);
   for(const [start,end] of [["function inlineP1Input(","function updateInlineP1Draft("],["function p1TouchCell(","function openP1NP("],["renderP1Cell=function(country,customer){","renderP2Importer=function(imp){"],["function p15RowState(","function moveP15Focus("]])vm.runInNewContext(source(start,end),ctx);
   ctx.renderP1Cell("07","ALL");ctx.renderP15Importer("07");
   const headings=["#","店舗名","商品名","注文数量","注文単位","数量","単位","NET重量","箱番号","メモ","状態",""];
