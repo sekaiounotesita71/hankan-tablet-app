@@ -84,6 +84,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 @media(min-width:1200px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:900px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.sales-board-tools.sales-supplier-tools{grid-template-columns:minmax(0,1fr)}.sales-supplier-tools .sales-filter-actions{flex-wrap:wrap}}
+.advance-entry-table .source-dates{min-width:108px;font-variant-numeric:tabular-nums;line-height:1.5}.advance-source-dates summary{cursor:pointer}.advance-source-dates small{color:var(--muted)}.advance-source-date-list{display:grid;gap:2px;max-height:180px;overflow:auto;margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260828-2">
 </head>
@@ -745,7 +746,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="advance-entry-summary" id="advance-purchase-summary"></div>
       <div class="advance-entry-table-wrap">
         <table class="advance-entry-table">
-          <thead><tr><th>No.</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th><th>マスタ候補</th><th></th></tr></thead>
+          <thead><tr><th>No.</th><th>引用元日付</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th><th>マスタ候補</th><th></th></tr></thead>
           <tbody id="advance-purchase-body"></tbody>
         </table>
       </div>
@@ -1461,6 +1462,7 @@ let purchaseReferencePage=1;
 const PURCHASE_REFERENCE_PAGE_SIZE=50;
 let advancePurchaseRows=[];
 let advancePurchaseSaving=false;
+let advancePurchaseDatesLoading=false;
 let advancePurchaseImportMode="detail";
 const advancePurchaseMasterPriceSelections=new Set();
 let payableRows=[];
@@ -1488,7 +1490,7 @@ const baseMasters={
 function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
 function blankOrder(){return{lineId:"",productCode:"",productName:"",englishName:"",qty:"",unit:"",unitPrice:"",unitPriceSource:"",supplierCode:"",supplierName:"",initialSupplierCode:"",initialSupplierName:"",supplierDecisionStatus:"provisional",supplierConfirmedAt:"",purchaseOrdered:false,purchaseOrderedAt:"",memo:""}}
-function blankAdvancePurchaseRow(){return{id:newAppUuid(),productCode:"",productName:"",origin:"",actualQty:"",actualUnit:"Kg",unitPrice:"",priceUnit:"Kg",taxRate:8,unitPriceSource:"",note:"",sourceSalesIds:[],invalid:false}}
+function blankAdvancePurchaseRow(){return{id:newAppUuid(),productCode:"",productName:"",origin:"",actualQty:"",actualUnit:"Kg",unitPrice:"",priceUnit:"Kg",taxRate:8,unitPriceSource:"",note:"",sourceSalesIds:[],sourceSaleDates:{},invalid:false}}
 function val(id){return document.getElementById(id)?.value||""}
 function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""))}
 function newAppUuid(){
@@ -2495,6 +2497,7 @@ async function loadDbData(){
     }
     dbReady=true;
     setDbStatus("DB接続中","ok");
+    if(document.querySelector('[data-workspace-panel="purchase-entry"].active'))refreshAdvancePurchaseSourceDates();
     await loadProductGuideTemplates();
     refreshCustomerLists();
     refreshImporterLists();
@@ -11367,7 +11370,7 @@ function setAdvancePurchaseEntryType(value,options={}){
   const select=document.getElementById("advance-purchase-entry-type");
   if(select){select.value=type;select.classList.toggle("credit-note",type==="credit_note")}
   const credit=type==="credit_note";
-  if(credit)advancePurchaseRows.forEach(row=>{row.sourceSalesIds=[]});
+  if(credit)advancePurchaseRows.forEach(row=>{row.sourceSalesIds=[];row.sourceSaleDates={}});
   const importButton=document.getElementById("advance-purchase-import-sales");
   if(importButton){importButton.disabled=credit;importButton.title=credit?"赤伝は売上引用せず直接入力します":""}
   const hint=document.getElementById("advance-purchase-hint");
@@ -11608,6 +11611,7 @@ async function importSalesIntoAdvancePurchase(){
       const row=grouped.get(key);
       row.actualQty=Math.round((Number(row.actualQty)+qty)*1000)/1000;
       row.sourceSalesIds.push(sale.id);
+      row.sourceSaleDates[sale.id]=sale.work_date||"";
     });
     const imported=[...grouped.values()];
     const importedSalesCount=imported.reduce((count,row)=>count+(row.sourceSalesIds?.length||0),0);
@@ -11644,6 +11648,45 @@ function updateAdvancePurchaseSummary(){
   const box=document.getElementById("advance-purchase-summary");
   if(box)box.innerHTML=`<span class="pill">明細 ${rows.length}件</span><span class="pill blue">税抜小計 ¥${Number(subtotal).toLocaleString("ja-JP")}</span><span class="pill">消費税 ¥${Number(taxAmount).toLocaleString("ja-JP")}</span><span class="pill blue">税込合計 ¥${Number(subtotal+taxAmount).toLocaleString("ja-JP")}</span>`;
 }
+function advancePurchaseSourceDatesHtml(row){
+  const ids=[...new Set(Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[])];
+  if(!ids.length)return "-";
+  const values=ids.map(id=>String(row.sourceSaleDates?.[id]||""));
+  const dates=[...new Set(values.filter(date=>/^\d{4}-\d{2}-\d{2}$/.test(date)))].sort();
+  const missing=values.filter(date=>!/^\d{4}-\d{2}-\d{2}$/.test(date)).length;
+  const unknown=missing?`<small>日付未確認 ${missing}件</small>`:"";
+  const label=date=>date.replace(/-/g,"/");
+  if(!dates.length)return unknown;
+  if(dates.length===1)return `${label(dates[0])}${unknown?`<br>${unknown}`:""}`;
+  return `<details class="advance-source-dates"><summary>${label(dates[0])} ～<br>${label(dates[dates.length-1])}<br><small>${dates.length}日分</small></summary><div class="advance-source-date-list">${dates.map(date=>`<span>${label(date)}</span>`).join("")}</div></details>${unknown}`;
+}
+async function refreshAdvancePurchaseSourceDates(){
+  if(advancePurchaseDatesLoading||!dbReady||!supabaseClient||!currentUser)return;
+  const targets=advancePurchaseRows.filter(row=>row.sourceSalesIds?.some(id=>!Object.prototype.hasOwnProperty.call(row.sourceSaleDates||{},id)));
+  const ids=[...new Set(targets.flatMap(row=>row.sourceSalesIds))];
+  if(!ids.length)return;
+  const requestedIds=new Set(ids);
+  advancePurchaseDatesLoading=true;
+  try{
+    const dates=new Map();
+    for(let index=0;index<ids.length;index+=200){
+      const {data,error}=await supabaseClient.from("sales_records").select("id,work_date").in("id",ids.slice(index,index+200));
+      if(error)throw error;
+      (data||[]).forEach(sale=>dates.set(sale.id,sale.work_date||""));
+    }
+    targets.forEach(row=>{
+      const index=advancePurchaseRows.indexOf(row);
+      if(index<0)return;
+      row.sourceSaleDates={...row.sourceSaleDates};
+      (row.sourceSalesIds||[]).forEach(id=>{if(requestedIds.has(id))row.sourceSaleDates[id]=dates.get(id)||""});
+      // Update only the date cell so an in-progress quantity/price input keeps focus.
+      const cell=document.querySelector(`[data-advance-source-dates="${index}"]`);
+      if(cell)cell.innerHTML=advancePurchaseSourceDatesHtml(row);
+    });
+    saveAdvancePurchaseDraft();
+  }catch(error){console.warn("引用元日付を取得できませんでした。",error)}
+  finally{advancePurchaseDatesLoading=false}
+}
 function renderAdvancePurchaseRows(){
   if(!advancePurchaseRows.length)advancePurchaseRows=[blankAdvancePurchaseRow()];
   const currentIds=new Set(advancePurchaseRows.map(row=>row.id));
@@ -11652,6 +11695,7 @@ function renderAdvancePurchaseRows(){
   if(!body)return;
   body.innerHTML=advancePurchaseRows.map((row,index)=>`<tr data-advance-row="${index}" class="${[row.invalid?"invalid":"",advancePurchaseMasterPriceSelections.has(row.id)?"advance-master-selected":""].filter(Boolean).join(" ")}">
     <td>${index+1}</td>
+    <td class="source-dates" data-advance-source-dates="${index}">${advancePurchaseSourceDatesHtml(row)}</td>
     <td><div class="lookup-cell"><input class="product-code ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-input data-advance-row-index="${index}" data-advance-field="productCode" value="${esc(row.productCode)}" oninput="setAdvancePurchaseRow(${index},'productCode',this.value)" onblur="resolveAdvancePurchaseProduct(${index},this.value)"><button class="lookup-btn" type="button" onclick="openAdvancePurchaseProductLookup(${index})">+</button></div></td>
     <td><input class="product-name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-input data-advance-row-index="${index}" data-advance-field="productName" value="${esc(row.productName)}" oninput="setAdvancePurchaseRow(${index},'productName',this.value)"></td>
     <td><input class="origin ime-en" lang="en" autocapitalize="none" autocomplete="off" data-advance-input data-advance-row-index="${index}" data-advance-field="origin" value="${esc(row.origin)}" oninput="setAdvancePurchaseRow(${index},'origin',this.value)"></td>
@@ -11762,7 +11806,7 @@ function addAdvancePurchaseRow(row=null,options={}){
 function duplicateAdvancePurchaseRow(index){
   const source=advancePurchaseRows[index];
   if(!source)return;
-  advancePurchaseRows.splice(index+1,0,{...source,id:newAppUuid(),sourceSalesIds:[],invalid:false});
+  advancePurchaseRows.splice(index+1,0,{...source,id:newAppUuid(),sourceSalesIds:[],sourceSaleDates:{},invalid:false});
   renderAdvancePurchaseRows();
   saveAdvancePurchaseDraft();
   requestAnimationFrame(()=>focusAdvancePurchaseCell(index+1,"actualQty"));
@@ -11978,6 +12022,7 @@ function switchWorkspaceTab(tab,options={}){
   if(target==="purchase-entry"){
     updateAdvancePurchaseHeader({save:false});
     renderAdvancePurchaseRows();
+    refreshAdvancePurchaseSourceDates();
   }
   if(target==="purchases")loadPurchaseReceipts();
   if(target==="payables"){
