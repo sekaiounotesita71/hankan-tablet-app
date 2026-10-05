@@ -39,12 +39,15 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
 .ar-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:11px}.side-stack{display:grid;gap:11px;align-content:start}.selected-box{border:1px solid var(--line);border-radius:7px;background:#f8fafb;padding:10px}.selected-box b{display:block;margin-bottom:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .full{grid-column:1/-1}.admin-only-hidden{display:none!important}
 .master-layout{display:grid;grid-template-columns:minmax(330px,.72fr) minmax(0,1.45fr);gap:11px}.master-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.master-form .full{grid-column:1/-1}.check-label{display:flex;align-items:center;gap:7px;min-height:38px;color:var(--text);font-size:12px}.check-label input{width:18px;height:18px;min-height:18px}.master-search{display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:7px;align-items:end;margin-bottom:8px}.master-note{margin-top:8px;color:var(--muted);font-size:11px;font-weight:700}
 .closing-tools{display:grid;grid-template-columns:145px 145px minmax(230px,1fr) auto auto;gap:8px;align-items:end}.closing-summary{display:grid;grid-template-columns:repeat(4,minmax(135px,1fr));gap:8px;margin-top:10px}.closing-list{margin-top:10px}.closing-table{min-width:1120px}.closing-state{margin-top:8px;color:var(--muted);font-size:11px;font-weight:800}.doc-actions{display:flex;gap:5px;align-items:center}
+.closing-queue-tools{display:grid;grid-template-columns:160px auto 140px minmax(180px,1fr);gap:8px;align-items:end}.closing-status-tabs{display:flex;gap:0;margin:12px 0;border-bottom:1px solid var(--line);overflow:auto}.closing-status-tabs button{min-height:40px;padding:7px 14px;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);font-weight:800;white-space:nowrap}.closing-status-tabs button[aria-pressed="true"]{border-bottom-color:var(--blue);color:var(--blue)}.closing-status-tabs b{font-variant-numeric:tabular-nums;margin-left:8px}.closing-overdue{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;color:var(--danger);font-size:12px;font-weight:800}.closing-overdue[hidden]{display:none}.closing-queue-wrap{max-height:390px}.closing-queue-table{min-width:900px}.closing-queue-table .queue-customer{white-space:normal;min-width:180px;max-width:270px}.queue-customer b,.queue-period span{display:block}.queue-customer small,.queue-period small{color:var(--muted)}.closing-queue-table td.queue-note{white-space:normal;min-width:120px;max-width:200px}.closing-queue-table .status-chip.pending{background:var(--danger-bg);color:var(--danger)}.closing-queue-table .status-chip.blocked{background:var(--warn-bg);color:var(--warn)}.closing-selection,.closing-history-details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.closing-selection>summary,.closing-history-details>summary{cursor:pointer;font-weight:800;padding:5px 0}.closing-selection .closing-tools{grid-template-columns:145px minmax(230px,1fr) auto auto;margin-top:8px}.closing-queue-state{margin:8px 0;color:var(--muted);font-size:12px;font-weight:700}
 .inline-suggest{position:fixed;z-index:1350;width:min(470px,calc(100vw - 16px));max-height:min(360px,65vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 12px 28px rgba(20,35,45,.2)}.inline-suggest button{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;width:100%;min-height:38px;padding:6px 9px;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;cursor:pointer}.inline-suggest button:hover,.inline-suggest button.active{background:var(--blue-bg)}.inline-suggest b{font-family:Consolas,monospace}.inline-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-suggest-empty{padding:10px;color:var(--muted);font-size:11px;font-weight:800}
 .modal-overlay{position:fixed;inset:0;z-index:1300;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(21,24,28,.58)}.modal-overlay.open{display:flex}.modal-shell{display:grid;grid-template-rows:auto minmax(0,1fr);width:min(1320px,100%);max-height:94vh;overflow:hidden;border:1px solid var(--line2);border-radius:8px;background:#fff;box-shadow:0 22px 54px rgba(0,0,0,.3)}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:#f7f9fa;font-weight:900}.modal-body{overflow:auto;padding:12px}.correction-head{display:grid;grid-template-columns:145px 170px minmax(220px,1fr) 150px;gap:8px;align-items:end}.correction-head .full{grid-column:1/-1}.correction-table{min-width:1140px;table-layout:fixed}.correction-table input,.correction-table select{min-height:34px;height:34px;padding:5px 7px}.correction-footer{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}.correction-reason{min-width:min(480px,100%);flex:1}.correction-summary{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .busy-overlay{position:fixed;inset:0;z-index:1500;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(21,24,28,.56)}.busy-overlay.open{display:flex}.busy-box{display:flex;align-items:center;gap:12px;max-width:430px;padding:17px 20px;border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(0,0,0,.26);font-weight:900}.spinner{width:25px;height:25px;flex:0 0 25px;border:3px solid #d7dee5;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.single-submit-pending{pointer-events:none!important;opacity:.58!important}
 .toast{position:fixed;right:16px;bottom:16px;z-index:1600;display:none;max-width:min(440px,calc(100vw - 32px));padding:11px 13px;border:1px solid #aacdbd;border-radius:7px;background:#eff9f3;color:#0b5d3d;box-shadow:0 8px 24px rgba(20,35,45,.18);font-weight:900}.toast.open{display:block}.toast.error{border-color:#e2b5b1;background:#fff1f0;color:var(--danger)}
 @media(max-width:1000px){.entry-head{grid-template-columns:1fr 1fr}.entry-head label:last-child{grid-column:1/-1}.filter-grid,.closing-tools,.correction-head{grid-template-columns:1fr 1fr}.filter-grid label:nth-child(4),.closing-tools label:nth-child(3),.correction-head .full{grid-column:1/-1}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.ar-layout,.master-layout{grid-template-columns:1fr}.table-wrap{max-height:55vh}.header-user{width:100%;justify-content:space-between}.app-header-row{align-items:flex-start;flex-direction:column}}
 @media(max-width:620px){main{padding:9px 9px 28px}.entry-head,.filter-grid,.form-grid,.master-form,.closing-tools,.correction-head{grid-template-columns:1fr}.entry-head label:last-child,.filter-grid label:nth-child(4),.form-grid .full,.master-form .full,.closing-tools label:nth-child(3),.correction-head .full{grid-column:auto}.summary-grid,.closing-summary{grid-template-columns:1fr 1fr}.summary-item{min-width:105px}.status-message{display:none}.modal-overlay{padding:6px}.modal-shell{max-height:98vh}}
+@media(max-width:1000px){.closing-queue-tools,.closing-selection .closing-tools{grid-template-columns:1fr 1fr}.closing-selection .closing-tools label{grid-column:auto}.closing-queue-wrap{max-height:350px}}
+@media(max-width:620px){.closing-queue-tools{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.closing-selection .closing-tools{grid-template-columns:1fr}.closing-status-tabs button{padding:7px 10px}.closing-queue-wrap{max-height:310px}}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260828-2">
 </head>
@@ -159,8 +162,25 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
     <div class="panel" style="margin-bottom:12px">
       <div class="panel-head"><span>請求締め・請求書</span><button class="btn small" type="button" onclick="loadDomesticClosingData()">再読込</button></div>
       <div class="panel-body">
+        <div class="closing-queue-tools">
+          <label>対象月<input id="closing-month" type="month" onchange="changeDomesticClosingMonth()"></label>
+          <div class="toolbar"><button class="btn small" type="button" onclick="setDomesticClosingMonthPreset('previous')">先月</button><button class="btn small" type="button" onclick="setDomesticClosingMonthPreset('current')">今月</button></div>
+          <label>締め日で絞り込み<select id="closing-queue-day" onchange="renderDomesticClosingQueue()"><option value="">すべて</option></select></label>
+          <label>得意先で絞り込み<input id="closing-queue-customer" type="search" autocomplete="off" placeholder="コード・名称" oninput="renderDomesticClosingQueue()"></label>
+        </div>
+        <div id="closing-overdue" class="closing-overdue" hidden></div>
+        <div class="closing-status-tabs" role="group" aria-label="請求締めの表示">
+          <button type="button" data-closing-queue-status="pending" aria-pressed="true" onclick="setDomesticClosingQueueStatus('pending')">未締め<b id="closing-pending-count">-</b></button>
+          <button type="button" data-closing-queue-status="closed" aria-pressed="false" onclick="setDomesticClosingQueueStatus('closed')">締め済み<b id="closing-closed-count">-</b></button>
+          <button type="button" data-closing-queue-status="all" aria-pressed="false" onclick="setDomesticClosingQueueStatus('all')">すべて<b id="closing-all-count">-</b></button>
+        </div>
+        <div id="closing-queue-state" class="closing-queue-state" aria-live="polite">読込中です。</div>
+        <div class="table-wrap closing-queue-wrap">
+          <table class="data-table closing-queue-table"><thead><tr><th>得意先</th><th>締め期間</th><th>売上件数</th><th class="money">今回売上（税込）</th><th class="money">請求額（税込）</th><th>状態</th><th>操作</th></tr></thead><tbody id="closing-queue-body"><tr><td colspan="7" class="empty">読込中です。</td></tr></tbody></table>
+        </div>
+        <details id="closing-selection" class="closing-selection">
+        <summary id="closing-selection-title">個別の締め内容</summary>
         <div class="closing-tools">
-          <label>対象月<input id="closing-month" type="month" onchange="refreshDomesticClosingPreview()"></label>
           <label>締め日グループ<select id="closing-day" onchange="refreshDomesticClosingPreview()"><option value="">締め日を選択</option></select></label>
           <label>得意先<input id="closing-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="コード・名称" oninput="renderDomesticClosingDayOptions();refreshDomesticClosingPreview()"></label>
           <button class="btn" type="button" onclick="refreshDomesticClosingPreview()">内容確認</button>
@@ -173,7 +193,10 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
           <div class="summary-card"><span>今回ご請求額</span><b id="closing-total">0</b></div>
         </div>
         <div id="closing-state" class="closing-state">対象月・締め日・得意先を選択してください。</div>
+        </details>
+        <details class="closing-history-details"><summary>締め履歴・再発行・解除</summary>
         <div id="closing-history" class="table-wrap closing-list"><div class="empty">請求締め履歴を読み込んでいます。</div></div>
+        </details>
       </div>
     </div>
     <div class="ar-layout">
@@ -318,6 +341,10 @@ let receivablePayments=[];
 let domesticClosingRows=[];
 let domesticClosingPreview=null;
 let domesticClosingDbReady=true;
+let domesticClosingLoaded=false;
+let domesticClosingLoadError="";
+let domesticClosingQueueCache=null;
+let domesticClosingQueueStatus="pending";
 let selectedReceivable=null;
 let selectedDomesticClosingId=null;
 let domesticPaymentAttempt=null;
@@ -500,6 +527,7 @@ async function loadBaseMasters(){
     ]);
     products=productRows;
     customers=customerRows;
+    domesticClosingQueueCache=null;
     renderCustomerDatalist();
     resolveEntryCustomer();
     setStatus(`国内得意先 ${customers.length}件・商品 ${products.length}件を読込済み`,"ok");
@@ -511,6 +539,7 @@ async function loadBaseMasters(){
 async function loadCustomerMaster(){
   try{
     customers=await fetchPaged(()=>supabaseClient.from("domestic_customer_master").select("*").order("customer_code"));
+    domesticClosingQueueCache=null;
     renderCustomerDatalist();
     renderCustomerList();
     setStatus(`国内得意先 ${customers.length}件を再読込しました。`,"ok");
@@ -994,6 +1023,10 @@ async function cancelSale(id){
 
 async function loadReceivables(){
   if(!currentUser)return;
+  domesticClosingLoaded=false;
+  domesticClosingLoadError="";
+  renderDomesticClosingQueue();
+  refreshDomesticClosingPreview();
   setBusy(true,"国内売掛を読み込んでいます。");
   try{
     const [receivables,payments,closingsResult]=await Promise.all([
@@ -1005,13 +1038,21 @@ async function loadReceivables(){
     receivablePayments=payments;
     domesticClosingDbReady=!closingsResult.error;
     domesticClosingRows=closingsResult.error?[]:(closingsResult.data||[]);
+    domesticClosingLoaded=true;
+    domesticClosingQueueCache=null;
     renderReceivables();
     renderDomesticClosingDayOptions();
     refreshDomesticClosingPreview();
     renderDomesticClosingHistory();
+    renderDomesticClosingQueue();
     restoreDomesticPaymentAttempt();
     setStatus(`国内売掛 ${receivableRows.length}件を表示中`,"ok");
-  }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+  }catch(error){
+    domesticClosingLoadError=friendlyError(error);
+    renderDomesticClosingQueue();
+    refreshDomesticClosingPreview();
+    showToast(domesticClosingLoadError,true);
+  }finally{setBusy(false)}
 }
 async function loadDomesticClosingData(){await loadReceivables()}
 function receivableStatus(row){
@@ -1216,22 +1257,20 @@ function renderDomesticClosingDayOptions(){
   if(days.includes(previous))select.value=String(previous);
   else if(selected&&days.length)select.value=String(days[0]);
 }
-function domesticClosingSnapshot(customerCode,range){
-  const records=receivableRows.filter(row=>row.customer_code===customerCode&&row.status!=="cancelled");
+function domesticClosingSnapshot(customerCode,range,index=null){
+  const records=index?(index.receivables.get(customerCode)||[]):receivableRows.filter(row=>row.customer_code===customerCode&&row.status!=="cancelled");
   const recordIds=new Set(records.map(row=>row.id));
+  const customerPayments=index?(index.payments.get(customerCode)||[]):receivablePayments.filter(row=>recordIds.has(row.receivable_id));
   const beforeCharges=records.filter(row=>String(row.invoice_date||"")<range.from).reduce((sum,row)=>sum+Number(row.amount_jpy||0),0);
-  const beforePayments=receivablePayments.filter(row=>recordIds.has(row.receivable_id)&&String(row.payment_date||"")<range.from).reduce((sum,row)=>sum+Number(row.amount_jpy||0),0);
+  const beforePayments=customerPayments.filter(row=>String(row.payment_date||"")<range.from).reduce((sum,row)=>sum+Number(row.amount_jpy||0),0);
   const charges=records.filter(row=>String(row.invoice_date||"")>=range.from&&String(row.invoice_date||"")<=range.to).sort((a,b)=>String(a.invoice_date).localeCompare(String(b.invoice_date)));
-  const payments=receivablePayments.filter(row=>recordIds.has(row.receivable_id)&&String(row.payment_date||"")>=range.from&&String(row.payment_date||"")<=range.to).sort((a,b)=>String(a.payment_date).localeCompare(String(b.payment_date)));
+  const payments=customerPayments.filter(row=>String(row.payment_date||"")>=range.from&&String(row.payment_date||"")<=range.to).sort((a,b)=>String(a.payment_date).localeCompare(String(b.payment_date)));
   const carryover=Math.round(beforeCharges-beforePayments);
   const sales=Math.round(charges.reduce((sum,row)=>sum+Number(row.amount_jpy||0),0));
   const payment=Math.round(payments.reduce((sum,row)=>sum+Number(row.amount_jpy||0),0));
   return{range,charges,payments,carryover,sales,payment,total:Math.round(carryover+sales-payment)};
 }
-function domesticClosingCalculation(){
-  const customer=findCustomer(value("closing-customer"));
-  const month=value("closing-month");
-  const requestedDay=Number(value("closing-day"));
+function domesticClosingCalculation(customer=findCustomer(value("closing-customer")),month=value("closing-month"),requestedDay=Number(value("closing-day")),index=null){
   if(!customer||!month||!domesticClosingDays(customer).includes(requestedDay))return{error:"対象月・締め日・得意先を選択してください。"};
   const days=domesticClosingDays(customer);
   const recurring=domesticRecurringClosing(customer);
@@ -1244,16 +1283,144 @@ function domesticClosingCalculation(){
   const dueDate=recurring
     ?(cycleIndex<days.length-1?domesticMonthDay(month,days[cycleIndex+1]):domesticMonthDay(month,days[0],1))
     :domesticMonthDay(month,Number(customer.payment_day)||31,Math.max(0,Number(customer.payment_month_offset)||0));
-  const existing=domesticClosingRows.find(row=>row.customer_code===customer.customer_code&&row.status==="closed"&&!(String(row.period_to)<range.from||String(row.period_from)>range.to));
+  const customerClosings=index?(index.closings.get(customer.customer_code)||[]):domesticClosingRows.filter(row=>row.customer_code===customer.customer_code);
+  const existing=customerClosings.find(row=>row.status==="closed"&&!(String(row.period_to)<range.from||String(row.period_from)>range.to));
   let prerequisiteError="";
   if(recurring&&cycleIndex>0){
     const previousTo=domesticMonthDay(month,days[cycleIndex-1]);
     const previousFrom=cycleIndex===1?domesticMonthDay(month,1):domesticShiftDate(domesticMonthDay(month,days[cycleIndex-2]),1);
-    const previousSnapshot=domesticClosingSnapshot(customer.customer_code,{from:previousFrom,to:previousTo});
-    const previousClosed=domesticClosingRows.some(row=>row.customer_code===customer.customer_code&&row.status==="closed"&&row.period_to===previousTo);
+    const previousSnapshot=domesticClosingSnapshot(customer.customer_code,{from:previousFrom,to:previousTo},index);
+    const previousClosed=customerClosings.some(row=>row.status==="closed"&&row.period_to===previousTo);
     if(!previousClosed&&(previousSnapshot.charges.length||previousSnapshot.payments.length||Math.abs(previousSnapshot.carryover)>.5))prerequisiteError=`先に同月${days[cycleIndex-1]}日締めを完了してください。`;
   }
-  return{error:prerequisiteError,customer,month,closingDay:requestedDay,range,dueDate,existing,snapshot:domesticClosingSnapshot(customer.customer_code,range)};
+  return{error:prerequisiteError,customer,month,closingDay:requestedDay,range,dueDate,existing,snapshot:domesticClosingSnapshot(customer.customer_code,range,index)};
+}
+function domesticClosingHasActivity(snapshot){return !!(snapshot&&(snapshot.charges.length||snapshot.payments.length||Math.abs(snapshot.carryover)>.5))}
+function domesticClosingIndex(){
+  const index={receivables:new Map(),payments:new Map(),closings:new Map(),customers:new Map(customers.map(row=>[row.customer_code,row]))};
+  const customerByRecord=new Map();
+  const add=(map,key,row)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(row)};
+  for(const row of receivableRows){
+    if(row.status==="cancelled")continue;
+    add(index.receivables,row.customer_code,row);
+    customerByRecord.set(row.id,row.customer_code);
+    if(!index.customers.has(row.customer_code))index.customers.set(row.customer_code,{customer_code:row.customer_code,customer_name:row.customer_name_snapshot||row.customer_code,active:false,missing:true});
+  }
+  for(const row of receivablePayments){const code=customerByRecord.get(row.receivable_id);if(code)add(index.payments,code,row)}
+  for(const row of domesticClosingRows){
+    add(index.closings,row.customer_code,row);
+    if(!index.customers.has(row.customer_code))index.customers.set(row.customer_code,{customer_code:row.customer_code,customer_name:row.customer_name_snapshot||row.customer_code,active:false,missing:true});
+  }
+  return index;
+}
+function domesticClosingQueueForMonth(month,index=domesticClosingIndex()){
+  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return[];
+  const rows=[];
+  const seenClosings=new Set();
+  const addClosed=(customer,saved,calculation={})=>{
+    if(seenClosings.has(saved.id))return;
+    seenClosings.add(saved.id);
+    const savedMonth=String(saved.period_to).slice(0,7);
+    const day=saved.period_to===domesticMonthDay(savedMonth,31)?31:Number(String(saved.period_to).slice(-2));
+    rows.push({...calculation,customer,month,closingDay:day,range:{from:saved.period_from,to:saved.period_to},dueDate:saved.due_date,existing:saved,status:"closed",note:"",sales:Number(saved.sales_amount_jpy),total:Number(saved.billing_amount_jpy),saleCount:saved.snapshot?.charges?.length??null});
+  };
+  for(const customer of index.customers.values()){
+    for(const day of domesticClosingDays(customer)){
+      const calculation=domesticClosingCalculation(customer,month,day,index);
+      if(!calculation.range)continue;
+      const {range,existing,snapshot}=calculation;
+      if(!existing&&!domesticClosingHasActivity(snapshot))continue;
+      let status="pending",note="";
+      if(existing&&existing.period_from<=range.from&&existing.period_to>=range.to){addClosed(customer,existing,calculation);continue}
+      if(existing){status="blocked";note="締め期間の重複を確認"}
+      else if(!customer.active){status="blocked";note=customer.missing?"得意先マスタ未登録":"得意先マスタが停止中"}
+      else if(calculation.error){status="blocked";note=calculation.error}
+      else if(range.to>today()){status="upcoming";note="締め日前"}
+      rows.push({...calculation,status,note,sales:snapshot.sales,total:snapshot.total,saleCount:snapshot.charges.length});
+    }
+    for(const saved of index.closings.get(customer.customer_code)||[])if(saved.status==="closed"&&String(saved.period_to).slice(0,7)===month)addClosed(customer,saved);
+  }
+  return rows.sort((a,b)=>a.range.to.localeCompare(b.range.to)||String(a.customer.customer_code).localeCompare(String(b.customer.customer_code),"ja",{numeric:true}));
+}
+function domesticClosingQueueData(month){
+  if(domesticClosingQueueCache?.month===month)return domesticClosingQueueCache;
+  const index=domesticClosingIndex();
+  const rows=domesticClosingQueueForMonth(month,index);
+  const older=[];
+  // Opening balances are a starting point, not a missed historical invoice.
+  const months=[...receivableRows.filter(row=>row.status!=="cancelled"&&row.source_type!=="opening").map(row=>String(row.invoice_date||"").slice(0,7)),...domesticClosingRows.map(row=>String(row.period_to||"").slice(0,7))].filter(value=>/^\d{4}-(0[1-9]|1[0-2])$/.test(value)&&value<month).sort();
+  if(rows.length||months.length){
+    for(let cursor=months[0];cursor&&cursor<month;cursor=domesticMonthDay(cursor,1,1).slice(0,7)){
+      const pending=domesticClosingQueueForMonth(cursor,index).filter(row=>row.status!=="closed"&&row.range.to<=today());
+      if(pending.length)older.push({month:cursor,count:pending.length});
+    }
+  }
+  domesticClosingQueueCache={month,rows,older};
+  return domesticClosingQueueCache;
+}
+function setDomesticClosingQueueStatus(status){
+  domesticClosingQueueStatus=["pending","closed","all"].includes(status)?status:"pending";
+  renderDomesticClosingQueue();
+}
+function changeDomesticClosingMonth(month=value("closing-month")){
+  document.getElementById("closing-month").value=month;
+  document.getElementById("closing-queue-day").value="";
+  document.getElementById("closing-queue-customer").value="";
+  document.getElementById("closing-customer").value="";
+  document.getElementById("closing-selection").open=false;
+  domesticClosingQueueStatus="pending";
+  renderDomesticClosingDayOptions();
+  refreshDomesticClosingPreview();
+  renderDomesticClosingQueue();
+}
+function setDomesticClosingMonthPreset(kind){changeDomesticClosingMonth(domesticMonthDay(today().slice(0,7),1,kind==="previous"?-1:0).slice(0,7))}
+function selectDomesticClosingQueueRow(code,day){
+  document.getElementById("closing-customer").value=code;
+  renderDomesticClosingDayOptions();
+  document.getElementById("closing-day").value=String(day);
+  refreshDomesticClosingPreview();
+  document.getElementById("closing-selection").open=true;
+  renderDomesticClosingQueue();
+  document.getElementById("closing-selection").scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+function renderDomesticClosingQueue(){
+  const body=document.getElementById("closing-queue-body");
+  if(!body)return;
+  const state=document.getElementById("closing-queue-state");
+  const overdue=document.getElementById("closing-overdue");
+  document.querySelectorAll("[data-closing-queue-status]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.closingQueueStatus===domesticClosingQueueStatus)));
+  if(!domesticClosingLoaded||!domesticClosingDbReady||domesticClosingLoadError){
+    const message=domesticClosingLoadError||(!domesticClosingLoaded?"読込中です。":"請求締めデータを読み込めません。再読込してください。");
+    state.textContent=message;
+    body.innerHTML=`<tr><td colspan="7" class="empty">${esc(message)}</td></tr>`;
+    ["pending","closed","all"].forEach(key=>document.getElementById(`closing-${key}-count`).textContent="-");
+    overdue.hidden=true;
+    return;
+  }
+  const month=value("closing-month");
+  const data=domesticClosingQueueData(month);
+  const daySelect=document.getElementById("closing-queue-day");
+  const selectedDay=daySelect.value;
+  const days=[...new Set(data.rows.map(row=>row.closingDay))].sort((a,b)=>a-b);
+  daySelect.innerHTML='<option value="">すべて</option>'+days.map(day=>`<option value="${day}">${day===31?"末日":`${day}日`}</option>`).join("");
+  if(days.includes(Number(selectedDay)))daySelect.value=selectedDay;
+  const query=normalize(value("closing-queue-customer"));
+  const matched=data.rows.filter(row=>(!daySelect.value||row.closingDay===Number(daySelect.value))&&(!query||normalize(`${row.customer.customer_code} ${row.customer.customer_name}`).includes(query)));
+  const pending=matched.filter(row=>row.status!=="closed").length;
+  document.getElementById("closing-pending-count").textContent=String(pending);
+  document.getElementById("closing-closed-count").textContent=String(matched.length-pending);
+  document.getElementById("closing-all-count").textContent=String(matched.length);
+  const visible=matched.filter(row=>domesticClosingQueueStatus==="all"||(domesticClosingQueueStatus==="closed"?row.status==="closed":row.status!=="closed"));
+  state.textContent=month?`${month} ／ 対象 ${data.rows.length}件 ／ 表示 ${visible.length}件`:"対象月を選択してください。";
+  overdue.hidden=!data.older.length;
+  overdue.innerHTML=data.older.length?'<span>前月以前の未締め</span>'+data.older.map(item=>`<button class="btn small danger" type="button" onclick="changeDomesticClosingMonth('${item.month}')">${item.month}：${item.count}件</button>`).join(""):"";
+  body.innerHTML=visible.map(row=>{
+    const code=row.customer.customer_code;
+    const label={pending:"未締め",closed:"締め済み",blocked:"要確認",upcoming:"締め日前"}[row.status];
+    const selected=value("closing-customer")===code&&Number(value("closing-day"))===row.closingDay;
+    const action=row.status==="closed"?`<button class="btn small" type="button" onclick="printDomesticInvoice('${row.existing.id}')">請求書</button>`:`<button class="btn small ${row.status==="pending"?"primary":""}" type="button" data-customer="${esc(code)}" data-day="${row.closingDay}" onclick="selectDomesticClosingQueueRow(this.dataset.customer,Number(this.dataset.day))" ${!row.customer.active?"disabled":""}>内容確認</button>`;
+    return`<tr${selected?' class="selected"':""}><td class="queue-customer"><small>${esc(code)}</small><b>${esc(row.customer.customer_name)}</b></td><td class="queue-period"><span>${esc(row.range.from)} ～</span><span>${esc(row.range.to)}</span></td><td>${row.saleCount??"-"}</td><td class="money">${money(row.sales)}</td><td class="money">${money(row.total)}</td><td class="queue-note"><span class="status-chip ${row.status==="closed"?"paid":row.status}">${label}</span>${row.note?`<div>${esc(row.note)}</div>`:""}</td><td>${action}</td></tr>`;
+  }).join("")||`<tr><td colspan="7" class="empty">${!month?"対象月を選択してください。":query||daySelect.value?"絞り込みに該当する請求はありません。":!data.rows.length?"この月の請求対象はありません。":domesticClosingQueueStatus==="pending"?"対象月の未締めはありません。":"該当する請求締めはありません。"}</td></tr>`;
 }
 function refreshDomesticClosingPreview(){
   const calculation=domesticClosingCalculation();
@@ -1265,10 +1432,13 @@ function refreshDomesticClosingPreview(){
   document.getElementById("closing-total").textContent=money(snapshot.total);
   const state=document.getElementById("closing-state");
   const button=document.getElementById("close-billing-button");
+  document.getElementById("closing-selection-title").textContent=calculation.customer?`${calculation.customer.customer_code} ${calculation.customer.customer_name} ／ 締め内容`:"個別の締め内容";
+  if(!domesticClosingLoaded||domesticClosingLoadError){state.textContent=domesticClosingLoadError||"読込中です。";button.disabled=true;return}
   if(!domesticClosingDbReady){state.textContent="国内請求締め用SQLが未実行です。";button.disabled=true;return}
   if(calculation.error){state.textContent=calculation.error;button.disabled=true;return}
   if(calculation.existing){state.textContent=`${calculation.range.from} ～ ${calculation.range.to} は締め済みです。履歴から請求書を再発行できます。`;button.disabled=true;return}
-  const hasActivity=calculation.snapshot.charges.length||calculation.snapshot.payments.length||Math.abs(calculation.snapshot.carryover)>.5;
+  if(!calculation.customer.active){state.textContent="有効な国内得意先を選択してください。";button.disabled=true;return}
+  const hasActivity=domesticClosingHasActivity(calculation.snapshot);
   state.textContent=`${calculation.range.from} ～ ${calculation.range.to}／支払期限 ${calculation.dueDate}／売上 ${calculation.snapshot.charges.length}件・入金 ${calculation.snapshot.payments.length}件`;
   button.disabled=!hasActivity;
 }
@@ -1281,6 +1451,7 @@ function domesticClosingPayload(snapshot){
   };
 }
 async function closeDomesticBillingPeriod(){
+  if(!domesticClosingLoaded||!domesticClosingDbReady||domesticClosingLoadError)return showToast("請求データを再読込してください。",true);
   const calculation=domesticClosingCalculation();
   if(calculation.error)return showToast(calculation.error,true);
   if(calculation.existing)return showToast("この期間は締め済みです。履歴から請求書を再発行してください。",true);
@@ -1483,7 +1654,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("sales-to").value=today();
   document.getElementById("payment-date").value=today();
   document.getElementById("opening-date").value=today();
-  document.getElementById("closing-month").value=today().slice(0,7);
+  document.getElementById("closing-month").value=domesticMonthDay(today().slice(0,7),1,-1).slice(0,7);
   restoreEntryDraft();
   document.querySelectorAll("[data-entry-header]").forEach(node=>node.addEventListener("input",scheduleDraftSave));
   initSupabase();
