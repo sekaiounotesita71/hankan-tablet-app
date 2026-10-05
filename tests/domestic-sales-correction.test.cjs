@@ -7,7 +7,7 @@ const vm=require("node:vm");
 const root=path.join(__dirname,"..");
 const domestic=fs.readFileSync(path.join(root,"domestic-sales.html"),"utf8");
 const main=fs.readFileSync(path.join(root,"order-entry-beta.html"),"utf8");
-const sql=fs.readFileSync(path.join(root,"domestic-sales-correction-migration.sql"),"utf8");
+const sql=fs.readFileSync(path.join(root,"domestic-linked-sale-correction-migration.sql"),"utf8");
 
 const scripts=[...domestic.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map(match=>match[1]).filter(source=>source.trim());
@@ -32,10 +32,10 @@ test("国内売上は管理者が確定後に売上・明細・売掛を一括�
   assert.match(sql,/perform set_config\('app\.audit_reason'/);
 });
 
-test("入金済み・請求締め済み・輸出連動売上は修正と取消を拒否する",()=>{
+test("入金済み・請求締め済みは拒否し、輸出連動は国内売上だけ修正と取消できる",()=>{
   assert.match(sql,/target_receivable\.paid_amount_jpy > 0/);
   assert.match(sql,/domestic_sale_has_closed_billing\(target_sale\.customer_code,target_sale\.sale_date\)/);
-  assert.match(sql,/source_type','manual'\) <> 'manual'/);
+  assert.match(sql,/source_type,'manual'\) not in \('manual','export_intermediary'\)/);
   const cancelSource=sourceBetween(sql,"create or replace function public.cancel_domestic_sale","revoke all on function public.domestic_sale_has_closed_billing");
   assert.match(cancelSource,/domestic_sale_has_closed_billing/);
   assert.match(cancelSource,/target_receivable\.paid_amount_jpy > 0/);

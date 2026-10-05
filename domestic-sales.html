@@ -35,6 +35,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fff}.entry-table-wrap{max-height:52vh;margin-top:11px}.data-table{width:100%;border-collapse:separate;border-spacing:0}.data-table th,.data-table td{padding:6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px;vertical-align:middle}.data-table th{position:sticky;top:0;z-index:3;background:#f7f9fa;color:var(--muted);font-weight:900}.data-table tbody tr:last-child td{border-bottom:0}.data-table tbody tr.selected td{background:var(--blue-bg)}.entry-table{min-width:1230px;table-layout:fixed}.entry-table .col-no{width:44px;text-align:center}.entry-table .col-code{width:120px}.entry-table .col-name{width:220px}.entry-table .col-qty{width:90px}.entry-table .col-unit{width:76px}.entry-table .col-price{width:112px}.entry-table .col-tax{width:72px}.entry-table .col-amount{width:118px}.entry-table .col-memo{width:210px}.entry-table .col-actions{width:170px}.entry-table input,.entry-table select{min-height:34px;height:34px;padding:5px 7px}.money{text-align:right!important;font-family:Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:900}.entry-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}.entry-summary{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}.summary-item{min-width:120px;border:1px solid var(--line);border-radius:6px;background:#f8fafb;padding:6px 9px}.summary-label{color:var(--muted);font-size:10px;font-weight:900}.summary-value{margin-top:2px;text-align:right;font-family:Consolas,monospace;font-size:17px;font-weight:900}
 .filter-grid{display:grid;grid-template-columns:145px 145px 180px minmax(190px,1fr) auto;gap:8px;align-items:end}.date-range-presets{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px}.date-range-presets .btn.active{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:8px;margin:10px 0}.summary-card{border:1px solid var(--line);border-radius:7px;background:#f9fafb;padding:9px}.summary-card b{display:block;margin-top:4px;text-align:right;font-family:Consolas,monospace;font-size:20px}.summary-card span{color:var(--muted);font-size:11px;font-weight:900}
 .sales-table{min-width:1030px}.ar-table{min-width:1100px}.customer-table{min-width:930px}.status-chip{display:inline-flex;align-items:center;min-height:23px;padding:0 7px;border-radius:5px;background:#edf0f2;color:#4d5965;font-size:10px;font-weight:900}.status-chip.unpaid,.status-chip.overdue{background:var(--warn-bg);color:var(--warn)}.status-chip.partial{background:var(--blue-bg);color:var(--blue)}.status-chip.paid{background:var(--accent-bg);color:var(--accent)}.status-chip.cancelled{background:var(--danger-bg);color:var(--danger)}
+.sales-table .sale-actions{position:sticky;right:0;z-index:2;background:#fff;box-shadow:-1px 0 var(--line)}.sales-table th.sale-actions{z-index:4;background:#f7f9fa}.sale-actions .doc-actions{display:grid;grid-template-columns:1fr 1fr;min-width:166px;gap:5px}
 .sale-detail td{padding:0!important;background:#f8fafb}.sale-detail-box{padding:9px 12px;white-space:normal}.detail-table{width:100%;border-collapse:collapse}.detail-table th,.detail-table td{padding:5px 7px!important;border:1px solid var(--line);background:#fff;font-size:11px}.empty{padding:26px;text-align:center;color:var(--muted);font-weight:800}
 .ar-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:11px}.side-stack{display:grid;gap:11px;align-content:start}.selected-box{border:1px solid var(--line);border-radius:7px;background:#f8fafb;padding:10px}.selected-box b{display:block;margin-bottom:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .full{grid-column:1/-1}.admin-only-hidden{display:none!important}
 .master-layout{display:grid;grid-template-columns:minmax(330px,.72fr) minmax(0,1.45fr);gap:11px}.master-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.master-form .full{grid-column:1/-1}.check-label{display:flex;align-items:center;gap:7px;min-height:38px;color:var(--text);font-size:12px}.check-label input{width:18px;height:18px;min-height:18px}.master-search{display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:7px;align-items:end;margin-bottom:8px}.master-note{margin-top:8px;color:var(--muted);font-size:11px;font-weight:700}
@@ -152,7 +153,7 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
           <div class="summary-card"><span>税込売上</span><b id="sales-total">0</b></div>
         </div>
         <div class="table-wrap">
-          <table class="data-table sales-table"><thead><tr><th>売上日</th><th>売上番号</th><th>得意先</th><th class="money">8%商品</th><th class="money">10%商品</th><th class="money">送料</th><th class="money">税額</th><th class="money">税込合計</th><th>状態</th><th>操作</th></tr></thead><tbody id="sales-body"><tr><td colspan="10" class="empty">検索すると表示します。</td></tr></tbody></table>
+          <table class="data-table sales-table"><thead><tr><th>売上日</th><th>売上番号</th><th>得意先</th><th class="money">8%商品</th><th class="money">10%商品</th><th class="money">送料</th><th class="money">税額</th><th class="money">税込合計</th><th>状態</th><th class="sale-actions">操作</th></tr></thead><tbody id="sales-body"><tr><td colspan="10" class="empty">検索すると表示します。</td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -316,7 +317,8 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
           <button id="save-correction-button" class="btn primary" type="button" onclick="saveDomesticSaleCorrection()">修正を保存</button>
         </div>
       </div>
-      <div class="master-note">入金済み・請求締め済み・輸出連動の売上はここでは修正できません。先に入金または請求締めを確認してください。</div>
+      <div id="correction-scope" class="master-note"></div>
+      <div class="master-note">入金済み・請求締め済みの売上は修正できません。先に国内売掛管理で入金または請求締めを確認してください。</div>
     </div>
   </div>
 </div>
@@ -842,9 +844,8 @@ async function loadSalesReference(){
     for(let index=0;index<rows.length;index+=100){
       const ids=rows.slice(index,index+100).map(row=>row.id);
       if(!ids.length)continue;
-      const {data,error}=await supabaseClient.from("domestic_sale_lines").select("*").in("sale_id",ids).order("line_no");
-      if(error)throw error;
-      (data||[]).forEach(line=>lineMap.get(line.sale_id)?.push(line));
+      const lines=await fetchPaged(()=>supabaseClient.from("domestic_sale_lines").select("*").in("sale_id",ids).order("line_no").order("id"));
+      lines.forEach(line=>lineMap.get(line.sale_id)?.push(line));
     }
     rows=rows.map(row=>({...row,lines:lineMap.get(row.id)||[]}));
     if(productQuery)rows=rows.filter(row=>row.lines.some(line=>normalize(line.product_code).includes(productQuery)||normalize(line.product_name_snapshot).includes(productQuery)));
@@ -866,11 +867,11 @@ function renderSalesReference(){
     const expanded=expandedSales.has(row.id);
     const detail=`<tr class="sale-detail"${expanded?"":" hidden"} id="sale-detail-${row.id}"><td colspan="10"><div class="sale-detail-box"><table class="detail-table"><thead><tr><th>No.</th><th>商品コード</th><th>商品名</th><th class="money">数量</th><th>単位</th><th class="money">単価</th><th>税率</th><th class="money">金額</th><th>メモ</th></tr></thead><tbody>${row.lines.map(line=>`<tr><td>${line.line_no}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}</td><td class="money">${Number(line.quantity).toLocaleString("ja-JP")}</td><td>${esc(line.unit)}</td><td class="money">${money(line.unit_price_jpy)}</td><td>${line.tax_rate}%</td><td class="money">${money(line.net_amount_jpy)}</td><td>${esc(line.memo||"")}</td></tr>`).join("")}</tbody></table></div></td></tr>`;
     const generated=row.source_type==="export_intermediary";
-    const correctionButton=isAdmin()&&row.status==="confirmed"&&!generated?`<button class="btn small" type="button" onclick="openDomesticSaleCorrection('${row.id}')">修正</button>`:"";
-    const cancelButton=isAdmin()&&row.status==="confirmed"&&!generated?`<button class="btn small danger" type="button" onclick="cancelSale('${row.id}')">取消</button>`:"";
+    const correctionButton=isAdmin()&&row.status==="confirmed"?`<button class="btn small" type="button" onclick="openDomesticSaleCorrection('${row.id}')">訂正</button>`:"";
+    const cancelButton=isAdmin()&&row.status==="confirmed"?`<button class="btn small danger" type="button" onclick="cancelSale('${row.id}')">削除（取消）</button>`:"";
     const sourceBadge=generated?`<span class="status-chip confirmed" title="輸出作業から自動作成">輸出連動 ${esc(row.source_importer_code||"")}</span>`:"";
     const deliveryButton=row.status==="confirmed"?`<button class="btn small blue" type="button" onclick="printDomesticDeliveryNote('${row.id}')">納品書</button>`:"";
-    return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span>${sourceBadge}</td><td><div class="doc-actions"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${deliveryButton}${correctionButton}${cancelButton}</div></td></tr>${detail}`;
+    return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span>${sourceBadge}</td><td class="sale-actions"><div class="doc-actions"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${deliveryButton}${correctionButton}${cancelButton}</div></td></tr>${detail}`;
   }).join("");
 }
 function toggleSaleDetail(id){expandedSales.has(id)?expandedSales.delete(id):expandedSales.add(id);renderSalesReference()}
@@ -879,9 +880,8 @@ function openDomesticSaleCorrection(id){
   const row=salesRows.find(item=>item.id===id);
   if(!row)return showToast("修正する国内売上が見つかりません。",true);
   if(row.status!=="confirmed")return showToast("取消済み売上は修正できません。",true);
-  if(row.source_type==="export_intermediary")return showToast("輸出連動売上は輸出側の元データから修正してください。",true);
   correctionTarget=row;
-  correctionLines=(row.lines||[]).map(line=>({id:newId(),productCode:line.product_code||"",productName:line.product_name_snapshot||"",quantity:String(line.quantity??""),unit:line.unit||"Kg",unitPrice:String(line.unit_price_jpy??""),taxRate:Number(line.tax_rate||8),memo:line.memo||"",resolvedCode:line.product_code||""}));
+  correctionLines=(row.lines||[]).map(line=>({id:newId(),originalLineId:line.id,productCode:line.product_code||"",productName:line.product_name_snapshot||"",quantity:String(line.quantity??""),unit:line.unit||"Kg",unitPrice:String(line.unit_price_jpy??""),taxRate:Number(line.tax_rate||8),memo:line.memo||"",resolvedCode:line.product_code||""}));
   if(!correctionLines.length)correctionLines=[blankLine()];
   document.getElementById("domestic-sale-correction-title").textContent=`国内売上の管理者修正 ${row.sale_no}`;
   document.getElementById("correction-date").value=row.sale_date||today();
@@ -890,6 +890,7 @@ function openDomesticSaleCorrection(id){
   document.getElementById("correction-shipping").value=String(row.shipping_amount_jpy??0);
   document.getElementById("correction-memo").value=row.memo||"";
   document.getElementById("correction-reason").value="";
+  document.getElementById("correction-scope").textContent=row.source_type==="export_intermediary"?"訂正対象：国内売上・国内売掛のみ。輸出作業・通関用の明細は変更しません。":"訂正対象：国内売上・国内売掛。";
   renderCorrectionLines();updateCorrectionTotals();
   document.getElementById("domestic-sale-correction-modal").classList.add("open");
   requestAnimationFrame(()=>document.getElementById("correction-date")?.focus());
@@ -929,7 +930,7 @@ function resolveCorrectionProduct(index,raw){
   if(product)applyProductToCorrection(index,product,false);
 }
 function addCorrectionLine(focus=false,source=null){
-  correctionLines.push(source?{...source,id:newId()}:blankLine());
+  correctionLines.push(source?{...source,id:newId(),originalLineId:null}:blankLine());
   renderCorrectionLines();updateCorrectionTotals();
   if(focus)requestAnimationFrame(()=>document.querySelector(`[data-correction-row="${correctionLines.length-1}"][data-correction-field="productCode"]`)?.focus());
 }
@@ -998,27 +999,39 @@ async function saveDomesticSaleCorrection(){
   }
   setBusy(true,"国内売上と売掛を修正しています。");
   try{
-    const payload=entered.map(line=>({product_code:line.productCode||null,product_name:line.productName,quantity:Number(line.quantity),unit:line.unit,unit_price:Number(line.unitPrice),tax_rate:Number(line.taxRate),memo:line.memo||null}));
+    const payload=entered.map(line=>({original_line_id:line.originalLineId||null,product_code:line.productCode||null,product_name:line.productName,quantity:Number(line.quantity),unit:line.unit,unit_price:Number(line.unitPrice),tax_rate:Number(line.taxRate),memo:line.memo||null}));
     const {data,error}=await supabaseClient.rpc("correct_domestic_sale",{p_sale_id:correctionTarget.id,p_sale_date:value("correction-date"),p_customer_code:customer.customer_code,p_shipping_amount_jpy:numberValue("correction-shipping"),p_memo:value("correction-memo")||null,p_lines:payload,p_reason:reason});
     if(error)throw error;
     closeDomesticSaleCorrection();
-    receivableRows=[];domesticClosingRows=[];
+    invalidateDomesticReceivables();
     showToast(`${data.sale_no} を修正しました。税込 ${money(data.total_amount_jpy)}円`);
     await loadSalesReference();
   }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
 }
 async function cancelSale(id){
+  if(appBusy)return;
+  if(!isAdmin())return showToast("確定済み売上を取り消せるのは管理者のみです。",true);
+  const row=salesRows.find(item=>item.id===id);
+  if(!row||row.status!=="confirmed")return showToast("取消する確定済み売上を選択してください。",true);
   const reason=prompt("売上の取消理由を3文字以上で入力してください。");
   if(reason===null)return;
   if(reason.trim().length<3)return showToast("取消理由を3文字以上入力してください。",true);
-  if(!confirm("売上と対応する売掛を取消します。よろしいですか？"))return;
+  const scope=row.source_type==="export_intermediary"?"\n輸出作業・通関用の明細は変更しません。":"";
+  if(!confirm(`${row.sale_no}\n${row.customer_code} ${row.customer_name_snapshot}\n国内売上と対応する国内売掛を取り消します。履歴は残ります。${scope}\nよろしいですか？`))return;
   setBusy(true,"国内売上を取り消しています。");
   try{
     const {error}=await supabaseClient.rpc("cancel_domestic_sale",{p_sale_id:id,p_reason:reason.trim()});
     if(error)throw error;
+    invalidateDomesticReceivables();
     showToast("売上と売掛を取り消しました。");
     await loadSalesReference();
   }catch(error){showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
+
+function invalidateDomesticReceivables(){
+  receivableRows=[];receivablePayments=[];domesticClosingRows=[];
+  domesticClosingLoaded=false;domesticClosingLoadError="";domesticClosingQueueCache=null;domesticClosingPreview=null;
+  selectedReceivable=null;selectedDomesticClosingId=null;
 }
 
 async function loadReceivables(){
