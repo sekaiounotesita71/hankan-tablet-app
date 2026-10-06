@@ -9,6 +9,8 @@
 <script src="./domestic-payment-model.js?v=20260918-1"></script>
 <script src="./domestic-documents.js?v=20261006-1"></script>
 <script src="./reference-sites.js?v=20260928-1"></script>
+<script src="./accounting-period-report.js?v=20261006-1"></script>
+<script src="./domestic-receivable-report.js?v=20261006-1"></script>
 <title>国内販売管理</title>
 <style>
 :root{--bg:#f4f6f7;--panel:#fff;--line:#d8dde3;--line2:#b5bec8;--text:#15181c;--muted:#64707d;--accent:#0f6848;--accent-bg:#e9f5ef;--blue:#174ea6;--blue-bg:#eaf2ff;--danger:#b42318;--danger-bg:#fff0ef;--warn:#8a5700;--warn-bg:#fff7e7}
@@ -161,6 +163,26 @@ label{display:grid;gap:5px;color:var(--muted);font-size:11px;font-weight:900}inp
   </section>
 
   <section class="workspace" data-panel="receivables">
+    <div class="panel" style="margin-bottom:12px">
+      <div class="panel-head">売掛帳票</div>
+      <div class="panel-body">
+        <div class="filter-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+          <label>対象期間<input id="domestic-ar-report-range" type="text" inputmode="numeric" autocomplete="off" placeholder="20260901-20260930"></label>
+          <label>集計対象<select id="domestic-ar-report-scope"><option value="posted">締め済み＋初期残高</option><option value="all">登録済みすべて（未締め含む）</option></select></label>
+          <label>拠点<select id="domestic-ar-report-site"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option><option value="UNASSIGNED">共通・未判定</option></select></label>
+          <label>得意先<input id="domestic-ar-report-customer" autocomplete="off" data-domestic-suggest="customer" placeholder="全得意先 / コード・名称"></label>
+        </div>
+        <div class="date-range-presets" aria-label="国内売掛帳票の対象期間">
+          <button class="btn small" type="button" onclick="setDomesticArReportPeriod('today')">今日</button>
+          <button class="btn small" type="button" onclick="setDomesticArReportPeriod('week')">今週</button>
+          <button class="btn small" type="button" onclick="setDomesticArReportPeriod('month')">今月</button>
+          <button class="btn small" type="button" onclick="setDomesticArReportPeriod('previous-month')">先月</button>
+          <button class="btn small" type="button" onclick="setDomesticArReportPeriod('year')">今年</button>
+          <button class="btn blue" type="button" onclick="printDomesticArReport()">売掛一覧表 PDF</button>
+          <button class="btn" type="button" onclick="printDomesticArReport(true)">得意先明細 PDF</button>
+        </div>
+      </div>
+    </div>
     <div class="panel" style="margin-bottom:12px">
       <div class="panel-head"><span>請求締め・請求書</span><button class="btn small" type="button" onclick="loadDomesticClosingData()">再読込</button></div>
       <div class="panel-body">
@@ -1069,6 +1091,37 @@ async function loadReceivables(){
   }finally{setBusy(false)}
 }
 async function loadDomesticClosingData(){await loadReceivables()}
+function setDomesticArReportPeriod(kind){
+  const range=domesticSalesPeriodRange(kind);
+  document.getElementById("domestic-ar-report-range").value=`${range.from.replaceAll('-','')}-${range.to.replaceAll('-','')}`;
+}
+async function printDomesticArReport(detail=false){
+  if(appBusy||!currentUser)return;
+  let options;
+  try{
+    const raw=value("domestic-ar-report-customer").trim(),customer=raw?findCustomer(raw):null;
+    if(raw&&!customer)throw Error("得意先候補から選択するか、正確な得意先コードを入力してください。");
+    if(detail&&!customer)throw Error("得意先明細は得意先を1つ選択してください。");
+    options={range:DomesticReceivableReport.range(value("domestic-ar-report-range")),scope:value("domestic-ar-report-scope"),site:value("domestic-ar-report-site"),customer:customer?.customer_code||""};
+  }catch(error){showToast(error.message,true);return}
+  const reportWindow=openDomesticPrintWindow("国内売掛帳票を作成しています");if(!reportWindow)return;
+  setBusy(true,"国内売掛帳票を作成しています。");
+  try{
+    const filter=query=>options.customer?query.eq("customer_code",options.customer):query;
+    const receivables=await fetchPaged(()=>filter(supabaseClient.from("domestic_receivables").select("*").neq("status","cancelled")).order("id"));
+    const closings=options.scope==='posted'?await fetchPaged(()=>filter(supabaseClient.from("domestic_billing_closings").select("*").eq("status","closed").lte("period_to",options.range.to)).order("id")):[];
+    const located=options.site?await ReferenceSites.domesticReceivables(supabaseClient,receivables):receivables;
+    const selected=DomesticReceivableReport.selectRows({...options,receivables:located,closings});
+    if(!selected.length)throw Error("対象期間に残高または取引がありません。");
+    const payments=await ReferenceSites.readLinked(supabaseClient,"domestic_receivable_payments","id,receivable_id,payment_date,amount_jpy,cash_amount_jpy,bank_fee_jpy,reference_no","receivable_id",selected.map(row=>row.id));
+    const sales=await ReferenceSites.readLinked(supabaseClient,"domestic_sales","id,sale_no,sale_date,customer_code,status,total_net_jpy,tax_total_jpy,total_amount_jpy","id",selected.map(row=>row.sale_id));
+    const report=DomesticReceivableReport.build({...options,receivables:located,closings,payments,sales,customers});
+    const doc=DomesticReceivableReport.document(report,{detail,company:DomesticDocuments.issuer.name,issuedAt:today()});
+    reportWindow.document.open();
+    reportWindow.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(doc.title)}</title>${DomesticReceivableReport.css()}</head><body><div class="print-actions"><button onclick="window.print()">印刷 / PDF保存</button><button onclick="window.close()">閉じる</button></div>${doc.body}</body></html>`);
+    reportWindow.document.close();reportWindow.focus();
+  }catch(error){reportWindow.close();showToast(friendlyError(error),true)}finally{setBusy(false)}
+}
 function receivableStatus(row){
   if(row.status==="unpaid"&&row.due_date&&row.due_date<today())return{key:"overdue",label:"期限超過"};
   return{key:row.status,label:{unpaid:"未入金",partial:"一部入金",paid:"入金済",cancelled:"取消済"}[row.status]||row.status};
@@ -1673,6 +1726,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("payment-date").value=today();
   document.getElementById("opening-date").value=today();
   document.getElementById("closing-month").value=domesticMonthDay(today().slice(0,7),1,-1).slice(0,7);
+  setDomesticArReportPeriod('previous-month');
   restoreEntryDraft();
   document.querySelectorAll("[data-entry-header]").forEach(node=>node.addEventListener("input",scheduleDraftSave));
   initSupabase();
