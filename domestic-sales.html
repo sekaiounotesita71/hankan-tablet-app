@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./domestic-payment-model.js?v=20260918-1"></script>
+<script src="./domestic-documents.js?v=20261006-1"></script>
 <script src="./reference-sites.js?v=20260928-1"></script>
 <title>国内販売管理</title>
 <style>
@@ -1464,6 +1465,7 @@ function domesticClosingPayload(snapshot){
   };
 }
 async function closeDomesticBillingPeriod(){
+  if(appBusy)return;
   if(!domesticClosingLoaded||!domesticClosingDbReady||domesticClosingLoadError)return showToast("請求データを再読込してください。",true);
   const calculation=domesticClosingCalculation();
   if(calculation.error)return showToast(calculation.error,true);
@@ -1472,9 +1474,17 @@ async function closeDomesticBillingPeriod(){
   const printWindow=openDomesticPrintWindow("請求書を作成しています");
   setBusy(true,"国内請求を締めています。");
   try{
+    const documentSnapshot=domesticClosingPayload(calculation.snapshot);
+    const documentSales=await domesticSalesForCharges(documentSnapshot.charges);
+    DomesticDocuments.validateInvoice({status:"closed",invoice_no:"締め前確認",customer_code:calculation.customer.customer_code,customer_name_snapshot:calculation.customer.customer_name,period_from:calculation.range.from,period_to:calculation.range.to,carryover_amount_jpy:calculation.snapshot.carryover,sales_amount_jpy:calculation.snapshot.sales,payment_amount_jpy:calculation.snapshot.payment,billing_amount_jpy:calculation.snapshot.total,snapshot:documentSnapshot},documentSales);
+    DomesticDocuments.assertIssuer(DomesticDocuments.issuer);
+    documentSnapshot.document_version=1;
+    documentSnapshot.document_sales=documentSales;
+    documentSnapshot.document_issuer={...DomesticDocuments.issuer};
+    documentSnapshot.document_customer={...calculation.customer};
     const {data,error}=await supabaseClient.rpc("close_domestic_billing_period",{
       p_customer_code:calculation.customer.customer_code,p_period_from:calculation.range.from,p_period_to:calculation.range.to,p_due_date:calculation.dueDate,
-      p_carryover_amount_jpy:calculation.snapshot.carryover,p_sales_amount_jpy:calculation.snapshot.sales,p_payment_amount_jpy:calculation.snapshot.payment,p_billing_amount_jpy:calculation.snapshot.total,p_snapshot:domesticClosingPayload(calculation.snapshot)
+      p_carryover_amount_jpy:calculation.snapshot.carryover,p_sales_amount_jpy:calculation.snapshot.sales,p_payment_amount_jpy:calculation.snapshot.payment,p_billing_amount_jpy:calculation.snapshot.total,p_snapshot:documentSnapshot
     });
     if(error)throw error;
     await loadReceivables();
@@ -1515,8 +1525,7 @@ function openDomesticPrintWindow(title){
   printWindow.document.close();
   return printWindow;
 }
-function domesticPrintCss(){return`<style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{margin:0;color:#111;font-family:"Yu Gothic",Meiryo,sans-serif;font-size:9.5pt}.print-actions{display:flex;gap:8px;margin-bottom:6mm}.print-actions button{padding:8px 14px;border:1px solid #555;background:#fff;font:inherit;font-weight:700}.document{min-height:270mm}.doc-title{text-align:center;font-size:22pt;font-weight:900;letter-spacing:0;margin:0 0 8mm}.doc-top{display:grid;grid-template-columns:1.35fr 1fr;gap:12mm;margin-bottom:6mm}.customer-name{font-size:15pt;font-weight:900;border-bottom:1px solid #111;padding:0 0 2mm}.address{white-space:pre-line;line-height:1.55;margin-top:3mm}.company{text-align:right;line-height:1.5}.company-logo{display:block;width:34mm;height:21mm;object-fit:contain;margin:0 0 1.5mm auto}.company b{font-size:12pt}.meta{width:100%;border-collapse:collapse;margin-top:4mm}.meta th,.meta td{border:1px solid #777;padding:2mm}.meta th{width:28%;background:#f2f2f2}.amount-due{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #111;margin:6mm 0 5mm;padding:0 2mm 2mm;font-size:12pt;font-weight:900}.amount-due strong{font-size:19pt}.lines{width:100%;border-collapse:collapse;table-layout:fixed}.lines th,.lines td{border:1px solid #777;padding:1.7mm 1.4mm;vertical-align:top}.lines th{background:#eee;text-align:center}.num{text-align:right}.center{text-align:center}.summary{width:86mm;margin:5mm 0 0 auto;border-collapse:collapse}.summary th,.summary td{border:1px solid #777;padding:2mm}.summary th{background:#f2f2f2;text-align:left}.summary td{text-align:right;font-weight:800}.note{margin-top:5mm;white-space:pre-line;border-top:1px solid #aaa;padding-top:3mm}@media print{.print-actions{display:none}.document{min-height:0}}</style>`}
-function domesticCompanyHtml(){const logoUrl=new URL("./yumirume-logo.jpg",location.href).href;return`<div class="company"><img class="company-logo" src="${esc(logoUrl)}" alt="YUMIRUME INC."><b>株式会社ゆみるめ</b><br>〒556-0004 大阪市浪速区日本橋西2-2-11<br>TEL 06-6537-9994　FAX 06-6536-8496<br>info@yumirume.co.jp</div>`}
+function domesticPrintCss(){return DomesticDocuments.css()}
 function writeDomesticPrintDocument(printWindow,title,body){
   if(!printWindow)return;
   printWindow.document.open();
@@ -1524,42 +1533,38 @@ function writeDomesticPrintDocument(printWindow,title,body){
   printWindow.document.close();printWindow.focus();
 }
 async function domesticSaleForDocument(saleId){
-  const cached=salesRows.find(row=>row.id===saleId);
-  if(cached?.lines?.length)return cached;
   const [{data:sale,error:saleError},{data:lines,error:lineError}]=await Promise.all([
     supabaseClient.from("domestic_sales").select("*").eq("id",saleId).single(),
-    supabaseClient.from("domestic_sale_lines").select("*").eq("sale_id",saleId).order("line_no")
+    fetchPaged(()=>supabaseClient.from("domestic_sale_lines").select("*").eq("sale_id",saleId).order("line_no")).then(data=>({data}))
   ]);
   if(saleError)throw saleError;if(lineError)throw lineError;
   return{...sale,lines:lines||[]};
+}
+async function domesticSalesForCharges(charges){
+  const ids=[...new Set((charges||[]).map(row=>row.sale_id).filter(Boolean))],result=[];
+  for(let start=0;start<ids.length;start+=5)result.push(...await Promise.all(ids.slice(start,start+5).map(domesticSaleForDocument)));
+  return result;
 }
 async function printDomesticDeliveryNote(saleId){
   const printWindow=openDomesticPrintWindow("納品書を作成しています");if(!printWindow)return;
   try{
     const sale=await domesticSaleForDocument(saleId);
     const customer=customers.find(row=>row.customer_code===sale.customer_code)||{};
-    const lineRows=(sale.lines||[]).map(line=>`<tr><td>${line.line_no}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}</td><td class="num">${Number(line.quantity).toLocaleString("ja-JP")}</td><td class="center">${esc(line.unit)}</td><td class="num">${money(line.unit_price_jpy)}</td><td class="num">${money(line.net_amount_jpy)}</td></tr>`).join("");
-    const body=`<main class="document"><h1 class="doc-title">納 品 書</h1><div class="doc-top"><div><div class="customer-name">${esc(sale.customer_name_snapshot)} 御中</div><div class="address">${esc([customer.postal_code?`〒${customer.postal_code}`:"",customer.address_text,customer.phone?`TEL ${customer.phone}`:""].filter(Boolean).join("\n"))}</div><table class="meta"><tr><th>納品日</th><td>${esc(sale.sale_date)}</td></tr><tr><th>伝票番号</th><td>${esc(sale.sale_no)}</td></tr></table></div>${domesticCompanyHtml()}</div><table class="lines"><thead><tr><th style="width:7%">No.</th><th style="width:16%">商品コード</th><th>商品名</th><th style="width:11%">数量</th><th style="width:8%">単位</th><th style="width:14%">単価</th><th style="width:15%">金額</th></tr></thead><tbody>${lineRows}${Number(sale.shipping_amount_jpy)>0?`<tr><td></td><td></td><td>送料</td><td></td><td></td><td></td><td class="num">${money(sale.shipping_amount_jpy)}</td></tr>`:""}</tbody></table><table class="summary"><tr><th>税抜合計</th><td>${money(sale.total_net_jpy)}円</td></tr><tr><th>消費税</th><td>${money(sale.tax_total_jpy)}円</td></tr><tr><th>税込合計</th><td>${money(sale.total_amount_jpy)}円</td></tr></table>${sale.memo?`<div class="note">備考　${esc(sale.memo)}</div>`:""}</main>`;
+    const body=DomesticDocuments.delivery(sale,customer,{logoUrl:new URL("./yumirume-logo.jpg",location.href).href});
     writeDomesticPrintDocument(printWindow,`納品書 ${sale.sale_no}`,body);
   }catch(error){printWindow.close();showToast(friendlyError(error),true)}
 }
 async function printDomesticInvoice(closingId,existingWindow=null){
   const printWindow=existingWindow||openDomesticPrintWindow("請求書を作成しています");if(!printWindow)return;
   try{
-    let closing=domesticClosingRows.find(row=>row.id===closingId);
-    if(!closing){const {data,error}=await supabaseClient.from("domestic_billing_closings").select("*").eq("id",closingId).single();if(error)throw error;closing=data}
-    const customer=customers.find(row=>row.customer_code===closing.customer_code)||{};
+    const {data:closing,error}=await supabaseClient.from("domestic_billing_closings").select("*").eq("id",closingId).single();
+    if(error)throw error;
     const snapshot=closing.snapshot||{};
-    const saleIds=[...new Set((snapshot.charges||[]).map(row=>row.sale_id).filter(Boolean))];
-    const sales=await Promise.all(saleIds.map(domesticSaleForDocument));
-    let lineNo=0;
-    const lineRows=sales.flatMap(sale=>{
-      const rows=(sale.lines||[]).map(line=>`<tr><td>${++lineNo}</td><td>${esc(sale.sale_date)}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}</td><td class="num">${Number(line.quantity).toLocaleString("ja-JP")}</td><td class="center">${esc(line.unit)}</td><td class="num">${money(line.unit_price_jpy)}</td><td class="num">${money(line.net_amount_jpy)}</td></tr>`);
-      if(Number(sale.shipping_amount_jpy)>0)rows.push(`<tr><td>${++lineNo}</td><td>${esc(sale.sale_date)}</td><td></td><td>送料</td><td></td><td></td><td></td><td class="num">${money(sale.shipping_amount_jpy)}</td></tr>`);
-      return rows;
-    }).join("");
-    const tax=sales.reduce((sum,row)=>sum+Number(row.tax_total_jpy||0),0);
-    const body=`<main class="document"><h1 class="doc-title">請 求 書</h1><div class="doc-top"><div><div class="customer-name">${esc(closing.customer_name_snapshot)} 御中</div><div class="address">${esc([customer.postal_code?`〒${customer.postal_code}`:"",customer.address_text,customer.phone?`TEL ${customer.phone}`:""].filter(Boolean).join("\n"))}</div><table class="meta"><tr><th>請求書番号</th><td>${esc(closing.invoice_no)}</td></tr><tr><th>請求期間</th><td>${esc(closing.period_from)} ～ ${esc(closing.period_to)}</td></tr><tr><th>支払期限</th><td>${esc(closing.due_date)}</td></tr></table></div>${domesticCompanyHtml()}</div><div class="amount-due"><span>今回ご請求額（税込）</span><strong>${money(closing.billing_amount_jpy)} 円</strong></div><table class="lines"><thead><tr><th style="width:6%">No.</th><th style="width:12%">日付</th><th style="width:14%">商品コード</th><th>商品名</th><th style="width:9%">数量</th><th style="width:7%">単位</th><th style="width:12%">単価</th><th style="width:14%">金額</th></tr></thead><tbody>${lineRows||'<tr><td colspan="8" class="center">当期売上明細なし</td></tr>'}</tbody></table><table class="summary"><tr><th>前回繰越</th><td>${money(closing.carryover_amount_jpy)}円</td></tr><tr><th>今回売上（税込）</th><td>${money(closing.sales_amount_jpy)}円</td></tr><tr><th>うち消費税</th><td>${money(tax)}円</td></tr><tr><th>期間内入金</th><td>-${money(closing.payment_amount_jpy)}円</td></tr><tr><th>今回ご請求額</th><td>${money(closing.billing_amount_jpy)}円</td></tr></table></main>`;
+    const frozen=snapshot.document_version===1;
+    if(frozen&&(!Array.isArray(snapshot.document_sales)||!snapshot.document_issuer||!snapshot.document_customer))throw new Error("請求書の保存明細が不足しています。管理者へ確認してください。");
+    const sales=frozen?snapshot.document_sales:await domesticSalesForCharges(snapshot.charges);
+    const customer=frozen?snapshot.document_customer:customers.find(row=>row.customer_code===closing.customer_code)||{};
+    const body=DomesticDocuments.invoice(closing,sales,customer,{issuer:frozen?snapshot.document_issuer:DomesticDocuments.issuer,logoUrl:new URL("./yumirume-logo.jpg",location.href).href});
     writeDomesticPrintDocument(printWindow,`請求書 ${closing.invoice_no}`,body);
   }catch(error){printWindow.close();showToast(friendlyError(error),true)}
 }

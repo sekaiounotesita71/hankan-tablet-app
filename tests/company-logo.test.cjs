@@ -22,11 +22,11 @@ test("main applications show the shared logo", () => {
 
 test("print documents use the shared logo", () => {
   const order = read("order-entry-beta.html");
-  const domestic = read("domestic-sales.html");
+  const domestic = read("domestic-documents.js");
   assert.match(order, /new URL\("\.\/yumirume-logo\.jpg",location\.href\)\.href/);
   assert.match(order, /class=\"report-brand\"/);
   assert.match(domestic, /class=\"company-logo\"/);
-  assert.match(domestic, /domesticCompanyHtml\(\)/);
+  assert.match(domestic, /companyHtml\(company,options\.logoUrl\)/);
 });
 
 test("logo sizes are constrained for tablet headers", () => {
