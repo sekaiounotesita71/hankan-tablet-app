@@ -1,7 +1,7 @@
 (function(){
   "use strict";
   let exporting=false;const libraryLoads=new Map();
-  const reportScriptUrl=new URL("./supplier-work-report.js?v=20260924-2",document.currentScript?.src||location.href).href;
+  const reportScriptUrl=new URL("./supplier-work-report.js?v=20261011-1",document.currentScript?.src||location.href).href;
   function library(name,url){
     if(window[name])return Promise.resolve(window[name]);if(libraryLoads.has(name))return libraryLoads.get(name);
     const promise=new Promise((resolve,reject)=>{

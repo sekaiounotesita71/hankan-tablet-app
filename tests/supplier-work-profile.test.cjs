@@ -15,10 +15,11 @@ test("saved scopes inherit common fields and isolate supplier/importer/site and 
   assert.equal(profile.resolve(profiles,{site_code:"TYO",importer_code:"07",supplier_code:"110"}).packing_note,common.packing_note);
   assert.equal(profile.resolve(profiles,{site_code:"TYO",importer_code:"07",supplier_code:"10"},{cargo_location:"臨時倉庫",packing_note:"なし"}).packing_note,"なし");
 });
-test("resolved header repeated on every print page without unrelated profile/private fields",()=>{
+test("resolved instructions appear on the first print page without unrelated profile/private fields",()=>{
   const model=report.build(Array.from({length:25},()=>row),{profiles,note:"今回追記"});const html=report.printableDocument(model,"https://example.test/supplier-work-report.js?v=2");
-  const pages=report.renderPages(model);assert.equal((pages.match(/貨物カット時間/g)||[]).length,3);
-  assert.equal((pages.match(/JAKARTA/g)||[]).length,3);assert.equal((pages.match(/今回追記/g)||[]).length,3);
+  const pages=report.renderPages(model);assert.equal((pages.match(/貨物カット時間/g)||[]).length,1);
+  assert.equal((pages.match(/JAKARTA/g)||[]).length,1);assert.equal((pages.match(/今回追記/g)||[]).length,1);
+  assert.equal((pages.match(/class="work-page"/g)||[]).length,2);
   assert.ok(pages.includes("個別真空<br>箱側面に記号<br>今回追記"));assert.ok(!html.includes("他社専用指示"));assert.ok(!html.includes('"profiles"'));
   assert.ok(html.includes("supplier-work-profile.js?v=2"));assert.equal(model.rowCount,25);
   const escaped=report.renderPages(report.build([row],{profiles:[{...common,packing_note:"<script>x</script>"}]}));assert.ok(escaped.includes("&lt;script&gt;"));

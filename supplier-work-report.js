@@ -33,12 +33,13 @@
     if(matches.length!==1)throw new Error("作業明細書は、発注先コードを指定するか、空欄（全発注先）で出力してください。");
     return rows.filter(r=>norm(r.supplierCode)===norm(matches[0].code));
   }
-  function paginate(rows,capacity=12){
+  function paginate(rows,capacity=12,continuationCapacity=capacity){
     const groups=new Map();rows.forEach(row=>{const key=customerKey(row);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row)});
     const pages=[];let page=[];const flush=()=>{if(page.length)pages.push(page);page=[]};
+    const pageCapacity=()=>pages.length?continuationCapacity:capacity;
     for(const group of groups.values()){
-      if(group.length<=capacity&&page.length+group.length>capacity)flush();
-      for(const row of group){if(page.length===capacity)flush();page.push(row)}
+      if(group.length<=pageCapacity()&&page.length+group.length>pageCapacity())flush();
+      for(const row of group){if(page.length===pageCapacity())flush();page.push(row)}
     }
     flush();return pages;
   }
@@ -65,7 +66,7 @@
         if(options.contact)group.header.contact=text(options.contact);
         if(options.note)group.header.packing_note=[group.header.packing_note,text(options.note)].filter(Boolean).join("\n");
         group.rows.sort((a,b)=>compare(a.customerCode,b.customerCode)||compare(a.customerName,b.customerName)||compare(a.productCode,b.productCode)||a.sequence-b.sequence);
-        group.rows.forEach((row,index)=>{row.number=index+1});group.pages=paginate(group.rows);
+        group.rows.forEach((row,index)=>{row.number=index+1});group.pages=paginate(group.rows,12,20);
       }
     }
     return {suppliers:result,options:{destination:text(options.destination),contact:text(options.contact),note:text(options.note)},rowCount:cleaned.length};
@@ -91,7 +92,7 @@
     }).join("");
     return `<section class="work-page"><header><h1>作業明細書</h1><span>${index+1} / ${total}</span></header>
       <div class="meta">${[`発注先 ${supplier.code} ${supplier.name}`,`輸入社 ${group.importerCode} ${group.importerName}`,`日付 ${group.date}`,`拠点 ${siteName(group.siteCode)}`,`箱記号 ${prefixLabel(supplier)||"________"}`].map(t=>`<strong>${escape(t)}</strong>`).join("")}</div>
-      ${headerHtml(group,options)}
+      ${index===0?headerHtml(group,options):""}
       <table class="lines"><colgroup>${columns.map(c=>`<col style="width:${c[1]}mm">`).join("")}</colgroup><thead><tr>${columns.map(c=>`<th>${escape(c[0]).replace(/\n/g,"<br>")}</th>`).join("")}</tr></thead><tbody>${lines}</tbody></table>
       <div class="box-title">箱別重量 <span>箱記号 ${escape(prefixLabel(supplier))}</span></div>
       <table class="boxes"><thead><tr>${Array(3).fill("<th>箱番号</th><th>グロス重量 kg</th><th>ドライアイス kg</th>").join("")}</tr></thead><tbody>${Array(3).fill(`<tr>${Array(9).fill("<td></td>").join("")}</tr>`).join("")}</tbody></table>

@@ -35,9 +35,32 @@ test("keeps customers together, repeats continuation pages and retains more than
   const rows=Array.from({length:1507},(_,i)=>({...sample,customerCode:`C${Math.floor(i/7)}`,productCode:String(i)}));
   const model=report.build(rows,settings),group=model.suppliers[0].groups[0];
   assert.equal(group.pages.flat().length,1507);assert.equal(new Set(group.pages.flat().map(r=>r.sequence)).size,1507);
-  assert.ok(group.pages.every(p=>p.length<=12&&p.length>0));
+  assert.ok(group.pages.every((p,i)=>p.length<=(i===0?12:20)&&p.length>0));
   const long=report.build(Array.from({length:25},()=>sample),settings).suppliers[0].groups[0];
-  assert.deepEqual(long.pages.map(p=>p.length),[12,12,1]);
+  assert.deepEqual(long.pages.map(p=>p.length),[12,13]);
+});
+
+test("continuation pages use the space freed by the full header without splitting small customer groups",()=>{
+  const rows=Array.from({length:32},(_,i)=>({...sample,customerCode:i<12?"A":i<22?"B":"C",sequence:i}));
+  const pages=report.paginate(rows,12,20);
+  assert.deepEqual(pages.map(p=>p.length),[12,20]);
+  assert.deepEqual(pages.flat(),rows);
+  assert.deepEqual(report.paginate(Array.from({length:25},()=>sample)).map(p=>p.length),[12,12,1]);
+});
+
+test("full instructions occur only on the first page of each date/importer/site/supplier group",()=>{
+  const rows=[];
+  for(const override of [{},{supplierCode:"11"},{importerCode:"01"},{siteCode:"OSA"},{orderDate:"2026-09-19"}]){
+    rows.push(...Array.from({length:35},()=>({...sample,...override})));
+  }
+  const model=report.build(rows,settings);
+  const pages=report.renderPages(model).split('<section class="work-page">').slice(1);
+  assert.equal(pages.length,15);
+  pages.forEach((page,i)=>{
+    assert.equal(page.includes('class="work-header"'),i%3===0);
+    for(const label of ["発注先", "輸入社", "日付", "拠点", "箱記号", 'class="lines"', 'class="boxes"'])assert.ok(page.includes(label),label);
+  });
+  assert.equal((report.renderPages(model).match(/data-row="/g)||[]).length,175);
 });
 test("print whitelist excludes sale prices and private fields even in embedded JSON",()=>{
   const model=report.build([{...sample,memo:"個別真空 / 価格候補: 987654321 / 123456789"}],settings);
