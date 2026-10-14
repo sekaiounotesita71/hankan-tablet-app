@@ -349,6 +349,8 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
         <label>日付<input id="confirmed-filter-date" type="date"></label>
         <label>拠点<select id="confirmed-filter-site" onchange="renderConfirmedOrders()"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
         <label>輸入社<input id="confirmed-filter-importer" list="importer-code-list" placeholder="例 DIM / FBI"></label>
+        <label>得意先<input id="confirmed-filter-customer" list="confirmed-customer-list" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="コード・得意先名"></label>
+        <datalist id="confirmed-customer-list"></datalist>
         <div class="actions" style="align-items:end"><button class="btn" onclick="clearConfirmedFilters()">絞込解除</button></div>
       </div>
       <div id="confirmed-orders" style="margin-top:10px"></div>
@@ -13027,25 +13029,49 @@ function render(){
 function batchLabel(batch){
   return `${batch.customer?.name||batch.customer?.code||"得意先未設定"} / ${batch.importer?.code||batch.importer?.name||"輸入社未設定"}`;
 }
+function renderConfirmedCustomerOptions(batches){
+  const list=document.getElementById("confirmed-customer-list");
+  if(!list)return;
+  const customers=new Map();
+  batches.forEach(({batch})=>{
+    const code=String(batch.customer?.code||"").trim();
+    const name=String(batch.customer?.name||"").trim();
+    const value=code||name;
+    const key=normalizeMasterSearchText(value);
+    if(key&&!customers.has(key))customers.set(key,{value,name});
+  });
+  const markup=[...customers.values()].sort((a,b)=>a.value.localeCompare(b.value,"ja",{numeric:true}))
+    .map(customer=>`<option value="${esc(customer.value)}" label="${esc(customer.name)}"></option>`).join("");
+  if(list.innerHTML!==markup)list.innerHTML=markup;
+}
 function renderConfirmedOrders(){
   const box=document.getElementById("confirmed-orders");
   if(!box)return;
   const dateFilter=val("confirmed-filter-date");
   const importerFilter=val("confirmed-filter-importer").trim().toLowerCase();
   const siteFilter=val("confirmed-filter-site");
-  if(!dateFilter&&!importerFilter&&!siteFilter){
-    box.innerHTML=`<div class="hint">日付・拠点・輸入社を指定すると、確定済み受注を表示します。</div>`;
+  const customerFilter=normalizeMasterSearchText(val("confirmed-filter-customer"));
+  const scopedBatches=confirmedBatches.map((batch,index)=>({batch,index})).filter(({batch})=>{
+    const dateOk=!dateFilter||(batch.orderDate||"")===dateFilter;
+    const importerText=[batch.importer?.code,batch.importer?.name].filter(Boolean).join(" ").toLowerCase();
+    const importerOk=!importerFilter||importerText.includes(importerFilter);
+    return dateOk&&importerOk&&(!siteFilter||ReferenceSites.matches(batch,siteFilter));
+  });
+  renderConfirmedCustomerOptions(scopedBatches);
+  if(!dateFilter&&!importerFilter&&!siteFilter&&!customerFilter){
+    box.innerHTML=`<div class="hint">日付・拠点・輸入社・得意先を指定すると、確定済み受注を表示します。</div>`;
     return;
   }
   if(!confirmedBatches.length){
     box.innerHTML=`<div class="hint">確定済み受注はまだありません。</div>`;
     return;
   }
-  const batches=confirmedBatches.map((batch,index)=>({batch,index})).filter(({batch})=>{
-    const dateOk=!dateFilter||(batch.orderDate||"")===dateFilter;
-    const importerText=[batch.importer?.code,batch.importer?.name].filter(Boolean).join(" ").toLowerCase();
-    const importerOk=!importerFilter||importerText.includes(importerFilter);
-    return dateOk&&importerOk&&(!siteFilter||ReferenceSites.matches(batch,siteFilter));
+  const exactCustomerCode=customerFilter&&confirmedBatches.some(batch=>normalizeMasterSearchText(batch.customer?.code)===customerFilter);
+  const batches=scopedBatches.filter(({batch})=>{
+    if(!customerFilter)return true;
+    const code=normalizeMasterSearchText(batch.customer?.code);
+    if(exactCustomerCode)return code===customerFilter;
+    return normalizeMasterSearchText([batch.customer?.code,batch.customer?.name].filter(Boolean).join(" ")).includes(customerFilter);
   });
   if(!batches.length){
     box.innerHTML=`<div class="hint">条件に一致する確定済み受注はありません。</div>`;
@@ -13076,8 +13102,10 @@ function clearConfirmedFilters(){
   const site=document.getElementById("confirmed-filter-site");if(site)site.value="";
   const date=document.getElementById("confirmed-filter-date");
   const importer=document.getElementById("confirmed-filter-importer");
+  const customer=document.getElementById("confirmed-filter-customer");
   if(date)date.value="";
   if(importer)importer.value="";
+  if(customer)customer.value="";
   renderConfirmedOrders();
 }
 async function markBatchCancelledInDb(batch){
@@ -16806,7 +16834,7 @@ function applySearchResult(type,index){
     renderSummary();
   });
 });
-["confirmed-filter-date","confirmed-filter-importer"].forEach(id=>{
+["confirmed-filter-date","confirmed-filter-importer","confirmed-filter-customer"].forEach(id=>{
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
     renderConfirmedOrders();
