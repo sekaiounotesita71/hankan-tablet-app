@@ -1,0 +1,9 @@
+export const categories=["交通費","宿泊費","日当","その他"] as const;
+export type Trip={ownerId:string;ownerEmail?:string;version:number;reviewNote:string;id:string;title:string;destination:string;startDate:string;endDate:string;purpose:string;result:string;nextAction:string;applicant:string;department:string;advance:number;status:string;createdAt:string;updatedAt:string};
+export type Receipt={url?:string;objectName?:string;id:string;expenseId:string;filename:string;mime:string;size:number};
+export type Expense={id:string;tripId:string;date:string;category:string;description:string;amount:number;payment:string;receiptStatus:string;note:string;receipts:Receipt[]};
+export function totals(es:Expense[],advance=0){const total=es.reduce((s,e)=>s+e.amount,0),company=es.filter(e=>e.payment==="company").reduce((s,e)=>s+e.amount,0);return {total,company,self:total-company,settlement:total-company-advance};}
+export function receiptLabel(e:Expense){return e.receipts.length?`添付 ${e.receipts.length}件`:e.receiptStatus==="unavailable"?"領収書なし":e.receiptStatus==="not_required"?"対象外":"未添付";}
+export function missingItems(t:Trip,es:Expense[]){const m:string[]=[];if(!t.applicant.trim())m.push("申請者名");if(!t.destination.trim())m.push("行き先・訪問先");if(!t.startDate||!t.endDate)m.push("出張日程");if(!t.purpose.trim())m.push("出張目的");if(!t.result.trim())m.push("結果・決まったこと");const n=es.filter(e=>!e.receipts.length&&e.receiptStatus==="pending").length;if(n)m.push(`領収書の確認 ${n}件`);return m;}
+export function csvCell(v:string|number){let s=String(v);if(typeof v==="string"&&/^\s*[=+@-]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
+export function expenseCsv(t:Trip,es:Expense[]){return "\uFEFF"+[["出張名","利用日","区分","内容・区間","金額（円）","支払","領収書","備考"],...es.map(e=>[t.title,e.date,e.category,e.description,e.amount,e.payment==="company"?"会社支払":"立替",receiptLabel(e),e.note])].map(r=>r.map(csvCell).join(",")).join("\r\n");}
