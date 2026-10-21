@@ -4,7 +4,8 @@ const session="00000000-0000-0000-0000-000000000001",domestic="00000000-0000-000
 
 test("reopened work routes to importer selection before any legacy sale writes",()=>{
   const final=app.slice(app.indexOf("finalizeSalesTrial=async function(){"),app.indexOf("function sessionListStatusLabelTrial"));
-  assert.ok(final.indexOf("openSalesRefinalization()")<final.indexOf("upsertSalesRecordsTrial("));
+  assert.ok(final.indexOf("openSalesRefinalization()")<final.indexOf("openSalesImporterFinalization()"));
+  assert.doesNotMatch(final,/upsertSalesRecordsTrial\(/);
   assert.match(final,/if\(currentSessionFinalizedAt\)return await openSalesRefinalization\(\)/);
   assert.doesNotMatch(final,/\.delete\(/);
   const upsert=app.slice(app.indexOf("async function upsertSalesRecordsTrial("),app.indexOf("function finalizedReceivablePayloads("));

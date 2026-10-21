@@ -42,7 +42,7 @@ async function openWorkProductChange(rowIdx){
   if(workProductBusy||!requireEditableTrial())return;
   if(!currentSessionId){toast("作業を保存してから変更してください");return}
   const sessionId=currentSessionId,row=rows.find(r=>r._idx===rowIdx);
-  if(!row)return;
+  if(!row||!requireEditableTrial(row))return;
   const modal=document.getElementById("work-product-dialog");
   workProductEdit=null;
   modal.showModal();
@@ -88,7 +88,7 @@ async function saveWorkProductChange(){
   const edit=workProductEdit;
   if(edit.sessionId!==currentSessionId){workProductMessage("作業が切り替わりました。開き直してください。");return}
   if(!edit.attempt){
-    if(!requireEditableTrial())return;
+    if(!requireEditableTrial(edit.base))return;
     const change=workProductValues(),price=numberOrNull(change.unit_price);
     if(change.product_id!==edit.appliedCode){workProductMessage("商品コードを候補から選択するか、未登録商品は空欄にしてください。");return}
     if(!change.product_name||change.unit_price&&(price===null||price<0)){

@@ -14,6 +14,11 @@ assert.ok(
     externalCheck.indexOf("if(!sitePartnerSchemaReady)return true;"),
   "Completed work rows must bypass the external-assignment status check"
 );
-assert.match(app, /const incomplete=incompleteSalesWorkRows\(\)\.length;/);
+const finalize = app.slice(checkEnd, app.indexOf("function sessionListStatusLabelTrial", checkEnd));
+assert.match(finalize, /return await openSalesImporterFinalization\(\)/);
+assert.doesNotMatch(finalize, /confirmOutstandingExternalWorkBeforeSales\(\)/);
+const sql = fs.readFileSync(path.join(__dirname, "..", "sales-finalize-importers-migration.sql"), "utf8");
+assert.match(sql, /group_state->>'incomplete'/);
+assert.doesNotMatch(sql, /external_work_assignments/);
 
 console.log("Sales finalization external-work tests passed");

@@ -130,6 +130,7 @@ async function addManualOrder(){
   if(workAdditionalBusy||(!workAdditionalAttempt&&!requireEditableTrial()))return;
   if(workAdditionalSession!==currentSessionId){workAdditionalMessage("作業を確認して開き直してください。");return}
   if(!workAdditionalAttempt){
+    if(!requireEditableTrial(manualValue("manual-importer")))return;
     const supplier=workAdditionalMasters.suppliers.find(s=>s.supplier_code===manualValue("manual-supplier"));
     const customerValue=manualValue("manual-customer");
     const customer=customerValue===""?null:workAdditionalCustomers[customerValue];

@@ -122,7 +122,7 @@ test('quantity uses native inline editing, read-only unit and existing focus/ref
   assert.match(app,/if\(n===1&&p15QuantityChanged\)\{buildP1Tabs\(\);p15QuantityChanged=false\}/);
 });
 test('actual quantity controls remain disabled for stockout, final and provisional locks',()=>{
-  const inputs=[{dataset:{stockout:'false'},removeAttribute(){}},{dataset:{stockout:'true'},removeAttribute(){}}];
+  const inputs=[{dataset:{stockout:'false'},closest(){return null},removeAttribute(){}},{dataset:{stockout:'true'},closest(){return null},removeAttribute(){}}];
   const ctx={currentSessionLocked:true,currentSessionProvisionalLocked:false,document:{querySelectorAll:selector=>selector.startsWith('#cloud-save-bar')?[]:inputs}};
   vm.createContext(ctx);vm.runInContext(source('function applyLockToInputsTrial(', 'function requireEditableTrial('),ctx);
   ctx.applyLockToInputsTrial();assert.ok(inputs.every(i=>i.disabled));

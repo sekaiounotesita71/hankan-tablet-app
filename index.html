@@ -23,6 +23,7 @@ if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").repl
 <script src="./work-paper.js?v=20260910-1" defer></script>
 <link rel="stylesheet" href="./work-paper.css?v=20260910-1">
 <script src="./sales-refinalize.js?v=20260911-1" defer></script>
+<script src="./sales-finalize-importers.js?v=20261022-1" defer></script>
 <link rel="stylesheet" href="./sales-refinalize.css?v=20260911-1">
 <style>
 .session-filter-bar select{height:38px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:inherit;background:#fff;color:var(--text)}
@@ -425,7 +426,7 @@ tbody tr.pending td:first-child{border-left:4px solid var(--danger)}tbody tr.par
 <div class="confirm-bg" id="confirm-bg"><div class="confirm-box"><div class="confirm-title">欠品にしますか？</div><div class="confirm-sub">入力済みの数量、NET、箱番号はクリアされます。</div><div class="confirm-product" id="confirm-product-name"></div><div class="confirm-btns"><button class="confirm-cancel" onclick="cancelStockout()">キャンセル</button><button class="confirm-ok" onclick="executeStockout()">欠品にする</button></div></div></div>
 <div class="toast" id="toast"></div>
 <link rel="stylesheet" href="./work-product-change.css?v=20261003-1">
-<script src="./work-product-change.js?v=20261003-1"></script>
+<script src="./work-product-change.js?v=20261022-1"></script>
 <script>
 let orderRows=[],masterMap={},rows=[];
 let activeCountry=null,activeCustomer={},activeImporter=null,boxMap={},currentPhase=1;
@@ -1615,6 +1616,7 @@ function renderP2Importer(imp){
   wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">総箱数</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div>${warnHtml}<div class="table-scroll"><table><thead><tr><th>箱番号</th><th>NET合計</th><th>グロス重量</th><th>ドライアイス</th><th>箱サイズ</th><th>状態</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
 }
 function updateBoxSize(imp,bn,size){
+  if(!requireEditableTrial(imp))return;
   if(!boxMap[imp]||!boxMap[imp][bn])return;
   boxMap[imp][bn].box_size=size;
   renderP2Importer(imp);
@@ -2242,7 +2244,7 @@ function saveOrderLineToSupabase(row){
   return task;
 }
 function updateOrderLineFieldsToSupabase(row,fields){
-  if(!requireEditableTrial())return Promise.resolve(false);
+  if(!requireEditableTrial(row))return Promise.resolve(false);
   if(!currentSessionId||!currentUser||!supabaseClient)return Promise.resolve(false);
   const sourceRowNo=row._idx+1,sessionId=currentSessionId;
   const key=`${sessionId}:${sourceRowNo}`;
@@ -2979,6 +2981,7 @@ function p1TouchCell(row,field,label,unit){
   return `<button type="button" class="touch-input-cell${value?"":" empty"}" onclick="event.stopPropagation();openP1NP(${row._idx},'${field}')">${text}</button>`;
 }
 function openP1NP(i,startField){
+  if(!requireEditableTrial(rows[i]))return;
   npMode="p1";
   curRow=i;
   curF=startField||"qty";
@@ -3218,7 +3221,7 @@ function closeP15History(rowIdx){
 }
 async function applyP15HistoryPrice(rowIdx,price){
   const row=rows[rowIdx];
-  if(!row||!requireEditableTrial())return;
+  if(!row||!requireEditableTrial(row))return;
   const input=document.querySelector(`.p15-price[data-row-idx="${rowIdx}"]`);
   if(input)input.value=price;
   await saveP15Field(rowIdx,"unit_price",price);
@@ -3474,7 +3477,7 @@ async function saveP15Field(rowIdx,field,value){
     }
   }
   if(String(row[field]??"")===next)return true;
-  if(!requireEditableTrial())return false;
+  if(!requireEditableTrial(row))return false;
   const sessionId=currentSessionId;
   let fields=p15PendingFields.get(row);
   if(!fields){fields=new Map();p15PendingFields.set(row,fields)}
@@ -4278,7 +4281,7 @@ function inlineP1MemoInput(row){
 }
 function updateInlineP1Draft(input){
   const row=rows[Number(input.dataset.rowIdx)],field=input.dataset.field;
-  if(!row||!P1_KEY[field])return;
+  if(!row||!P1_KEY[field]||!requireEditableTrial(row))return;
   if(field==="box"&&input.dataset.boxPrefix!==undefined){
     if(input.disabled)return;
     const value=WorkBoxNumber.digits(input.value);
@@ -4293,7 +4296,7 @@ function updateInlineP1Draft(input){
 }
 function updateInlineP1MemoDraft(input){
   const row=rows[Number(input.dataset.rowIdx)];
-  if(!row)return;
+  if(!row||!requireEditableTrial(row))return;
   row._memo=String(input.value||"").slice(0,200);
   if(input.value!==row._memo)input.value=row._memo;
 }
@@ -4329,7 +4332,7 @@ function handleInlineWorkKey(event){
 function commitInlineBoxField(input){
   const imp=input.dataset.imp,bn=input.dataset.box,field=input.dataset.boxField;
   const box=boxMap[imp]?.[bn];
-  if(!box)return;
+  if(!box||!requireEditableTrial(imp))return;
   const value=sanitizeInlineNumber(input.value,false);
   if(input.value!==value)input.value=value;
   box[field]=value;
@@ -4351,7 +4354,7 @@ renderP1Cell=function(country,customer){
   const tbody=document.getElementById("p1cusbody-"+key);
   if(!tbody)return;
   tbody.innerHTML=cRows.map((r,i)=>{
-    if(r._stockout)return `<tr style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;color:var(--muted)">${workProductCell(r)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
+    if(r._stockout)return `<tr data-row-idx="${r._idx}" style="opacity:.58"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:700;color:var(--muted)">${workProductCell(r)}</td><td>${esc(r.csv_qty)||"-"}</td><td>${esc(r.unit)||"-"}</td><td colspan="5" style="color:var(--muted);font-weight:700">欠品</td><td><span class="badge">欠品</span></td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-undo" onclick="event.stopPropagation();undoStockout(${r._idx})">戻す</button></td></tr>`;
     const complete=r._qty&&r._net&&r._box,partial=!complete&&(r._qty||r._net||r._box);
     return `<tr class="${complete?"done":partial?"partial":"pending"}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${workProductCell(r)}</td><td style="font-weight:800">${esc(r.csv_qty)||"-"}</td><td style="color:var(--muted)">${esc(r.unit)||"-"}</td><td>${inlineP1Input(r,"qty","数量")}</td><td>${p1TouchCell(r,"unit","単位","")}</td><td>${inlineP1Input(r,"net","NET")}</td><td>${inlineP1Input(r,"box","箱")}</td><td>${inlineP1MemoInput(r)}</td><td>${complete?'<span class="badge badge-done">完了</span>':partial?'<span class="badge badge-partial">入力中</span>':'<span class="badge badge-pending">未入力</span>'}</td><td><button class="btn-reset" onclick="event.stopPropagation();resetP1Row(${r._idx})">訂正</button> <button class="btn-stockout" onclick="event.stopPropagation();confirmStockout(${r._idx})">欠品</button></td></tr>`;
   }).join("");
@@ -4374,7 +4377,7 @@ renderP2Importer=function(imp){
   wrap.innerHTML=`<div class="statusbar"><div><div class="stat-num">${total}</div><div class="stat-label">総箱数</div></div><div class="stat-div"></div><div><div class="stat-num done">${done}</div><div class="stat-label">入力済</div></div><div class="stat-div"></div><div><div class="stat-num pending">${total-done}</div><div class="stat-label">未入力</div></div><div class="stat-div"></div><div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div><div style="font-size:14px;font-weight:800;color:var(--success)">${pct}%</div></div><div class="table-scroll"><table><thead><tr><th>箱番号</th><th>NET合計</th><th>グロス重量</th><th>ドライアイス</th><th>箱サイズ</th><th>状態</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
 };
 toggleDI=function(imp,bn,checked){
-  if(!boxMap[imp]?.[bn])return;
+  if(!boxMap[imp]?.[bn]||!requireEditableTrial(imp))return;
   boxMap[imp][bn].dry_ice_enabled=checked;
   if(!checked)boxMap[imp][bn].dry_ice="";
   renderP2Importer(imp);
@@ -4427,6 +4430,7 @@ let currentUserRoleLoadUserId="";
 let currentSessionLocked=false;
 let currentSessionProvisionalLocked=false;
 let currentSessionFinalizedAt="";
+let currentSessionFinalizedImporters=[];
 function currentUserIsAdmin(){return currentUserRole==="admin"}
 async function loadCurrentUserRoleTrial(){
   if(!supabaseClient||!currentUser){
@@ -4463,12 +4467,14 @@ function setSessionLockStateTrial(session){
   currentSessionLocked=!!session?.locked;
   currentSessionProvisionalLocked=!!session?.provisional_locked;
   currentSessionFinalizedAt=session?.finalized_at||"";
+  currentSessionFinalizedImporters=Array.isArray(session?.finalized_importer_codes)?session.finalized_importer_codes:[];
   updateLockUITrial();
 }
 function lockBadgeHtml(){
   if(!currentSessionId)return "";
   if(currentSessionLocked)return ` <span class="lock-badge">確定ロック中</span>`;
   if(currentSessionProvisionalLocked)return ` <span class="lock-badge provisional">仮締め中</span>`;
+  if(currentSessionFinalizedImporters.length)return ` <span class="lock-badge open">一部確定（${esc(currentSessionFinalizedImporters.join(", "))}）</span>`;
   return ` <span class="lock-badge open">編集中</span>`;
 }
 function updateLockUITrial(){
@@ -4506,15 +4512,27 @@ function updateLockUITrial(){
 function applyLockToInputsTrial(){
   const locked=!!(currentSessionLocked||currentSessionProvisionalLocked);
   document.querySelectorAll(".inline-work-input,.inline-box-input,.p15-input,.touch-input-cell,.btn-stockout,.btn-reset,.btn-undo,.work-product-edit,.box-size-select,.di-toggle input").forEach(el=>{
-    el.disabled=locked||el.dataset.boxRoutingBlocked==="true"||el.dataset.stockout==="true";
-    if(locked)el.title=currentSessionLocked?"売上確定済みのため編集できません":"仮締め中のため編集できません";
+    const tr=el.closest("tr"),reference=el.dataset.rowIdx!==undefined?el:tr?.querySelector("[data-row-idx]");
+    const rowIndex=reference?.dataset.rowIdx??tr?.dataset.rowIdx;
+    const scope=rowIndex!==undefined?rows[Number(rowIndex)]:(el.dataset.imp||tr?.querySelector("[data-imp]")?.dataset.imp);
+    const importerLocked=workImporterFinalizedTrial(scope);
+    el.disabled=locked||importerLocked||el.dataset.boxRoutingBlocked==="true"||el.dataset.stockout==="true";
+    if(locked||importerLocked)el.title=currentSessionProvisionalLocked&&!currentSessionLocked?"仮締め中のため編集できません":"売上確定済みのため編集できません";
     else el.removeAttribute("title");
   });
   const addBtn=[...document.querySelectorAll("#cloud-save-bar .btn")].find(btn=>btn.textContent==="追加オーダー");
   if(addBtn)addBtn.disabled=locked;
 }
-function requireEditableTrial(){
-  if(!currentSessionLocked&&!currentSessionProvisionalLocked)return true;
+function workImporterFinalizedTrial(scope){
+  const value=scope&&typeof scope==="object"?(scope.importer_code||scope.importer_id||scope.country):scope;
+  return !!value&&typeof importerSalesCodeFinalized==="function"&&importerSalesCodeFinalized(value);
+}
+function requireEditableTrial(scope){
+  if(!currentSessionLocked&&!currentSessionProvisionalLocked){
+    if(!workImporterFinalizedTrial(scope))return true;
+    toast("この輸入社は売上確定済みです。売上参照の管理者修正を使用してください");
+    return false;
+  }
   toast(currentSessionLocked?"売上確定済みです。売上参照の管理者修正を使用してください":"仮締め中です。管理者が仮締め解除すると編集できます");
   return false;
 }
@@ -4654,11 +4672,11 @@ refreshCurrentSessionFromSupabase=async function(){
   return ok;
 };
 const __saveOrderLineLockBase=saveOrderLineToSupabase;
-saveOrderLineToSupabase=async function(row){if(!requireEditableTrial())return;return __saveOrderLineLockBase(row)};
+saveOrderLineToSupabase=async function(row){if(!requireEditableTrial(row))return false;return __saveOrderLineLockBase(row)};
 const __saveBoxLockBase=saveBoxToSupabase;
 var boxSaveInFlight=new Set();
 saveBoxToSupabase=async function(imp,bn){
-  if(!requireEditableTrial())return false;
+  if(!requireEditableTrial(imp))return false;
   const task=__saveBoxLockBase(imp,bn);
   boxSaveInFlight.add(task);
   try{return await task}finally{boxSaveInFlight.delete(task)}
@@ -4670,17 +4688,18 @@ renderP2Importer=function(imp){__renderP2ImporterLockBase(imp);applyLockToInputs
 const __addManualOrderLockBase=addManualOrder;
 addManualOrder=function(){if(!requireEditableTrial())return;return __addManualOrderLockBase()};
 const __executeStockoutLockBase=executeStockout;
-executeStockout=function(){if(!requireEditableTrial())return;return __executeStockoutLockBase()};
+executeStockout=function(){if(!requireEditableTrial(rows[pendingStockoutIdx]))return;return __executeStockoutLockBase()};
 const __undoStockoutLockBase=undoStockout;
-undoStockout=function(i){if(!requireEditableTrial())return;return __undoStockoutLockBase(i)};
+undoStockout=function(i){if(!requireEditableTrial(rows[i]))return;return __undoStockoutLockBase(i)};
 const __resetP1RowLockBase=resetP1Row;
-resetP1Row=function(rowIdx){if(!requireEditableTrial())return;return __resetP1RowLockBase(rowIdx)};
+resetP1Row=function(rowIdx){if(!requireEditableTrial(rows[rowIdx]))return;return __resetP1RowLockBase(rowIdx)};
 const __resetLocalStateLockBase=resetLocalStateForSession;
 resetLocalStateForSession=function(){
   __resetLocalStateLockBase();
   currentSessionLocked=false;
   currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
+  currentSessionFinalizedImporters=[];
   updateLockUITrial();
 };
 const __mergeAndRenderLockBase=mergeAndRender;
@@ -4688,6 +4707,7 @@ mergeAndRender=function(){
   currentSessionLocked=false;
   currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
+  currentSessionFinalizedImporters=[];
   const result=__mergeAndRenderLockBase();
   updateLockUITrial();
   return result;
@@ -4827,61 +4847,13 @@ finalizeSalesTrial=async function(){
     if(currentSessionLocked){toast("すでに売上確定済みです");return false}
     if(!(await checkSalesLockSetupTrial()))return false;
     const checkedSessionId=currentSessionId;
-    const {data:latestLock,error:latestLockError}=await supabaseClient.from("work_sessions").select("locked,status,finalized_at,provisional_locked").eq("id",checkedSessionId).maybeSingle();
+    const {data:latestLock,error:latestLockError}=await supabaseClient.from("work_sessions").select("locked,status,finalized_at,provisional_locked,finalized_importer_codes").eq("id",checkedSessionId).maybeSingle();
     if(latestLockError||!latestLock){alert("作業の最新状態を確認できませんでした。再読み込みしてください。");return false}
     if(currentSessionId!==checkedSessionId){alert("作業が切り替わったため中止しました。");return false}
     setSessionLockStateTrial(latestLock);
     if(latestLock.locked||latestLock.status==="closed"){toast("すでに売上確定済みです");return false}
     if(currentSessionFinalizedAt)return await openSalesRefinalization();
-    if(!(await confirmOutstandingExternalWorkBeforeSales()))return false;
-    const incomplete=incompleteSalesWorkRows().length;
-    if(incomplete&&!confirm(`未完了の明細が${incomplete}件あります。このまま売上確定しますか？`))return false;
-    if(!confirm("売上確定すると作業データをロックします。確定しますか？"))return false;
-    const shippingImporters=[...new Set(rows.map(r=>importerCode(r.importer_id)).filter(Boolean))].sort();
-    const shippingFees=salesShippingFeesPromptValue(shippingImporters);
-    if(shippingFees===null)return false;
-    const shippingFee=salesShippingFeesTotal(shippingFees);
-    const refreshed=await refreshCurrentSessionFromSupabase();
-    if(!refreshed){alert("最新データの取得に失敗したため、売上確定を中止しました。");return false}
-    try{
-      setSaveState("Supabase: 売上確定中...");
-      const finalizedAt=new Date().toISOString();
-      const workDate=currentWorkDateValue();
-      currentSessionWorkDate=workDate;
-      await upsertSalesRecordsTrial(rows.map(row=>salesRecordPayloadTrial(row,finalizedAt)));
-      const {data,error}=await supabaseClient.rpc("finalize_export_revenue_route",{
-        p_session_id:currentSessionId,
-        p_work_date:workDate,
-        p_finalized_at:finalizedAt,
-        p_shipping_fee:shippingFee,
-        p_shipping_fees:shippingFees
-      });
-      if(error)throw error;
-      if(!data?.session)throw new Error("売上経路の確定結果を取得できません。最新状態を再読込してください。");
-      setSessionLockStateTrial(data.session);
-      const directImporters=Array.isArray(data.direct_importers)?data.direct_importers:[];
-      const domesticSales=Array.isArray(data.domestic_sales)?data.domestic_sales:[];
-      try{
-        const receivableCount=await syncFinalizedSessionToReceivables(workDate,shippingFees,directImporters);
-        const domesticLabel=domesticSales.length?` / 国内会社経由 ${domesticSales.length}件`:"";
-        if(receivableCount){
-          setSaveState(`Supabase: 売上確定・請求締め候補反映済み${domesticLabel}`);
-          toast(`売上確定し、請求締め候補へ反映しました${domesticLabel}`);
-        }else{
-          setSaveState(domesticSales.length?"Supabase: 売上確定・国内売上反映済み":"Supabase: 売上確定済み / 売掛対象なし");
-          toast(domesticSales.length?"売上確定し、国内売上・売掛へ反映しました":"売上確定しました（売掛対象なし）");
-        }
-      }catch(receivableError){
-        setSaveState("Supabase: 売上確定済み / 請求締め候補反映待ち",true);
-        alert(`売上確定は完了しましたが、請求締め候補への自動反映に失敗しました。\n売掛管理の「対象期間を再同期」で再反映できます。\n${String(receivableError?.message||receivableError)}`);
-      }
-      return true;
-    }catch(error){
-      const message=salesLockSetupErrorMessage(error);
-      setSaveState("Supabase: 売上確定失敗",true);
-      alert("売上確定エラー: "+message);
-      return false;
-    }
+    return await openSalesImporterFinalization();
   }finally{
     salesFinalizeInProgress=false;
     updateLockUITrial();
@@ -4890,6 +4862,7 @@ finalizeSalesTrial=async function(){
 function sessionListStatusLabelTrial(session){
   if(session?.locked||session?.status==="closed")return "確定済み";
   if(session?.provisional_locked)return "仮締め中";
+  if(session?.finalized_importer_codes?.length)return "一部確定";
   return session?.status||"active";
 }
 function sessionListTimeTrial(session){
@@ -4903,7 +4876,7 @@ function sessionListItemHtmlTrial(session,isFinalized){
   const time=esc(`${session.site_code==="TYO"?"東京":"大阪"} / ${sessionListTimeTrial(session)}`);
   const finalizedClass=isFinalized?" session-finalized":"";
   const finalizedBadge=isFinalized?`<span class="session-locked-badge">売上確定済み</span>`:`<span class="export-option-badge partial">${status}</span>`;
-  const deleteButton=!isFinalized&&currentUserIsAdmin()?`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`:"";
+  const deleteButton=!isFinalized&&!session.finalized_importer_codes?.length&&currentUserIsAdmin()?`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`:"";
   return `<div class="export-option${finalizedClass}"><div class="export-option-left" onclick="openSavedSession('${session.id}')" style="flex:1;cursor:pointer"><span class="export-option-code">${name}</span><span class="export-option-meta">${time}</span></div>${finalizedBadge}${deleteButton}</div>`;
 }
 function sessionListEmptyHtmlTrial(text){
@@ -7148,6 +7121,7 @@ async function createWorkSessionFromConfirmedOrders(){
   currentSessionLocked=false;
   currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
+  currentSessionFinalizedImporters=[];
   currentSessionWorkDate=date;
   currentSessionSiteCode=siteCode;
   latestOrderFilename=`order-entry:${date}`;
@@ -7207,6 +7181,6 @@ function openWorkPaper(){
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
 </script>
 <link rel="stylesheet" href="./work-additional-orders.css?v=20260918-1">
-<script src="./work-additional-orders.js?v=20260924-1"></script>
+<script src="./work-additional-orders.js?v=20261022-1"></script>
 </body>
 </html>
