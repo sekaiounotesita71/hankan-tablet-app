@@ -553,6 +553,7 @@ test("actual index save and row-action wrappers reject finalized scopes and pres
   const f=indexFixture(),c=f.context,calls=[],boxReply=deferred();
   const spy=name=>(...args)=>{calls.push({name,args});return true};
   Object.assign(c,{
+    saveAllBoxesToSupabase:async()=>true,
     saveOrderLineToSupabase:spy("line"),saveBoxToSupabase:(...args)=>{calls.push({name:"box",args});return boxReply.promise},
     renderP1Cell:spy("renderP1"),renderP2Importer:spy("renderP2"),addManualOrder:spy("add"),
     executeStockout:spy("stockout"),undoStockout:spy("undo"),resetP1Row:spy("reset"),pendingStockoutIdx:0

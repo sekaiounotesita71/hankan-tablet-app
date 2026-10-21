@@ -51,6 +51,7 @@ begin
     if not coalesce(public.is_master_admin(),false) then raise exception '確定済み作業の発注先補完は管理者のみ可能です。'; end if;
   end if;
   if exists(select 1 from public.sales_records where session_id=p_session_id)
+     and coalesce(jsonb_array_length(to_jsonb(session_row)->'finalized_importer_codes'),0)=0
      and not coalesce(public.is_master_admin(),false) then
     raise exception '売上確定済み作業の訂正は管理者のみ可能です。';
   end if;
@@ -107,6 +108,10 @@ begin
   select * into importer_row from public.importer_master
     where is_active and (importer_code=btrim(order_data->>'importer_code')
       or (repair and lower(importer_name)=lower(btrim(order_data->>'importer_code'))));
+  if not repair and exists(select 1 from jsonb_array_elements_text(coalesce(to_jsonb(session_row)->'finalized_importer_codes','[]'::jsonb)) c
+     where c=importer_row.importer_code) then
+    raise exception 'この輸入社は売上確定済みのため追加できません。';
+  end if;
   if not repair and nullif(order_data->>'customer_id','') is not null then
     select * into customer_row from public.customer_master where id=(order_data->>'customer_id')::uuid and active;
     if not found or customer_row.importer_code is distinct from importer_row.importer_code

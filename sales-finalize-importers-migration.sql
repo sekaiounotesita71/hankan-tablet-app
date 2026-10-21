@@ -1,5 +1,6 @@
 -- Initial importer-scoped finalization. Existing transactions are not backfilled.
 begin;
+-- Apply work-additional-order-migration.sql as well to allow additions to still-open importers.
 
 alter table public.work_sessions add column if not exists finalized_importer_codes text[] not null default '{}'::text[];
 

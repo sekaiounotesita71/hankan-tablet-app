@@ -2279,8 +2279,9 @@ async function saveBoxToSupabase(imp,bn){
 }
 async function saveAllBoxesToSupabase(){
   if(!currentSessionId||!currentUser||!supabaseClient)return true;
+  if(currentSessionLocked||currentSessionProvisionalLocked)return true;
   const payloads=[];
-  Object.entries(boxMap).forEach(([imp,boxes])=>Object.entries(boxes).forEach(([bn,b])=>payloads.push(boxToPayload(imp,bn,b))));
+  Object.entries(boxMap).filter(([imp])=>!workImporterFinalizedTrial(imp)).forEach(([imp,boxes])=>Object.entries(boxes).forEach(([bn,b])=>payloads.push(boxToPayload(imp,bn,b))));
   if(!payloads.length)return true;
   for(let index=0;index<payloads.length;index+=300){
     const chunk=payloads.slice(index,index+300);
@@ -4675,6 +4676,12 @@ const __saveOrderLineLockBase=saveOrderLineToSupabase;
 saveOrderLineToSupabase=async function(row){if(!requireEditableTrial(row))return false;return __saveOrderLineLockBase(row)};
 const __saveBoxLockBase=saveBoxToSupabase;
 var boxSaveInFlight=new Set();
+const __saveAllBoxesLockBase=saveAllBoxesToSupabase;
+saveAllBoxesToSupabase=async function(){
+  const task=__saveAllBoxesLockBase();
+  boxSaveInFlight.add(task);
+  try{return await task}finally{boxSaveInFlight.delete(task)}
+};
 saveBoxToSupabase=async function(imp,bn){
   if(!requireEditableTrial(imp))return false;
   const task=__saveBoxLockBase(imp,bn);

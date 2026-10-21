@@ -105,6 +105,20 @@ test('repair of an already-linked missing supplier does not duplicate order or w
     assert.equal((await db.query('select supplier_code from order_entry_lines')).rows[0].supplier_code,'02');
   }finally{await db.close()}
 });
+test('nonadmin can add to a pending importer after another importer is finalized',dbOptions,async()=>{
+  const db=await database();try{
+    await db.exec("alter table work_sessions add finalized_importer_codes text[] not null default '{}';insert into sales_records(session_id,amount) values('"+session+"',100)");
+    await assert.rejects(()=>save(db),/管理者/);
+    await db.exec("update work_sessions set finalized_importer_codes=array['03']");
+    const added=await save(db);assert.equal(added.importer_code,'01');
+    await db.exec("update work_sessions set finalized_importer_codes=array['01','03']");
+    const before=await counts(db);
+    await assert.rejects(()=>save(db,order,'33333333-3333-4333-8333-333333333334'),/確定済み/);
+    assert.deepEqual(await counts(db),before);
+    assert.deepEqual(await save(db),added);
+  }finally{await db.close()}
+});
+
 test('UI validates and keeps retry IDs, and purchase import never silently guesses a supplier',()=>{
   new vm.Script(work);new vm.Script(fs.readFileSync(path.join(root,'purchase-source-review.js'),'utf8'));
   assert.match(work,/workAdditionalBusy\|\|\(!workAdditionalAttempt&&!requireEditableTrial\(\)\)/);
