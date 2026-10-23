@@ -15,7 +15,7 @@ test("purchase entry offers a distinct credit-note mode", () => {
 });
 
 test("credit-note entry is submitted through the versioned atomic RPC", () => {
-  assert.match(html, /rpc\("create_confirmed_purchase_batch_v5"/);
+  assert.match(html, /rpc\("create_confirmed_purchase_batch_v6"/);
   assert.match(html, /p_entry_type:entryType/);
   assert.match(html, /advancePurchaseIsCreditNote\(\)\?Math\.abs\(dbNumber\(row\.actualQty\)\)/);
   assert.match(html, /entryType==="credit_note"\?"赤伝"/);

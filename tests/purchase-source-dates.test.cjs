@@ -3,6 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const test=require('node:test');
+const PurchaseCostScope=require('../purchase-cost-scope.js');
 const app=fs.readFileSync(path.join(__dirname,'..','order-entry-beta.html'),'utf8');
 function source(start,end){
   const a=app.indexOf(start),b=app.indexOf(end,a+start.length);
@@ -13,14 +14,17 @@ function fixture(overrides={}){
   const calls=[],cells=new Map();
   const ctx={dbReady:true,supabaseClient:{from(table){
     assert.equal(table,'sales_records');
-    return {select(fields){assert.equal(fields,'id,work_date');return this},async in(field,ids){
+    return {select(fields){assert.equal(fields,'id,work_date,importer_code,importer_id');return this},async in(field,ids){
       assert.equal(field,'id');calls.push([...ids]);
-      return {data:ids.map(id=>({id,work_date:'2026-09-03'}))};
+      return {data:ids.map(id=>({id,work_date:'2026-09-03',importer_code:'01'}))};
     }};
   }},currentUser:{id:'user'},advancePurchaseRows:[],advancePurchaseDatesLoading:false,
+    PurchaseCostScope,getMasters:()=>({importers:[{code:'01',name:'DIM'}]}),esc:String,
+    salesRefBuildImporterIndex:()=>({}),salesRefImporterIdentity:source=>({code:source.importer_code}),
     document:{querySelector(selector){if(!cells.has(selector))cells.set(selector,{});return cells.get(selector)}},
     saveAdvancePurchaseDraft:()=>calls.push('save'),console:{warn:()=>{}},...overrides};
   vm.createContext(ctx);
+  vm.runInContext(source('function purchaseCostScopeImporters(', 'const advancePurchaseFieldOrder='),ctx);
   vm.runInContext(source('function advancePurchaseSourceDatesHtml(', 'function renderAdvancePurchaseRows('),ctx);
   return {ctx,calls,cells};
 }
@@ -42,7 +46,8 @@ test('old drafts hydrate dates in bounded read-only chunks without repainting in
   assert.deepEqual(calls.filter(Array.isArray).map(chunk=>chunk.length),[200,200,51]);
   assert.equal(row.sourceSaleDates['sale-450'],'2026-09-03');
   assert.equal(row.actualQty,7.5);assert.equal(row.unitPrice,1200);assert.equal(row.note,'keep');
-  assert.deepEqual([...cells.keys()],['[data-advance-source-dates="0"]']);
+  assert.deepEqual([...cells.keys()],['[data-advance-source-dates="0"]','[data-advance-row-index="0"][data-advance-field="costChoice"]']);
+  assert.equal(row.sourceSaleImporters['sale-450'],'01');
   assert.equal(cells.values().next().value.innerHTML,'2026/09/03');
   await ctx.refreshAdvancePurchaseSourceDates();
   assert.equal(calls.filter(Array.isArray).length,3);
@@ -86,8 +91,11 @@ test('monthly import carries each work date without changing grouping, quantity 
       document:{getElementById:()=>({value:'',textContent:'',className:''})},setAppBusy:()=>{},alert:message=>{assert.doesNotMatch(message,/失敗/)},
       findMasterProduct:()=>({}),normalizeLineUnit:value=>value,dbNumber:Number,productPurchasePriceForSupplier:()=>({price:1000,unit:'Kg'}),
       newAppUuid:()=>`row-${++id}`,advancePurchaseActiveRows:()=>[],renderAdvancePurchaseRows:()=>{},saveAdvancePurchaseDraft:()=>{},requestAnimationFrame:()=>{},
+      PurchaseCostScope,getMasters:()=>({importers:[{code:'01',name:'DIM'}]}),
+      salesRefBuildImporterIndex:()=>({}),salesRefImporterIdentity:source=>({code:source.importer_code}),
     };
     vm.createContext(ctx);vm.runInContext(app.match(/function blankAdvancePurchaseRow\(\)\{[^\n]+/)[0],ctx);
+    vm.runInContext(source('function purchaseCostScopeImporters(', 'const advancePurchaseFieldOrder='),ctx);
     vm.runInContext(source('async function importSalesIntoAdvancePurchase(', 'function updateAdvancePurchaseSummary('),ctx);
     await ctx.importSalesIntoAdvancePurchase();
     assert.equal(ctx.advancePurchaseRows.length,mode==='product'?1:3);

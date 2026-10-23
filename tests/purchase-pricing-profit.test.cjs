@@ -114,7 +114,7 @@ assert.match(html, /id="advance-purchase-supplier"/);
 assert.match(html, /productPurchasePriceForSupplier\(product,supplierCode\)/);
 assert.match(html, /商品別粗利/);
 assert.match(html, /得意先別粗利/);
-assert.match(html, /輸入社・国内別粗利/);
+assert.match(html, /輸入社別概算粗利/);
 assert.match(html, /仕入実績未反映の商品（売上金額順）/);
 assert.match(html, /実績原価未反映売上/);
 assert.match(html, /全体粗利/);

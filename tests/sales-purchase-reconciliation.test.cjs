@@ -64,7 +64,7 @@ test("PDF一括取込以外の通常事前仕入は自動配分しない",()=>{
 
 test("粗利画面は確定仕入実績を基準に表示する",()=>{
   assert.match(html,/確定仕入実績で計算/);
-  assert.match(html,/全体粗利は、期間内の純売上から仕入確定/);
+  assert.match(html,/全体粗利＝純売上－すべての確定仕入・仕入送料等/);
   assert.match(html,/仕入実績未反映の商品（売上金額順）/);
   assert.doesNotMatch(html,/商品別粗利はマスタ仕入単価で計算/);
 });

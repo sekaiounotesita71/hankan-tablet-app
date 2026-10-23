@@ -46,8 +46,8 @@ const saveSource = sourceBetween(
   "async function saveAdvancePurchaseBatch",
   "function initialWorkspaceTab"
 );
-assert.match(saveSource, /rpc\("create_confirmed_purchase_batch_v5"/);
-assert.match(saveSource, /rpc\("create_confirmed_purchase_batch_v4"/);
+assert.match(saveSource, /rpc\("create_confirmed_purchase_batch_v6"/);
+assert.match(saveSource, /p_entry_type:entryType/);
 assert.match(saveSource, /entryType==="credit_note"\?"赤伝":hasSalesLinks\?"売上引用":"直接入力"/);
 
 console.log("Purchase receipt type tests passed");

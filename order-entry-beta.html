@@ -10,6 +10,7 @@
 <script src="./i18n.js?v=20260805-ap"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./reference-sites.js?v=20260928-1"></script>
+<script src="./purchase-cost-scope.js?v=20261023-1"></script>
 <script src="./supplier-work-profile.js?v=20260924-2" defer></script>
 <script src="./supplier-work-profile-app.js?v=20260924-2" defer></script>
 <link rel="stylesheet" href="./supplier-work-profile.css?v=20260924-2">
@@ -749,7 +750,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="advance-entry-summary" id="advance-purchase-summary"></div>
       <div class="advance-entry-table-wrap">
         <table class="advance-entry-table">
-          <thead><tr><th>No.</th><th>引用元日付</th><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th><th>マスタ候補</th><th></th></tr></thead>
+          <thead><tr><th>No.</th><th>引用元日付</th><th>商品コード</th><th>商品名</th><th>輸入社・仕入区分</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th><th>マスタ候補</th><th></th></tr></thead>
           <tbody id="advance-purchase-body"></tbody>
         </table>
       </div>
@@ -1386,6 +1387,8 @@ let profitReferenceLoadSequence=0;
 let profitReferenceReady=false;
 let profitReferenceRows=[];
 let profitReferencePurchaseSummary={subtotal:0,fees:0,cost:0,receiptCount:0};
+let profitReferenceCostScopes=[];
+let profitReferenceImporterMasters=null;
 let salesRefCustomerOptions=[];
 let salesRefProductOptions=[];
 let salesRefSuggestionIndex=0;
@@ -1493,7 +1496,7 @@ const baseMasters={
 function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
 function blankOrder(){return{lineId:"",productCode:"",productName:"",englishName:"",qty:"",unit:"",unitPrice:"",unitPriceSource:"",supplierCode:"",supplierName:"",initialSupplierCode:"",initialSupplierName:"",supplierDecisionStatus:"provisional",supplierConfirmedAt:"",purchaseOrdered:false,purchaseOrderedAt:"",memo:""}}
-function blankAdvancePurchaseRow(){return{id:newAppUuid(),productCode:"",productName:"",origin:"",actualQty:"",actualUnit:"Kg",unitPrice:"",priceUnit:"Kg",taxRate:8,unitPriceSource:"",note:"",sourceSalesIds:[],sourceSaleDates:{},invalid:false}}
+function blankAdvancePurchaseRow(){return{id:newAppUuid(),productCode:"",productName:"",origin:"",actualQty:"",actualUnit:"Kg",unitPrice:"",priceUnit:"Kg",taxRate:8,unitPriceSource:"",note:"",costScope:"",costImporterCode:"",sourceSalesIds:[],sourceSaleDates:{},sourceSaleImporters:{},invalid:false}}
 function val(id){return document.getElementById(id)?.value||""}
 function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""))}
 function newAppUuid(){
@@ -4004,7 +4007,7 @@ async function refreshSalesRefSupplierFilter(){
 function salesRefFilteredRows(options={}){
   const site=options.site??val("sales-ref-site");
   const q=val("sales-ref-search").trim().toLowerCase();
-  const importer=val("sales-ref-importer").trim().toLowerCase();
+  const importer=options.ignoreImporter?"":val("sales-ref-importer").trim().toLowerCase();
   const customer=salesRefFilterKey(val("sales-ref-customer"));
   const product=salesRefFilterKey(val("sales-ref-product"));
   const supplier=salesRefSupplierCodeKey(val("sales-ref-supplier"));
@@ -4459,6 +4462,57 @@ function salesRefUnpricedProductTable(rows){
 function profitReferenceDetailFilterActive(){
   return ["profit-ref-importer","profit-ref-customer","profit-ref-product","profit-ref-search"].some(id=>val(id).trim());
 }
+function profitReferenceCostDetailFilterActive(){
+  return ["profit-ref-customer","profit-ref-product","profit-ref-search"].some(id=>val(id).trim());
+}
+function profitReferenceReportImporters(){return profitReferenceImporterMasters||getMasters().importers}
+function profitReferenceImporterLabel(code){
+  const importers=profitReferenceReportImporters();
+  const normalized=PurchaseCostScope.normalizeCode(code,importers);
+  const item=importers.find(value=>PurchaseCostScope.normalizeCode(value.code,importers)===normalized);
+  return item?[item.code,item.name].filter(Boolean).join(" / "):code||"未設定";
+}
+function profitReferenceSaleScope(row,importers=profitReferenceReportImporters()){
+  if(row._domesticSale&&row.importer_code==="DOMESTIC")return {scope:"domestic",importerCode:""};
+  for(const raw of [row.importer_code,row.importer_id,row.importer_name,row.importer_name_snapshot]){
+    const code=PurchaseCostScope.normalizeCode(raw,importers);
+    if(code&&importers.some(item=>PurchaseCostScope.normalizeCode(item.code,importers)===code))return {scope:"importer",importerCode:code};
+  }
+  return {scope:"unassigned",importerCode:""};
+}
+function profitReferenceImporterMatches(scope,code,query=val("profit-ref-importer"),importers=profitReferenceReportImporters()){
+  const key=String(query||"").normalize("NFKC").trim().toLowerCase();
+  if(!key)return true;
+  if(scope==="domestic")return "domestic 国内".includes(key);
+  if(scope!=="importer")return false;
+  const exact=PurchaseCostScope.normalizeCode(query,importers);
+  if(exact&&importers.some(item=>PurchaseCostScope.normalizeCode(item.code,importers)===exact))return code===exact;
+  return importers.some(item=>PurchaseCostScope.normalizeCode(item.code,importers)===code
+    &&[item.code,item.name,...(item.aliases||[])].some(value=>String(value||"").normalize("NFKC").toLowerCase().includes(key)));
+}
+function profitReferenceFilteredRows(){
+  const importers=profitReferenceReportImporters();
+  return salesRefFilteredRows({rows:profitReferenceRows,site:val("profit-ref-site"),ignoreImporter:true})
+    .filter(row=>!salesRefIsProvisional(row))
+    .filter(row=>{const scope=profitReferenceSaleScope(row,importers);return profitReferenceImporterMatches(scope.scope,scope.importerCode,undefined,importers)});
+}
+function profitReferenceImporterEstimates(rows,scopes=profitReferenceCostScopes){
+  const importers=profitReferenceReportImporters();
+  const sales=rows.map(row=>({...profitReferenceSaleScope(row,importers),amount:salesRefNum(row.amount)}));
+  const costs=scopes.filter(row=>!["importer","domestic"].includes(row.scope)
+    ||profitReferenceImporterMatches(row.scope,PurchaseCostScope.normalizeCode(row.importer_code,importers),undefined,importers));
+  return PurchaseCostScope.buildImporterProfit(sales,costs);
+}
+function profitReferenceImporterEstimateHtml(rows,scopes=profitReferenceCostScopes){
+  if(profitReferenceCostDetailFilterActive())return `<div class="sales-empty">輸入社別概算粗利は、得意先・商品・キーワードの絞り込みを解除すると表示されます。</div>`;
+  const estimate=profitReferenceImporterEstimates(rows,scopes);
+  const body=estimate.rows.map(row=>{
+    if(row.scope==="unassigned")return `<tr><td>輸入社未設定の売上</td><td>${esc(salesRefMoney(row.sales))}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
+    const label=row.scope==="domestic"?"国内（輸入社指定なし）":profitReferenceImporterLabel(row.importerCode);
+    return `<tr><td>${esc(label)}</td><td>${esc(salesRefMoney(row.sales))}</td><td>${esc(salesRefMoney(row.cost))}</td><td>${esc(salesRefMoney(row.grossProfit))}</td><td>${row.margin===null?"-":esc(row.margin.toFixed(1))+"%"}</td><td>${esc(row.lineCount)}件</td></tr>`;
+  }).join("");
+  return `<div class="sales-analysis-table"><table><caption>輸入社別概算粗利（全体仕入・未分類・送料等を除く）</caption><thead><tr><th>輸入社</th><th>純売上（送料除外）</th><th>指定仕入（税抜）</th><th>概算粗利</th><th>概算粗利率</th><th>仕入明細</th></tr></thead><tbody>${body||'<tr><td colspan="6">対象データはありません。</td></tr>'}</tbody></table></div>`;
+}
 function salesRefProfitAnalysisHtml(rows,purchaseSummary=profitReferencePurchaseSummary){
   const metrics=salesRefMetrics(rows);
   const exportSales=rows.filter(row=>!row._domesticSale).reduce((sum,row)=>sum+salesRefNum(row.amount),0);
@@ -4466,7 +4520,9 @@ function salesRefProfitAnalysisHtml(rows,purchaseSummary=profitReferencePurchase
   const productRows=salesRefProfitGroups(rows,row=>`${row.product_id||""} ${row.product_name||""}`.trim());
   const customerRows=salesRefProfitGroups(rows,row=>`${row.customer_code||""} ${row.store_name||""}`.trim());
   const segmentRows=salesRefProfitGroups(rows,row=>row._domesticSale?"国内売上":"輸出売上");
-  const importerRows=salesRefProfitGroups(rows,row=>salesRefRowImporter(row).label);
+  const costScopes=profitReferenceCostScopes;
+  const scopeAmount=scope=>costScopes.filter(row=>row.scope===scope).reduce((sum,row)=>sum+salesRefNum(row.amount),0);
+  const scopeCount=scope=>costScopes.filter(row=>row.scope===scope).reduce((sum,row)=>sum+salesRefNum(row.line_count),0);
   const periodPurchaseCost=salesRefNum(purchaseSummary.cost);
   const aggregateAvailable=!profitReferenceDetailFilterActive();
   const aggregateGrossProfit=metrics.netSales-periodPurchaseCost;
@@ -4475,15 +4531,19 @@ function salesRefProfitAnalysisHtml(rows,purchaseSummary=profitReferencePurchase
   const grossProfitSub=aggregateAvailable
     ?`粗利率 ${aggregateMargin.toFixed(1)}%`
     :"輸入社・得意先・商品等の絞り込みを解除してください";
-  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">全体粗利は、期間内の純売上から仕入確定の税抜商品仕入・送料・その他費用を差し引いて計算します。内訳は売上に紐づく確定仕入の商品原価です。赤伝・値引き等の売上調整は原価0円として含みます。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">実績原価 ${metrics.linkedCostCount}件 / 未反映 ${metrics.unpricedCount}件</span></div>
+  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">全体粗利＝純売上－すべての確定仕入・仕入送料等。輸入社別は指定された仕入のみを引いた概算です。全体仕入・未分類・仕入送料等は輸入社に配賦しません。売上・仕入とも選択期間の日付を基準に集計します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">実績原価 ${metrics.linkedCostCount}件 / 未反映 ${metrics.unpricedCount}件</span></div>
     <div class="sales-analysis-grid">
       <div class="sales-compare-card"><div class="sales-card-label">合算純売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.netSales))}</div><div class="sales-compare-sub">輸出 ${esc(salesRefMoney(exportSales))} / 国内 ${esc(salesRefMoney(domesticSales))}</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">期間仕入（税抜）</div><div class="sales-compare-main">${esc(salesRefMoney(periodPurchaseCost))}</div><div class="sales-compare-sub">商品 ${esc(salesRefMoney(purchaseSummary.subtotal))} / 送料・その他 ${esc(salesRefMoney(purchaseSummary.fees))} / ${esc(purchaseSummary.receiptCount)}伝票</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">全体粗利</div><div class="sales-compare-main">${esc(grossProfitText)}</div><div class="sales-compare-sub">${esc(grossProfitSub)}</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">全体仕入（税抜）</div><div class="sales-compare-main">${esc(salesRefMoney(scopeAmount("shared")))}</div><div class="sales-compare-sub">選択期間全体 ${esc(scopeCount("shared"))}明細 / 複数輸入社等</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">未分類仕入（税抜）</div><div class="sales-compare-main">${esc(salesRefMoney(scopeAmount("unassigned")))}</div><div class="sales-compare-sub">選択期間全体 ${esc(scopeCount("unassigned"))}件 / 輸入社別概算には含みません</div></div>
+      <div class="sales-compare-card"><div class="sales-card-label">仕入送料・その他</div><div class="sales-compare-main">${esc(salesRefMoney(scopeAmount("fees")))}</div><div class="sales-compare-sub">選択期間全体 / 全体粗利にのみ反映</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">実績原価反映済み売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.costedSales))}</div><div class="sales-compare-sub">仕入紐づけ ${metrics.linkedCostCount}件 / 調整・欠品 ${metrics.adjustmentCount}件</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">実績原価未反映売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.unpricedSales))}</div><div class="sales-compare-sub">${esc(metrics.unpricedCount)}明細 / 全体粗利には影響しません</div></div>
     </div>
-    <div class="sales-analysis-tables">${salesRefUnpricedProductTable(rows)}${salesRefProfitTable("輸出・国内別粗利",segmentRows)}${salesRefProfitTable("商品別粗利",productRows)}${salesRefProfitTable("得意先別粗利",customerRows)}${salesRefProfitTable("輸入社・国内別粗利",importerRows)}</div>`;
+    ${profitReferenceImporterEstimateHtml(rows,costScopes)}
+    <div class="sales-analysis-tables">${salesRefUnpricedProductTable(rows)}${salesRefProfitTable("輸出・国内別粗利（売上紐づけ分）",segmentRows)}${salesRefProfitTable("商品別粗利（売上紐づけ分）",productRows)}${salesRefProfitTable("得意先別粗利（売上紐づけ分）",customerRows)}</div>`;
 }
 function salesRefRatio(current,previous){
   if(!previous)return current?null:0;
@@ -4788,7 +4848,7 @@ async function salesRefReadDomesticRows(client,range){
       unit_price:line.unit_price_jpy,
       amount:salesRefJpyAmount(line.net_amount_jpy),
       memo:[line.memo,sale.memo].filter(Boolean).join(" / "),
-      importer_code:"DOMESTIC",
+      importer_code:sale.source_type==="export_intermediary"?sale.source_importer_code||"DOMESTIC":"DOMESTIC",
       importer_name:sale.source_type==="export_intermediary"?`国内売上 (${sale.source_importer_code||"輸出"})`:"国内売上",
       is_stockout:false,
       _domesticSale:true,
@@ -4921,8 +4981,8 @@ function renderProfitReferenceBoard(){
     target.innerHTML="";
     return;
   }
-  const rows=salesRefFilteredRows({rows:profitReferenceRows,site:val("profit-ref-site")}).filter(row=>!salesRefIsProvisional(row));
-  if(!rows.length){
+  const rows=profitReferenceFilteredRows();
+  if(!rows.length&&!profitReferenceCostScopes.some(row=>salesRefNum(row.amount)||salesRefNum(row.line_count))){
     target.innerHTML=`<div class="sales-empty">表示対象の確定売上データはありません。</div>`;
     return;
   }
@@ -4941,12 +5001,28 @@ async function salesRefReadPurchaseSummary(client,range){
   const fees=receipts.reduce((sum,receipt)=>sum+purchaseJpyAmount(receipt.shipping_fee)+purchaseJpyAmount(receipt.other_fee),0);
   return {subtotal,fees,cost:subtotal+fees,receiptCount:receipts.length};
 }
+async function profitReferenceReadCostScopes(client,range){
+  const part=range.ranges[0]||{};
+  const {data,error}=await client.rpc("get_purchase_cost_scope_summary",{
+    p_from:part.from||null,p_to:part.to||null,p_site_code:val("profit-ref-site")||null
+  });
+  if(error)throw error;
+  return data||[];
+}
+async function profitReferenceReadImporterMasters(client){
+  const rows=await salesRefReadPaged(includeCount=>client.from("importer_master")
+    .select("importer_code,importer_name,aliases,is_active",includeCount?{count:"exact"}:undefined)
+    .order("importer_code",{ascending:true}));
+  return rows.map(row=>({code:row.importer_code,name:row.importer_name,aliases:Array.isArray(row.aliases)?row.aliases:[],isActive:row.is_active}));
+}
 async function loadProfitReferenceBoard(){
   const loadSequence=++profitReferenceLoadSequence;
   const state=document.getElementById("profit-ref-state");
   profitReferenceReady=false;
   profitReferenceRows=[];
   profitReferencePurchaseSummary={subtotal:0,fees:0,cost:0,receiptCount:0};
+  profitReferenceCostScopes=[];
+  profitReferenceImporterMasters=null;
   renderProfitReferenceBoard();
   syncProfitReferenceFiltersToSales();
   if(state)state.textContent="売上データを読み込んでいます...";
@@ -4968,15 +5044,21 @@ async function loadProfitReferenceBoard(){
   if(range.error){if(state)state.textContent=range.error;return}
   try{
     if(state)state.textContent="国内売上と期間仕入を読み込んでいます...";
-    const [domesticRows,purchaseSummary]=await Promise.all([
+    const [domesticRows,purchaseSummary,costScopes,reportImporters]=await Promise.all([
       salesRefReadDomesticRows(client,range),
-      salesRefReadPurchaseSummary(client,range)
+      salesRefReadPurchaseSummary(client,range),
+      profitReferenceReadCostScopes(client,range),
+      profitReferenceReadImporterMasters(client)
     ]);
     if(loadSequence!==profitReferenceLoadSequence||salesLoadSequence!==salesReferenceLoadSequence)return;
     profitReferenceRows=[...salesReferenceRows,...domesticRows];
     profitReferencePurchaseSummary=purchaseSummary;
+    const scopeTotal=costScopes.reduce((sum,row)=>sum+salesRefNum(row.amount),0);
+    if(scopeTotal!==purchaseSummary.cost)throw new Error("仕入区分集計と期間仕入が一致しません。再度読み込んでください。");
+    profitReferenceCostScopes=costScopes;
+    profitReferenceImporterMasters=reportImporters;
     salesRefRenderFilterOptions(profitReferenceRows);
-    const filteredRows=salesRefFilteredRows({rows:profitReferenceRows}).filter(row=>!salesRefIsProvisional(row));
+    const filteredRows=profitReferenceFilteredRows();
     const domesticCount=filteredRows.filter(row=>row._domesticSale).length;
     if(state)state.textContent=`確定売上 ${filteredRows.length}件（国内 ${domesticCount}件）/ 引用仕入の実績を読み込んでいます...`;
     const result=await salesRefAttachPurchaseCosts(client,filteredRows);
@@ -11032,6 +11114,13 @@ async function loadPurchaseReceipts(){
       .in("receipt_id",chunk)
       .order("receipt_id",{ascending:true})
       .order("created_at",{ascending:true})),4);
+    const scopeRows=await salesRefReadChunks(lines.map(line=>line.id),100,async lineIds=>{
+      const {data,error}=await supabaseClient.rpc("get_purchase_line_cost_scopes",{p_line_ids:lineIds});
+      if(error)throw error;
+      return data||[];
+    },4);
+    const scopesByLine=new Map(scopeRows.map(scope=>[scope.purchase_line_id,scope]));
+    lines.forEach(line=>applyPurchaseLineCostScope(line,scopesByLine.get(line.id)));
     const byReceipt=new Map();
     lines.forEach(line=>{if(!byReceipt.has(line.receipt_id))byReceipt.set(line.receipt_id,[]);byReceipt.get(line.receipt_id).push(line)});
     purchaseReceipts=receipts.map(row=>({...row,lines:byReceipt.get(row.id)||[]}));
@@ -11052,6 +11141,7 @@ function purchaseReceiptCardHtml(receipt){
     const lines=receipt.lines.map(line=>`<tr>
       <td><input class="purchase-product-code ime-en" value="${esc(line.product_code||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','product_code',this.value)"></td>
       <td><input class="purchase-product-name ime-ja" value="${esc(line.product_name||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','product_name',this.value)"></td>
+      <td>${purchaseLineCostScopeSelectHtml(line)}</td>
       <td><input value="${esc(line.origin||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','origin',this.value)"></td>
       <td><input class="ops-money" inputmode="decimal" value="${esc(line.actual_qty??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_qty',this.value)"></td>
       <td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_unit',this.value)">${purchaseUnitOptions(line.actual_unit)}</select></td>
@@ -11065,7 +11155,7 @@ function purchaseReceiptCardHtml(receipt){
     const action=locked
       ?(currentUserIsAdmin()?`<button class="btn danger" type="button" onclick="unlockPurchaseReceiptForCorrection('${esc(receipt.id)}')">修正解除</button>`:`<span class="pill">確定済み</span>`)
       :`<button class="btn primary" type="button" onclick="confirmPurchaseReceipt('${esc(receipt.id)}')">${receipt.correction_unlocked?"修正を再確定":"仕入確定"}</button>`;
-    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(purchaseReceiptTypeLabel(receipt))}</span><span>${esc(purchaseStatusLabel(receipt.status,receipt))}</span><span class="ops-money">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid">${correctionNote}<label>仕入日<input type="date" value="${esc(receipt.purchase_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','purchase_date',this.value)"></label><label>拠点<select ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','site_code',this.value)">${purchaseSiteOptions(receipt.site_code)}</select></label><label>仕入先コード<input class="ime-en" list="supplier-code-list" value="${esc(receipt.supplier_code||"")}" ${disabled} onchange="savePurchaseSupplier('${esc(receipt.id)}',this.value)"></label><label>仕入先名<div class="site-readonly">${esc(receipt.supplier_name_snapshot||"")}</div></label><label>管理番号<div class="site-readonly">${esc(receipt.supplier_invoice_no||"自動採番待ち")}</div></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>税計算<select ${disabled} onchange="savePurchaseTaxMode('${esc(receipt.id)}',this.value)"><option value="auto" ${receipt.tax_override?"":"selected"}>税率から自動</option><option value="manual" ${receipt.tax_override?"selected":""}>税額を手入力</option></select></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${taxAmountDisabled} onchange="savePurchaseTaxAmount('${esc(receipt.id)}',this.value)"></label><label>合計<div class="site-readonly">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input class="ime-ja" value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end">${action}</div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th></tr></thead><tbody>${lines||'<tr><td colspan="10">明細なし</td></tr>'}</tbody></table></div></div></details>`;
+    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(purchaseReceiptTypeLabel(receipt))}</span><span>${esc(purchaseStatusLabel(receipt.status,receipt))}</span><span class="ops-money">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid">${correctionNote}<label>仕入日<input type="date" value="${esc(receipt.purchase_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','purchase_date',this.value)"></label><label>拠点<select ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','site_code',this.value)">${purchaseSiteOptions(receipt.site_code)}</select></label><label>仕入先コード<input class="ime-en" list="supplier-code-list" value="${esc(receipt.supplier_code||"")}" ${disabled} onchange="savePurchaseSupplier('${esc(receipt.id)}',this.value)"></label><label>仕入先名<div class="site-readonly">${esc(receipt.supplier_name_snapshot||"")}</div></label><label>管理番号<div class="site-readonly">${esc(receipt.supplier_invoice_no||"自動採番待ち")}</div></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>税計算<select ${disabled} onchange="savePurchaseTaxMode('${esc(receipt.id)}',this.value)"><option value="auto" ${receipt.tax_override?"":"selected"}>税率から自動</option><option value="manual" ${receipt.tax_override?"selected":""}>税額を手入力</option></select></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${taxAmountDisabled} onchange="savePurchaseTaxAmount('${esc(receipt.id)}',this.value)"></label><label>合計<div class="site-readonly">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input class="ime-ja" value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end">${action}</div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>輸入社・仕入区分</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th></tr></thead><tbody>${lines||'<tr><td colspan="11">明細なし</td></tr>'}</tbody></table></div></div></details>`;
 }
 function renderPurchaseReceipts(){
   const box=document.getElementById("purchase-receipt-list");
@@ -11192,7 +11282,89 @@ async function unlockPurchaseReceiptForCorrection(id){
     else alert(sitePartnerDbError(error));
   }finally{setAppBusy(false)}
 }
-const advancePurchaseFieldOrder=["productCode","productName","origin","actualQty","actualUnit","unitPrice","priceUnit","taxRate","note"];
+function purchaseCostScopeImporters(){
+  return getMasters().importers.filter(item=>!!PurchaseCostScope.normalizeCode(item.code,[item])&&item.is_active!==false&&item.isActive!==false)
+    .sort((a,b)=>String(a.code).localeCompare(String(b.code),"ja",{numeric:true}));
+}
+function purchaseCostScopeImporterExists(code){
+  const importers=purchaseCostScopeImporters();
+  const normalized=PurchaseCostScope.normalizeCode(code,importers);
+  return !!normalized&&importers.some(item=>PurchaseCostScope.normalizeCode(item.code,importers)===normalized);
+}
+function purchaseCostScopeSalesImporter(sale,index=salesRefBuildImporterIndex()){
+  const importers=purchaseCostScopeImporters();
+  for(const value of [sale.importer_code,sale.importer_id]){
+    if(!String(value??"").trim())continue;
+    const normalized=PurchaseCostScope.normalizeCode(value,importers);
+    if(!normalized)continue;
+    const identity=salesRefImporterIdentity({importer_code:normalized},index);
+    const code=PurchaseCostScope.normalizeCode(identity.code,importers);
+    if(code&&purchaseCostScopeImporterExists(code))return code;
+  }
+  return "";
+}
+function purchaseCostScopeOptionsHtml(scope,importerCode,options={}){
+  const rawValue=PurchaseCostScope.choiceValue(scope,importerCode);
+  const value=rawValue==="unassigned"?"":rawValue;
+  const choices=[
+    ...purchaseCostScopeImporters().map(item=>[PurchaseCostScope.choiceValue("importer",item.code),`${item.code} ${item.name||""}`.trim()]),
+    ["shared","全体仕入（複数輸入社）"],
+    ["domestic","国内仕入"]
+  ];
+  const emptyLabel=scope==="unassigned"&&(options.quoted||options.legacy)?"未分類":"選択してください";
+  const missing=value&&!choices.some(([key])=>key===value)?`<option value="${esc(value)}" selected disabled>${esc(importerCode)}（マスタ未登録）</option>`:"";
+  return `<option value="" ${value?"":"selected"} disabled>${emptyLabel}</option>${missing}${choices.map(([key,label])=>`<option value="${esc(key)}" ${value===key?"selected":""}>${esc(label)}</option>`).join("")}`;
+}
+function applyPurchaseLineCostScope(line,metadata){
+  line.cost_scope=metadata?.scope||"unassigned";
+  line.cost_importer_code=metadata?.importer_code||"";
+  line.cost_assignment_method=metadata?.assignment_method||"";
+  line.cost_scope_editable=metadata?.editable===true;
+}
+function purchaseLineCostScopeSelectHtml(line){
+  const disabled=line.cost_scope_editable===true?"":"disabled";
+  return `<select style="width:190px" aria-label="輸入社・仕入区分" data-purchase-cost-scope="${esc(line.id)}" ${disabled} onchange="savePurchaseLineCostScope('${esc(line.id)}',this.value,this)">${purchaseCostScopeOptionsHtml(line.cost_scope||"unassigned",line.cost_importer_code,{legacy:true})}</select>`;
+}
+async function savePurchaseLineCostScope(id,value,input=null){
+  const line=purchaseReceipts.flatMap(receipt=>receipt.lines||[]).find(item=>item.id===id);
+  if(!line||line.cost_scope_editable!==true)return;
+  const choice=PurchaseCostScope.parseChoice(value);
+  if(!["importer","shared","domestic"].includes(choice.scope))return;
+  if(choice.scope==="importer"&&!purchaseCostScopeImporterExists(choice.importerCode))return;
+  const select=input||document.querySelector(`[data-purchase-cost-scope="${id}"]`);
+  if(select?.disabled)return;
+  if(select)select.disabled=true;
+  try{
+    const {error}=await supabaseClient.rpc("set_purchase_line_cost_scope",{
+      p_purchase_line_id:id,p_scope:choice.scope,p_importer_code:choice.importerCode||null
+    });
+    if(error)throw error;
+    applyPurchaseLineCostScope(line,{scope:choice.scope,importer_code:choice.importerCode,assignment_method:"manual",editable:true});
+    if(typeof invalidateProfitReference==="function")invalidateProfitReference();
+  }catch(error){alert(sitePartnerDbError(error))}
+  finally{
+    if(select){select.innerHTML=purchaseCostScopeOptionsHtml(line.cost_scope,line.cost_importer_code,{legacy:true});select.disabled=line.cost_scope_editable!==true}
+  }
+}
+function advancePurchaseCostScope(row){
+  if(row.sourceSalesIds?.length){
+    const derived=PurchaseCostScope.deriveFromSources(row.sourceSalesIds,row.sourceSaleImporters||{},purchaseCostScopeImporters());
+    row.costScope=derived.scope;
+    row.costImporterCode=derived.importerCode||"";
+  }
+  return {scope:row.costScope||"",importerCode:row.costImporterCode||""};
+}
+function advancePurchaseCostScopeValid(row){
+  const value=advancePurchaseCostScope(row);
+  if(row.sourceSalesIds?.length)return ["importer","shared","unassigned"].includes(value.scope);
+  return ["shared","domestic"].includes(value.scope)||(value.scope==="importer"&&purchaseCostScopeImporterExists(value.importerCode));
+}
+function advancePurchaseCostScopeSelectHtml(row,index){
+  const value=advancePurchaseCostScope(row);
+  const quoted=!!row.sourceSalesIds?.length;
+  return `<select style="width:190px" aria-label="輸入社・仕入区分" data-advance-input data-advance-row-index="${index}" data-advance-field="costChoice" ${quoted?"disabled":""} onchange="setAdvancePurchaseRow(${index},'costChoice',this.value)">${purchaseCostScopeOptionsHtml(value.scope,value.importerCode,{quoted})}</select>`;
+}
+const advancePurchaseFieldOrder=["productCode","productName","costChoice","origin","actualQty","actualUnit","unitPrice","priceUnit","taxRate","note"];
 function advancePurchaseRowActive(row){return !![row.productCode,row.productName,row.origin,row.actualQty,row.unitPrice,row.note].some(value=>String(value??"").trim())}
 function advancePurchaseActiveRows(){return advancePurchaseRows.filter(advancePurchaseRowActive)}
 function advancePurchaseAmount(row){
@@ -11373,7 +11545,10 @@ function setAdvancePurchaseEntryType(value,options={}){
   const select=document.getElementById("advance-purchase-entry-type");
   if(select){select.value=type;select.classList.toggle("credit-note",type==="credit_note")}
   const credit=type==="credit_note";
-  if(credit)advancePurchaseRows.forEach(row=>{row.sourceSalesIds=[];row.sourceSaleDates={}});
+  if(credit)advancePurchaseRows.forEach(row=>{
+    if(row.sourceSalesIds?.length){row.costScope="";row.costImporterCode=""}
+    row.sourceSalesIds=[];row.sourceSaleDates={};row.sourceSaleImporters={};
+  });
   const importButton=document.getElementById("advance-purchase-import-sales");
   if(importButton){importButton.disabled=credit;importButton.title=credit?"赤伝は売上引用せず直接入力します":""}
   const hint=document.getElementById("advance-purchase-hint");
@@ -11551,13 +11726,14 @@ async function importSalesIntoAdvancePurchase(){
   if(supplierWasAutoAssigned&&supplier)setAdvancePurchaseReferenceMode(supplier.purchaseReferenceMode||"day",{save:false});
   const purchaseDate=val("advance-purchase-date");
   const referenceRange=advancePurchaseReferenceRange();
-  const importerCode=normalizeImporterCode(val("advance-purchase-importer"));
+  const importerCode=PurchaseCostScope.normalizeCode(val("advance-purchase-importer"),purchaseCostScopeImporters())||normalizeImporterCode(val("advance-purchase-importer"));
   if(!purchaseDate||!orderSupplierCode||!orderSupplier){alert("仕入日と、仕入先マスタに登録済みの引用元発注先コードを入力してから引用してください。");return}
   if(!supplier){alert("実仕入先コードは仕入先マスタに登録済みのコードを指定してください。");return}
   if(!referenceRange){alert("引用対象は日次なら20260825、月次なら202608の形式で入力してください。");document.getElementById("advance-purchase-reference-period")?.focus();return}
   setAppBusy(true,`${referenceRange.label}の確定売上から仕入明細を確認しています...`);
   try{
     const salesRows=await readSalesForAdvancePurchase(referenceRange.from,referenceRange.to);
+    const importerIndex=salesRefBuildImporterIndex();
     const [orderSupplierBySale,registeredSalesIds]=await Promise.all([
       readOrderSuppliersForAdvancePurchase(salesRows),
       readImportedSalesIdsForAdvancePurchase(salesRows)
@@ -11572,7 +11748,7 @@ async function importSalesIntoAdvancePurchase(){
     const draftSalesIds=new Set(advancePurchaseRows.flatMap(row=>Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[]));
     const unassigned=salesRows.filter(sale=>!sale.is_stockout
       &&(sessionSites.get(sale.session_id)||"OSA")===siteCode
-      &&(!importerCode||normalizeImporterCode(sale.importer_code||sale.importer_id)===importerCode)
+      &&(!importerCode||purchaseCostScopeSalesImporter(sale,importerIndex)===importerCode)
       &&!registeredSalesIds.has(sale.id)&&!draftSalesIds.has(sale.id)
       &&!orderSupplierBySale.get(advancePurchaseSaleSourceKey(sale)));
     if(unassigned.length){
@@ -11585,7 +11761,7 @@ async function importSalesIntoAdvancePurchase(){
     salesRows.forEach(sale=>{
       if(sale.is_stockout)return;
       if((sessionSites.get(sale.session_id)||"OSA")!==siteCode)return;
-      if(importerCode&&normalizeImporterCode(sale.importer_code||sale.importer_id)!==importerCode)return;
+      if(importerCode&&purchaseCostScopeSalesImporter(sale,importerIndex)!==importerCode)return;
       if(registeredSalesIds.has(sale.id)){registeredDuplicate++;return}
       if(draftSalesIds.has(sale.id)){draftDuplicate++;return}
       const product=findMasterProduct(sale.product_id,sale.product_name)||{};
@@ -11615,8 +11791,10 @@ async function importSalesIntoAdvancePurchase(){
       row.actualQty=Math.round((Number(row.actualQty)+qty)*1000)/1000;
       row.sourceSalesIds.push(sale.id);
       row.sourceSaleDates[sale.id]=sale.work_date||"";
+      row.sourceSaleImporters[sale.id]=purchaseCostScopeSalesImporter(sale,importerIndex);
     });
     const imported=[...grouped.values()];
+    imported.forEach(advancePurchaseCostScope);
     const importedSalesCount=imported.reduce((count,row)=>count+(row.sourceSalesIds?.length||0),0);
     if(!imported.length){
       alert(`引用できる売上明細がありません。\n受注明細の発注先コード、日付・拠点・輸入社を確認してください。${unmapped?`\n発注先未設定: ${unmapped}件`:""}${registeredDuplicate?`\n仕入登録済み: ${registeredDuplicate}件`:""}${draftDuplicate?`\n画面へ引用済み: ${draftDuplicate}件`:""}`);
@@ -11665,29 +11843,38 @@ function advancePurchaseSourceDatesHtml(row){
 }
 async function refreshAdvancePurchaseSourceDates(){
   if(advancePurchaseDatesLoading||!dbReady||!supabaseClient||!currentUser)return;
-  const targets=advancePurchaseRows.filter(row=>row.sourceSalesIds?.some(id=>!Object.prototype.hasOwnProperty.call(row.sourceSaleDates||{},id)));
+  const targets=advancePurchaseRows.filter(row=>row.sourceSalesIds?.some(id=>!Object.prototype.hasOwnProperty.call(row.sourceSaleDates||{},id)||!Object.prototype.hasOwnProperty.call(row.sourceSaleImporters||{},id)));
   const ids=[...new Set(targets.flatMap(row=>row.sourceSalesIds))];
   if(!ids.length)return;
   const requestedIds=new Set(ids);
   advancePurchaseDatesLoading=true;
   try{
-    const dates=new Map();
+    const dates=new Map(),importers=new Map();
+    const importerIndex=salesRefBuildImporterIndex();
     for(let index=0;index<ids.length;index+=200){
-      const {data,error}=await supabaseClient.from("sales_records").select("id,work_date").in("id",ids.slice(index,index+200));
+      const {data,error}=await supabaseClient.from("sales_records").select("id,work_date,importer_code,importer_id").in("id",ids.slice(index,index+200));
       if(error)throw error;
-      (data||[]).forEach(sale=>dates.set(sale.id,sale.work_date||""));
+      (data||[]).forEach(sale=>{dates.set(sale.id,sale.work_date||"");importers.set(sale.id,purchaseCostScopeSalesImporter(sale,importerIndex))});
     }
     targets.forEach(row=>{
       const index=advancePurchaseRows.indexOf(row);
       if(index<0)return;
       row.sourceSaleDates={...row.sourceSaleDates};
-      (row.sourceSalesIds||[]).forEach(id=>{if(requestedIds.has(id))row.sourceSaleDates[id]=dates.get(id)||""});
-      // Update only the date cell so an in-progress quantity/price input keeps focus.
+      row.sourceSaleImporters={...row.sourceSaleImporters};
+      (row.sourceSalesIds||[]).forEach(id=>{
+        if(!requestedIds.has(id))return;
+        row.sourceSaleDates[id]=dates.get(id)||"";
+        row.sourceSaleImporters[id]=importers.get(id)||"";
+      });
+      const scope=advancePurchaseCostScope(row);
+      // Patch only source metadata cells so quantity/price input keeps focus.
       const cell=document.querySelector(`[data-advance-source-dates="${index}"]`);
       if(cell)cell.innerHTML=advancePurchaseSourceDatesHtml(row);
+      const scopeSelect=document.querySelector(`[data-advance-row-index="${index}"][data-advance-field="costChoice"]`);
+      if(scopeSelect){scopeSelect.innerHTML=purchaseCostScopeOptionsHtml(scope.scope,scope.importerCode,{quoted:true});scopeSelect.disabled=true}
     });
     saveAdvancePurchaseDraft();
-  }catch(error){console.warn("引用元日付を取得できませんでした。",error)}
+  }catch(error){console.warn("引用元の日付・輸入社を取得できませんでした。",error)}
   finally{advancePurchaseDatesLoading=false}
 }
 function renderAdvancePurchaseRows(){
@@ -11701,6 +11888,7 @@ function renderAdvancePurchaseRows(){
     <td class="source-dates" data-advance-source-dates="${index}">${advancePurchaseSourceDatesHtml(row)}</td>
     <td><div class="lookup-cell"><input class="product-code ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-input data-advance-row-index="${index}" data-advance-field="productCode" value="${esc(row.productCode)}" oninput="setAdvancePurchaseRow(${index},'productCode',this.value)" onblur="resolveAdvancePurchaseProduct(${index},this.value)"><button class="lookup-btn" type="button" onclick="openAdvancePurchaseProductLookup(${index})">+</button></div></td>
     <td><input class="product-name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-advance-input data-advance-row-index="${index}" data-advance-field="productName" value="${esc(row.productName)}" oninput="setAdvancePurchaseRow(${index},'productName',this.value)"></td>
+    <td>${advancePurchaseCostScopeSelectHtml(row,index)}</td>
     <td><input class="origin ime-en" lang="en" autocapitalize="none" autocomplete="off" data-advance-input data-advance-row-index="${index}" data-advance-field="origin" value="${esc(row.origin)}" oninput="setAdvancePurchaseRow(${index},'origin',this.value)"></td>
     <td><input class="quantity" inputmode="decimal" data-advance-input data-advance-row-index="${index}" data-advance-field="actualQty" value="${esc(row.actualQty)}" oninput="setAdvancePurchaseRow(${index},'actualQty',this.value)"></td>
     <td><select class="unit" data-advance-input data-advance-row-index="${index}" data-advance-field="actualUnit" onchange="setAdvancePurchaseRow(${index},'actualUnit',this.value)">${purchaseUnitOptions(row.actualUnit)}</select></td>
@@ -11718,7 +11906,12 @@ function renderAdvancePurchaseRows(){
 function setAdvancePurchaseRow(index,field,value){
   const row=advancePurchaseRows[index];
   if(!row)return;
-  row[field]=field==="taxRate"?Number(value):value;
+  if(field==="costChoice"){
+    if(row.sourceSalesIds?.length)return;
+    const choice=PurchaseCostScope.parseChoice(value);
+    row.costScope=choice.scope;
+    row.costImporterCode=choice.importerCode||"";
+  }else row[field]=field==="taxRate"?Number(value):value;
   if(field==="unitPrice")row.unitPriceSource="manual";
   if(field==="productCode"||field==="productName")showAdvancePurchaseProductSuggestions(index,field,value);
   row.invalid=false;
@@ -11809,7 +12002,7 @@ function addAdvancePurchaseRow(row=null,options={}){
 function duplicateAdvancePurchaseRow(index){
   const source=advancePurchaseRows[index];
   if(!source)return;
-  advancePurchaseRows.splice(index+1,0,{...source,id:newAppUuid(),sourceSalesIds:[],sourceSaleDates:{},invalid:false});
+  advancePurchaseRows.splice(index+1,0,{...source,id:newAppUuid(),sourceSalesIds:[],sourceSaleDates:{},sourceSaleImporters:{},costScope:source.sourceSalesIds?.length?"":source.costScope,costImporterCode:source.sourceSalesIds?.length?"":source.costImporterCode,invalid:false});
   renderAdvancePurchaseRows();
   saveAdvancePurchaseDraft();
   requestAnimationFrame(()=>focusAdvancePurchaseCell(index+1,"actualQty"));
@@ -11836,25 +12029,24 @@ function clearAdvancePurchaseRows(options={}){
 }
 function focusAdvancePurchaseCell(rowIndex,field){
   const input=document.querySelector(`[data-advance-row-index="${rowIndex}"][data-advance-field="${field}"]`);
-  if(!input)return false;
+  if(!input||input.disabled)return false;
   input.focus();
   if(typeof input.select==="function"&&input.type!=="checkbox")input.select();
   input.scrollIntoView({block:"nearest",inline:"nearest"});
   return true;
 }
 function moveAdvancePurchaseFocus(target,direction){
-  const rowIndex=Number(target.dataset.advanceRowIndex);
-  const field=target.dataset.advanceField;
-  const fieldIndex=advancePurchaseFieldOrder.indexOf(field);
+  let rowIndex=Number(target.dataset.advanceRowIndex);
+  let fieldIndex=advancePurchaseFieldOrder.indexOf(target.dataset.advanceField);
   if(fieldIndex<0)return;
-  if(direction<0){
-    if(fieldIndex>0)focusAdvancePurchaseCell(rowIndex,advancePurchaseFieldOrder[fieldIndex-1]);
-    else if(rowIndex>0)focusAdvancePurchaseCell(rowIndex-1,advancePurchaseFieldOrder[advancePurchaseFieldOrder.length-1]);
-    return;
+  for(;;){
+    fieldIndex+=direction;
+    if(fieldIndex<0){rowIndex--;fieldIndex=advancePurchaseFieldOrder.length-1}
+    else if(fieldIndex>=advancePurchaseFieldOrder.length){rowIndex++;fieldIndex=0}
+    if(rowIndex<0)return;
+    if(rowIndex>=advancePurchaseRows.length){addAdvancePurchaseRow(null,{focus:true});return}
+    if(focusAdvancePurchaseCell(rowIndex,advancePurchaseFieldOrder[fieldIndex]))return;
   }
-  if(fieldIndex<advancePurchaseFieldOrder.length-1){focusAdvancePurchaseCell(rowIndex,advancePurchaseFieldOrder[fieldIndex+1]);return}
-  if(rowIndex>=advancePurchaseRows.length-1)addAdvancePurchaseRow(null,{focus:true});
-  else focusAdvancePurchaseCell(rowIndex+1,advancePurchaseFieldOrder[0]);
 }
 function moveAdvancePurchaseVertical(target,direction){
   const rowIndex=Number(target.dataset.advanceRowIndex);
@@ -11874,7 +12066,7 @@ function advancePurchaseValidation(){
     const qty=dbNumber(row.actualQty);
     const price=dbNumber(row.unitPrice);
     const invalidQty=qty===null||qty===0||(!advancePurchaseIsCreditNote()&&qty<0);
-    row.invalid=!String(row.productName||"").trim()||invalidQty||price===null||price<0||!units.has(row.actualUnit)||!units.has(row.priceUnit)||!taxRates.has(Number(row.taxRate));
+    row.invalid=!String(row.productName||"").trim()||invalidQty||price===null||price<0||!units.has(row.actualUnit)||!units.has(row.priceUnit)||!taxRates.has(Number(row.taxRate))||!advancePurchaseCostScopeValid(row);
     if(row.invalid&&firstInvalid===null)firstInvalid=index;
   });
   return {active,firstInvalid};
@@ -11892,9 +12084,9 @@ async function saveAdvancePurchaseBatch(){
   if(check.firstInvalid!==null){
     renderAdvancePurchaseRows();
     const row=advancePurchaseRows[check.firstInvalid];
-    const field=!String(row.productName||"").trim()?"productName":dbNumber(row.actualQty)===null||dbNumber(row.actualQty)===0||(!advancePurchaseIsCreditNote()&&dbNumber(row.actualQty)<0)?"actualQty":"unitPrice";
+    const field=!String(row.productName||"").trim()?"productName":!advancePurchaseCostScopeValid(row)?"costChoice":dbNumber(row.actualQty)===null||dbNumber(row.actualQty)===0||(!advancePurchaseIsCreditNote()&&dbNumber(row.actualQty)<0)?"actualQty":"unitPrice";
     focusAdvancePurchaseCell(check.firstInvalid,field);
-    alert("赤色の明細を確認してください。商品名・数量・仕入単価・単位が必要です。");
+    alert("赤色の明細を確認してください。商品名・輸入社または仕入区分・数量・仕入単価・単位が必要です。");
     return;
   }
   const lines=check.active.map(row=>({
@@ -11908,6 +12100,8 @@ async function saveAdvancePurchaseBatch(){
     tax_rate:Number(row.taxRate??8),
     track_inventory:false,
     note:String(row.note||"").trim()||null,
+    cost_scope:advancePurchaseCostScope(row).scope,
+    cost_importer_code:row.costImporterCode||null,
     source_sales_ids:[...new Set((Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[]).filter(Boolean))]
   }));
   const hasSalesLinks=lines.some(line=>line.source_sales_ids.length);
@@ -11917,28 +12111,16 @@ async function saveAdvancePurchaseBatch(){
   setAppBusy(true,`${lines.length}件の仕入を確定しています...`);
   try{
     const note=val("advance-purchase-note").trim()||null;
-    if(entryType==="credit_note"){
-      const {error}=await supabaseClient.rpc("create_confirmed_purchase_batch_v5",{
-        p_purchase_date:purchaseDate,
-        p_site_code:siteCode,
-        p_supplier_code:supplierCode,
-        p_supplier_invoice_no:null,
-        p_note:note,
-        p_entry_type:entryType,
-        p_lines:lines
-      });
-      if(error)throw error;
-    }else{
-      const {error}=await supabaseClient.rpc("create_confirmed_purchase_batch_v4",{
-        p_purchase_date:purchaseDate,
-        p_site_code:siteCode,
-        p_supplier_code:supplierCode,
-        p_supplier_invoice_no:null,
-        p_note:note,
-        p_lines:lines
-      });
-      if(error)throw error;
-    }
+    const {error}=await supabaseClient.rpc("create_confirmed_purchase_batch_v6",{
+      p_purchase_date:purchaseDate,
+      p_site_code:siteCode,
+      p_supplier_code:supplierCode,
+      p_supplier_invoice_no:null,
+      p_note:note,
+      p_entry_type:entryType,
+      p_lines:lines
+    });
+    if(error)throw error;
     clearAdvancePurchaseRows({confirm:false,resetEntryType:true});
     const state=document.getElementById("advance-purchase-state");
     if(state){state.textContent=`仕入確定 ${lines.length}件`;state.className="pill blue"}
@@ -11953,8 +12135,8 @@ async function saveAdvancePurchaseBatch(){
     const duplicateSales=error?.code==="23505"&&/purchase_sales_links|sales_record_id|sales record has already/i.test(errorText);
     const message=duplicateSales
       ?"この売上は別の端末ですでに仕入登録されています。画面をクリアして、もう一度「売上から引用」を実行してください。"
-      :error?.code==="PGRST202"||/create_confirmed_purchase_batch_v5/i.test(errorText)
-        ?"仕入赤伝対応SQLが未実行です。purchase-credit-note-migration.sql を実行してください。"
+      :error?.code==="PGRST202"||/create_confirmed_purchase_batch_v6/i.test(errorText)
+        ?"輸入社別仕入区分のSQLが未実行です。purchase-cost-scope-migration.sql を実行してください。"
         :sitePartnerDbError(error);
     alert(message);
   }finally{
