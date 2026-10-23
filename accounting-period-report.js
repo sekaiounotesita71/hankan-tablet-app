@@ -17,9 +17,9 @@
     if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==s)throw Error('存在しない日付です。');
     return s;
   }
-  const moneyFields=['opening','cash','fee','carry','net','adjustment','tax','charges','balance'];
+  const moneyFields=['opening','cash','fee','offset','carry','net','adjustment','tax','charges','balance'];
   function empty(identity){
-    return {...identity,opening:0,cash:0,fee:0,carry:0,net:0,adjustment:0,tax:0,charges:0,balance:0,count:0,taxUnknown:0,events:[],records:[],payments:[]};
+    return {...identity,opening:0,cash:0,fee:0,offset:0,carry:0,net:0,adjustment:0,tax:0,charges:0,balance:0,count:0,taxUnknown:0,events:[],records:[],payments:[]};
   }
   function build({records,payments,range,kind='ar'}){
     const from=date(range.from),to=date(range.to);
@@ -53,18 +53,19 @@
       if(!payment.id||paymentIds.has(payment.id))throw Error('帳票の入出金IDが空欄または重複しています。');
       paymentIds.add(payment.id);
       const day=date(payment.date),cash=cents(payment.cash),fee=cents(payment.fee);
-      const settled=cash+(kind==='ar'?fee:0),group=match.group;
+      const offset=kind==='ap'?cents(payment.offset):0;
+      const settled=cash+(kind==='ar'?fee:offset),group=match.group;
       group.payments.push(payment);
       if(day<from)group.opening-=settled;
       else if(day<=to){
-        group.cash+=cash;group.fee+=fee;
-        group.events.push({date:day,type:kind==='ar'?'入金':'支払',reference:payment.reference||'',description:payment.description||'',debit:0,credit:settled,order:1,id:payment.id});
+        group.cash+=cash;group.fee+=fee;group.offset+=offset;
+        group.events.push({date:day,type:offset?'相殺':kind==='ar'?'入金':'支払',reference:payment.reference||'',description:payment.description||'',debit:0,credit:settled,order:1,id:payment.id});
       }
     }
     const totals=empty({key:'total',code:'',name:'合計'});
     const items=[...groups.values()].filter(g=>g.opening!==0||g.events.length).sort((a,b)=>String(a.code).localeCompare(String(b.code),'ja',{numeric:true}));
     for(const group of items){
-      group.carry=group.opening-group.cash-(kind==='ar'?group.fee:0);
+      group.carry=group.opening-group.cash-(kind==='ar'?group.fee:group.offset);
       group.balance=group.carry+group.charges;
       group.events.sort((a,b)=>a.date.localeCompare(b.date)||a.order-b.order||String(a.id).localeCompare(String(b.id)));
       let balance=group.opening;

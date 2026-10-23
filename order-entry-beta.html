@@ -804,6 +804,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
             <option value="overdue">期限超過</option>
             <option value="paid">支払済</option>
             <option value="overpaid">過払</option>
+            <option value="credit">赤伝・相殺待ち</option>
           </select>
         </label>
         <label>検索<input id="ap-search" placeholder="請求書・仕入先・メモ" oninput="renderPayables()"></label>
@@ -885,7 +886,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
               <label class="wide">メモ<input id="ap-payment-memo" class="ime-ja" autocomplete="off"></label>
             </div>
             <div class="actions" style="margin-top:8px">
-              <button class="btn primary" type="button" onclick="savePayablePayment()">支払を登録</button>
+              <button class="btn primary" type="button" onclick="savePayablePayment()">支払・相殺を登録</button>
               <button class="btn" type="button" onclick="clearPayablePaymentForm()">選択解除</button>
             </div>
             <div class="ar-payment-history" id="ap-payment-history"><div class="sales-empty">買掛締めまたは買掛を選択すると支払履歴を表示します。</div></div>
@@ -1475,6 +1476,8 @@ let advancePurchaseImportMode="detail";
 const advancePurchaseMasterPriceSelections=new Set();
 let payableRows=[];
 let payablePayments=[];
+let payablePaymentSaving=false;
+let payablePaymentAttempt=null;
 let payableClosings=[];
 let payablesLoaded=false;
 let payableClosingDbReady=true;
@@ -9831,6 +9834,7 @@ async function reviewExternalAssignment(id,action){
 }
 function apDbErrorMessage(error){
   const message=String(error?.message||error||"");
+  if(/register_accounts_payable_net_payment|cancel_accounts_payable_payment_group|credit_offset_jpy|accounts_payable_settlements/i.test(message)&&/schema cache|does not exist|not found|column|function/i.test(message))return "買掛相殺用SQLが未反映です。accounts-payable-credit-offset-migration.sql を実行してください。";
   if(/closing_anchor_date|payment_days_after_closing/i.test(message)&&/does not exist|schema cache|not found|column/i.test(message)){
     return "7日間隔締め用SQLが未実行です。accounts-payable-weekly-migration.sql を実行してください。";
   }
@@ -9861,7 +9865,11 @@ function apPayablesForClosing(closing){
   );
 }
 function apClosingCurrentBalance(closing){
-  return arRound(apPayablesForClosing(closing).reduce((sum,row)=>sum+Math.max(0,apRecordState(row).balance),0));
+  return arRound(apPayablesForClosing(closing).reduce((sum,row)=>sum+apRecordState(row).balance,0));
+}
+function apClosingCreditOffset(closing){
+  const balances=apPayablesForClosing(closing).map(row=>apRecordState(row).balance);
+  return arRound(Math.min(balances.reduce((s,b)=>s+Math.max(b,0),0),balances.reduce((s,b)=>s+Math.max(-b,0),0)));
 }
 function apPaymentsForTargetClosing(closingId){
   return payablePayments.filter(payment=>payment.target_closing_id===closingId);
@@ -9894,25 +9902,26 @@ async function apReadSupplierProfiles(){
 function apRecordState(row){
   const amount=arNumber(row.amount_jpy);
   const paid=apPaymentsFor(row.id).reduce((sum,payment)=>sum+arNumber(payment.amount_jpy),0);
-  const balance=arRound(amount-paid);
+  const offset=apPaymentsFor(row.id).reduce((sum,payment)=>sum+arNumber(payment.credit_offset_jpy),0);
+  const balance=arRound(amount-paid-offset);
   const overdue=balance>0&&row.due_date&&row.due_date<today();
   let key="unpaid",label="未払";
-  if(balance<0){key="overpaid";label="過払"}
-  else if(balance===0&&amount!==0){key="paid";label="支払済"}
-  else if(paid>0){key="partial";label="一部支払"}
+  if(balance<0){key=amount<0?"credit":"overpaid";label=amount<0?"赤伝・相殺待ち":"過払"}
+  else if(balance===0&&amount!==0){key="paid";label=offset!==0?(paid?"支払・相殺済":"相殺済"):"支払済"}
+  else if(paid>0||offset!==0){key="partial";label=offset!==0?"一部支払・相殺":"一部支払"}
   if(overdue){key="overdue";label="期限超過"}
-  return {amount,paid,balance,key,label};
+  return {amount,paid,offset,balance,key,label};
 }
 // Tax-exclusive balances are display-only; settlement always uses gross yen.
 function apNetBalance(row,state){
-  const {amount,paid,balance}=state||apRecordState(row);
+  const {amount,paid,balance,offset=0}=state||apRecordState(row);
   if(balance===0)return {net:0,estimated:false,reason:""};
   const rawTax=row.tax_amount_jpy;
   const tax=Number(rawTax);
   const known=rawTax!==null&&rawTax!==undefined&&rawTax!==""&&Number.isFinite(tax)&&(row.source_type==="purchase"||tax!==0);
   if(!known)return {net:null,estimated:false,reason:"税内訳不明"};
   if(!amount||tax*amount<0||Math.abs(tax)>Math.abs(amount)||paid<0||paid>0&&amount<=0||amount>0&&balance<0)return {net:null,estimated:false,reason:"税抜残高を算出できません"};
-  return {net:arRound(balance*(amount-tax)/amount),estimated:paid!==0,reason:""};
+  return {net:arRound(balance*(amount-tax)/amount),estimated:paid!==0||offset!==0,reason:""};
 }
 function apMergeNetBalances(summaries){
   return summaries.reduce((total,item)=>({net:arRound(total.net+item.net),knownCount:total.knownCount+item.knownCount,unknownCount:total.unknownCount+item.unknownCount,estimatedCount:total.estimatedCount+item.estimatedCount}),{net:0,knownCount:0,unknownCount:0,estimatedCount:0});
@@ -9933,10 +9942,10 @@ function apNetBalanceNote(summary){
 function apClosingNetBalance(supplierCode,periodTo){
   const rows=payableRows.filter(row=>apSameSupplier(row.supplier_code,supplierCode)&&String(row.invoice_date||"")<=periodTo);
   const paidById=new Map();
-  payablePayments.filter(payment=>String(payment.payment_date||"")<=periodTo).forEach(payment=>paidById.set(payment.payable_id,(paidById.get(payment.payable_id)||0)+arNumber(payment.amount_jpy)));
+  payablePayments.filter(payment=>String(payment.payment_date||"")<=periodTo).forEach(payment=>paidById.set(payment.payable_id,(paidById.get(payment.payable_id)||0)+arNumber(payment.amount_jpy)+arNumber(payment.credit_offset_jpy)));
   return apNetBalanceSummary(rows,row=>{
     const amount=arNumber(row.amount_jpy),paid=paidById.get(row.id)||0;
-    return {amount,paid,balance:arRound(amount-paid)};
+    return {amount,paid:amount<0?0:paid,offset:amount<0?paid:0,balance:arRound(amount-paid)};
   });
 }
 function apFilteredRows(){
@@ -9951,7 +9960,7 @@ function apFilteredRows(){
     if(range.to&&String(row.invoice_date||"")>range.to)return false;
     if(supplier&&!String(row.supplier_code||"").toLowerCase().includes(supplier)&&!String(row.supplier_name||"").toLowerCase().includes(supplier))return false;
     const state=apRecordState(row);
-    if(status==="open"&&state.balance<=0)return false;
+    if(status==="open"&&state.balance===0)return false;
     if(status&&status!=="open"&&state.key!==status)return false;
     if(search){
       const haystack=[row.invoice_no,row.supplier_code,row.supplier_name,row.memo].join(" ").toLowerCase();
@@ -10007,7 +10016,7 @@ function renderPayables(){
         <td><b>${esc(row.supplier_code||"")}</b>${row.supplier_name?` ${esc(row.supplier_name)}`:""}</td>
         <td>${esc(period)}</td>
         <td class="ar-money">${esc(salesRefMoney(row._state.amount)||"0")}</td>
-        <td class="ar-money">${esc(salesRefMoney(row._state.paid)||"0")}</td>
+        <td class="ar-money">${esc(salesRefMoney(row._state.paid)||"0")}${row._state.offset?`<br><small>相殺 ${esc(salesRefMoney(row._state.offset))}</small>`:""}</td>
         <td class="ar-money">${esc(salesRefMoney(row._state.balance)||"0")}</td>
         <td class="ar-money" title="${esc(net.reason||(net.estimated?"一部支払分は税額を比例按分":"登録済み消費税額から算出"))}">${net.net===null?esc(net.reason):esc(salesRefMoney(net.net)||"0")}</td>
         <td>${esc(row.due_date||"-")}</td>
@@ -10055,6 +10064,7 @@ async function loadPayables(){
     renderPayables();
     renderPayablePaymentHistory();
     refreshPayableClosingGroup();
+    restorePayablePaymentAttempt();
   }catch(error){
     payableRows=[];payablePayments=[];payableClosings=[];payableSupplierProfiles=[];payablesLoaded=false;
     state.textContent=apDbErrorMessage(error);
@@ -10415,9 +10425,9 @@ function renderPayableClosingHistory(){
     const status=row.status==="closed"?"締め済":"解除済";
     const note=row.status==="reopened"?`解除理由: ${row.reopen_reason||"-"}`:`締め日時: ${String(row.closed_at||"").replace("T"," ").slice(0,16)}`;
     const currentBalance=apClosingCurrentBalance(row);
-    const paymentButton=row.status==="closed"&&currentBalance>0
-      ?`<button class="small primary" type="button" onclick="selectPayableClosingForPayment('${esc(row.id)}')">支払</button>`
-      :(row.status==="closed"?'<span class="ar-status paid">支払済</span>':"");
+    const hasOffset=apClosingCreditOffset(row)>0;
+    const paymentButton=row.status==="closed"
+      ?`<button class="small ${currentBalance>0||hasOffset?"primary":""}" type="button" onclick="selectPayableClosingForPayment('${esc(row.id)}')">${currentBalance>0?"支払":hasOffset?"相殺":currentBalance<0?"赤伝残・履歴":"支払済・履歴"}</button>`:"";
     const reopenButton=currentUserIsAdmin()&&row.status==="closed"
       ?`<button class="small danger" type="button" onclick="reopenAccountsPayablePeriod('${esc(row.id)}')">締め解除</button>`:"";
     return `<div class="ar-closing-row ${[row.status==="reopened"?"reopened":"",selectedClosingId===row.id?"selected":""].filter(Boolean).join(" ")}">
@@ -10717,8 +10727,10 @@ async function saveOpeningPayable(){
   finally{setAppBusy(false)}
 }
 function selectPayableForPayment(id){
+  if(payablePaymentAttempt||payablePaymentSaving){alert("処理結果未確認の支払を先に確認してください。");return}
   const row=payableRows.find(item=>item.id===id);
   if(!row)return;
+  if(row.closing_id&&apClosingIsActive(row.closing_id))return selectPayableClosingForPayment(row.closing_id);
   const state=apRecordState(row);
   payablePaymentClosingId="";
   document.getElementById("ap-payment-closing-id").value="";
@@ -10730,6 +10742,7 @@ function selectPayableForPayment(id){
   document.getElementById("ap-payment-amount").focus();
 }
 function selectPayableClosingForPayment(id){
+  if(payablePaymentAttempt||payablePaymentSaving){alert("処理結果未確認の支払を先に確認してください。");return}
   const closing=payableClosings.find(item=>item.id===id&&item.status==="closed");
   if(!closing)return;
   const supplier=lookupSupplierByCode(closing.supplier_code);
@@ -10737,14 +10750,16 @@ function selectPayableClosingForPayment(id){
   payablePaymentClosingId=id;
   document.getElementById("ap-payment-payable-id").value="";
   document.getElementById("ap-payment-closing-id").value=id;
-  document.getElementById("ap-payment-target").textContent=`買掛締め / ${closing.supplier_code} ${supplier?.name||""} / ${closing.period_from} ～ ${closing.period_to} / 支払残 ¥${salesRefMoney(balance)||"0"}`;
-  document.getElementById("ap-payment-amount").value=balance>0?String(balance):"";
+  const offset=apClosingCreditOffset(closing);
+  document.getElementById("ap-payment-target").textContent=`買掛締め / ${closing.supplier_code} ${supplier?.name||""} / ${closing.period_from} ～ ${closing.period_to} / 支払残 ¥${salesRefMoney(Math.max(balance,0))||"0"}${offset?` / 赤伝等相殺 ¥${salesRefMoney(offset)}`:""}${balance<0?` / 翌回繰越の赤伝残 ¥${salesRefMoney(-balance)}`:""}`;
+  document.getElementById("ap-payment-amount").value=balance>0?String(balance):offset?"0":"";
   renderPayables();
   renderPayableClosingHistory();
   renderPayablePaymentHistory();
   document.getElementById("ap-payment-amount").focus();
 }
 function clearPayablePaymentForm(){
+  if(payablePaymentAttempt){alert("処理結果未確認の支払を先に確認してください。");return}
   payablePaymentClosingId="";
   document.getElementById("ap-payment-payable-id").value="";
   document.getElementById("ap-payment-closing-id").value="";
@@ -10755,40 +10770,68 @@ function clearPayablePaymentForm(){
   renderPayableClosingHistory();
   renderPayablePaymentHistory();
 }
+function apPaymentAttemptKey(){return `yumirume-payable-payment:${currentUser?.id||""}`}
+function setPayablePaymentRetry(active){
+  ["ap-payment-date","ap-payment-amount","ap-payment-fee","ap-payment-reference","ap-payment-memo"].forEach(id=>document.getElementById(id).readOnly=active);
+  document.querySelector('[onclick="savePayablePayment()"]')?.replaceChildren(document.createTextNode(active?"支払結果を再確認":"支払・相殺を登録"));
+}
+function restorePayablePaymentAttempt(){
+  if(payablePaymentAttempt||payablePaymentSaving||!currentUser)return;
+  let saved;try{saved=JSON.parse(sessionStorage.getItem(apPaymentAttemptKey())||"null")}catch(e){return}
+  if(!saved?.p_request_id)return;
+  if(payablePayments.some(row=>row.payment_group_id===saved.p_request_id)){sessionStorage.removeItem(apPaymentAttemptKey());return}
+  selectPayableClosingForPayment(saved.p_closing_id);
+  payablePaymentAttempt=saved;setPayablePaymentRetry(true);
+  for(const [id,key] of [["date","p_payment_date"],["amount","p_amount_jpy"],["fee","p_bank_fee_jpy"],["reference","p_reference_no"],["memo","p_memo"]])document.getElementById(`ap-payment-${id}`).value=saved[key]??"";
+}
 async function savePayablePayment(){
+  if(payablePaymentSaving)return;
+  payablePaymentSaving=true;
+  setAppBusy(true,"支払・相殺を登録しています...");
+  try{
   const user=await ensureCurrentUser();
-  if(!user){alert("ログインしてください。");return}
+  if(!user)throw new Error("ログインしてください。");
   const payableId=val("ap-payment-payable-id");
   const closingId=apSelectedPaymentClosingId();
   const row=payableRows.find(item=>item.id===payableId);
   const closing=payableClosings.find(item=>item.id===closingId&&item.status==="closed");
-  const amount=arNumber(val("ap-payment-amount"));
-  const fee=arNumber(val("ap-payment-fee"));
+  const amount=Number(val("ap-payment-amount").normalize("NFKC").replace(/[,\s￥¥]/g,""));
+  const fee=Number(val("ap-payment-fee").normalize("NFKC").replace(/[,\s￥¥]/g,""));
   const paymentDate=val("ap-payment-date");
-  if((!row&&!closing)||!paymentDate||amount<=0||fee<0){alert("対象の買掛締めまたは買掛・支払日・支払額を確認してください。");return}
+  if(!payablePaymentAttempt){
+  if(row&&!closing&&arNumber(row.amount_jpy)<0){alert("赤伝は買掛締めに含めて相殺してください。");return}
+  if((!row&&!closing)||!paymentDate||!val("ap-payment-amount").trim()||!Number.isFinite(amount)||!Number.isFinite(fee)||amount<0||(!closing&&amount===0)||fee<0||(closing&&amount===0&&apClosingCreditOffset(closing)<=0)){alert("対象の買掛締めまたは買掛・支払日・支払額を確認してください。");return}
   const balance=closing?apClosingCurrentBalance(closing):apRecordState(row).balance;
-  if(closing&&amount>balance){alert(`この買掛締めの支払残は ¥${salesRefMoney(balance)||"0"} です。支払額を確認してください。`);return}
+  if(closing&&amount>Math.max(balance,0)){alert(`この買掛締めの支払残は ¥${salesRefMoney(Math.max(balance,0))||"0"} です。支払額を確認してください。`);return}
   if(!closing&&amount>balance&&!confirm(`買掛残 ¥${salesRefMoney(balance)||"0"} を超える支払です。登録しますか？`))return;
-  setAppBusy(true,"支払を登録しています...");
-  try{
+  }
     const referenceNo=val("ap-payment-reference").trim()||null;
     const memo=val("ap-payment-memo").trim()||null;
-    const result=closing
-      ?await initSupabase().rpc("register_accounts_payable_closing_payment",{
+    if(closing&&!payablePaymentAttempt){
+      payablePaymentAttempt={
         p_closing_id:closingId,p_payment_date:paymentDate,p_amount_jpy:amount,p_bank_fee_jpy:fee,
-        p_reference_no:referenceNo,p_memo:memo
-      })
+        p_reference_no:referenceNo,p_memo:memo,p_request_id:crypto.randomUUID()
+      };
+      sessionStorage.setItem(apPaymentAttemptKey(),JSON.stringify(payablePaymentAttempt));
+    }
+    const result=payablePaymentAttempt
+      ?await initSupabase().rpc("register_accounts_payable_net_payment",payablePaymentAttempt)
       :await initSupabase().from("accounts_payable_payments").insert({
         payable_id:payableId,payment_date:paymentDate,amount_jpy:amount,bank_fee_jpy:fee,
         reference_no:referenceNo,memo,created_by:user.id,updated_by:user.id
       });
     const {error}=result;
     if(error)throw error;
+    payablePaymentAttempt=null;sessionStorage.removeItem(apPaymentAttemptKey());setPayablePaymentRetry(false);
     await loadPayables();
     clearPayablePaymentForm();
-    alert(closing?"買掛締めに対する支払を登録しました。":"支払を登録しました。");
-  }catch(error){alert(apDbErrorMessage(error))}
-  finally{setAppBusy(false)}
+    alert(closing?"買掛締めに対する支払・相殺を登録しました。":"支払を登録しました。");
+  }catch(error){
+    if(!payablePaymentAttempt||error?.code&&/^(P0001|P0002|22|23|42|PGRST)/.test(error.code)){
+      payablePaymentAttempt=null;sessionStorage.removeItem(apPaymentAttemptKey());setPayablePaymentRetry(false);alert(apDbErrorMessage(error));
+    }else{setPayablePaymentRetry(true);alert("支払結果を確認できません。「支払結果を再確認」を押してください。同じ受付番号で確認し、二重登録を防ぎます。")}
+  }
+  finally{payablePaymentSaving=false;setAppBusy(false)}
 }
 function renderPayablePaymentHistory(){
   const box=document.getElementById("ap-payment-history");
@@ -10810,9 +10853,10 @@ function renderPayablePaymentHistory(){
         const first=payments[0];
         const amount=payments.reduce((sum,payment)=>sum+arNumber(payment.amount_jpy),0);
         const fee=payments.reduce((sum,payment)=>sum+arNumber(payment.bank_fee_jpy),0);
+        const offset=payments.reduce((sum,payment)=>sum+Math.max(0,arNumber(payment.credit_offset_jpy)),0);
         const locked=payments.some(payment=>apClosingIsActive(payment.closing_id));
         const action=locked?'<span class="ar-lock">締め済</span>':(currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deletePayablePaymentGroup('${esc(groupId)}')">削除</button>`:"<span></span>");
-        return `<div class="ar-payment-row"><span>${esc(first.payment_date||"")}</span><span class="ar-money">¥${esc(salesRefMoney(amount)||"0")}</span><span>手数料 ¥${esc(salesRefMoney(fee)||"0")}</span><span>${esc(first.reference_no||first.memo||"-")}</span>${action}</div>`;
+        return `<div class="ar-payment-row"><span>${esc(first.payment_date||"")}</span><span class="ar-money">支払 ¥${esc(salesRefMoney(amount)||"0")}${offset?` / 相殺 ¥${esc(salesRefMoney(offset))}`:""}</span><span>手数料 ¥${esc(salesRefMoney(fee)||"0")}</span><span>${esc(first.reference_no||first.memo||"-")}</span>${action}</div>`;
       }).join("");
     return;
   }
@@ -10822,24 +10866,27 @@ function renderPayablePaymentHistory(){
   box.innerHTML=rows.map(payment=>{
     const locked=apClosingIsActive(payment.closing_id);
     const action=locked?'<span class="ar-lock">締め済</span>':(currentUserIsAdmin()?`<button class="small danger" type="button" onclick="deletePayablePayment('${esc(payment.id)}')">削除</button>`:"<span></span>");
-    return `<div class="ar-payment-row"><span>${esc(payment.payment_date||"")}</span><span class="ar-money">¥${esc(salesRefMoney(payment.amount_jpy)||"0")}</span><span>手数料 ¥${esc(salesRefMoney(payment.bank_fee_jpy)||"0")}</span><span>${esc(payment.reference_no||payment.memo||"-")}</span>${action}</div>`;
+    return `<div class="ar-payment-row"><span>${esc(payment.payment_date||"")}</span><span class="ar-money">${arNumber(payment.credit_offset_jpy)?`相殺 ¥${esc(salesRefMoney(payment.credit_offset_jpy))}`:`支払 ¥${esc(salesRefMoney(payment.amount_jpy)||"0")}`}</span><span>手数料 ¥${esc(salesRefMoney(payment.bank_fee_jpy)||"0")}</span><span>${esc(payment.reference_no||payment.memo||"-")}</span>${action}</div>`;
   }).join("");
 }
 async function deletePayablePaymentGroup(groupId){
+  if(payablePaymentAttempt||payablePaymentSaving){alert("処理結果未確認の支払を先に確認してください。");return}
   if(!currentUserIsAdmin()){alert("支払を削除できるのは管理者のみです。");return}
   const rows=payablePayments.filter(payment=>payment.payment_group_id===groupId);
   if(!rows.length)return;
   if(rows.some(payment=>apClosingIsActive(payment.closing_id))){alert("次の買掛締めに含まれた支払は削除できません。先に該当する締めを解除してください。");return}
-  if(!confirm("この締めに対する支払登録を削除しますか？"))return;
-  const {error}=await initSupabase().from("accounts_payable_payments").delete().in("id",rows.map(row=>row.id));
+  if(!confirm("この支払と、同時に登録した赤伝等の相殺をすべて取り消しますか？"))return;
+  const {error}=await initSupabase().rpc("cancel_accounts_payable_payment_group",{p_group_id:groupId});
   if(error){alert(apDbErrorMessage(error));return}
   const closingId=apSelectedPaymentClosingId();
   await loadPayables();
   if(closingId)selectPayableClosingForPayment(closingId);
 }
 async function deletePayablePayment(id){
+  if(payablePaymentAttempt||payablePaymentSaving){alert("処理結果未確認の支払を先に確認してください。");return}
   if(!currentUserIsAdmin()){alert("支払を削除できるのは管理者のみです。");return}
   const payment=payablePayments.find(row=>row.id===id);
+  if(payment?.payment_group_id)return deletePayablePaymentGroup(payment.payment_group_id);
   if(apClosingIsActive(payment?.closing_id)){alert("買掛締め済みの支払は削除できません。先に締め解除してください。");return}
   if(!confirm("この支払履歴を削除しますか？"))return;
   const {error}=await initSupabase().from("accounts_payable_payments").delete().eq("id",id);
@@ -17379,7 +17426,7 @@ setTimeout(()=>{
 <script src="./unit-price-analysis-core.js?v=20260918-1"></script>
 <script src="./unit-price-analysis.js?v=20260918-3"></script>
 <link rel="stylesheet" href="./accounting-period-report.css?v=20261001-1">
-<script src="./accounting-period-report.js?v=20261001-1"></script>
-<script src="./accounting-period-report-app.js?v=20261001-1"></script>
+<script src="./accounting-period-report.js?v=20261023-ap-offset"></script>
+<script src="./accounting-period-report-app.js?v=20261023-ap-offset"></script>
 </body>
 </html>

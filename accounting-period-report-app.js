@@ -47,15 +47,15 @@
       const taxKnown=isAr||(row.tax_amount_jpy!==null&&row.tax_amount_jpy!==undefined&&row.tax_amount_jpy!==''&&(row.source_type==='purchase'||Number(row.tax_amount_jpy)!==0));
       return {id:row.id,key:identity.key,code:identity.code,name:identity.name,date:row.invoice_date,amount:row.amount_jpy,tax:isAr?0:row.tax_amount_jpy,taxKnown,adjustment:row.adjustment_amount_jpy,sourceType:row.source_type,reference:row.invoice_no||'',description:[isAr?arSourceLabel(row.source_type):apSourceLabel(row.source_type),row.memo].filter(Boolean).join(' / ')};
     });
-    const payments=(isAr?receivablePayments:payablePayments).map(p=>({id:p.id,recordId:isAr?p.receivable_id:p.payable_id,date:p.payment_date,cash:p.amount_jpy,fee:p.bank_fee_jpy,reference:p.reference_no,description:[p.memo,arNumber(p.bank_fee_jpy)?`${isAr?'手数料消込':'振込手数料（外数）'} ${accountingReportMoney(p.bank_fee_jpy)}`:''].filter(Boolean).join(' / ')}));
+    const payments=(isAr?receivablePayments:payablePayments).map(p=>({id:p.id,recordId:isAr?p.receivable_id:p.payable_id,date:p.payment_date,cash:p.amount_jpy,fee:p.bank_fee_jpy,offset:isAr?0:p.credit_offset_jpy,reference:p.reference_no,description:[p.memo,arNumber(p.bank_fee_jpy)?`${isAr?'手数料消込':'振込手数料（外数）'} ${accountingReportMoney(p.bank_fee_jpy)}`:''].filter(Boolean).join(' / ')}));
     const report=AccountingPeriodReport.build({records,payments,range,kind});
     if(!isAr){
       const paid=new Map();
-      for(const p of payablePayments)if(String(p.payment_date||'').slice(0,10)<=range.to)paid.set(p.payable_id,(paid.get(p.payable_id)||0)+arNumber(p.amount_jpy));
+      for(const p of payablePayments)if(String(p.payment_date||'').slice(0,10)<=range.to)paid.set(p.payable_id,(paid.get(p.payable_id)||0)+arNumber(p.amount_jpy)+arNumber(p.credit_offset_jpy));
       const byId=new Map(sourceRows.map(row=>[row.id,row]));
       for(const item of report.items)item.netBalance=apNetBalanceSummary(item.records.map(row=>byId.get(row.id)),row=>{
         const amount=String(row.invoice_date||'')<=range.to?arNumber(row.amount_jpy):0,settled=paid.get(row.id)||0;
-        return {amount,paid:settled,balance:arRound(amount-settled)};
+        return {amount,paid:amount<0?0:settled,offset:amount<0?settled:0,balance:arRound(amount-settled)};
       });
       report.totals.netBalance=apMergeNetBalances(report.items.map(item=>item.netBalance));
     }

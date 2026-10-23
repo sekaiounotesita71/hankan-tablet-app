@@ -48,7 +48,7 @@ assert.match(html, /function apSelectedPaymentClosingId\(\)/);
 assert.match(html, /payablePaymentClosingId=id/);
 assert.match(html, /const closingId=apSelectedPaymentClosingId\(\)/);
 assert.match(html, /function apClosingCurrentBalance\(closing\)/);
-assert.match(html, /rpc\("register_accounts_payable_closing_payment"/);
+assert.match(html, /rpc\("register_accounts_payable_net_payment"/);
 assert.match(html, /function deletePayablePaymentGroup\(groupId\)/);
 
 assert.match(sql, /create table if not exists public\.accounts_payable_closings/);
