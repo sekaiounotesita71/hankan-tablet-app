@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const PurchaseTaxDisplay = require("../purchase-tax-display.js");
 
 const root = path.resolve(__dirname, "..");
 const app = fs.readFileSync(path.join(root, "order-entry-beta.html"), "utf8");
@@ -16,8 +17,10 @@ assert.equal(sandbox.purchaseJpyAmount(98363.2), 98363);
 assert.equal(sandbox.purchaseJpyAmount(100.5), 101);
 assert.equal(sandbox.purchaseJpyAmount(-100.5), -101);
 
-assert.match(app, /const amount=purchaseJpyAmount\(qty\*price\)/, "仕入入力は明細ごとに1円単位へ丸めること");
-assert.match(app, /line\.line_amount=purchaseJpyAmount\(Number\(line\.actual_qty\|\|0\)\*Number\(line\.unit_price\|\|0\)\)/, "仕入修正も同じ丸め規則を使うこと");
+assert.match(app, /const amount=PurchaseTaxDisplay\.lineNet\(qty,price\)/, "仕入入力は明細ごとに正確に1円単位へ丸めること");
+assert.match(app, /line\.line_amount=PurchaseTaxDisplay\.lineNet\(line\.actual_qty\|\|0,line\.unit_price\|\|0\)/, "仕入修正も同じ丸め規則を使うこと");
+assert.equal(PurchaseTaxDisplay.lineNet(1.13,3050),3447);
+assert.equal(PurchaseTaxDisplay.lineNet(-1.13,3050),-3447);
 assert.match(app, /"税抜金額":purchaseJpyAmount\(line\.line_amount\)/, "仕入Excelは丸め済み明細金額を出力すること");
 
 assert.match(migration, /trg_normalize_purchase_receipt_line_jpy_amount/, "仕入明細のDB丸めトリガーを追加すること");

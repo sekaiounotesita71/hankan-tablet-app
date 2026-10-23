@@ -4,6 +4,7 @@ const path=require("node:path");
 const vm=require("node:vm");
 const test=require("node:test");
 const PurchaseCostScope=require("../purchase-cost-scope.js");
+const PurchaseTaxDisplay=require("../purchase-tax-display.js");
 const html=fs.readFileSync(path.join(__dirname,"..","order-entry-beta.html"),"utf8");
 const importers=[{code:"01",name:"DIM",aliases:["DIM FZ"]},{code:"03",name:"FBI"},{code:"07",name:"JKT"},{code:"09",name:"Inactive",is_active:false}];
 
@@ -18,7 +19,8 @@ function fixture(overrides={}){
   const elements=new Map(),alerts=[],calls=[];
   let sequence=0;
   const ctx={
-    PurchaseCostScope,getMasters:()=>({importers}),newAppUuid:()=>`row-${++sequence}`,
+    PurchaseCostScope,PurchaseTaxDisplay,getMasters:()=>({importers}),newAppUuid:()=>`row-${++sequence}`,
+    salesRefMoney:value=>Number(value).toLocaleString("ja-JP",{maximumFractionDigits:2}),
     esc:value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char])),
     dbNumber:value=>value===undefined||value===null||String(value).trim()===""?null:Number(value),
     salesRefBuildImporterIndex:()=>({}),
@@ -40,6 +42,7 @@ function fixture(overrides={}){
     ...overrides
   };
   vm.createContext(ctx);
+  vm.runInContext(source("function purchaseMoneyPairHtml(","function salesRefGrossBoxKey("),ctx);
   vm.runInContext(html.match(/function blankAdvancePurchaseRow\(\)\{[^\n]+/)[0],ctx);
   vm.runInContext(source("function purchaseCostScopeImporters(","function advancePurchaseRowActive("),ctx);
   vm.runInContext(source("function advancePurchaseRowActive(","function advancePurchaseAmount("),ctx);
@@ -281,7 +284,7 @@ test("confirmed receipt retains financial locks but permits only server-approved
     purchaseJpyAmount:Number,siteNameFromCode:value=>value,purchaseReceiptTypeLabel:()=>"直接入力",purchaseStatusLabel:()=>"確定済み"
   });
   vm.runInContext(source("function purchaseReceiptCardHtml(","function renderPurchaseReceipts("),ctx);
-  const line={id:"line",product_code:"1198",product_name:"Product",actual_qty:2.5,unit_price:1200,line_amount:3000,cost_scope:"shared",cost_scope_editable:true};
+  const line={id:"line",product_code:"1198",product_name:"Product",actual_qty:2.5,unit_price:1200,tax_rate:8,line_amount:3000,cost_scope:"shared",cost_scope_editable:true};
   const markup=ctx.purchaseReceiptCardHtml({id:"receipt",status:"confirmed",total_amount:3240,lines:[line]});
   assert.match(markup,/value="1200" disabled onchange="savePurchaseLineField/);
   assert.match(markup,/value="2.5" disabled onchange="savePurchaseLineField/);

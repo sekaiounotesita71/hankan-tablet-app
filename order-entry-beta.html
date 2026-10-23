@@ -11,6 +11,7 @@
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./reference-sites.js?v=20260928-1"></script>
 <script src="./purchase-cost-scope.js?v=20261023-1"></script>
+<script src="./purchase-tax-display.js?v=20261023-1"></script>
 <script src="./supplier-work-profile.js?v=20260924-2" defer></script>
 <script src="./supplier-work-profile-app.js?v=20260924-2" defer></script>
 <link rel="stylesheet" href="./supplier-work-profile.css?v=20260924-2">
@@ -86,6 +87,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 @media(max-width:900px){.sales-board-tools.sales-supplier-tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.sales-board-tools.sales-supplier-tools{grid-template-columns:minmax(0,1fr)}.sales-supplier-tools .sales-filter-actions{flex-wrap:wrap}}
 .advance-entry-table .source-dates{min-width:108px;font-variant-numeric:tabular-nums;line-height:1.5}.advance-source-dates summary{cursor:pointer}.advance-source-dates small{color:var(--muted)}.advance-source-date-list{display:grid;gap:2px;max-height:180px;overflow:auto;margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
+.purchase-money-pair{display:grid;gap:3px;min-width:135px;font-family:Consolas,monospace;font-size:12px;line-height:17px}.purchase-money-pair>span{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.purchase-money-pair small{font-family:Meiryo,sans-serif;font-size:10px;font-weight:700;color:var(--muted)}.purchase-unit-gross{display:block;max-width:145px;margin-top:3px;color:var(--muted);font-size:10px;font-weight:600;line-height:15px;white-space:normal;overflow-wrap:anywhere}.purchase-tax-totals>summary{grid-template-columns:105px 90px minmax(170px,1fr) 130px 120px 165px auto}.purchase-tax-adjustment{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px;font-weight:700}
 </style>
 <link rel="stylesheet" href="./app-nav.css?v=20260828-2">
 </head>
@@ -750,7 +752,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
       <div class="advance-entry-summary" id="advance-purchase-summary"></div>
       <div class="advance-entry-table-wrap">
         <table class="advance-entry-table">
-          <thead><tr><th>No.</th><th>引用元日付</th><th>商品コード</th><th>商品名</th><th>輸入社・仕入区分</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th><th>マスタ候補</th><th></th></tr></thead>
+          <thead><tr><th>No.</th><th>引用元日付</th><th>商品コード</th><th>商品名</th><th>輸入社・仕入区分</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価（税抜）</th><th>単価単位</th><th>税率</th><th>金額（税抜／税込）</th><th>明細メモ</th><th>マスタ候補</th><th></th></tr></thead>
           <tbody id="advance-purchase-body"></tbody>
         </table>
       </div>
@@ -3111,6 +3113,19 @@ function salesRefJpyAmount(value){
 }
 function purchaseJpyAmount(value){
   return salesRefJpyAmount(value);
+}
+function purchaseMoneyPairHtml(net,gross,grossLabel="税込"){
+  return `<span class="purchase-money-pair"><span><small>税抜</small><strong>¥${esc(salesRefMoney(net))}</strong></span><span><small>${esc(grossLabel)}</small><strong>¥${esc(salesRefMoney(gross))}</strong></span></span>`;
+}
+function purchaseUnitGrossHtml(value,rate){
+  const price=dbNumber(value);
+  return `<small class="purchase-unit-gross">税込目安 ${price===null?"-":`¥${esc(salesRefMoney(PurchaseTaxDisplay.unitGross(price,Number(rate??8))))}`}</small>`;
+}
+function purchaseReceiptTaxAdjustmentHtml(amounts){
+  const parts=[];
+  if(amounts.taxDifference)parts.push(`伝票税額差 ¥${salesRefMoney(amounts.taxDifference)}`);
+  if(amounts.netDifference)parts.push(`明細差額（税抜） ¥${salesRefMoney(amounts.netDifference)}`);
+  return parts.length?`<div class="purchase-tax-adjustment">${parts.map(text=>`<span>${esc(text)}</span>`).join("")}</div>`:"";
 }
 function salesRefGrossBoxKey(row={}){
   const boxNo=salesRefText(row.box_no).normalize("NFKC").trim();
@@ -11136,27 +11151,46 @@ async function loadPurchaseReceipts(){
   }
 }
 function purchaseReceiptCardHtml(receipt){
+    const amounts=PurchaseTaxDisplay.receipt(receipt);
     const locked=receipt.status==="confirmed";
     const disabled=locked?"disabled":"";
     const taxAmountDisabled=locked||!receipt.tax_override?"disabled":"";
-    const lines=receipt.lines.map(line=>`<tr>
+    const lines=receipt.lines.map((line,index)=>`<tr>
       <td><input class="purchase-product-code ime-en" value="${esc(line.product_code||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','product_code',this.value)"></td>
       <td><input class="purchase-product-name ime-ja" value="${esc(line.product_name||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','product_name',this.value)"></td>
       <td>${purchaseLineCostScopeSelectHtml(line)}</td>
       <td><input value="${esc(line.origin||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','origin',this.value)"></td>
       <td><input class="ops-money" inputmode="decimal" value="${esc(line.actual_qty??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_qty',this.value)"></td>
       <td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','actual_unit',this.value)">${purchaseUnitOptions(line.actual_unit)}</select></td>
-      <td><input class="ops-money" inputmode="decimal" value="${esc(line.unit_price??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','unit_price',this.value)"></td>
+      <td><input class="ops-money" inputmode="decimal" aria-label="仕入単価（税抜）" value="${esc(line.unit_price??"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','unit_price',this.value)">${purchaseUnitGrossHtml(line.unit_price,line.tax_rate)}</td>
       <td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','price_unit',this.value)">${purchaseUnitOptions(line.price_unit)}</select></td>
       <td><select ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','tax_rate',this.value)">${purchaseTaxRateOptions(line.tax_rate)}</select></td>
-      <td class="ops-money">${purchaseJpyAmount(line.line_amount).toLocaleString("ja-JP")}</td>
+      <td class="ops-money">${purchaseMoneyPairHtml(amounts.lines[index].net,amounts.lines[index].gross,amounts.taxDifference?"税込参考":"税込")}</td>
       <td><input class="purchase-line-note ime-ja" value="${esc(line.note||"")}" ${disabled} onchange="savePurchaseLineField('${esc(line.id)}','note',this.value)"></td>
     </tr>`).join("");
     const correctionNote=receipt.correction_unlocked?`<div class="purchase-correction-note">修正中：${esc(receipt.last_correction_reason||"理由記録あり")}　修正後は必ず「修正を再確定」を押してください。</div>`:"";
     const action=locked
       ?(currentUserIsAdmin()?`<button class="btn danger" type="button" onclick="unlockPurchaseReceiptForCorrection('${esc(receipt.id)}')">修正解除</button>`:`<span class="pill">確定済み</span>`)
       :`<button class="btn primary" type="button" onclick="confirmPurchaseReceipt('${esc(receipt.id)}')">${receipt.correction_unlocked?"修正を再確定":"仕入確定"}</button>`;
-    return `<details class="purchase-receipt"><summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(purchaseReceiptTypeLabel(receipt))}</span><span>${esc(purchaseStatusLabel(receipt.status,receipt))}</span><span class="ops-money">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</span><span></span></summary><div class="purchase-detail"><div class="purchase-detail-grid">${correctionNote}<label>仕入日<input type="date" value="${esc(receipt.purchase_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','purchase_date',this.value)"></label><label>拠点<select ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','site_code',this.value)">${purchaseSiteOptions(receipt.site_code)}</select></label><label>仕入先コード<input class="ime-en" list="supplier-code-list" value="${esc(receipt.supplier_code||"")}" ${disabled} onchange="savePurchaseSupplier('${esc(receipt.id)}',this.value)"></label><label>仕入先名<div class="site-readonly">${esc(receipt.supplier_name_snapshot||"")}</div></label><label>管理番号<div class="site-readonly">${esc(receipt.supplier_invoice_no||"自動採番待ち")}</div></label><label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label><label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label><label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label><label>税計算<select ${disabled} onchange="savePurchaseTaxMode('${esc(receipt.id)}',this.value)"><option value="auto" ${receipt.tax_override?"":"selected"}>税率から自動</option><option value="manual" ${receipt.tax_override?"selected":""}>税額を手入力</option></select></label><label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${taxAmountDisabled} onchange="savePurchaseTaxAmount('${esc(receipt.id)}',this.value)"></label><label>合計<div class="site-readonly">¥${purchaseJpyAmount(receipt.total_amount).toLocaleString("ja-JP")}</div></label><label class="wide">照合メモ<input class="ime-ja" value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label><div class="actions" style="align-items:end">${action}</div></div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>輸入社・仕入区分</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価</th><th>単価単位</th><th>税率</th><th>税抜金額</th><th>明細メモ</th></tr></thead><tbody>${lines||'<tr><td colspan="11">明細なし</td></tr>'}</tbody></table></div></div></details>`;
+    return `<details class="purchase-receipt purchase-tax-totals">
+      <summary><span>${esc(receipt.purchase_date)}</span><span>${esc(siteNameFromCode(receipt.site_code))}</span><span>${esc(receipt.supplier_code)} ${esc(receipt.supplier_name_snapshot||"")}</span><span>${esc(purchaseReceiptTypeLabel(receipt))}</span><span>${esc(purchaseStatusLabel(receipt.status,receipt))}</span><span class="ops-money">${purchaseMoneyPairHtml(amounts.netTotal,amounts.grossTotal)}</span><span></span></summary>
+      <div class="purchase-detail"><div class="purchase-detail-grid">${correctionNote}${purchaseReceiptTaxAdjustmentHtml(amounts)}
+        <label>仕入日<input type="date" value="${esc(receipt.purchase_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','purchase_date',this.value)"></label>
+        <label>拠点<select ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','site_code',this.value)">${purchaseSiteOptions(receipt.site_code)}</select></label>
+        <label>仕入先コード<input class="ime-en" list="supplier-code-list" value="${esc(receipt.supplier_code||"")}" ${disabled} onchange="savePurchaseSupplier('${esc(receipt.id)}',this.value)"></label>
+        <label>仕入先名<div class="site-readonly">${esc(receipt.supplier_name_snapshot||"")}</div></label>
+        <label>管理番号<div class="site-readonly">${esc(receipt.supplier_invoice_no||"自動採番待ち")}</div></label>
+        <label>請求書日<input type="date" value="${esc(receipt.invoice_date||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','invoice_date',this.value)"></label>
+        <label>送料（税抜）<input inputmode="decimal" value="${esc(receipt.shipping_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','shipping_fee',this.value)"></label>
+        <label>その他費用（税抜）<input inputmode="decimal" value="${esc(receipt.other_fee??0)}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','other_fee',this.value)"></label>
+        <label>税計算<select ${disabled} onchange="savePurchaseTaxMode('${esc(receipt.id)}',this.value)"><option value="auto" ${receipt.tax_override?"":"selected"}>税率から自動</option><option value="manual" ${receipt.tax_override?"selected":""}>税額を手入力</option></select></label>
+        <label>消費税<input inputmode="decimal" value="${esc(receipt.tax_amount??0)}" ${taxAmountDisabled} onchange="savePurchaseTaxAmount('${esc(receipt.id)}',this.value)"></label>
+        <label>税抜合計<div class="site-readonly">¥${esc(salesRefMoney(amounts.netTotal))}</div></label>
+        <label>税込合計<div class="site-readonly">¥${esc(salesRefMoney(amounts.grossTotal))}</div></label>
+        <label class="wide">照合メモ<input class="ime-ja" value="${esc(receipt.note||"")}" ${disabled} onchange="savePurchaseReceiptField('${esc(receipt.id)}','note',this.value)"></label>
+        <div class="actions" style="align-items:end">${action}</div>
+      </div><div class="table-wrap"><table class="purchase-detail-table"><thead><tr><th>商品コード</th><th>商品名</th><th>輸入社・仕入区分</th><th>産地</th><th>数量</th><th>単位</th><th>仕入単価（税抜）</th><th>単価単位</th><th>税率</th><th>金額（税抜／税込）</th><th>明細メモ</th></tr></thead><tbody>${lines||'<tr><td colspan="11">明細なし</td></tr>'}</tbody></table></div></div>
+    </details>`;
 }
 function renderPurchaseReceipts(){
   const box=document.getElementById("purchase-receipt-list");
@@ -11194,6 +11228,19 @@ function renderPurchaseReceipts(){
   const pageRows=rows.slice(start,start+PURCHASE_REFERENCE_PAGE_SIZE);
   box.innerHTML=`<div class="purchase-pagebar"><span>${rows.length.toLocaleString("ja-JP")}伝票 / ${purchaseReferencePage} / ${totalPages}ページ</span><span class="purchase-pagebar-actions"><button class="small" type="button" onclick="purchaseRefChangePage(-1)" ${purchaseReferencePage<=1?"disabled":""}>前へ</button><button class="small" type="button" onclick="purchaseRefChangePage(1)" ${purchaseReferencePage>=totalPages?"disabled":""}>次へ</button></span></div>${pageRows.map(purchaseReceiptCardHtml).join("")}`;
 }
+function purchaseReferenceExcelDetailRows(rows){
+  return rows.flatMap(receipt=>{
+    const amounts=PurchaseTaxDisplay.receipt(receipt);
+    return (receipt.lines||[]).map((line,index)=>({
+      "仕入日":receipt.purchase_date,"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,
+      "商品コード":line.product_code||"","商品名":line.product_name||"","産地":line.origin||"","数量":line.actual_qty??"","単位":line.actual_unit||"",
+      "仕入単価":line.unit_price??"","仕入単価（税込目安）":line.unit_price===null||line.unit_price===undefined?"":PurchaseTaxDisplay.unitGross(line.unit_price,Number(line.tax_rate??8)),
+      "単価単位":line.price_unit||"","税率":line.tax_rate??"","税抜金額":purchaseJpyAmount(line.line_amount),
+      "消費税（明細配分）":amounts.lines[index].tax,"税込金額（税率計算）":amounts.lines[index].gross,
+      "伝票税額差あり":amounts.taxDifference?"あり":"","明細メモ":line.note||""
+    }));
+  });
+}
 function exportPurchaseReferenceExcel(){
   if(typeof XLSX==="undefined"){alert("Excel出力ライブラリを読み込めませんでした。");return}
   const rows=purchaseRefFilteredReceipts();
@@ -11218,7 +11265,7 @@ function exportPurchaseReferenceExcel(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(purchaseRefGroupLines(rows,line=>`${line.product_code||""} ${line.product_name||""}`.trim()).map(row=>({"商品":row.key,"税抜明細金額":row.amount,"明細件数":row.count,"数量（単位別）":Object.entries(row.quantityByUnit).map(([unit,qty])=>`${qty.toLocaleString("ja-JP")} ${unit}`).join(" / ")}))),"商品別");
   if(analysis)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(analysis.monthly.map(row=>({"月":row.month,"税込仕入":row.current,"前年同月":row.previous,"前年差":row.delta,"昨対%":row.ratio,"伝票件数":row.count,"前年伝票件数":row.previousCount}))),"月別昨対");
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.map(receipt=>({"仕入日":receipt.purchase_date,"拠点":siteNameFromCode(receipt.site_code),"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,"区分":purchaseReceiptTypeLabel(receipt),"状態":purchaseStatusLabel(receipt.status,receipt),"税抜仕入":purchaseJpyAmount(receipt.subtotal),"送料":purchaseJpyAmount(receipt.shipping_fee),"その他費用":purchaseJpyAmount(receipt.other_fee),"消費税":purchaseJpyAmount(receipt.tax_amount),"税込仕入":purchaseJpyAmount(receipt.total_amount),"メモ":receipt.note||""}))),"仕入伝票");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.flatMap(receipt=>(receipt.lines||[]).map(line=>({"仕入日":receipt.purchase_date,"仕入先コード":receipt.supplier_code,"仕入先名":receipt.supplier_name_snapshot,"管理番号":receipt.supplier_invoice_no,"商品コード":line.product_code||"","商品名":line.product_name||"","産地":line.origin||"","数量":line.actual_qty??"","単位":line.actual_unit||"","仕入単価":line.unit_price??"","単価単位":line.price_unit||"","税率":line.tax_rate??"","税抜金額":purchaseJpyAmount(line.line_amount),"明細メモ":line.note||""})))),"仕入明細");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(purchaseReferenceExcelDetailRows(rows)),"仕入明細");
   const stamp=new Date().toISOString().slice(0,10).replace(/-/g,"");
   XLSX.writeFile(wb,`purchase_reference_${stamp}.xlsx`);
 }
@@ -11255,7 +11302,7 @@ async function savePurchaseSupplier(id,value){
 }
 async function savePurchaseLineField(id,field,value){
   let receipt=null,line=null;for(const row of purchaseReceipts){const found=row.lines.find(item=>item.id===id);if(found){receipt=row;line=found;break}}
-  if(!line||receipt.status==="confirmed")return;const numeric=["actual_qty","unit_price","tax_rate"].includes(field);line[field]=numeric?dbNumber(value):(String(value||"").trim()||null);line.line_amount=purchaseJpyAmount(Number(line.actual_qty||0)*Number(line.unit_price||0));
+  if(!line||receipt.status==="confirmed")return;const numeric=["actual_qty","unit_price","tax_rate"].includes(field);line[field]=numeric?dbNumber(value):(String(value||"").trim()||null);line.line_amount=PurchaseTaxDisplay.lineNet(line.actual_qty||0,line.unit_price||0);
   const {error}=await supabaseClient.from("purchase_receipt_lines").update({[field]:line[field],line_amount:line.line_amount}).eq("id",id);if(error){alert(sitePartnerDbError(error));return}
   const headerResult=await supabaseClient.from("purchase_receipts").select("subtotal,tax_amount,tax_override,total_amount").eq("id",receipt.id).single();if(headerResult.error){alert(sitePartnerDbError(headerResult.error));return}Object.assign(receipt,headerResult.data||{});renderPurchaseReceipts();
 }
@@ -11372,20 +11419,15 @@ function advancePurchaseAmount(row){
   const qty=dbNumber(row.actualQty);
   const price=dbNumber(row.unitPrice);
   if(qty===null||price===null)return 0;
-  const amount=purchaseJpyAmount(qty*price);
+  const amount=PurchaseTaxDisplay.lineNet(qty,price);
   return advancePurchaseIsCreditNote()?-Math.abs(amount):amount;
 }
 function advancePurchaseIsCreditNote(){return val("advance-purchase-entry-type")==="credit_note"}
 function advancePurchaseTaxAmount(rows=advancePurchaseActiveRows()){
-  const bases=new Map([[0,0],[8,0],[10,0]]);
-  rows.forEach(row=>{
-    const rate=Number(row.taxRate??8);
-    if(bases.has(rate))bases.set(rate,bases.get(rate)+advancePurchaseAmount(row));
-  });
-  return [...bases].reduce((sum,[rate,amount])=>{
-    const rawTax=amount*rate/100;
-    return sum+(rawTax>=0?Math.floor(rawTax):Math.ceil(rawTax));
-  },0);
+  return advancePurchaseTaxAmounts(rows).tax;
+}
+function advancePurchaseTaxAmounts(rows=advancePurchaseRows){
+  return PurchaseTaxDisplay.allocate(rows.map(row=>({net:advancePurchaseAmount(row),taxRate:Number(row.taxRate??8)})));
 }
 function advancePurchaseMasterProduct(row,products=getMasters().products){
   const code=masterCodeKey(row?.productCode);
@@ -11829,6 +11871,22 @@ function updateAdvancePurchaseSummary(){
   const taxAmount=advancePurchaseTaxAmount(rows);
   const box=document.getElementById("advance-purchase-summary");
   if(box)box.innerHTML=`<span class="pill">明細 ${rows.length}件</span><span class="pill blue">税抜小計 ¥${Number(subtotal).toLocaleString("ja-JP")}</span><span class="pill">消費税 ¥${Number(taxAmount).toLocaleString("ja-JP")}</span><span class="pill blue">税込合計 ¥${Number(subtotal+taxAmount).toLocaleString("ja-JP")}</span>`;
+  updateAdvancePurchaseTaxDisplays();
+}
+function updateAdvancePurchaseTaxDisplays(){
+  const amounts=advancePurchaseTaxAmounts();
+  document.querySelectorAll("[data-advance-amount]").forEach(cell=>{
+    const amount=amounts.lines[Number(cell.dataset.advanceAmount)];
+    if(!amount)return;
+    const html=purchaseMoneyPairHtml(amount.net,amount.gross);
+    if(cell.innerHTML!==html)cell.innerHTML=html;
+  });
+  document.querySelectorAll("[data-advance-unit-gross]").forEach(cell=>{
+    const row=advancePurchaseRows[Number(cell.dataset.advanceUnitGross)];
+    if(!row)return;
+    const html=purchaseUnitGrossHtml(row.unitPrice,row.taxRate);
+    if(cell.innerHTML!==html)cell.innerHTML=html;
+  });
 }
 function advancePurchaseSourceDatesHtml(row){
   const ids=[...new Set(Array.isArray(row.sourceSalesIds)?row.sourceSalesIds:[])];
@@ -11884,6 +11942,7 @@ function renderAdvancePurchaseRows(){
   [...advancePurchaseMasterPriceSelections].forEach(id=>{if(!currentIds.has(id))advancePurchaseMasterPriceSelections.delete(id)});
   const body=document.getElementById("advance-purchase-body");
   if(!body)return;
+  const amounts=advancePurchaseTaxAmounts();
   body.innerHTML=advancePurchaseRows.map((row,index)=>`<tr data-advance-row="${index}" class="${[row.invalid?"invalid":"",advancePurchaseMasterPriceSelections.has(row.id)?"advance-master-selected":""].filter(Boolean).join(" ")}">
     <td>${index+1}</td>
     <td class="source-dates" data-advance-source-dates="${index}">${advancePurchaseSourceDatesHtml(row)}</td>
@@ -11893,10 +11952,10 @@ function renderAdvancePurchaseRows(){
     <td><input class="origin ime-en" lang="en" autocapitalize="none" autocomplete="off" data-advance-input data-advance-row-index="${index}" data-advance-field="origin" value="${esc(row.origin)}" oninput="setAdvancePurchaseRow(${index},'origin',this.value)"></td>
     <td><input class="quantity" inputmode="decimal" data-advance-input data-advance-row-index="${index}" data-advance-field="actualQty" value="${esc(row.actualQty)}" oninput="setAdvancePurchaseRow(${index},'actualQty',this.value)"></td>
     <td><select class="unit" data-advance-input data-advance-row-index="${index}" data-advance-field="actualUnit" onchange="setAdvancePurchaseRow(${index},'actualUnit',this.value)">${purchaseUnitOptions(row.actualUnit)}</select></td>
-    <td><input class="price" inputmode="decimal" data-advance-input data-advance-row-index="${index}" data-advance-field="unitPrice" value="${esc(row.unitPrice)}" oninput="setAdvancePurchaseRow(${index},'unitPrice',this.value)"></td>
+    <td><input class="price" inputmode="decimal" aria-label="仕入単価（税抜）" data-advance-input data-advance-row-index="${index}" data-advance-field="unitPrice" value="${esc(row.unitPrice)}" oninput="setAdvancePurchaseRow(${index},'unitPrice',this.value)"><span data-advance-unit-gross="${index}">${purchaseUnitGrossHtml(row.unitPrice,row.taxRate)}</span></td>
     <td><select class="unit" data-advance-input data-advance-row-index="${index}" data-advance-field="priceUnit" onchange="setAdvancePurchaseRow(${index},'priceUnit',this.value)">${purchaseUnitOptions(row.priceUnit)}</select></td>
     <td><select class="tax-rate" data-advance-input data-advance-row-index="${index}" data-advance-field="taxRate" onchange="setAdvancePurchaseRow(${index},'taxRate',this.value)">${purchaseTaxRateOptions(row.taxRate)}</select></td>
-    <td class="line-amount" data-advance-amount="${index}">¥${Number(advancePurchaseAmount(row)).toLocaleString("ja-JP")}</td>
+    <td class="line-amount" data-advance-amount="${index}">${purchaseMoneyPairHtml(amounts.lines[index].net,amounts.lines[index].gross)}</td>
     <td><input class="memo ime-ja" autocomplete="off" data-advance-input data-advance-row-index="${index}" data-advance-field="note" value="${esc(row.note)}" oninput="setAdvancePurchaseRow(${index},'note',this.value)"></td>
     <td><label class="advance-master-check"><input type="checkbox" data-advance-master-row-id="${esc(row.id)}" ${advancePurchaseMasterPriceSelections.has(row.id)?"checked":""} onchange="toggleAdvancePurchaseMasterPrice('${esc(row.id)}',this.checked)" aria-label="${esc(row.productCode||row.productName||`明細${index+1}`)}を仕入単価マスタ候補にする"></label></td>
     <td><div class="advance-row-actions"><button class="small" type="button" onclick="duplicateAdvancePurchaseRow(${index})">複製</button><button class="small danger" type="button" onclick="removeAdvancePurchaseRow(${index})">削除</button></div></td>
@@ -11917,8 +11976,6 @@ function setAdvancePurchaseRow(index,field,value){
   if(field==="productCode"||field==="productName")showAdvancePurchaseProductSuggestions(index,field,value);
   row.invalid=false;
   document.querySelector(`[data-advance-row="${index}"]`)?.classList.remove("invalid");
-  const amount=document.querySelector(`[data-advance-amount="${index}"]`);
-  if(amount)amount.textContent=`¥${Number(advancePurchaseAmount(row)).toLocaleString("ja-JP")}`;
   updateAdvancePurchaseSummary();
   saveAdvancePurchaseDraft();
 }

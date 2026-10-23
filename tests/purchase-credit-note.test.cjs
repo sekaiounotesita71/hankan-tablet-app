@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const PurchaseTaxDisplay = require("../purchase-tax-display.js");
 
 const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "order-entry-beta.html"), "utf8");
@@ -31,7 +32,8 @@ test("database stores purchase credit notes as negative receipts", () => {
 });
 
 test("negative purchase tax mirrors positive truncation", () => {
-  assert.match(html, /rawTax>=0\?Math\.floor\(rawTax\):Math\.ceil\(rawTax\)/);
+  assert.match(html, /return advancePurchaseTaxAmounts\(rows\)\.tax/);
+  assert.equal(PurchaseTaxDisplay.allocate([{net:-101,taxRate:8},{net:-101,taxRate:8}]).tax,-16);
   assert.match(sql, /when grouped\.taxable_amount >= 0[\s\S]*floor/);
   assert.match(sql, /else ceil\(grouped\.taxable_amount \* grouped\.tax_rate \/ 100\.0\)/);
 });
