@@ -4509,7 +4509,8 @@ function profitReferenceImporterEstimateHtml(rows,scopes=profitReferenceCostScop
   const body=estimate.rows.map(row=>{
     if(row.scope==="unassigned")return `<tr><td>輸入社未設定の売上</td><td>${esc(salesRefMoney(row.sales))}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
     const label=row.scope==="domestic"?"国内（輸入社指定なし）":profitReferenceImporterLabel(row.importerCode);
-    return `<tr><td>${esc(label)}</td><td>${esc(salesRefMoney(row.sales))}</td><td>${esc(salesRefMoney(row.cost))}</td><td>${esc(salesRefMoney(row.grossProfit))}</td><td>${row.margin===null?"-":esc(row.margin.toFixed(1))+"%"}</td><td>${esc(row.lineCount)}件</td></tr>`;
+    const hasCost=row.lineCount>0;
+    return `<tr><td>${esc(label)}</td><td>${esc(salesRefMoney(row.sales))}</td><td>${hasCost?esc(salesRefMoney(row.cost)):"未指定"}</td><td>${hasCost?esc(salesRefMoney(row.grossProfit)):"-"}</td><td>${!hasCost||row.margin===null?"-":esc(row.margin.toFixed(1))+"%"}</td><td>${esc(row.lineCount)}件</td></tr>`;
   }).join("");
   return `<div class="sales-analysis-table"><table><caption>輸入社別概算粗利（全体仕入・未分類・送料等を除く）</caption><thead><tr><th>輸入社</th><th>純売上（送料除外）</th><th>指定仕入（税抜）</th><th>概算粗利</th><th>概算粗利率</th><th>仕入明細</th></tr></thead><tbody>${body||'<tr><td colspan="6">対象データはありません。</td></tr>'}</tbody></table></div>`;
 }

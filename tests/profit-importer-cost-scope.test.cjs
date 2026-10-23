@@ -94,3 +94,11 @@ test('inactive importers keep historical revenue and purchase attribution withou
   const read=section('async function profitReferenceReadImporterMasters','async function loadProfitReferenceBoard');
   assert.doesNotMatch(read,/\.eq\("is_active"|\.insert\(|\.update\(|localStorage|saveCustomMaster/);
 });
+test('no assigned purchase is not displayed as 100 percent profit, but an explicit zero-cost purchase is',()=>{
+  const ctx=fixture();
+  const sales=[{importer_code:'01',amount:1000}];
+  const unknown=ctx.profitReferenceImporterEstimateHtml(sales,[]);
+  assert.match(unknown,/未指定/);assert.doesNotMatch(unknown,/100\.0%/);
+  const explicitZero=ctx.profitReferenceImporterEstimateHtml(sales,[{scope:'importer',importer_code:'01',amount:0,line_count:1}]);
+  assert.match(explicitZero,/100\.0%/);assert.doesNotMatch(explicitZero,/未指定/);
+});
