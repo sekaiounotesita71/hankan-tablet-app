@@ -8,7 +8,7 @@ const workApp = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const orderApp = fs.readFileSync(path.join(root, "order-entry-beta.html"), "utf8");
 const migration = fs.readFileSync(path.join(root, "jpy-invoice-rounding-migration.sql"), "utf8");
 
-const helperSource = workApp.match(/function roundFinancialAmount\([\s\S]*?\n}\nfunction roundJpyAmount[^\n]+\nfunction roundInvoiceAmount\([\s\S]*?\n}/);
+const helperSource = workApp.match(/function financialDecimalParts\([\s\S]*?\n}\nfunction roundJpyAmount[^\n]+\nfunction roundInvoiceAmount\([\s\S]*?\n}/);
 assert.ok(helperSource, "JPY丸めの共通関数が見つかること");
 
 const sandbox = {};
@@ -18,9 +18,9 @@ assert.equal(sandbox.roundJpyAmount(100.5), 101);
 assert.equal(sandbox.roundJpyAmount(-100.5), -101);
 assert.equal(sandbox.roundInvoiceAmount(10.126, "USD"), 10.13);
 
-assert.match(workApp, /line\.amount=roundInvoiceAmount\(rawAmount,currency\)/, "Invoice明細を通貨単位で丸めること");
-assert.match(workApp, /amount:qty!==null&&price!==null\?roundJpyAmount\(qty\*price\):null/, "売上確定額を明細ごとに1円単位へ丸めること");
-assert.match(workApp, /group\.netSales\+=roundJpyAmount\(qty\*price\)/, "売掛は丸め済み明細を合計すること");
+assert.match(workApp, /roundFinancialProduct\(line\.qty,line\.price,currency===\"JPY\"\?0:2\)/, "Invoice明細を通貨単位で丸めること");
+assert.match(workApp, /amount:qty!==null&&price!==null\?roundFinancialProduct\(qty,price\):null/, "売上確定額を明細ごとに1円単位へ丸めること");
+assert.match(workApp, /group\.netSales\+=roundFinancialProduct\(qty,price\)/, "売掛は丸め済み明細を合計すること");
 assert.match(workApp, /result\["金額"\]=line\.amount/, "Invoice Dataにも丸め済み金額を出力すること");
 
 assert.match(orderApp, /function salesRefJpyAmount\(/, "売上参照にJPY丸め関数があること");

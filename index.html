@@ -629,6 +629,43 @@ async function loadPendingInvoiceCandidates(country){
 function pendingInvoiceDefaultChecked(entry,targetDate){
   return entry.status==="pending"&&(!entry.planned_date||entry.planned_date<=targetDate);
 }
+async function loadAppliedInvoiceEntries(country,targetDate=pendingInvoiceTargetDate()){
+  if(!currentSessionId||!supabaseClient)return [];
+  const importers=pendingInvoiceTargetImporters(country);
+  const invoiceNos=importers.map(code=>pendingInvoiceReference(code,targetDate)).filter(Boolean);
+  if(!invoiceNos.length)return [];
+  const entries=[];
+  for(let offset=0;;offset+=500){
+    const {data,error}=await supabaseClient.from("pending_entries").select("*")
+      .eq("status","applied").in("applied_invoice_no",invoiceNos)
+      .order("entry_date",{ascending:true}).order("id",{ascending:true}).range(offset,offset+499);
+    if(error)throw error;
+    entries.push(...(data||[]));
+    if((data||[]).length<500)break;
+  }
+  const importerKey=value=>String(invoiceImporterCode(value)||normalizeImporterCode(value)).replace(/^0+(?=\d+$)/,"");
+  const targets=new Set(importers.map(importerKey));
+  const relevant=entries.filter(entry=>targets.has(importerKey(entry.importer_code))&&(!entry.applied_work_date||entry.applied_work_date===targetDate));
+  if(!relevant.length)return [];
+  const linked=await ReferenceSites.readLinked(supabaseClient,"accounts_receivable","id,source_key,source_session_id","source_key",relevant.map(entry=>`pending:${entry.id}`));
+  const sessionByEntry=new Map(linked.filter(row=>row.source_session_id).map(row=>[row.source_key,row.source_session_id]));
+  const unresolved=relevant.filter(entry=>!sessionByEntry.has(`pending:${entry.id}`));
+  const customers=await ReferenceSites.readLinked(supabaseClient,"customer_master","id,customer_code,importer_code,site_code","customer_code",unresolved.map(entry=>entry.customer_code));
+  const customerKey=value=>String(value||"").normalize("NFKC").trim().toUpperCase();
+  return relevant.filter(entry=>{
+    const linkedSession=sessionByEntry.get(`pending:${entry.id}`);
+    if(linkedSession)return linkedSession===currentSessionId;
+    const matches=customers.filter(customer=>customerKey(customer.customer_code)===customerKey(entry.customer_code)&&importerKey(customer.importer_code)===importerKey(entry.importer_code));
+    const sites=new Set(matches.map(customer=>customer.site_code).filter(site=>site==="OSA"||site==="TYO"));
+    if(!entry.customer_code||!matches.length||sites.size!==1||matches.some(customer=>!customer.site_code)){
+      throw new Error(`反映済み伝票「${entry.customer_name_snapshot||entry.customer_code||entry.id} / ${entry.description||""}」の作業拠点を特定できません。得意先マスタのコード・輸入社・拠点を確認してください。`);
+    }
+    return sites.has(currentSessionSiteCode||"OSA");
+  });
+}
+function invoiceEntriesForExport(appliedEntries,selectedEntries=[]){
+  return [...new Map([...appliedEntries,...selectedEntries].map(entry=>[entry.id,entry])).values()];
+}
 function pendingInvoiceAmount(entry){
   const amount=pendingInvoiceNumber(entry.amount);
   if(amount!==null){
@@ -636,14 +673,31 @@ function pendingInvoiceAmount(entry){
     return roundJpyAmount(amount);
   }
   const qty=pendingInvoiceNumber(entry.qty),price=pendingInvoiceNumber(entry.unit_price);
-  const calculated=qty!==null&&price!==null?qty*price:0;
+  const calculated=qty!==null&&price!==null?roundFinancialProduct(qty,price):0;
   return roundJpyAmount((entry.entry_type==="credit_note"||entry.entry_type==="discount")&&calculated>0?-calculated:calculated);
 }
-function roundFinancialAmount(value,digits=0){
+function financialDecimalParts(value){
   const number=Number(value);
-  if(!Number.isFinite(number))return 0;
-  const factor=10**digits;
-  return Math.sign(number)*Math.round((Math.abs(number)+Number.EPSILON)*factor)/factor;
+  if(!Number.isFinite(number))return null;
+  const [mantissa,exponent="0"]=String(number).toLowerCase().split("e");
+  const [whole,fraction=""]=mantissa.replace(/^[+-]/,"").split(".");
+  return{coefficient:BigInt(whole+fraction)*(number<0?-1n:1n),scale:fraction.length-Number(exponent)};
+}
+function roundFinancialProduct(left,right,digits=0){
+  const a=financialDecimalParts(left),b=financialDecimalParts(right);
+  if(!a||!b)return 0;
+  // Keep decimal operands exact until rounding, as PostgreSQL numeric does.
+  const product=a.coefficient*b.coefficient,negative=product<0n;
+  const absolute=negative?-product:product,shift=a.scale+b.scale-digits;
+  let rounded;
+  if(shift>0){
+    const divisor=10n**BigInt(shift);
+    rounded=absolute/divisor+(absolute%divisor*2n>=divisor?1n:0n);
+  }else rounded=absolute*10n**BigInt(-shift);
+  return Number(negative?-rounded:rounded)/(10**digits);
+}
+function roundFinancialAmount(value,digits=0){
+  return roundFinancialProduct(value,1,digits);
 }
 function roundJpyAmount(value){return roundFinancialAmount(value,0)}
 function roundInvoiceAmount(value,currency="JPY"){
@@ -1030,8 +1084,9 @@ function buildCustomsInvoiceContexts(payload,settings,mode="customs"){
       line.noOfBox=line.boxNo&&!seenBoxes.has(String(line.boxNo))?1:"";
       if(line.boxNo)seenBoxes.add(String(line.boxNo));
       const hasCalculation=!line.record.__isPending&&line.qty!==""&&line.price!==""&&Number.isFinite(Number(line.qty))&&Number.isFinite(Number(line.price));
-      const rawAmount=hasCalculation?Number(line.qty)*Number(line.price):Number(line.amount)||0;
-      line.amount=roundInvoiceAmount(rawAmount,currency);
+      line.amount=hasCalculation
+        ?roundFinancialProduct(line.qty,line.price,currency==="JPY"?0:2)
+        :roundInvoiceAmount(Number(line.amount)||0,currency);
     });
     const subtotal=roundInvoiceAmount(lines.reduce((sum,line)=>sum+(Number(line.amount)||0),0),currency);
     const shipping=roundInvoiceAmount(profile.include_shipping_fee===false?0:customsInvoiceShipping(settings,code),currency);
@@ -1526,7 +1581,13 @@ renderExportPreview=async function(country,mode="customs"){
   window.__invoiceExportMode=mode;
   const body=document.getElementById("export-preview-body");
   body.innerHTML=`<div class="export-preview-note">${invoiceExportModeLabel(mode)}Invoiceの設定と出力内容を確認しています...</div>`;
-  const payload=buildExportPayload(country);
+  let appliedEntries;
+  try{appliedEntries=await loadAppliedInvoiceEntries(country)}catch(error){
+    invoicePreviewState=null;
+    body.textContent=`Invoiceを準備できません。${pendingInvoiceDbErrorMessage(error)}`;
+    return;
+  }
+  const payload=buildExportPayload(country,appliedEntries);
   const targetRows=country?rows.filter(row=>row.country===country):rows;
   const settings=await loadCustomsInvoiceSettings(targetRows);
   const contexts=buildCustomsInvoiceContexts(payload,settings,mode);
@@ -3829,10 +3890,10 @@ async function doExport(country,mode="customs"){
   closeExportPicker();
   if(typeof ExcelJS==="undefined"){toast("帳票用Excelライブラリを読み込めませんでした");return}
   if(!(await requireSupabaseLogin()))return;
-  let candidates=[];
+  let candidates=[],appliedEntries=[];
   try{
     setSaveState("Supabase: 赤伝・未処理伝票を確認中...");
-    candidates=await loadPendingInvoiceCandidates(country);
+    [candidates,appliedEntries]=await Promise.all([loadPendingInvoiceCandidates(country),loadAppliedInvoiceEntries(country)]);
   }catch(error){
     setSaveState("Supabase: 未処理伝票確認失敗",true);
     alert(pendingInvoiceDbErrorMessage(error));
@@ -3846,7 +3907,7 @@ async function doExport(country,mode="customs"){
     const targetRows=country?rows.filter(row=>row.country===country):rows;
     setSaveState("Supabase: Invoice設定と金額を確認中...");
     const settings=await loadCustomsInvoiceSettings(targetRows);
-    const previewPayload=buildExportPayload(country,selected);
+    const previewPayload=buildExportPayload(country,invoiceEntriesForExport(appliedEntries,selected));
     const previewContexts=buildCustomsInvoiceContexts(previewPayload,settings,mode);
     if(!settings.schemaReady){
       const proceed=confirm(`${customsInvoiceDbError(settings.error)}\n\n設定なしの状態でExcel出力を続けますか？`);
@@ -3868,7 +3929,7 @@ async function doExport(country,mode="customs"){
       if(!claimed.length){alert("選択した未処理伝票は、別の端末ですでに反映されました。最新状態を確認してから再度出力してください。");setSaveState("未処理伝票は他端末で反映済み",true);return}
       if(claimed.length!==selected.length)alert(`${selected.length-claimed.length}件は別の端末で先に反映されたため、今回のExcelから除外しました。`);
     }
-    const invoiceEntries=mode==="billing"?claimed:selected;
+    const invoiceEntries=invoiceEntriesForExport(appliedEntries,mode==="billing"?claimed:selected);
     const payload=buildExportPayload(country,invoiceEntries),contexts=buildCustomsInvoiceContexts(payload,settings,mode),wb=new ExcelJS.Workbook(),usedSheetNames=new Set();
     wb.creator="YUMIRUME INC.";
     wb.created=new Date();
@@ -4598,7 +4659,7 @@ function salesRecordPayloadTrial(row,finalizedAt=""){
     dry_ice_weight:numberOrNull(box.dry_ice),
     box_size:box.box_size||null,
     unit_price:price,
-    amount:qty!==null&&price!==null?roundJpyAmount(qty*price):null,
+    amount:qty!==null&&price!==null?roundFinancialProduct(qty,price):null,
     memo:row._memo||null,
     is_stockout:!!row._stockout
   };
@@ -4766,7 +4827,7 @@ function finalizedReceivablePayloads(workDate,shippingFees,directImporters=null)
     const group=groups.get(code)||{code,name:importerDisplayName(code),netSales:0,customers:new Set()};
     const qty=numberOrNull(row._qty);
     const price=numberOrNull(row.unit_price);
-    if(qty!==null&&price!==null)group.netSales+=roundJpyAmount(qty*price);
+    if(qty!==null&&price!==null)group.netSales+=roundFinancialProduct(qty,price);
     if(row.customer)group.customers.add(String(row.customer).trim());
     groups.set(code,group);
   });
