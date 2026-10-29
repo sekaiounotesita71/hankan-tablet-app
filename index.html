@@ -22,8 +22,9 @@ if(/(?:^|&)type=(?:invite|recovery)(?:&|$)/i.test(String(location.hash||"").repl
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./work-paper.js?v=20260910-1" defer></script>
 <link rel="stylesheet" href="./work-paper.css?v=20260910-1">
-<script src="./sales-refinalize.js?v=20260911-1" defer></script>
+<script src="./sales-refinalize.js?v=20261029-1" defer></script>
 <script src="./sales-finalize-importers.js?v=20261022-1" defer></script>
+<script src="./sales-unlock-importers.js?v=20261029-1" defer></script>
 <link rel="stylesheet" href="./sales-refinalize.css?v=20260911-1">
 <style>
 .session-filter-bar select{height:38px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:inherit;background:#fff;color:var(--text)}
@@ -4493,6 +4494,7 @@ let currentSessionLocked=false;
 let currentSessionProvisionalLocked=false;
 let currentSessionFinalizedAt="";
 let currentSessionFinalizedImporters=[];
+let currentSessionReopenedImporters=[];
 function currentUserIsAdmin(){return currentUserRole==="admin"}
 async function loadCurrentUserRoleTrial(){
   if(!supabaseClient||!currentUser){
@@ -4530,12 +4532,14 @@ function setSessionLockStateTrial(session){
   currentSessionProvisionalLocked=!!session?.provisional_locked;
   currentSessionFinalizedAt=session?.finalized_at||"";
   currentSessionFinalizedImporters=Array.isArray(session?.finalized_importer_codes)?session.finalized_importer_codes:[];
+  currentSessionReopenedImporters=Array.isArray(session?.reopened_importer_codes)?session.reopened_importer_codes:[];
   updateLockUITrial();
 }
 function lockBadgeHtml(){
   if(!currentSessionId)return "";
   if(currentSessionLocked)return ` <span class="lock-badge">確定ロック中</span>`;
   if(currentSessionProvisionalLocked)return ` <span class="lock-badge provisional">仮締め中</span>`;
+  if(currentSessionReopenedImporters.length)return ` <span class="lock-badge provisional">訂正中（${esc(currentSessionReopenedImporters.join(", "))}）</span>`;
   if(currentSessionFinalizedImporters.length)return ` <span class="lock-badge open">一部確定（${esc(currentSessionFinalizedImporters.join(", "))}）</span>`;
   return ` <span class="lock-badge open">編集中</span>`;
 }
@@ -4546,11 +4550,12 @@ function updateLockUITrial(){
   const provisionalUnlockBtn=document.getElementById("provisional-unlock-btn");
   if(finalizeBtn){
     finalizeBtn.style.display=currentSessionId?"":"none";
-    finalizeBtn.disabled=!!currentSessionLocked||salesFinalizeInProgress;
-    finalizeBtn.textContent=currentSessionLocked?"売上確定済み":salesFinalizeInProgress?"売上確定中...":currentSessionFinalizedAt?"売上再確定":"売上確定";
+    finalizeBtn.disabled=!!currentSessionLocked||salesFinalizeInProgress||typeof salesImporterUnlockBusy!=="undefined"&&salesImporterUnlockBusy;
+    finalizeBtn.textContent=currentSessionLocked?"売上確定済み":salesFinalizeInProgress?"売上確定中...":currentSessionFinalizedAt||currentSessionReopenedImporters.length?"売上再確定":"売上確定";
   }
   if(unlockBtn){
-    unlockBtn.style.display=currentSessionLocked&&currentUserIsAdmin()?"":"none";
+    unlockBtn.style.display=currentSessionId&&(currentSessionLocked||currentSessionFinalizedImporters.length)&&currentUserIsAdmin()?"":"none";
+    unlockBtn.disabled=salesFinalizeInProgress||typeof salesImporterUnlockBusy!=="undefined"&&salesImporterUnlockBusy;
   }
   if(provisionalLockBtn){
     provisionalLockBtn.style.display=currentSessionId&&!currentSessionLocked&&!currentSessionProvisionalLocked?"":"none";
@@ -4700,16 +4705,9 @@ async function finalizeSalesTrial(){
   }
 }
 async function unlockSessionTrial(){
-  if(!currentSessionId||!currentSessionLocked)return;
+  if(!currentSessionId||(!currentSessionLocked&&!currentSessionFinalizedImporters.length))return;
   if(!(await requireSupabaseLogin()))return;
-  await loadCurrentUserRoleTrial();
-  if(!currentUserIsAdmin()){toast("ロック解除は管理者のみ可能です");return}
-  const reason=prompt("ロック解除理由を入力してください");
-  if(!reason)return;
-  const {data,error}=await supabaseClient.from("work_sessions").update({locked:false,unlocked_at:new Date().toISOString(),unlocked_by:currentUser.id,unlock_reason:reason,status:"active"}).eq("id",currentSessionId).select("*").single();
-  if(error){toast("ロック解除エラー: "+error.message);return}
-  setSessionLockStateTrial(data);
-  toast("ロック解除しました");
+  return await openSalesImporterUnlock();
 }
 const __updateSupabaseStatusLockBase=updateSupabaseStatus;
 updateSupabaseStatus=function(){
@@ -4768,6 +4766,7 @@ resetLocalStateForSession=function(){
   currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
   currentSessionFinalizedImporters=[];
+  currentSessionReopenedImporters=[];
   updateLockUITrial();
 };
 const __mergeAndRenderLockBase=mergeAndRender;
@@ -4776,6 +4775,7 @@ mergeAndRender=function(){
   currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
   currentSessionFinalizedImporters=[];
+  currentSessionReopenedImporters=[];
   const result=__mergeAndRenderLockBase();
   updateLockUITrial();
   return result;
@@ -4903,6 +4903,7 @@ async function confirmOutstandingExternalWorkBeforeSales(){
   return confirm(`未確認の外部作業が ${outstanding.length}件あります。管理者権限で売上確定を続けますか？\n\n${label}`);
 }
 finalizeSalesTrial=async function(){
+  if(typeof salesImporterUnlockBusy!=="undefined"&&salesImporterUnlockBusy){toast("解除画面を閉じてから売上確定してください");return false}
   if(salesFinalizeInProgress){toast("売上確定処理中です。完了までお待ちください");return false}
   salesFinalizeInProgress=true;
   const finalizeButton=document.getElementById("finalize-btn");
@@ -4915,11 +4916,12 @@ finalizeSalesTrial=async function(){
     if(currentSessionLocked){toast("すでに売上確定済みです");return false}
     if(!(await checkSalesLockSetupTrial()))return false;
     const checkedSessionId=currentSessionId;
-    const {data:latestLock,error:latestLockError}=await supabaseClient.from("work_sessions").select("locked,status,finalized_at,provisional_locked,finalized_importer_codes").eq("id",checkedSessionId).maybeSingle();
+    const {data:latestLock,error:latestLockError}=await supabaseClient.from("work_sessions").select("locked,status,finalized_at,provisional_locked,finalized_importer_codes,reopened_importer_codes").eq("id",checkedSessionId).maybeSingle();
     if(latestLockError||!latestLock){alert("作業の最新状態を確認できませんでした。再読み込みしてください。");return false}
     if(currentSessionId!==checkedSessionId){alert("作業が切り替わったため中止しました。");return false}
     setSessionLockStateTrial(latestLock);
     if(latestLock.locked||latestLock.status==="closed"){toast("すでに売上確定済みです");return false}
+    if(currentSessionReopenedImporters.length)return await openSalesRefinalization();
     if(currentSessionFinalizedAt)return await openSalesRefinalization();
     return await openSalesImporterFinalization();
   }finally{
@@ -4930,6 +4932,7 @@ finalizeSalesTrial=async function(){
 function sessionListStatusLabelTrial(session){
   if(session?.locked||session?.status==="closed")return "確定済み";
   if(session?.provisional_locked)return "仮締め中";
+  if(session?.reopened_importer_codes?.length)return "訂正中";
   if(session?.finalized_importer_codes?.length)return "一部確定";
   return session?.status||"active";
 }
@@ -4944,7 +4947,7 @@ function sessionListItemHtmlTrial(session,isFinalized){
   const time=esc(`${session.site_code==="TYO"?"東京":"大阪"} / ${sessionListTimeTrial(session)}`);
   const finalizedClass=isFinalized?" session-finalized":"";
   const finalizedBadge=isFinalized?`<span class="session-locked-badge">売上確定済み</span>`:`<span class="export-option-badge partial">${status}</span>`;
-  const deleteButton=!isFinalized&&!session.finalized_importer_codes?.length&&currentUserIsAdmin()?`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`:"";
+  const deleteButton=!isFinalized&&!session.finalized_importer_codes?.length&&!session.reopened_importer_codes?.length&&currentUserIsAdmin()?`<button class="btn-stockout" onclick="deleteSavedSession(event,'${session.id}','${name}')">削除</button>`:"";
   return `<div class="export-option${finalizedClass}"><div class="export-option-left" onclick="openSavedSession('${session.id}')" style="flex:1;cursor:pointer"><span class="export-option-code">${name}</span><span class="export-option-meta">${time}</span></div>${finalizedBadge}${deleteButton}</div>`;
 }
 function sessionListEmptyHtmlTrial(text){
@@ -7190,6 +7193,7 @@ async function createWorkSessionFromConfirmedOrders(){
   currentSessionProvisionalLocked=false;
   currentSessionFinalizedAt="";
   currentSessionFinalizedImporters=[];
+  currentSessionReopenedImporters=[];
   currentSessionWorkDate=date;
   currentSessionSiteCode=siteCode;
   latestOrderFilename=`order-entry:${date}`;

@@ -435,7 +435,7 @@ function indexFixture(options={}){
   const f=fixture(options),c=f.context;
   Object.assign(c,{
     currentSessionLocked:false,currentSessionProvisionalLocked:false,currentSessionFinalizedAt:"",
-    currentSessionFinalizedImporters:[],salesFinalizeInProgress:false,
+    currentSessionFinalizedImporters:[],currentSessionReopenedImporters:[],salesFinalizeInProgress:false,
     importerDisplayNames:{"01":"DIM","03":"FBI","08":"EN"},
     rows:[{_idx:0,importer_id:"01-DIM"},{_idx:1,importer_code:"03",importer_id:"03-FBI"}],
     activeCountry:"01",activeImporter:"03"
@@ -607,6 +607,7 @@ test("final index override routes initial and reopened work without any global r
   for(const [name,latest,route] of [
     ["new",{finalized_importer_codes:[]},"initial"],
     ["partial",{finalized_importer_codes:["01"]},"initial"],
+    ["partial reopened",{finalized_importer_codes:["03"],reopened_importer_codes:["01"],finalized_at:null},"refinalize"],
     ["reopened",{finalized_at:"2026-10-21T00:00:00Z",finalized_importer_codes:[]},"refinalize"]
   ])await t.test(name,async()=>{
     const f=finalOverrideFixture({latest});
