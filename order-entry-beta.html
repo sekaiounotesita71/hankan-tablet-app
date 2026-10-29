@@ -4820,7 +4820,7 @@ async function salesRefReadSessions(client,range){
   return salesRefReadChunks(range.ranges,1,async parts=>{
     const part=parts[0];
     return salesRefReadPaged(includeCount=>{
-    let query=client.from("work_sessions").select("id,name,site_code,work_date,shipping_fee,shipping_fees,locked,status,finalized_at,updated_at,created_at",includeCount?{count:"exact"}:undefined).order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
+    let query=client.from("work_sessions").select("id,name,site_code,work_date,shipping_fee,shipping_fees,locked,status,finalized_importer_codes,finalized_at,updated_at,created_at",includeCount?{count:"exact"}:undefined).order("work_date",{ascending:false,nullsFirst:false}).order("id",{ascending:false});
     if(part.from)query=query.gte("work_date",part.from);
     if(part.to)query=query.lte("work_date",part.to);
     return query;
@@ -4878,6 +4878,18 @@ async function salesRefReadDomesticRows(client,range){
     },salesReferenceImporterIndex);
   });
 }
+function salesRefUnfinalizedRows(rows,sessions,confirmedRows=[],importerIndex=salesReferenceImporterIndex||salesRefBuildImporterIndex()){
+  const finalized=new Set();
+  const key=(sessionId,importer)=>JSON.stringify([sessionId,salesRefImporterIdentity(importer,importerIndex).key]);
+  (sessions||[]).forEach(session=>{
+    (session.finalized_importer_codes||[]).forEach(code=>finalized.add(key(session.id,code)));
+  });
+  // Reconcile parallel reads and legacy confirmations without mixing sites or work sessions.
+  confirmedRows.forEach(row=>{
+    if(row.session_id)finalized.add(key(row.session_id,row.importer_code||row.importer_id||""));
+  });
+  return (rows||[]).filter(row=>!finalized.has(key(row.session_id,row.importer_code||row.importer_id||"")));
+}
 async function salesRefReadProvisionalRows(client,sessions){
   const activeSessions=(sessions||[]).filter(session=>!(session.locked||session.status==="closed")&&session.status!=="archived");
   const sessionIds=activeSessions.map(session=>session.id).filter(Boolean);
@@ -4894,9 +4906,9 @@ async function salesRefReadProvisionalRows(client,sessions){
     const importerKey=salesRefImporterIdentity(box.importer_code,importerIndex).key;
     boxMap.set(`${box.session_id}::${importerKey}::${salesRefText(box.box_no).trim()}`,box);
   });
-  return lines.map(line=>{
+  return salesRefUnfinalizedRows(lines,activeSessions,[],importerIndex).map(line=>{
     const session=sessionMap.get(line.session_id)||{};
-    const importer=salesRefImporterIdentity({importer_code:line.importer_code,importer_id:line.importer_id},importerIndex);
+    const importer=salesRefImporterIdentity(line.importer_code||line.importer_id||"",importerIndex);
     const box=boxMap.get(`${line.session_id}::${importer.key}::${salesRefText(line.box_no).trim()}`)||{};
     const qty=line.input_qty===null||line.input_qty===undefined||line.input_qty===""?null:Number(line.input_qty);
     const price=line.unit_price===null||line.unit_price===undefined||line.unit_price===""?null:Number(line.unit_price);
@@ -4965,7 +4977,7 @@ async function loadSalesReferenceBoard(){
     });
     const pastRows=historicalResult.rows.map(row=>salesRefNormalizeRowImporter({...row,amount:row.amount===null||row.amount===undefined||row.amount===""?null:salesRefJpyAmount(row.amount),source_type:"過去データ",work_date:row.work_date||salesRefDateOnly(row.finalized_at),session_id:row.session_id||""},salesReferenceImporterIndex));
     const adjustmentRows=pendingResult.rows.map(row=>({...salesRefPendingToRow(row,salesReferenceImporterIndex),_referenceSite:ReferenceSites.customerSite(row,getMasters().customers)}));
-    const provisionalRows=provisionalResult.rows.map(row=>salesRefNormalizeRowImporter(row,salesReferenceImporterIndex));
+    const provisionalRows=salesRefUnfinalizedRows(provisionalResult.rows,salesReferenceSessions,allRows,salesReferenceImporterIndex).map(row=>salesRefNormalizeRowImporter(row,salesReferenceImporterIndex));
     const locatedRows=await ReferenceSites.sessions(client,[...currentRows,...pastRows,...adjustmentRows,...provisionalRows],salesReferenceSessions);
     if(loadSequence!==salesReferenceLoadSequence)return;
     salesReferenceRows=locatedRows.sort((a,b)=>salesRefRowDate(b).localeCompare(salesRefRowDate(a),"ja")||String(b.finalized_at||"").localeCompare(String(a.finalized_at||""),"ja"));
