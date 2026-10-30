@@ -7605,6 +7605,7 @@ function setReceivableView(view,options={}){
     document.getElementById("ar-payment-target").textContent=receivableView==="prepayments"?"対象Invoiceの「入金」を選択してください。":"請求締めの「入金」を選択してください。";
   }
   renderReceivables();
+  renderReceivablePaymentHistory();
   if(receivableView==="closing"){
     loadStatementProfileFromSelectedImporter(true).then(()=>refreshClosingSalesPreview({force:true}));
   }

@@ -140,7 +140,7 @@ test('SOA month and button stay visible together, retaining the month across vie
     return nodes.get(id);
   };
   const ctx={document:{getElementById:node,querySelectorAll:()=>[]},renderReceivables(){},val:id=>node(id).value,
-    receivablePaymentAttempt:null,receivablePaymentSaving:false,
+    receivablePaymentAttempt:null,receivablePaymentSaving:false,renderReceivablePaymentHistory(){},
     async loadStatementProfileFromSelectedImporter(silent){loads.push(silent)},async refreshClosingSalesPreview(){}};
   vm.runInNewContext(source('function setReceivableView(','function openReceivableImporterDetail('),ctx);
   for(const view of ['closing','detail','summary','payments','setup','closing']){
