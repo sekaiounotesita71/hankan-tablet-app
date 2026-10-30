@@ -44,6 +44,21 @@ test('layout has flexible groups and responsive wrapping, without hiding overflo
   assert.match(app,/const advancePurchaseFieldOrder=\["productCode","productName","costChoice","origin","actualQty","actualUnit","unitPrice","priceUnit","taxRate","note"\]/);
   for(const m of app.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(m[1].trim())new vm.Script(m[1]);
 });
+test('desktop fits all fields in a single grid row with narrow code, units and tax columns',()=>{
+  const desktop=source('@media(min-width:1200px){','@media(max-width:1100px)');
+  assert.match(desktop,/grid-template-areas:"meta code name scope origin qty unit price priceunit tax amount memo master tools"/);
+  assert.match(desktop,/70px 70px minmax\(0,2fr\) 88px 65px 56px 50px 82px 52px 54px 110px/);
+  assert.match(desktop,/\.advance-entry-group,\.advance-entry-pair,\.advance-entry-tools\{display:contents\}/);
+  assert.match(app,/class="advance-entry-heading" aria-hidden="true"/);
+  const {ctx,body}=fixture([{id:'first',productCode:'069',actualQty:'1.13',unitPrice:'3050'}]);ctx.renderAdvancePurchaseRows();
+  assert.match(body.innerHTML,/aria-label="明細1の操作"/);
+  const action=body.innerHTML.match(/class="advance-row-action-select"[^>]+onchange="([^"]+)"/)[1];
+  new vm.Script(`function actionChanged(){${action}}`);
+  const calls=[],actionContext={duplicateAdvancePurchaseRow:i=>calls.push(['duplicate',i]),removeAdvancePurchaseRow:i=>calls.push(['remove',i])};
+  vm.runInNewContext(`function actionChanged(){${action}}`,actionContext);
+  for(const value of ['duplicate','remove','']){const control={value};actionContext.actionChanged.call(control);assert.equal(control.value,'')}
+  assert.deepEqual(calls,[['duplicate',0],['remove',0]]);
+});
 test('keyboard navigation skips locked source scope, continues to next row, and retains reverse movement',()=>{
   const inputs=new Map(),focused=[];
   for(let row=0;row<2;row++)for(const field of fields)inputs.set(`${row}:${field}`,{disabled:row===0&&field==='costChoice',type:'text',focus(){focused.push(`${row}:${field}`)},select(){},scrollIntoView(){}});
