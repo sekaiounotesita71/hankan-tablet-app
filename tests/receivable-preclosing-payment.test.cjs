@@ -57,6 +57,7 @@ test('same-number site invoices have independent actions, selected amount and hi
   const enriched=ctx.arFilteredRows().rows.map(r=>({...r,_state:ctx.arRecordState(r)}));
   const table=ctx.arRenderPrepaymentTable(enriched);assert.match(table,/>東京</);assert.match(table,/>大阪</);
   assert.match(table,/selectReceivableForPayment\('tokyo'\)/);assert.match(table,/selectReceivableForPayment\('osaka'\)/);
+  assert.match(table,/ar-prepayment-customers/);assert.match(html,/\.ar-prepayment-table\{table-layout:fixed;min-width:1120px\}/);
   assert.match(ctx.arSummaryCards(enriched),/締め前Invoiceの未入金額/);
 });
 test('pre-closing menu exposes filters, sync and entry without changing existing closing payment view',()=>{
