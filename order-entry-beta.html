@@ -8187,7 +8187,7 @@ function renderReceivablePaymentHistory(){
   const receivableId=val("ar-payment-receivable-id");
   const closing=receivableClosings.find(row=>row.id===val("ar-payment-closing-id"));
   if(!receivableId&&!closing){
-    container.innerHTML='<div class="sales-empty">請求締めを選択すると入金履歴を表示します。</div>';
+    container.innerHTML=`<div class="sales-empty">${receivableView==="prepayments"?"Invoice":"請求締め"}を選択すると入金履歴を表示します。</div>`;
     return;
   }
   const ids=new Set(closing?arClosingPaymentTargets(closing).map(row=>row.id):[receivableId]);
