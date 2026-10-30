@@ -139,7 +139,8 @@ test('SOA month and button stay visible together, retaining the month across vie
     if(!nodes.has(id))nodes.set(id,{hidden:false,style:{},value:id==='ar-closing-month'?'2026-08':''});
     return nodes.get(id);
   };
-  const ctx={document:{getElementById:node,querySelectorAll:()=>[]},renderReceivables(){},
+  const ctx={document:{getElementById:node,querySelectorAll:()=>[]},renderReceivables(){},val:id=>node(id).value,
+    receivablePaymentAttempt:null,receivablePaymentSaving:false,
     async loadStatementProfileFromSelectedImporter(silent){loads.push(silent)},async refreshClosingSalesPreview(){}};
   vm.runInNewContext(source('function setReceivableView(','function openReceivableImporterDetail('),ctx);
   for(const view of ['closing','detail','summary','payments','setup','closing']){

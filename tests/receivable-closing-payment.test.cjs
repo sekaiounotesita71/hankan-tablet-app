@@ -161,3 +161,28 @@ test('one importer index is reused for every invoice in the closing',()=>{
   const ctx=model(rows,[],[closing]);let builds=0;ctx.salesRefBuildImporterIndex=()=>{builds++;return {}};
   assert.equal(ctx.arClosingPaymentState(closing).balance,30000);assert.equal(builds,1);
 });
+
+test('pre-closing partial receipt stays on its exact site invoice and is deducted once at each cutoff',options,async()=>{
+  const db=await database();try{
+    await db.exec(`insert into accounts_receivable values('${id(8)}','01','sales','2026-09-02',7000,'2026-09-02',null)`);
+    const before=(await db.query('select * from accounts_receivable order by id')).rows;
+    await pay(db,{closing:null,receivable:id(3),date:'2026-09-10',cash:2000,fee:0,balance:5000});
+    assert.equal((await pay(db,{closing:null,receivable:id(3),date:'2026-09-10',cash:2000,fee:0,balance:5000})).already_recorded,true);
+    const ps=await payments(db);
+    assert.equal(ps.length,1);assert.equal(ps[0].receivable_id,id(3));assert.equal(ps[0].target_closing_id,null);
+    assert.deepEqual((await db.query('select * from accounts_receivable order by id')).rows,before);
+    const rows=before.map(row=>({...row,invoice_date:row.invoice_date.toISOString?.().slice(0,10)||row.invoice_date}));
+    for(const p of ps)p.payment_date=p.payment_date.toISOString?.().slice(0,10)||p.payment_date;
+    const ctx={receivableRows:rows,receivablePayments:ps,arCanonicalImporterCode:x=>x,arSameImporter:(r,c)=>['01','DIM'].includes(r.importer_code)&&c==='01',
+      salesReferenceImporterIndex:{},arIsOperationRow:r=>r.source_type==='opening'||r.invoice_date>='2026-08-01',arNumber:Number,arRound:v=>Math.round(v*100)/100};
+    vm.runInNewContext(source('function arStatementRecords(','function arStatementAdjustmentCandidates(').replace(/async function arAssignInvoiceNumbers[\s\S]*?(?=function arStatementSnapshot)/,''),ctx);
+    const september=ctx.arStatementSnapshot('01',{from:'2026-09-01',to:'2026-09-30'},{});
+    assert.equal(september.chargeAmount,12000);assert.equal(september.paymentAmount,2000);
+    assert.equal(september.totalAmount,september.carryover+10000);
+    const october=ctx.arStatementSnapshot('01',{from:'2026-10-01',to:'2026-10-31'},{});
+    assert.equal(october.paymentAmount,0);assert.equal(october.carryover,september.totalAmount);
+    const beforeReceipt=ctx.arStatementSnapshot('01',{from:'2026-09-01',to:'2026-09-09'},{});
+    assert.equal(beforeReceipt.paymentAmount,0);
+    await assert.rejects(()=>pay(db,{request:id(21),closing:null,receivable:id(3),date:'2026-09-12',cash:3001,fee:0,balance:3000}),/未回収額/);
+  }finally{await db.close()}
+});
