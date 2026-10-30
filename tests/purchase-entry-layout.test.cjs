@@ -39,6 +39,7 @@ test('layout has flexible groups and responsive wrapping, without hiding overflo
   assert.match(app,/@media\(max-width:1100px\)[\s\S]*?grid-template-areas/);
   assert.match(app,/@media\(max-width:640px\)[\s\S]*?grid-template-areas/);
   assert.match(app,/\.advance-entry-head\{grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(app,/\.advance-entry-actions>\.btn,\.advance-master-tools>\.btn\{flex:0 0 auto;white-space:nowrap/);
   assert.doesNotMatch(source('function renderAdvancePurchaseRows(','function setAdvancePurchaseRow('),/\.rpc\(|\.from\(/);
   assert.match(app,/const advancePurchaseFieldOrder=\["productCode","productName","costChoice","origin","actualQty","actualUnit","unitPrice","priceUnit","taxRate","note"\]/);
   for(const m of app.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(m[1].trim())new vm.Script(m[1]);
