@@ -105,7 +105,8 @@ test('monthly import carries each work date without changing grouping, quantity 
   }
 });
 test('date column preserves keyboard targets and saving does not change accounting dates',()=>{
-  assert.match(app,/<th>No\.<\/th><th>引用元日付<\/th><th>商品コード/);
+  assert.match(app,/id="advance-purchase-body" role="list" aria-label="仕入明細"/);
+  assert.match(app,/advance-entry-meta[\s\S]*引用元日付/);
   const render=source('function renderAdvancePurchaseRows(', 'function setAdvancePurchaseRow(');
   assert.match(render,/data-advance-source-dates=/);assert.match(render,/data-advance-field="unitPrice"/);
   assert.doesNotMatch(source('async function saveAdvancePurchaseBatch(', 'function initialWorkspaceTab('),/sourceSaleDates|source_dates/);
