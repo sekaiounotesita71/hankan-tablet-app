@@ -8964,6 +8964,7 @@ function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile,adjustm
     return {id:row.id,sessionId:row.source_session_id,date:row.invoice_date,invoiceNo:row.invoice_no||arInvoiceNumber(row.invoice_date,row,index),
       siteCode:["OSA","TYO"].includes(siteCode)?siteCode:"UNASSIGNED",net:arRound(amount-shipping),shipping,amount:arRound(amount)};
   }).sort((a,b)=>a.date.localeCompare(b.date)||a.invoiceNo.localeCompare(b.invoiceNo)||String(a.id).localeCompare(String(b.id)));
+  const invoiceByRecordId=new Map(invoiceRows.map(row=>[row.id,row]));
   // Fold separately stored corrections only when their invoice can be identified unambiguously.
   for(const row of charges.filter(row=>row.source_type==="adjustment")){
     let candidates=arStatementAdjustmentCandidates(row,invoiceRows,index);
@@ -8973,6 +8974,20 @@ function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile,adjustm
     invoice.net=arRound(invoice.net+amount-shipping);
     invoice.shipping=arRound(invoice.shipping+shipping);
     invoice.amount=arRound(invoice.amount+amount);
+    invoiceByRecordId.set(row.id,invoice);
+  }
+  for(const invoice of invoiceRows){invoice.received=0;invoice.bankFees=0;invoice.paymentDates=[]}
+  for(const payment of receivablePayments){
+    const invoice=invoiceByRecordId.get(payment.receivable_id);
+    if(!invoice||String(payment.payment_date)>asOfDate)continue;
+    invoice.received+=arNumber(payment.amount_jpy);
+    invoice.bankFees+=arNumber(payment.bank_fee_jpy);
+    invoice.paymentDates.push(String(payment.payment_date));
+  }
+  for(const invoice of invoiceRows){
+    invoice.received=arRound(invoice.received);invoice.bankFees=arRound(invoice.bankFees);
+    invoice.balance=arRound(invoice.amount-invoice.received-invoice.bankFees);
+    invoice.paymentDates=[...new Set(invoice.paymentDates)].sort();
   }
   const invoiceAmount=arRound(invoiceRows.reduce((sum,row)=>sum+row.amount,0));
   const currentAdjustments=arRound(calculation.totals.charges-invoiceAmount);
@@ -8983,6 +8998,8 @@ function arInvoiceStatementSnapshot(importerCode,selectedClosing,profile,adjustm
   return {
     importerCode:arCanonicalImporterCode(importerCode,index),range,profile,asOfDate,charges,invoiceRows,invoiceAmount,
     carryover:arRound(calculation.totals.opening-priorSettled),
+    openingCarryover:calculation.totals.opening,
+    receivedAmount:calculation.totals.cash,bankFeeAmount:calculation.totals.fee,
     chargeAmount:calculation.totals.charges,paymentAmount,currentAdjustments,
     settlementAmount:arRound(currentAdjustments-paymentAmount),
     totalAmount:calculation.totals.balance
@@ -9078,15 +9095,36 @@ function arStatementRowsHtml(snapshot){
     const subtotal=arRound(invoices.reduce((sum,row)=>sum+row.amount,0));
     invoices.forEach((row,index)=>{
       const date=esc(arStatementDate(row.date));
+      const paymentDates=(row.paymentDates||[]).map(day=>arStatementDate(day)).join(" / ");
+      const receipt=row.received?`<tr class="invoice-payment"><td></td><td>Payment received <span class="payment-dates">(${esc(paymentDates)})</span></td><td class="amount">${esc(arStatementMoney(-row.received))}</td></tr>`:"";
+      const bankFees=row.bankFees?`<tr class="invoice-payment"><td></td><td>Bank charges</td><td class="amount">${esc(arStatementMoney(-row.bankFees))}</td></tr>`:"";
+      const balance=receipt||bankFees?`<tr class="invoice-balance"><td></td><td>INVOICE BALANCE</td><td class="amount">${esc(arStatementMoney(row.balance))}</td></tr>`:"";
       const heading=showSites&&index===0?`<tr class="site-heading"><td colspan="3">${label}</td></tr>`:"";
       const siteTotal=showSites&&index===invoices.length-1?`<tr class="site-subtotal"><td colspan="2">${label} INVOICE SUBTOTAL</td><td class="amount">${esc(arStatementMoney(subtotal))}</td></tr>`:"";
       rows.push(`<tbody class="invoice-group">${heading}<tr><td>${date}</td><td>Export Invoice No.${esc(row.invoiceNo)}${showSites?`<span class="invoice-site"> (${label})</span>`:""}</td><td class="amount">${esc(arStatementMoney(row.net))}</td></tr>
         <tr><td>${date}</td><td>Shipping Fee</td><td class="amount">${esc(arStatementMoney(row.shipping))}</td></tr>
-        <tr class="subtotal"><td></td><td>【TOTAL】</td><td class="amount">&lt; ${esc(arStatementMoney(row.amount))} &gt;</td></tr>${siteTotal}</tbody>`);
+        <tr class="subtotal"><td></td><td>【TOTAL】</td><td class="amount">&lt; ${esc(arStatementMoney(row.amount))} &gt;</td></tr>${receipt}${bankFees}${balance}${siteTotal}</tbody>`);
     });
   }
-  rows.push(`<tbody><tr class="grand-total"><td></td><td>【TOTAL AMOUNT】</td><td class="amount">${esc(arStatementMoney(snapshot.totalAmount))}</td></tr></tbody>`);
+  rows.push(arStatementSettlementHtml(snapshot,"table"));
   return rows.join("");
+}
+function arStatementSettlementHtml(snapshot,layout){
+  const opening=arNumber(snapshot.openingCarryover??snapshot.carryover);
+  const received=arNumber(snapshot.receivedAmount??snapshot.paymentAmount);
+  const fees=arNumber(snapshot.bankFeeAmount);
+  const adjustments=arNumber(snapshot.currentAdjustments);
+  const lines=[];
+  if(opening||received||fees||adjustments){
+    if(opening)lines.push(["Balance brought forward",opening]);
+    lines.push(["Invoice total",snapshot.invoiceAmount]);
+    if(adjustments)lines.push([adjustments<0?"Other credits":"Other charges",adjustments]);
+    if(received)lines.push([`Payments received (${snapshot.range.from} - ${snapshot.asOfDate})`,-received]);
+    if(fees)lines.push(["Bank charges deducted",-fees]);
+  }
+  if(layout==="table")return `<tbody${lines.length?' class="settlement-summary"':""}>${lines.map(([label,amount])=>`<tr><td></td><td>${esc(label)}</td><td class="amount">${esc(arStatementMoney(amount))}</td></tr>`).join("")}<tr class="grand-total"><td></td><td>【TOTAL AMOUNT】</td><td class="amount">${esc(arStatementMoney(snapshot.totalAmount))}</td></tr></tbody>`;
+  if(!lines.length)lines.push(["Balance brought forward",opening]);
+  return lines.map(([label,amount])=>`<div class="balance-line"><span>${esc(label)}</span><span>${esc(arStatementMoney(amount))} JPY</span></div>`).join("");
 }
 function arStatementDocumentHtml(snapshot,issue){
   const profile=snapshot.profile;
@@ -9106,12 +9144,13 @@ function arStatementDocumentHtml(snapshot,issue){
   .customer{display:grid;grid-template-columns:25mm 1fr;gap:2mm}.customer-label{padding-top:1px}.customer-name{font-size:11pt;margin-bottom:2mm}.customer-address{min-height:16mm;line-height:1.24}.customer-phone{margin-top:2mm}
   .logo{text-align:right;height:25mm}.logo img{width:33mm;height:auto}.bank{margin-top:0;font-size:8.3pt;line-height:1.15}
   .company{margin:1mm 0 2mm 15mm;font-size:8.5pt;line-height:1.2}.company-name{font-family:"Times New Roman",serif;font-size:12pt;letter-spacing:0;margin-bottom:1mm}
-  .balance-head{margin:0 0 3mm}.balance-line{display:flex;justify-content:space-between;gap:4mm;margin-bottom:1mm}.total-label{font-size:11pt}.total-value{font-size:11pt;white-space:nowrap}.as-of{font-size:8pt;margin-top:1mm}
+  .balance-head{margin:0 0 3mm;break-inside:avoid}.balance-line{display:flex;justify-content:space-between;gap:4mm;margin-bottom:1mm}.balance-line>span:last-child{white-space:nowrap}.total-label{font-size:11pt}.total-value{font-size:11pt;white-space:nowrap}.as-of{font-size:8pt;margin-top:1mm}
   table{width:100%;border-collapse:separate;border-spacing:0;border:1.4px solid #111;border-radius:3px;overflow:hidden}
   th,td{padding:.8mm 2.5mm;vertical-align:top}th{font-family:"Times New Roman",serif;font-weight:400;text-align:center;border-bottom:1px solid #111}
   th+th,td+td{border-left:1px solid #111}th:nth-child(1){width:24mm}th:nth-child(3){width:39mm}
   td.amount{text-align:right;white-space:nowrap}.subtotal td{padding-top:.2mm;padding-bottom:1.25mm}.subtotal td:nth-child(2){text-align:center;font-weight:700}.grand-total td{padding-top:1.4mm;font-weight:700}.grand-total td:nth-child(2){text-align:center}
   .site-heading td{padding-top:1.4mm;padding-bottom:1.4mm;border-top:1px solid #111;border-bottom:1px solid #111;font-weight:700;background:#f3f3f3}.site-subtotal td{padding-top:1.4mm;padding-bottom:1.4mm;border-top:1px solid #111;font-weight:700}.site-subtotal td:first-child{text-align:right}.invoice-site{font-size:8pt;white-space:nowrap}
+  .invoice-payment td{font-size:8.3pt}.payment-dates{overflow-wrap:anywhere}.invoice-balance td{font-weight:700}.settlement-summary{break-inside:avoid;page-break-inside:avoid}.settlement-summary tr:first-child td{border-top:1px solid #111;padding-top:1.5mm}
   thead{display:table-header-group}.invoice-group{break-inside:avoid;page-break-inside:avoid}.customer-address,.company,.bank{overflow-wrap:anywhere}
   .compact{font-size:8.8pt}.compact .header{min-height:52mm}.compact th,.compact td{padding-top:.6mm;padding-bottom:.6mm}.compact .subtotal td{padding-top:.15mm;padding-bottom:.9mm}
   @media print{.print-action{display:none}.sheet{min-height:0}}
@@ -9153,8 +9192,8 @@ function arStatementDocumentHtml(snapshot,issue){
       </div>
     </section>
     <div class="balance-head">
-      <div class="balance-line"><span>【Carryover amount】</span><span>${esc(arStatementMoney(snapshot.carryover))} JPY</span></div>
-      <div class="balance-line"><span class="total-label">TOTAL AMOUNT</span><span class="total-value">${esc(arStatementMoney(snapshot.totalAmount))} JPY</span></div>
+      ${arStatementSettlementHtml(snapshot,"header")}
+      <div class="balance-line"><span class="total-label">AMOUNT DUE</span><span class="total-value">${esc(arStatementMoney(snapshot.totalAmount))} JPY</span></div>
       <div class="as-of">Period: ${esc(snapshot.range.from)} - ${esc(snapshot.range.to)} / Balance as of ${esc(snapshot.asOfDate)}</div>
     </div>
     <table>

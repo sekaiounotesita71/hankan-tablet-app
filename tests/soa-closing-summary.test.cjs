@@ -234,7 +234,7 @@ test('prior balance paid by closing date clears carryover without receipt detail
   assert.doesNotMatch(report,/20260803001|paid-aug|Payments \/ Adjustments/);
 });
 
-test('partial receipts, fees, credit notes and embedded adjustments reconcile without detail rows',()=>{
+test('partial receipts, fees and credit notes explain the difference without exposing private notes',()=>{
   const a=sale('a','2026-08-03',2000,300);a.adjustment_amount_jpy=-100;a.amount_jpy-=100;
   const credit={id:'credit',importer_code:'01',source_type:'adjustment',closing_id:'aug',invoice_date:'2026-08-04',amount_jpy:-200,memo:'Private credit reason'};
   const payments=[receipt('p1','a','2026-08-20',480,20),receipt('future','a','2026-09-01',500)];
@@ -245,10 +245,12 @@ test('partial receipts, fees, credit notes and embedded adjustments reconcile wi
   assert.equal(snapshot.settlementAmount,-700);assert.equal(snapshot.totalAmount,1500);
   const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
   assert.doesNotMatch(report,/Payments \/ Adjustments|-700 JPY/);assert.match(report,/1,500 JPY/);
-  assert.doesNotMatch(report,/Private credit reason|<td>Payment|<td>Adjustment/);
+  assert.match(report,/Payment received/);assert.match(report,/INVOICE BALANCE/);
+  assert.match(report,/Other credits/);assert.match(report,/Bank charges deducted/);
+  assert.doesNotMatch(report,/Private credit reason|<td>Adjustment/);
 });
 
-test('SOA hides the settlement summary for either sign without changing totals or source data',()=>{
+test('SOA separately displays either sign of credits or charges and receipts without changing totals',()=>{
   for(const adjustment of [-200,100,200]){
     const rows=[sale('a','2026-08-03',1000,300),
       {id:'credit',importer_code:'01',source_type:'adjustment',closing_id:'aug',invoice_date:'2026-08-04',amount_jpy:adjustment}];
@@ -260,11 +262,89 @@ test('SOA hides the settlement summary for either sign without changing totals o
     assert.equal(snapshot.settlementAmount,adjustment-100);
     assert.equal(snapshot.totalAmount,1200+adjustment);
     assert.equal(snapshot.invoiceRows[0].amount,1300);
-    assert.equal((report.match(/class="balance-line"/g)||[]).length,2);
+    assert.equal((report.match(/class="balance-line"/g)||[]).length,4);
+    assert.match(report,/Invoice total/);assert.match(report,/Payments received/);
+    assert.match(report,adjustment<0?/Other credits/:/Other charges/);
     assert.doesNotMatch(report,/Payments \/ Adjustments/);
     assert.match(report,new RegExp(`${(1200+adjustment).toLocaleString('en-US')} JPY`));
     assert.equal(JSON.stringify([rows,payments]),before);
   }
+});
+
+test('pre-closing receipt leaves the invoice intact and explains the exact deduction and remaining amount',()=>{
+  const rows=[sale('a','2026-08-03',2000,300)];
+  const payments=[receipt('paid','a','2026-08-20',480,20)];
+  const model=statementModel(rows,payments,[aug]);
+  const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  const invoice=snapshot.invoiceRows[0];
+  assert.equal(invoice.amount,2300);assert.equal(invoice.received,480);
+  assert.equal(invoice.bankFees,20);assert.equal(invoice.balance,1800);
+  assert.equal(snapshot.receivedAmount,480);assert.equal(snapshot.bankFeeAmount,20);
+  assert.equal(snapshot.openingCarryover,0);assert.equal(snapshot.totalAmount,1800);
+  const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+  assert.match(report,/【TOTAL】<\/td><td class="amount">&lt; 2,300 &gt;/);
+  assert.match(report,/Payment received <span class="payment-dates">\(26\.08\.20\)<\/span><\/td><td class="amount">-480/);
+  assert.match(report,/INVOICE BALANCE<\/td><td class="amount">1,800/);
+  assert.match(report,/Bank charges deducted<\/td><td class="amount">-20/);
+  assert.match(report,/AMOUNT DUE/);
+});
+
+test('same-number site invoices and grouped allocations never borrow another invoice payment',()=>{
+  const rows=[{...sale('osaka','2026-08-03',1000,100),_referenceSite:'OSA'},
+    {...sale('tokyo','2026-08-03',2000,200),_referenceSite:'TYO'}];
+  const payments=[{...receipt('p1','osaka','2026-08-10',100),payment_group_id:'group'},
+    {...receipt('p2','tokyo','2026-08-10',200),payment_group_id:'group'},
+    receipt('p3','tokyo','2026-08-20',50),receipt('future','tokyo','2026-09-01',500),
+    receipt('foreign','different-importer','2026-08-20',999)];
+  const before=JSON.stringify([rows,payments]);
+  const model=statementModel(rows,payments,[aug]);
+  const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  const byId=new Map(snapshot.invoiceRows.map(row=>[row.id,row]));
+  assert.equal(byId.get('osaka').received,100);assert.equal(byId.get('osaka').balance,1000);
+  assert.equal(byId.get('tokyo').received,250);assert.equal(byId.get('tokyo').balance,1950);
+  assert.equal(snapshot.receivedAmount,350);assert.equal(snapshot.totalAmount,2950);
+  assert.equal(Array.from(byId.get('tokyo').paymentDates).join(','),'2026-08-10,2026-08-20');
+  assert.equal(JSON.stringify([rows,payments]),before);
+});
+
+test('opening balance and receipts for prior invoices are shown separately rather than disappearing in carryover',()=>{
+  const rows=[sale('aug','2026-08-03',500),sale('sep','2026-09-03',1000,100,sep)];
+  const payments=[receipt('prior','aug','2026-09-10',300),receipt('current','sep','2026-09-20',100,10)];
+  const model=statementModel(rows,payments,[aug,sep]);
+  const snapshot=model.arInvoiceStatementSnapshot('01',sep,profile);
+  assert.equal(snapshot.carryover,200);assert.equal(snapshot.openingCarryover,500);
+  assert.equal(snapshot.paymentAmount,110);assert.equal(snapshot.receivedAmount,400);
+  assert.equal(snapshot.bankFeeAmount,10);assert.equal(snapshot.totalAmount,1190);
+  assert.equal(snapshot.openingCarryover+snapshot.invoiceAmount+snapshot.currentAdjustments-snapshot.receivedAmount-snapshot.bankFeeAmount,snapshot.totalAmount);
+  const report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+  assert.match(report,/Balance brought forward<\/td><td class="amount">500/);
+  assert.match(report,/Payments received \(2026-09-01 - 2026-09-30\)<\/td><td class="amount">-400/);
+  assert.doesNotMatch(report,/Export Invoice No\.20260803001/);
+});
+
+test('payment on a uniquely resolved correction follows only that invoice',()=>{
+  const rows=[{...sale('a','2026-08-03',1000),source_session_id:'o'},
+    {...sale('b','2026-08-03',2000),source_session_id:'t'},
+    {id:'adjustment',importer_code:'01',source_type:'adjustment',closing_id:'aug',source_session_id:'t',invoice_date:'2026-08-03',amount_jpy:50}];
+  const model=statementModel(rows,[receipt('p','adjustment','2026-08-20',30)],[aug]);
+  const snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  assert.equal(snapshot.invoiceRows.find(row=>row.id==='a').received,0);
+  assert.equal(snapshot.invoiceRows.find(row=>row.id==='b').received,30);
+  assert.equal(snapshot.invoiceRows.find(row=>row.id==='b').balance,2020);
+  assert.equal(snapshot.totalAmount,3020);
+});
+
+test('zero receipts keep the existing compact invoice form, fully paid invoices show zero balance',()=>{
+  const model=statementModel([sale('a','2026-08-03',1000)],[],[aug]);
+  let snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  let report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+  assert.doesNotMatch(report,/<tr class="invoice-payment">|<tbody class="settlement-summary">/);
+  assert.equal((report.match(/class="balance-line"/g)||[]).length,2);
+  model.receivablePayments=[receipt('paid','a','2026-08-31',1000)];
+  snapshot=model.arInvoiceStatementSnapshot('01',aug,profile);
+  assert.equal(snapshot.invoiceRows[0].balance,0);assert.equal(snapshot.totalAmount,0);
+  report=model.arStatementDocumentHtml(snapshot,{statement_no:42});
+  assert.match(report,/INVOICE BALANCE<\/td><td class="amount">0/);
 });
 
 test('invoice-level corrections stay in their original invoice amount, never a separate adjustment line',()=>{
