@@ -92,7 +92,7 @@ test("printing and supplier review preserve every selected row but do not print 
   assert.equal((outputs[0].output.match(/<tr><td>/g)||[]).length,9);
   assert.equal((outputs[1].output.match(/<section class="ticket-page">/g)||[]).length,2);
   assert.equal((outputs[1].output.match(/class="ticket"/g)||[]).length,9);
-  vm.runInNewContext(between("async function printSupplierReviewPurchaseOrder(","async function setSupplierReviewOrdered("),ctx);
+  vm.runInNewContext(between("function supplierReviewReportSelection(","async function setSupplierReviewOrdered("),ctx);
   ctx.supabaseClient={};ctx.currentUser={id:"user"};
   ctx.supplierReviewGroups=[{rows:[{line_id:"line-0",order_date:"2026-09-09",supplier_decision_status:"confirmed",supplier_code:"10",supplier_name_snapshot:"確認用仕入先"}]}];
   ctx.loadConfirmedReportBatchesFromDb=async()=>[{siteCode:"TYO",rows}];

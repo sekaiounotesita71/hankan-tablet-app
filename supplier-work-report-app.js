@@ -1,7 +1,7 @@
 (function(){
   "use strict";
   let exporting=false;const libraryLoads=new Map();
-  const reportScriptUrl=new URL("./supplier-work-report.js?v=20261011-1",document.currentScript?.src||location.href).href;
+  const reportScriptUrl=new URL("./supplier-work-report.js?v=20261105-1",document.currentScript?.src||location.href).href;
   function library(name,url){
     if(window[name])return Promise.resolve(window[name]);if(libraryLoads.has(name))return libraryLoads.get(name);
     const promise=new Promise((resolve,reject)=>{
@@ -21,15 +21,32 @@
   function download(buffer,name,type){
     const url=URL.createObjectURL(new Blob([buffer],{type}));const link=document.createElement("a");link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
+  async function loadModel(filter){
+    const settings=options();
+    const [source,profiles]=await Promise.all([reportRowsForPrint(false),SupplierWorkProfilesApp.read()]);
+    settings.profiles=profiles;
+    if(JSON.stringify(filter)!==JSON.stringify(reportFilter()))throw new Error("出力条件が変更されました。もう一度出力してください。");
+    return SupplierWorkReport.build(SupplierWorkReport.selectSupplier(source,filter.supplier,settings.suppliers),settings);
+  }
+  async function savePdf(){
+    const filter={...reportFilter()};
+    if(!filter.date){alert("帳票出力の日付を指定してください");return}
+    await OrderReportPdf.save("work","作業明細書",async()=>{
+      const model=await loadModel(filter);
+      const documents=model.suppliers.map(supplier=>{
+        const single={...model,suppliers:[supplier]};
+        return {code:supplier.code,name:supplier.name,model:single,html:SupplierWorkReport.styledPages(single)};
+      });
+      return {date:filter.date,scope:reportPdfScope(filter),documents};
+    });
+  }
   async function output(kind){
     if(exporting)return;const filter={...reportFilter()};
     if(!filter.date){alert("帳票出力の日付を指定してください");return}
     let popup=null;if(kind==="pdf"){popup=openPrintLoadingWindow("作業明細書");if(!popup)return}
     exporting=true;setAppBusy(true,"作業明細書を作成中...");
     try{
-      const settings=options();const [source,profiles]=await Promise.all([reportRowsForPrint(false),SupplierWorkProfilesApp.read()]);settings.profiles=profiles;
-      if(JSON.stringify(filter)!==JSON.stringify(reportFilter()))throw new Error("出力条件が変更されました。もう一度出力してください。");
-      const rows=SupplierWorkReport.selectSupplier(source,filter.supplier,settings.suppliers);const model=SupplierWorkReport.build(rows,settings);
+      const model=await loadModel(filter);
       if(kind==="pdf"){
         popup.document.open();popup.document.write(SupplierWorkReport.printableDocument(model,reportScriptUrl));popup.document.close();
       }else{
@@ -49,4 +66,5 @@
     finally{exporting=false;setAppBusy(false)}
   }
   window.printSupplierWorkStatements=()=>output("pdf");window.exportSupplierWorkStatements=()=>output("excel");
+  window.downloadSupplierWorkStatements=savePdf;
 })();

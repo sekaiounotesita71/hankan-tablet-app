@@ -30,7 +30,7 @@
     [...masters,...rows.map(r=>({code:r.supplierCode,name:r.supplierName}))].forEach(s=>{if(text(s.code))identities.set(norm(s.code),{code:text(s.code),name:text(s.name)})});
     let matches=[...identities.values()].filter(s=>norm(s.code)===key);
     if(!matches.length)matches=[...identities.values()].filter(s=>norm(s.name)===key);
-    if(matches.length!==1)throw new Error("作業明細書は、発注先コードを指定するか、空欄（全発注先）で出力してください。");
+    if(matches.length!==1)throw new Error("発注先コードを指定するか、空欄（全発注先）で出力してください。");
     return rows.filter(r=>norm(r.supplierCode)===norm(matches[0].code));
   }
   function paginate(rows,capacity=12,continuationCapacity=capacity){
@@ -101,6 +101,7 @@
   const css=`@page{size:A4 landscape;margin:7mm 8mm}*{box-sizing:border-box}body{font-family:"Yu Gothic","Meiryo",sans-serif;color:#111;margin:0;font-size:9pt;letter-spacing:0;background:#e8ecef}.work-page{width:281mm;min-height:194mm;background:white;margin:10mm auto;padding:0;break-after:page;page-break-after:always}.work-page:last-child{break-after:auto;page-break-after:auto}header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #111;padding:2mm 0}h1{font-size:17pt;margin:0}.meta{display:flex;flex-wrap:wrap;gap:2mm 8mm;padding:3mm 0;font-size:10pt}.delivery,.instructions{margin-bottom:2mm;white-space:normal;overflow-wrap:anywhere}.lines,.boxes{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #333;overflow-wrap:anywhere;vertical-align:middle;padding:1mm;font-weight:normal}th{font-weight:bold;background:#eceff1;font-size:8pt;height:9mm;text-align:center}.lines td{height:7.8mm;font-size:8.5pt;line-height:1.3}.lines td:first-child,.lines td:nth-child(6),.lines td:nth-child(7){text-align:center}.customer-start td{border-top:2px solid #111}.box-title{display:flex;justify-content:space-between;margin:3mm 0 1mm;font-weight:bold}.boxes th{height:6mm}.boxes td{height:6mm}.boxes th:nth-child(3n),.boxes td:nth-child(3n){border-right:2px solid #111}footer{display:flex;justify-content:flex-end;gap:12mm;margin-top:3mm}.print-tools{position:sticky;top:0;padding:12px;background:#fff;border-bottom:1px solid #bbb;display:flex;gap:12px;align-items:center;z-index:1}.print-tools button{font:inherit;padding:8px 18px;cursor:pointer}@media print{body{background:white}.print-tools{display:none}.work-page{margin:0;min-height:0}}`;
   const compactCss="body{line-height:1.25}header{padding:1mm 0}h1{line-height:1.2}.meta{padding:2mm 0}.work-header{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #555;border-left:1px solid #555;margin:0 0 2mm;font-size:8.5pt}.work-header>div{display:flex;gap:2mm;padding:1mm 1.5mm;border-right:1px solid #555;border-bottom:1px solid #555;min-width:0}.work-header b{flex:0 0 32mm}.work-header span{overflow-wrap:anywhere;min-width:0}.work-header .header-wide{grid-column:1/-1}.lines th{padding:.6mm;line-height:1.15;height:8mm}.lines td{padding:.6mm;line-height:1.2}.boxes th{line-height:1.15;padding:.5mm}.boxes td{height:5.5mm}footer{margin-top:2mm}";
   function renderPages(model){return model.suppliers.map(s=>s.groups.map(g=>g.pages.map((p,i)=>pageHtml(s,g,p,i,g.pages.length,model.options)).join("")).join("")).join("")}
+  function styledPages(model){return `<style>${css}${compactCss}</style><main id="work-pages">${renderPages(model)}</main>`}
   function printableDocument(model,scriptUrl){
     const data=JSON.stringify(model).replace(/</g,"\\u003c");
     const profileUrl=String(scriptUrl).replace(/supplier-work-report\.js/,"supplier-work-profile.js");
@@ -111,21 +112,26 @@
     const model=JSON.parse(doc.getElementById("work-report-data").textContent);
     const measure=doc.createElement("div");measure.style.cssText="position:absolute;height:191mm;width:1px;visibility:hidden";doc.body.append(measure);
     const maxHeight=measure.getBoundingClientRect().height;measure.remove();
+    const root=doc.getElementById("work-pages");
+    const fits=reflowPages(root,model,maxHeight);
+    doc.getElementById("print-status").textContent=fits?`${model.rowCount}明細 / ${root.querySelectorAll(".work-page").length}ページ`:"備考・連絡事項が長すぎます。Excel出力をご利用ください。";
+    doc.getElementById("print-work").disabled=!fits;return fits;
+  }
+  function reflowPages(root,model,maxHeight){
     // Reflow long descriptions without losing a row or shrinking the entire sheet.
+    const fits=el=>el.lastElementChild.getBoundingClientRect().bottom-el.getBoundingClientRect().top<=maxHeight;
     let changed=true,pass=0;
     while(changed&&pass++<10000){
-      changed=false;let pageIndex=0;const elements=[...doc.querySelectorAll(".work-page")];
+      changed=false;let pageIndex=0;const elements=[...root.querySelectorAll(".work-page")];
       scan:for(const supplier of model.suppliers)for(const group of supplier.groups)for(let i=0;i<group.pages.length;i++){
         const el=elements[pageIndex++];if(!el)break scan;
-        if(el.lastElementChild.getBoundingClientRect().bottom-el.getBoundingClientRect().top>maxHeight&&group.pages[i].length>1){
+        if(!fits(el)&&group.pages[i].length>1){
           const removed=group.pages[i].pop();if(!group.pages[i+1])group.pages.push([]);group.pages[i+1].unshift(removed);changed=true;break scan;
         }
       }
-      if(changed)doc.getElementById("work-pages").innerHTML=renderPages(model);
+      if(changed)root.innerHTML=renderPages(model);
     }
-    const overflow=[...doc.querySelectorAll(".work-page")].some(el=>el.lastElementChild.getBoundingClientRect().bottom-el.getBoundingClientRect().top>maxHeight);
-    doc.getElementById("print-status").textContent=overflow?"備考・連絡事項が長すぎます。Excel出力をご利用ください。":`${model.rowCount}明細 / ${doc.querySelectorAll(".work-page").length}ページ`;
-    doc.getElementById("print-work").disabled=overflow;return !overflow;
+    return [...root.querySelectorAll(".work-page")].every(fits);
   }
   function createWorkbook(ExcelJS,supplier,options={}){
     const workbook=new ExcelJS.Workbook();workbook.creator="YUMIRUME";
@@ -174,5 +180,5 @@
     });return workbook;
   }
   function filename(supplier,index,date){return `${String(index+1).padStart(2,"0")}_作業明細書_${safeName(date)}_${safeName(supplier.code)}_${safeName(supplier.name)}.xlsx`}
-  return {columns,units,build,paginate,selectSupplier,cellValues,createWorkbook,printableDocument,preparePrint,renderPages,filename};
+  return {columns,units,build,paginate,selectSupplier,cellValues,createWorkbook,printableDocument,preparePrint,renderPages,styledPages,reflowPages,filename};
 });
