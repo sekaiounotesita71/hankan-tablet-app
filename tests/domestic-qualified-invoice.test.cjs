@@ -40,6 +40,19 @@ test('rounding stays per delivery when monthly tax would differ by one yen',()=>
   assert.equal(Math.floor(38*8/100),3);
   assert.match(docs.invoice(c,sales),/>40 円</);
 });
+test('the remittance block appears once, below the amount due, only on the consolidated invoice',()=>{
+  const sales=[sale('a'),sale('b')],c=closing(sales),before=clone({sales,c});
+  const bankTransfer={bankName:'見本銀行',branchName:'見本支店',accountType:'普通',accountNumber:'0012345',accountHolder:'カ）ミホン <test>'};
+  const doc=docs.invoice(c,sales,{},{bankTransfer});
+  const [cover,...deliveries]=doc.split('</main>');
+  assert.match(cover,/今回ご請求額[\s\S]*<h2 id="invoice-bank-title">振込先<\/h2>/);
+  for(const value of ['見本銀行 見本支店','普通 0012345','カ）ミホン &lt;test&gt;'])assert.ok(cover.includes(value));
+  assert.equal((doc.match(/class="invoice-bank"/g)||[]).length,1);
+  assert.doesNotMatch(deliveries.join(''),/見本銀行|振込先/);
+  assert.doesNotMatch(docs.delivery(sales[0],{},{bankTransfer}),/見本銀行|振込先/);
+  assert.throws(()=>docs.invoice(c,sales,{},{bankTransfer:{...bankTransfer,accountNumber:''}}),/振込先の口座番号/);
+  assert.deepEqual({sales,c},before);
+});
 test('missing or inconsistent stored amounts, unknown tax, cancelled and partial detail are rejected',()=>{
   for(const mutate of [s=>s.lines=[],s=>s.status='cancelled',s=>s.tax_8_jpy++,s=>s.total_net_jpy++,s=>s.total_amount_jpy++,s=>s.lines[0].tax_rate=null,s=>s.lines[0].net_amount_jpy++,s=>s.lines[0].sale_id='another',s=>s.lines.push(clone(s.lines[0])),s=>s.lines[0].quantity=null]){
     const s=sale();mutate(s);assert.throws(()=>docs.delivery(s));
@@ -84,9 +97,16 @@ function appContext({c,sales,cache=[]}){
 test('old closings use fresh data, while new invoices reprint their stored document snapshots',async()=>{
   const s=sale(),c=closing([s]);const old=appContext({c,sales:[s],cache:[{...c,status:'reopened'}]});
   await old.context.printDomesticInvoice(c.id);assert.equal(old.result().calls,1);assert.ok(old.result().output.includes('T8120001233117'));
-  const frozen=clone(c);Object.assign(frozen.snapshot,{document_version:1,document_sales:[s],document_customer:{address_text:'保存した住所'},document_issuer:docs.issuer});
+  const {bankTransfer,...legacyIssuer}=docs.issuer;
+  const frozen=clone(c);Object.assign(frozen.snapshot,{document_version:1,document_sales:[s],document_customer:{address_text:'保存した住所'},document_issuer:legacyIssuer});
   const fresh=appContext({c:frozen,sales:[]});await fresh.context.printDomesticInvoice(c.id);
   assert.equal(fresh.result().calls,0);assert.match(fresh.result().output,/保存した住所/);
+  for(const text of ['りそな銀行 上六支店','普通 0412610','カブシキガイシャユミルメ'])assert.ok(fresh.result().output.includes(text));
+  assert.equal((fresh.result().output.match(/class="invoice-bank"/g)||[]).length,1);
+  assert.equal(bankTransfer.accountNumber,'0412610');
+  frozen.snapshot.document_issuer={...docs.issuer,bankTransfer:{bankName:'見本銀行',branchName:'見本支店',accountType:'当座',accountNumber:'0012345',accountHolder:'ミホン'}};
+  const withBank=appContext({c:frozen,sales:[]});await withBank.context.printDomesticInvoice(c.id);
+  assert.equal(withBank.result().calls,0);assert.match(withBank.result().output,/当座 0012345/);
   delete frozen.snapshot.document_issuer;
   const broken=appContext({c:frozen,sales:[s]});await broken.context.printDomesticInvoice(c.id);
   assert.equal(broken.result().closed,true);assert.match(broken.result().error,/保存明細/);
