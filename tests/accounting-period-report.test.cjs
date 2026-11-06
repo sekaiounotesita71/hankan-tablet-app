@@ -53,7 +53,7 @@ test('bad dates, invalid money and duplicate IDs fail closed',()=>{
   assert.throws(()=>Report.build({records:[row('a','2026-08-01',1)],payments:[payment('x','a','2026-08-02',1),payment('x','a','2026-08-03',1)],range}));
 });
 function uiContext(){
-  const c={window:{},document:{getElementById:()=>null},AccountingPeriodReport:Report,
+  const c={window:{},document:{getElementById:()=>null},AccountingPeriodReport:Report,AccountingReportLayout:require('../accounting-report-layout.js'),
     receivableRows:[],receivablePayments:[],receivableClosings:[],payableRows:[],payablePayments:[],payableClosings:[],
     arIsOperationRow:r=>r.source_type==='opening'||r.invoice_date>='2026-08-01',
     arSameImporter:(a,b)=>['01','DIM'].includes(a.importer_code)&&['01','DIM'].includes(b),

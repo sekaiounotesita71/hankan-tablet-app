@@ -89,7 +89,7 @@ test('document includes period, basis, totals, pagination CSS and escapes custom
   const row=record('a','2026-09-10',108,{customer_name_snapshot:'<script>bad</script>'});
   const result=report.build(opts([row],{customer:'163'}));
   const list=report.document(result),detail=report.document(result,{detail:true});
-  for(const text of ['国内 売掛一覧表','2026-09-30','期首残高','期間入金額','手数料消込','期末売掛残高','消費税'])assert.ok(list.body.includes(text));
+  for(const text of ['国内 売掛一覧表','2026-09-30','期首残高','入金額','手数料消込','期末売掛残高','消費税'])assert.ok(list.body.includes(text),text);
   assert.ok(!list.body.includes('<script>'));assert.match(detail.body,/DOM-a/);
   assert.match(report.css(),/A4 landscape/);assert.match(report.css(),/thead\{display:table-header-group/);
   assert.throws(()=>report.document({...result,customer:''},{detail:true}),/得意先/);
@@ -104,7 +104,7 @@ test('report read failures close the print window and never fall back to cached 
   for(const fail of [false,true]){
     const row=record('a','2026-09-10');let output='',closed=false,error='',fetches=0,opened=0;
     const printWindow={document:{open(){},write(s){output=s},close(){}},close(){closed=true},focus(){}};
-    const ctx={appBusy:false,currentUser:{},customers:[],DomesticReceivableReport:report,DomesticDocuments:{issuer:{name:'Test'}},today:()=>dates.to,
+    const ctx={appBusy:false,currentUser:{},customers:[],DomesticReceivableReport:report,DomesticDocuments:{issuer:{name:'Test'}},today:()=>dates.to,URL,location:{href:'https://example.test/domestic-sales'},
       value:id=>({'domestic-ar-report-range':'20260901-20260930','domestic-ar-report-scope':'all'}[id]||''),findCustomer:()=>null,
       showToast:s=>error=s,friendlyError:e=>e.message,esc:s=>s,setBusy(v){ctx.appBusy=v},openDomesticPrintWindow:()=>{opened++;return printWindow},
       supabaseClient:{from(){return{select(){return this},neq(){return this},lte(){return this},order(){return this}}}},

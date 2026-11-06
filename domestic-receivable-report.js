@@ -1,9 +1,8 @@
 (function(root,factory){
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./accounting-period-report.js'),require('./domestic-payment-model.js'),require('./reference-sites.js'));
-  else root.DomesticReceivableReport=factory(root.AccountingPeriodReport,root.DomesticPayments,root.ReferenceSites);
-})(typeof globalThis!=='undefined'?globalThis:this,function(period,paymentsModel,sites){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./accounting-period-report.js'),require('./domestic-payment-model.js'),require('./reference-sites.js'),require('./accounting-report-layout.js'));
+  else root.DomesticReceivableReport=factory(root.AccountingPeriodReport,root.DomesticPayments,root.ReferenceSites,root.AccountingReportLayout);
+})(typeof globalThis!=='undefined'?globalThis:this,function(period,paymentsModel,sites,Layout){
   'use strict';
-  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=value=>Number(value).toLocaleString('ja-JP',{maximumFractionDigits:2});
   function amount(value,label){
     if(value===null||value===undefined||value===''||!Number.isFinite(Number(value)))throw Error(`${label}を読み込めません。帳票は作成していません。`);
@@ -58,24 +57,44 @@
     });
     return {...period.build({records,payments,range:options.range,kind:'ar'}),scope:options.scope||'posted',site:options.site||'',customer:options.customer||''};
   }
-  function document(report,{detail=false,company='株式会社ゆみるめ',issuedAt=''}={}){
+  function document(report,{detail=false,company='株式会社ゆみるめ',issuedAt='',logoUrl=''}={}){
     if(!report.items.length)throw Error('対象期間に残高または取引がありません。');
     if(detail&&(!report.customer||report.items.length!==1))throw Error('得意先明細は得意先コードを1つ選択してください。');
     const title=detail?'国内 得意先明細表':'国内 売掛一覧表',total=report.totals;
-    const num=n=>`<td class="num">${money(n)}</td>`;
-    const listRow=row=>`<tr${row===total?' class="total"':''}><td>${esc(row===total?'合計':row.code)}</td><td>${esc(row===total?'':row.name||'')}</td>${[row.opening,row.net,row.tax,row.adjustment,row.cash,row.fee,row.balance].map(num).join('')}</tr>`;
-    let table;
+    const numberCell=value=>({text:money(value),className:'money'});
+    const paired=(top,bottom)=>({lines:[top,bottom],className:'money'});
+    const itemRow=row=>[
+      {text:row.code||'',className:'code'},row.name||'',
+      paired(money(row.opening),money(row.net)),paired(money(row.cash),money(row.adjustment)),
+      paired(money(row.fee),money(row.tax)),paired(money(row.carry),money(row.charges)),
+      paired(String(row.count),money(row.balance))
+    ];
+    let headers,rows,subtitle;
     if(detail){
       const row=report.items[0];
-      let last=`<tr class="total"><td colspan="4">合計</td>${num(row.charges)}${num(row.cash+row.fee)}${num(row.balance)}</tr>`;
-      table=`<h2>${esc(row.code)} ${esc(row.name)}</h2><table><colgroup><col style="width:23mm"><col style="width:18mm"><col style="width:44mm"><col><col style="width:31mm"><col style="width:31mm"><col style="width:31mm"></colgroup><thead><tr><th>日付</th><th>区分</th><th>管理番号</th><th>内容</th><th>売上・調整（税込）</th><th>入金・消込</th><th>売掛残高</th></tr></thead><tbody><tr><td>${esc(report.range.from)}</td><td>繰越</td><td></td><td>期間開始前残高</td><td></td><td></td>${num(row.opening)}</tr>${row.events.map(event=>`<tr><td>${esc(event.date)}</td><td>${esc(event.type)}</td><td>${esc(event.reference)}</td><td>${esc(event.description)}</td>${num(event.debit)}${num(event.credit)}${num(event.balance)}</tr>`).join('')}${last}</tbody></table>`;
+      subtitle=`${row.code} ${row.name}`;
+      headers=[{label:'日付',width:'22mm'},{label:'区分',width:'22mm'},{label:'管理番号',width:'38mm'},'内容',
+        {label:'売上・調整（税込）',className:'money',width:'32mm'},
+        {label:'入金・消込',className:'money',width:'32mm'},{label:'売掛残高',className:'money',width:'34mm'}];
+      rows=[[report.range.from,'繰越','-','期間開始前残高','','',numberCell(row.opening)],
+        ...row.events.map(event=>[event.date,event.type,event.reference,event.description,event.debit?numberCell(event.debit):'',event.credit?numberCell(event.credit):'',numberCell(event.balance)]),
+        {total:true,cells:['','合計','','',numberCell(row.charges),numberCell(row.cash+row.fee),numberCell(row.balance)]}];
     }else{
-      table=`<table><colgroup><col style="width:16mm"><col style="width:43mm">${'<col style="width:30mm">'.repeat(7)}</colgroup><thead><tr><th>コード</th><th>得意先名</th><th>期首残高</th><th>期間売上<br>（税抜・送料込）</th><th>消費税</th><th>調整・初期登録</th><th>期間入金額</th><th>手数料消込</th><th>期末売掛残高<br>（税込）</th></tr></thead><tbody>${report.items.map(listRow).join('')}${listRow(total)}</tbody></table>`;
+      subtitle='得意先別 期間残高一覧（送料を含む）';
+      headers=[{label:'コード',width:'16mm'},{label:'得意先名',width:'68mm'},
+        {label:'期首残高\n当期売上額（税抜）',className:'money'},{label:'入金額\n調整・初期登録',className:'money'},
+        {label:'手数料消込\n消費税',className:'money'},{label:'差引繰越\n当期売上合計（税込）',className:'money'},
+        {label:'伝票数\n期末売掛残高（税込）',className:'money'}];
+      rows=[...report.items.map(itemRow),{total:true,cells:itemRow(total)}];
     }
-    const repeatLabel=`${title} ／ ${report.range.from} ～ ${report.range.to}${detail?` ／ ${report.items[0].code} ${report.items[0].name}`:''}`;
-    table=table.replace('<thead>','<thead><tr><th colspan="'+(detail?7:9)+'" style="text-align:left;background:#fff">'+esc(repeatLabel)+'</th></tr>');
-    return {title,body:`<main class="ar-report"><header><div><h1>${title}</h1><div class="meta">対象期間 ${esc(report.range.from)} ～ ${esc(report.range.to)} ／ 残高基準日 ${esc(report.range.to)}</div><div class="meta">${report.scope==='posted'?'締め済み＋初期残高':'登録済みすべて（未締め含む）'} ／ ${esc(sites.label(report.site))} ／ ${report.customer?`得意先 ${esc(report.customer)}`:'全得意先'} ／ 単位：円</div></div><div class="issuer">${esc(company)}${issuedAt?`<br>出力日 ${esc(issuedAt)}`:''}</div></header><div class="summary">${[['期首残高',total.opening],['期間売上・調整（税込）',total.charges],['期間入金・消込',total.cash+total.fee],['期末売掛残高（税込）',total.balance]].map(([label,n])=>`<div><span>${label}</span><b>${money(n)}</b></div>`).join('')}</div>${table}</main>`};
+    const meta=[`対象期間 ${report.range.from} ～ ${report.range.to}`,`期末基準日 ${report.range.to}`,
+      report.scope==='posted'?'締め済み＋初期残高':'登録済みすべて（未締め含む）',
+      report.customer?`得意先 ${report.customer}`:'全得意先',sites.label(report.site),'単位：円'];
+    const summary=[{label:'期首残高',value:money(total.opening)},{label:'期間入金・消込',value:money(total.cash+total.fee)},
+      {label:'期間売上・調整計（税込）',value:money(total.charges)},{label:'期末売掛残高（税込）',value:money(total.balance)}];
+    return Layout.create({title,subtitle,meta,summary,headers,rows,orientation:'landscape',layout:'period',company,issuedAt,logoUrl,
+      repeatLabel:`${title} ／ ${report.range.from} ～ ${report.range.to}${detail?` ／ ${report.items[0].code} ${report.items[0].name}`:''}`});
   }
-  function css(){return `<style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box;letter-spacing:0}body{margin:0;color:#111;background:#fff;font-family:Meiryo,"Yu Gothic",sans-serif;font-size:9pt}.print-actions{display:flex;gap:8px;margin:10px}.print-actions button{font:inherit;padding:8px 14px;background:#fff;border:1px solid #555}.ar-report{width:100%;max-width:277mm;margin:0 auto;padding:4mm 0}header{display:flex;justify-content:space-between;gap:8mm;margin-bottom:5mm}h1{font-size:19pt;margin:0 0 3mm}h2{font-size:12pt;margin:4mm 0}.meta{line-height:1.7;font-size:8.5pt}.issuer{text-align:right;font-size:9pt;line-height:1.8;white-space:nowrap}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:2px solid #333;border-bottom:1px solid #333;margin:0 0 5mm;break-inside:avoid}.summary>div{padding:2mm 3mm;border-right:1px solid #aaa}.summary>div:last-child{border:0}.summary span{font-size:8pt}.summary b{display:block;text-align:right;font-size:13pt;margin-top:1mm}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5pt}th,td{border:1px solid #777;padding:2.1mm 1.4mm;overflow-wrap:anywhere;vertical-align:middle}th{background:#eee;font-size:8pt;font-weight:700}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.total{font-weight:700;background:#f2f2f2}.total td{border-top:2px solid #444}@media(max-width:800px){body{overflow-x:auto}.ar-report{min-width:1000px}}@media print{.print-actions{display:none}.ar-report{min-width:0;max-width:none;margin:0;padding:0}body{overflow:visible}}</style>`;}
+  function css(){return Layout.css();}
   return {range,selectRows,build,document,css};
 });

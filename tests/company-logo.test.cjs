@@ -24,7 +24,8 @@ test("print documents use the shared logo", () => {
   const order = read("order-entry-beta.html");
   const domestic = read("domestic-documents.js");
   assert.match(order, /new URL\("\.\/yumirume-logo\.jpg",location\.href\)\.href/);
-  assert.match(order, /class=\"report-brand\"/);
+  assert.match(order, /AccountingReportLayout\.create/);
+  assert.match(read("accounting-report-layout.js"), /class=\"report-brand\"/);
   assert.match(domestic, /class=\"company-logo\"/);
   assert.match(domestic, /companyHtml\(company,options\.logoUrl\)/);
 });

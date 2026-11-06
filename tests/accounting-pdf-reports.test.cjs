@@ -5,6 +5,7 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "order-entry-beta.html"), "utf8");
+const layout = fs.readFileSync(path.join(root, "accounting-report-layout.js"), "utf8");
 
 const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map((match) => match[1])
@@ -17,8 +18,9 @@ assert.match(html, /onclick="printPayableListPdf\(\)">買掛一覧PDF/);
 assert.match(html, /onclick="printSupplierLedgerPdf\(\)">仕入先明細PDF/);
 
 assert.match(html, /function writeAccountingReport\(/);
-assert.match(html, /@page\{size:A4 \$\{orientation\}/);
-assert.match(html, /thead\{display:table-header-group\}/);
+assert.match(html, /AccountingReportLayout\.create/);
+assert.match(layout, /@page\{size:A4 \$\{paper\}/);
+assert.match(layout, /thead\{display:table-header-group\}/);
 
 assert.match(html, /const result=arFilteredRows\(\)/);
 assert.match(html, /_state:arRecordState\(row\)/);
