@@ -4192,11 +4192,18 @@ function salesRefCostQuantity(row,priceUnit){
   }
   return null;
 }
+function salesRefIsZeroAmount(row){
+  const value=row?.amount;
+  if(typeof value!=="number"&&typeof value!=="string")return false;
+  if(typeof value==="string"&&!value.trim())return false;
+  return Number.isFinite(Number(value))&&Number(value)===0;
+}
 function salesRefCostInfo(row){
   if(row.is_stockout||row.pending_entry_id||row.source_type==="未処理伝票")return {priced:true,amount:0,source:"adjustment"};
   if(row._purchaseCostSource==="linked"&&Number.isFinite(row._purchaseCostActual)){
     return {priced:true,amount:row._purchaseCostActual,source:"linked",supplierCode:row._purchaseSupplierCode||""};
   }
+  if(salesRefIsZeroAmount(row))return {priced:true,amount:0,source:"zero_sales"};
   return {priced:false,amount:0,source:"",reason:row._purchaseCostReason||"仕入未紐づけ"};
 }
 async function salesRefReadChunks(items,chunkSize,readChunk,concurrency=6){
@@ -4430,7 +4437,7 @@ function salesRefMetrics(rows,options={}){
   const quantityByUnit=salesRefQuantityByUnit(rows);
   const customers=new Set(rows.map(row=>row.store_name||row.customer_code).filter(Boolean));
   const products=new Set(rows.map(row=>row.product_id||row.product_name).filter(Boolean));
-  let purchaseCost=0,costedSales=0,pricedCount=0,unpricedCount=0,unpricedSales=0,linkedCostCount=0,adjustmentCount=0;
+  let purchaseCost=0,costedSales=0,pricedCount=0,unpricedCount=0,unpricedSales=0,linkedCostCount=0,adjustmentCount=0,zeroSalesCount=0;
   if(includeProfit){
     rows.forEach(row=>{
       const cost=salesRefCostInfo(row);
@@ -4440,6 +4447,7 @@ function salesRefMetrics(rows,options={}){
       pricedCount++;
       if(cost.source==="linked")linkedCostCount++;
       else if(cost.source==="adjustment")adjustmentCount++;
+      else if(cost.source==="zero_sales")zeroSalesCount++;
     });
   }
   const grossProfit=costedSales-purchaseCost;
@@ -4457,7 +4465,7 @@ function salesRefMetrics(rows,options={}){
     avgCustomer:customers.size?totalSales/customers.size:0,
     avgNetUnit:totalNet?netSales/totalNet:0,
     purchaseCost,costedSales,grossProfit,grossMargin:costedSales?grossProfit/costedSales*100:0,
-    pricedCount,unpricedCount,unpricedSales,linkedCostCount,adjustmentCount
+    pricedCount,unpricedCount,unpricedSales,linkedCostCount,adjustmentCount,zeroSalesCount
   };
 }
 function salesRefProfitGroups(rows,keyFn){
@@ -4584,7 +4592,7 @@ function salesRefProfitAnalysisHtml(rows,purchaseSummary=profitReferencePurchase
   const grossProfitSub=aggregateAvailable
     ?`粗利率 ${aggregateMargin.toFixed(1)}%`
     :"輸入社・得意先・商品等の絞り込みを解除してください";
-  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">全体粗利＝純売上－すべての確定仕入・仕入送料等。輸入社別は指定された仕入のみを引いた概算です。全体仕入・未分類・仕入送料等は輸入社に配賦しません。売上・仕入とも選択期間の日付を基準に集計します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">実績原価 ${metrics.linkedCostCount}件 / 未反映 ${metrics.unpricedCount}件</span></div>
+  return `<div class="sales-analysis-head"><div><div class="sales-analysis-title">粗利分析</div><div class="sales-analysis-note">全体粗利＝純売上－すべての確定仕入・仕入送料等。輸入社別は指定された仕入のみを引いた概算です。全体仕入・未分類・仕入送料等は輸入社に配賦しません。売上・仕入とも選択期間の日付を基準に集計します。</div></div><span class="pill ${metrics.unpricedCount?"warn":"blue"}">実績原価 ${metrics.linkedCostCount}件 / 未反映 ${metrics.unpricedCount}件${metrics.zeroSalesCount?` / 売上0円除外 ${metrics.zeroSalesCount}件`:""}</span></div>
     <div class="sales-analysis-grid">
       <div class="sales-compare-card"><div class="sales-card-label">合算純売上</div><div class="sales-compare-main">${esc(salesRefMoney(metrics.netSales))}</div><div class="sales-compare-sub">輸出 ${esc(salesRefMoney(exportSales))} / 国内 ${esc(salesRefMoney(domesticSales))}</div></div>
       <div class="sales-compare-card"><div class="sales-card-label">期間仕入（税抜）</div><div class="sales-compare-main">${esc(salesRefMoney(periodPurchaseCost))}</div><div class="sales-compare-sub">商品 ${esc(salesRefMoney(purchaseSummary.subtotal))} / 送料・その他 ${esc(salesRefMoney(purchaseSummary.fees))} / ${esc(purchaseSummary.receiptCount)}伝票</div></div>
@@ -11843,7 +11851,7 @@ async function readSalesForAdvancePurchase(fromDate,toDate=fromDate){
   const pageSize=1000;
   for(let offset=0;;offset+=pageSize){
     const {data,error}=await supabaseClient.from("sales_records")
-      .select("id,session_id,source_row_no,work_date,importer_code,importer_id,product_id,product_name,origin,input_qty,input_unit,net_weight,is_stockout")
+      .select("id,session_id,source_row_no,work_date,importer_code,importer_id,product_id,product_name,origin,input_qty,input_unit,net_weight,is_stockout,amount")
       .gte("work_date",fromDate)
       .lte("work_date",toDate)
       .order("work_date")
@@ -11854,7 +11862,7 @@ async function readSalesForAdvancePurchase(fromDate,toDate=fromDate){
     result.push(...page);
     if(page.length<pageSize)break;
   }
-  return result;
+  return result.filter(row=>!salesRefIsZeroAmount(row));
 }
 function advancePurchaseSaleSourceKey(row){
   return `${row?.session_id||""}|${Number(row?.source_row_no)||0}`;
