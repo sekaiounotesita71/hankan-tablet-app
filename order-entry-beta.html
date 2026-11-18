@@ -192,6 +192,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="auth-user"><span id="auth-state" class="pill warn">確認中</span><span id="auth-user-email" class="auth-user-email"></span><span id="auth-role-state" class="pill">一般</span></div>
     <button class="btn" type="button" onclick="signOutSupabase()">ログアウト</button>
   </div>
+  <div id="local-storage-warning" role="alert" hidden style="margin:8px 0;padding:10px 12px;border:1px solid #d7a040;border-radius:6px;background:#fff6df;color:#674600;font-weight:700"></div>
 
   <section class="workspace-panel active" data-workspace-panel="home" id="home-panel">
     <div class="home-workspace">
@@ -1525,6 +1526,46 @@ let selectedAuditEvent=null;
 let auditSnapshots=[];
 let externalBackupRuns=[];
 
+const orderEntryMemoryStorage=new Map();
+const orderEntryStorageFailures=new Set();
+function updateOrderEntryStorageWarning(){
+  const warning=document.getElementById("local-storage-warning");
+  if(!warning)return;
+  warning.hidden=orderEntryStorageFailures.size===0;
+  warning.textContent=warning.hidden?"":"端末内の保存領域を利用できません。未確定の入力は画面内に保持しています。DBへの受注確定を確認するまで画面を閉じないでください。";
+}
+function readOrderEntryLocal(key){
+  if(orderEntryMemoryStorage.has(key))return orderEntryMemoryStorage.get(key);
+  try{return localStorage.getItem(key)}catch(error){return null}
+}
+function writeOrderEntryLocal(key,value){
+  let saved=false;
+  try{localStorage.setItem(key,value);saved=true}catch(error){
+    // Only this obsolete DB-derived cache is disposable; drafts and auth are not.
+    try{localStorage.removeItem(CONFIRMED_KEY);localStorage.setItem(key,value);saved=true}catch(retryError){}
+  }
+  if(saved){
+    orderEntryMemoryStorage.delete(key);
+    orderEntryStorageFailures.delete(key);
+  }else{
+    orderEntryMemoryStorage.set(key,value);
+    orderEntryStorageFailures.add(key);
+  }
+  updateOrderEntryStorageWarning();
+  return saved;
+}
+function removeOrderEntryLocal(key){
+  try{
+    localStorage.removeItem(key);
+    orderEntryMemoryStorage.delete(key);
+    orderEntryStorageFailures.delete(key);
+  }catch(error){
+    orderEntryMemoryStorage.set(key,null);
+    if(key!==CONFIRMED_KEY)orderEntryStorageFailures.add(key);
+  }
+  updateOrderEntryStorageWarning();
+}
+
 const baseMasters={
   products:[],
   customers:[],
@@ -1737,7 +1778,7 @@ function dbErrorMessage(error){
 }
 function savedMastersObject(){
   try{
-    const saved=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}");
+    const saved=JSON.parse(readOrderEntryLocal(MASTER_KEY)||"{}");
     saved.products=saved.products||[];
     saved.customers=saved.customers||[];
     saved.suppliers=saved.suppliers||[];
@@ -1754,7 +1795,7 @@ function savedMastersObject(){
 }
 function saveMastersObject(saved){
   let previous={deleted:{products:[],customers:[],suppliers:[],importers:[]}};
-  try{previous=JSON.parse(localStorage.getItem(MASTER_KEY)||"{}")}catch(e){}
+  try{previous=JSON.parse(readOrderEntryLocal(MASTER_KEY)||"{}")}catch(e){}
   saved.products=saved.products||[];
   saved.customers=saved.customers||[];
   saved.suppliers=saved.suppliers||[];
@@ -1764,7 +1805,7 @@ function saveMastersObject(saved){
   saved.deleted.customers=saved.deleted.customers||[];
   saved.deleted.suppliers=saved.deleted.suppliers||[];
   saved.deleted.importers=saved.deleted.importers||[];
-  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+  writeOrderEntryLocal(MASTER_KEY,JSON.stringify(saved));
 }
 function getMasters(){
   try{
@@ -1797,7 +1838,7 @@ function saveCustomMaster(type,item){
   if(idx>=0)list[idx]=item;else list.push(item);
   const key=masterCodeKey(item.code);
   saved.deleted[type]=(saved.deleted[type]||[]).filter(code=>masterCodeKey(code)!==key);
-  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+  writeOrderEntryLocal(MASTER_KEY,JSON.stringify(saved));
 }
 function masterCodeKey(code){
   return String(code||"").trim().toLowerCase();
@@ -1821,7 +1862,7 @@ function appendCustomMaster(type,item){
   const key=masterCodeKey(item.code);
   saved.deleted[type]=(saved.deleted[type]||[]).filter(code=>masterCodeKey(code)!==key);
   saved[type].push(item);
-  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+  writeOrderEntryLocal(MASTER_KEY,JSON.stringify(saved));
   return true;
 }
 function upsertCustomMaster(type,item){
@@ -1832,12 +1873,12 @@ function upsertCustomMaster(type,item){
   const idx=list.findIndex(existing=>masterCodeKey(existing.code)===key);
   if(idx>=0){
     list[idx]={...list[idx],...item};
-    localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+    writeOrderEntryLocal(MASTER_KEY,JSON.stringify(saved));
     return "updated";
   }
   const existedBefore=masterCodeExists(type,item.code);
   list.push(item);
-  localStorage.setItem(MASTER_KEY,JSON.stringify(saved));
+  writeOrderEntryLocal(MASTER_KEY,JSON.stringify(saved));
   return existedBefore?"updated":"added";
 }
 function dbNumber(value){
@@ -2561,22 +2602,21 @@ async function loadDbData(){
   }
 }
 function loadConfirmedBatches(){
-  try{
-    confirmedBatches=JSON.parse(localStorage.getItem(CONFIRMED_KEY)||"[]");
-    if(!Array.isArray(confirmedBatches))confirmedBatches=[];
-  }catch(e){confirmedBatches=[]}
+  confirmedBatches=[];
+  saveConfirmedBatches();
 }
 function saveConfirmedBatches(){
-  localStorage.setItem(CONFIRMED_KEY,JSON.stringify(confirmedBatches));
+  // Confirmed history is authoritative in Supabase, never duplicated in Web Storage.
+  removeOrderEntryLocal(CONFIRMED_KEY);
 }
 function loadImportDrafts(){
   try{
-    importDraftGroups=JSON.parse(localStorage.getItem(IMPORT_DRAFT_KEY)||"[]");
+    importDraftGroups=JSON.parse(readOrderEntryLocal(IMPORT_DRAFT_KEY)||"[]");
     if(!Array.isArray(importDraftGroups))importDraftGroups=[];
   }catch(e){importDraftGroups=[]}
 }
 function saveImportDrafts(){
-  localStorage.setItem(IMPORT_DRAFT_KEY,JSON.stringify(importDraftGroups));
+  writeOrderEntryLocal(IMPORT_DRAFT_KEY,JSON.stringify(importDraftGroups));
 }
 function importDraftLabel(group){
   return `${group.customer?.name||group.customer?.code||"得意先未設定"} / ${group.importer?.code||group.importer?.name||"輸入社未設定"}`;
@@ -2690,12 +2730,12 @@ function pendingLocalId(){
 }
 function loadPendingLocal(){
   try{
-    pendingEntries=JSON.parse(localStorage.getItem(PENDING_KEY)||"[]");
+    pendingEntries=JSON.parse(readOrderEntryLocal(PENDING_KEY)||"[]");
     if(!Array.isArray(pendingEntries))pendingEntries=[];
   }catch(e){pendingEntries=[]}
 }
 function savePendingLocal(){
-  localStorage.setItem(PENDING_KEY,JSON.stringify(pendingEntries));
+  writeOrderEntryLocal(PENDING_KEY,JSON.stringify(pendingEntries));
 }
 function pendingDbErrorMessage(error){
   const msg=String(error?.message||error||"");
@@ -5932,10 +5972,10 @@ function productGuideEnsureRowIdentity(row,index=0){
   };
 }
 function productGuideLocalTemplateStore(){
-  try{return JSON.parse(localStorage.getItem(PRODUCT_GUIDE_TEMPLATE_LOCAL_KEY)||"[]")||[]}catch(e){return []}
+  try{return JSON.parse(readOrderEntryLocal(PRODUCT_GUIDE_TEMPLATE_LOCAL_KEY)||"[]")||[]}catch(e){return []}
 }
 function productGuideLocalVariantStore(){
-  try{return JSON.parse(localStorage.getItem(PRODUCT_GUIDE_VARIANT_LOCAL_KEY)||"[]")||[]}catch(e){return []}
+  try{return JSON.parse(readOrderEntryLocal(PRODUCT_GUIDE_VARIANT_LOCAL_KEY)||"[]")||[]}catch(e){return []}
 }
 function saveProductGuideLocalState(){
   if(currentProductGuideTemplate){
@@ -5943,9 +5983,9 @@ function saveProductGuideLocalState(){
     const record={...currentProductGuideTemplate,rows:productGuideRows.map((row,index)=>productGuideEnsureRowIdentity(row,index)),updatedAt:new Date().toISOString()};
     const index=saved.findIndex(item=>item.id===record.id);
     if(index>=0)saved[index]=record;else saved.push(record);
-    localStorage.setItem(PRODUCT_GUIDE_TEMPLATE_LOCAL_KEY,JSON.stringify(saved.slice(-100)));
+    writeOrderEntryLocal(PRODUCT_GUIDE_TEMPLATE_LOCAL_KEY,JSON.stringify(saved.slice(-100)));
   }
-  localStorage.setItem(PRODUCT_GUIDE_VARIANT_LOCAL_KEY,JSON.stringify(productGuideVariants.slice(-5000)));
+  writeOrderEntryLocal(PRODUCT_GUIDE_VARIANT_LOCAL_KEY,JSON.stringify(productGuideVariants.slice(-5000)));
 }
 function productGuideCurrency(){
   return val("product-guide-currency")||"JPY";
@@ -5959,7 +5999,7 @@ function productGuidePriceProfileDefaults(currency=productGuideCurrency()){
   };
 }
 function productGuidePriceProfiles(){
-  try{return JSON.parse(localStorage.getItem(PRODUCT_GUIDE_PRICE_PROFILE_KEY)||"{}")||{}}catch(e){return {}}
+  try{return JSON.parse(readOrderEntryLocal(PRODUCT_GUIDE_PRICE_PROFILE_KEY)||"{}")||{}}catch(e){return {}}
 }
 function productGuidePriceProfileKey(){
   const importer=normalizeImporterCode(val("product-guide-importer"))||"ALL";
@@ -5990,7 +6030,7 @@ function saveProductGuidePriceProfile(options={}){
     margin:Number(val("product-guide-margin"))||1,
     formula:String(val("product-guide-price-formula")||productGuidePriceProfileDefaults(currency).formula).trim()
   };
-  localStorage.setItem(PRODUCT_GUIDE_PRICE_PROFILE_KEY,JSON.stringify(profiles));
+  writeOrderEntryLocal(PRODUCT_GUIDE_PRICE_PROFILE_KEY,JSON.stringify(profiles));
   if(!options.silent){
     autoShapeProductGuide({silent:true});
     const state=document.getElementById("product-guide-state");
@@ -6318,7 +6358,7 @@ async function loadProductGuideTemplates(){
     const dbVariants=variantRows.map(productGuideVariantFromDb);
     const dbVariantIds=new Set(dbVariants.map(item=>item.id));
     productGuideVariants=[...dbVariants,...productGuideVariants.filter(item=>!dbVariantIds.has(item.id))];
-    localStorage.setItem(PRODUCT_GUIDE_VARIANT_LOCAL_KEY,JSON.stringify(productGuideVariants));
+    writeOrderEntryLocal(PRODUCT_GUIDE_VARIANT_LOCAL_KEY,JSON.stringify(productGuideVariants));
     renderProductGuideTemplateSelect();
     productGuideTemplateState(`保存済みテンプレート ${productGuideTemplates.length}件、画像対応 ${productGuideVariants.filter(item=>item.imageUrl).length}件を読み込みました。`);
   }catch(error){
@@ -11728,12 +11768,12 @@ function saveAdvancePurchaseDraft(){
     note:val("advance-purchase-note").trim(),
     rows:advancePurchaseRows.map(({invalid,...row})=>row)
   };
-  try{localStorage.setItem(ADVANCE_PURCHASE_DRAFT_KEY,JSON.stringify(payload))}catch(e){}
+  writeOrderEntryLocal(ADVANCE_PURCHASE_DRAFT_KEY,JSON.stringify(payload));
 }
 function loadAdvancePurchaseDraft(){
   advancePurchaseMasterPriceSelections.clear();
   let saved={};
-  try{saved=JSON.parse(localStorage.getItem(ADVANCE_PURCHASE_DRAFT_KEY)||"{}")||{}}catch(e){}
+  try{saved=JSON.parse(readOrderEntryLocal(ADVANCE_PURCHASE_DRAFT_KEY)||"{}")||{}}catch(e){}
   if(saved.purchaseDate)document.getElementById("advance-purchase-date").value=saved.purchaseDate;
   if(saved.siteCode)document.getElementById("advance-purchase-site").value=saved.siteCode;
   if(saved.orderSupplierCode)document.getElementById("advance-purchase-order-supplier").value=saved.orderSupplierCode;
@@ -12456,6 +12496,7 @@ function switchWorkspaceTab(tab,options={}){
   return true;
 }
 function init(){
+  loadConfirmedBatches();
   initSupabase();
   document.getElementById("order-date").value=today();
   document.getElementById("report-filter-date").value=today();
@@ -12477,7 +12518,6 @@ function init(){
   if(guideRange&&!guideRange.value)guideRange.value=productGuideDefaultRange();
   loadProductGuidePriceProfile();
   loadProductGuideTemplates();
-  loadConfirmedBatches();
   loadImportDrafts();
   loadPendingLocal();
   loadLocal();
@@ -12508,12 +12548,12 @@ function normalizeLineExpression(value){
 }
 function loadLocalLineDictionary(){
   try{
-    const data=JSON.parse(localStorage.getItem(LINE_DICT_KEY)||"[]");
+    const data=JSON.parse(readOrderEntryLocal(LINE_DICT_KEY)||"[]");
     return Array.isArray(data)?data:[];
   }catch(e){return []}
 }
 function saveLocalLineDictionary(list){
-  localStorage.setItem(LINE_DICT_KEY,JSON.stringify(list));
+  writeOrderEntryLocal(LINE_DICT_KEY,JSON.stringify(list));
 }
 function lineDictionaryCustomerKey(customerInfo){
   const source=customerInfo||{};
@@ -12925,13 +12965,13 @@ function saveLocal(){
     importerCode:val("batch-importer-code"),importerName:val("batch-importer-name"),
     customerCode:val("batch-customer-code"),customerName:val("batch-customer-name"),siteCode:currentOrderSiteCode(),confirmed,orders,currentImportDraftId,currentOrderAttemptId
   };
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
-  document.getElementById("save-state").textContent="端末保存済み";
+  const saved=writeOrderEntryLocal(STORAGE_KEY,JSON.stringify(data));
+  document.getElementById("save-state").textContent=saved?"端末保存済み":"画面内に保持中（端末保存不可）";
   document.getElementById("confirm-state").textContent=confirmed?"確定済み":"未確定";
   document.getElementById("confirm-state").className=confirmed?"pill blue":"pill warn";
 }
 function loadLocal(){
-  const raw=localStorage.getItem(STORAGE_KEY);
+  const raw=readOrderEntryLocal(STORAGE_KEY);
   if(!raw)return;
   try{
     const data=JSON.parse(raw);
@@ -17515,7 +17555,7 @@ document.addEventListener("click",e=>{
   }
 });
 window.addEventListener("beforeunload",e=>{
-  if(!hasPendingImportReview())return;
+  if(!hasPendingImportReview()&&!orderEntryStorageFailures.size)return;
   e.preventDefault();
   e.returnValue="";
 });
@@ -17561,11 +17601,11 @@ init();
 setTimeout(()=>{
   let code="";
   let draft=null;
-  try{code=localStorage.getItem("hankan-invoice-master-importer")||""}catch(_error){}
-  try{draft=JSON.parse(localStorage.getItem("hankan-invoice-rule-draft")||"null")}catch(_error){}
+  try{code=readOrderEntryLocal("hankan-invoice-master-importer")||""}catch(_error){}
+  try{draft=JSON.parse(readOrderEntryLocal("hankan-invoice-rule-draft")||"null")}catch(_error){}
   if(!code)return;
-  try{localStorage.removeItem("hankan-invoice-master-importer")}catch(_error){}
-  try{localStorage.removeItem("hankan-invoice-rule-draft")}catch(_error){}
+  removeOrderEntryLocal("hankan-invoice-master-importer");
+  removeOrderEntryLocal("hankan-invoice-rule-draft");
   switchWorkspaceTab("masters",{skipConfirm:true});
   showInvoiceExportMaster(code);
   if(draft)setTimeout(()=>applyInvoiceRuleDraft(draft),250);

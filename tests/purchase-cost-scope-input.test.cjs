@@ -180,6 +180,7 @@ test("draft save and restore retain both explicit choices and per-source importe
     supplierPurchaseReferenceMode:value=>value||"day",normalizeImporterCode:value=>value,
     setAdvancePurchaseReferenceMode(){},setAdvancePurchaseImportMode(){},setAdvancePurchaseEntryType(){},updateAdvancePurchaseHeader(){}
   });
+  vm.runInContext(source("const orderEntryMemoryStorage=","const baseMasters="),ctx);
   vm.runInContext(source("function saveAdvancePurchaseDraft(","function setAdvancePurchaseEntryType("),ctx);
   ctx.advancePurchaseRows=[active(ctx,{costScope:"domestic"}),active(ctx,{costScope:"importer",costImporterCode:"01",sourceSalesIds:["sale"],sourceSaleImporters:{sale:"01"},sourceSaleDates:{sale:"2026-10-22"}})];
   ctx.saveAdvancePurchaseDraft();
