@@ -14626,7 +14626,14 @@ function ticketImporterColorKey(value){
     const words=[item.code,item.name,...(item.aliases||[])].map(v=>String(v||"").trim().toLowerCase()).filter(Boolean);
     return words.some(word=>lowerValues.includes(word));
   });
-  return keyFromRaw(master?.code)||"OTHER";
+  const masterPreset=keyFromRaw(master?.code);
+  if(masterPreset)return masterPreset;
+  const codes=typeof value==="object"&&value?[value.importerCode,value.importer_code,master?.code]:[value,master?.code];
+  for(const raw of codes){
+    const code=String(raw??"").normalize("NFKC").trim();
+    if(/^\d{1,2}$/.test(code)&&Number(code)>=9)return code.padStart(2,"0");
+  }
+  return "OTHER";
 }
 function ticketColorForImporter(value){
   const code=ticketImporterColorKey(value);
@@ -14636,9 +14643,18 @@ function ticketColorForImporter(value){
     BKK:["#ffd400","#ffd400","#111111"],
     KL:["#008a3d","#008a3d","#ffffff"],
     JKT:["#d71920","#d71920","#ffffff"],
-    EN:["#f97316","#f97316","#111111"]
+    EN:["#f97316","#f97316","#111111"],
+    "09":["#a01b70","#a01b70","#ffffff"],
+    "10":["#006e63","#006e63","#ffffff"],
+    "11":["#4338a0","#4338a0","#ffffff"],
+    "12":["#7c4920","#7c4920","#ffffff"]
   };
   if(presets[code])return presets[code];
+  if(/^\d{2}$/.test(code)){
+    const hue=((Number(code)-13)*137.508+190)%360;
+    const color=`hsl(${hue.toFixed(1)} 60% 29%)`;
+    return [color,color,"#ffffff"];
+  }
   return ["#7c3aed","#7c3aed","#ffffff"];
 }
 function ticketHtml(r){

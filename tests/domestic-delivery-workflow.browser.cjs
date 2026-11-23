@@ -29,6 +29,7 @@ async function setup(browser,viewport,importerCode='10'){
     ['/domestic-delivery-export.css','domestic-delivery-export.css'],
     ['/domestic-delivery-export.js','domestic-delivery-export.js'],
     ['/domestic-delivery-export-app.js','domestic-delivery-export-app.js'],
+    ['/domestic-documents.js','domestic-documents.js'],
     ['/yumirume-logo.jpg','yumirume-logo.jpg']
   ]);
   await page.route('**/*',async route=>{
@@ -53,7 +54,7 @@ async function setup(browser,viewport,importerCode='10'){
 }
 async function click(page,action){await page.locator(`[data-action="${action}"]`).click()}
 async function waitStatus(page,text){await page.waitForFunction(value=>document.getElementById('dde-status').textContent.includes(value),text)}
-test('dedicated delivery workflow preserves money, blocks incomplete exports, saves drafts and downloads identical Excel/CSV',options,async()=>{
+test('importer 10 downloads one order-sorted sheet and uses the same persisted amounts as the printed note',options,async()=>{
   const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
   try{
     const {context,page,errors}=await setup(browser,{width:1440,height:1000});
@@ -76,12 +77,21 @@ test('dedicated delivery workflow preserves money, blocks incomplete exports, sa
     await waitStatus(page,'CSV出力済み');
     const csvData=parseCsv(fs.readFileSync(await csvDownload.path(),'utf8'));
     assert.equal(csvData[0].length,9);assert.equal(csvData.length,4);
-    assert.equal(csvData[1][0],'0000123');assert.equal(csvData[2][1],'東京店');assert.equal(csvData[3][2],'JNX/No,Y0012');
+    assert.equal(csvData[3][0],'0000123');assert.equal(csvData[1][2],'東京店');assert.equal(csvData[2][1],'JNX/No,Y0012');
     const excelPromise=page.waitForEvent('download');await click(page,'excel');const excelDownload=await excelPromise;
     await waitStatus(page,'Excel出力済み');
     const workbook=new ExcelJS.Workbook();await workbook.xlsx.readFile(await excelDownload.path());
-    const sheet=workbook.worksheets[0];
-    assert.deepEqual(sheet.getSheetValues().slice(1).map(row=>row.slice(1).map(String)),csvData);
+    const [sheet]=workbook.worksheets;
+    const values=s=>s.getSheetValues().slice(1).map(row=>row.slice(1).map(String));
+    assert.deepEqual(workbook.worksheets.map(s=>s.name),['納品明細']);
+    assert.deepEqual(values(sheet),csvData);
+    assert.equal(sheet.getCell('A4').value,'0000123');
+    assert.equal(sheet.getCell('I4').value,3447);
+    const printed=await page.evaluate(()=>DomesticDocuments.delivery(demoSale,{},{
+      caseNumbers:new Map(demoSale.lines.map((line,i)=>[line.id,demoSources[i].box_no]))
+    }));
+    assert.match(printed,/<td class="num">3,447<\/td>/);
+    assert.equal([2,3,4].reduce((sum,i)=>sum+sheet.getCell(`I${i}`).value,0),28107);
     assert.equal(typeof sheet.getCell('A2').value,'string');assert.equal(typeof sheet.getCell('I2').value,'number');
     assert.equal(sheet.getCell('A2').numFmt,'@');assert.equal(sheet.getCell('I2').numFmt,'#,##0');
     assert.deepEqual(financials(await page.evaluate(()=>demoSale)),financials(original.sale));
@@ -103,6 +113,9 @@ test('dedicated delivery workflow preserves money, blocks incomplete exports, sa
     await page.evaluate(()=>{demoSale.lines[0].delivery_export_revision++});
     await click(page,'save');await waitStatus(page,'他の端末');
     assert.deepEqual(financials(await page.evaluate(()=>demoSale)),financials(original.sale));
+    await click(page,'close');await page.getByRole('button',{name:'見本を開く'}).click();
+    await page.evaluate(()=>{demoSale.product_subtotal_8_jpy++});
+    await click(page,'excel');await waitStatus(page,'税率別金額が一致しません');
     assert.deepEqual(errors,[]);await context.close();
     const mobile=await setup(browser,{width:390,height:844});
     await mobile.page.locator('[data-index="0"] [data-field="customerName"]').fill('長い店舗名・東京中央市場第二営業部');
@@ -121,6 +134,11 @@ test('dedicated delivery workflow preserves money, blocks incomplete exports, sa
     const plainRows=parseCsv(fs.readFileSync(await plainDownload.path(),'utf8'));
     assert.deepEqual(plainRows.slice(1).map(row=>row[2]),['MAR-1','YUK/02-A','0009']);
     assert.equal(plainRows[0][0],'先方受注番号');
+    const plainExcelPromise=plain.page.waitForEvent('download');await click(plain.page,'excel');const plainExcel=await plainExcelPromise;
+    await waitStatus(plain.page,'Excel出力済み');
+    const otherWorkbook=new ExcelJS.Workbook();await otherWorkbook.xlsx.readFile(await plainExcel.path());
+    assert.deepEqual(otherWorkbook.worksheets.map(s=>s.name),['納品明細']);
+    assert.deepEqual(values(otherWorkbook.worksheets[0]),plainRows);
     if(output)await plain.page.screenshot({path:path.join(output,'other-importer.png')});
     assert.deepEqual(plain.errors,[]);await plain.context.close();
   }finally{await browser.close()}

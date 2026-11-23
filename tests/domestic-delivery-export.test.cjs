@@ -435,6 +435,29 @@ test("empty datasets produce a header only, consistently in each format",()=>{
   assert.deepEqual(workbookData(book),[labels]);assert.equal(book.worksheets[0].pageSetup.printArea,"A1:H1");
 });
 
+test("J NEXT uses one order-number-sorted worksheet without changing the saved values",()=>{
+  const row=make()[0];
+  const rows=freezeDeep([
+    {...row,lineNo:3,orderNo:"10",cartonNo:"JNX/No,Y2",amount:10.25},
+    {...row,lineNo:1,orderNo:"0002",cartonNo:"JNX/No,Y10",amount:20.50},
+    {...row,lineNo:4,orderNo:"3-A",cartonNo:"JNX/No,Y2",amount:30.50},
+    {...row,lineNo:2,orderNo:"001",cartonNo:"JNX/No,Y1",amount:40.75}
+  ]);
+  const selected=["orderNo","cartonNo","customerName","amount"];
+  const options={sortByOrderNumber:true};
+  const book=Export.createWorkbook(FakeExcelJS,rows,selected,options);
+  const [order]=book.worksheets;
+  const values=sheet=>sheet.rows.map(r=>r.cells.map(c=>c.value));
+  assert.deepEqual(book.worksheets.map(sheet=>sheet.name),["納品明細"]);
+  assert.deepEqual(values(order).slice(1).map(r=>r[0]),["001","0002","3-A","10"]);
+  assert.deepEqual(values(order),Export.sheetRows(rows,selected,options));
+  assert.deepEqual(parseCsv(Export.csv(rows,selected,options)),values(order).map(row=>row.map(String)));
+  assert.equal(order.getCell(2,1).numFmt,"@");
+  assert.equal(order.getCell(2,4).value,40.75);
+  assert.deepEqual(rows.map(r=>r.orderNo),["10","0002","3-A","001"]);
+  assert.equal(Export.createWorkbook(FakeExcelJS,rows,selected).worksheets[0].getCell(2,1).value,"10");
+});
+
 let actualExcelJS;
 try{actualExcelJS=require(process.env.EXCELJS_PATH||"exceljs");}
 catch(error){if(error.code!=="MODULE_NOT_FOUND")throw error;}

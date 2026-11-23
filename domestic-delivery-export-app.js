@@ -17,8 +17,13 @@
     const known=core().columns.map(c=>c.key);
     const valid=Array.isArray(value?.columns)&&value.columns.length&&new Set(value.columns).size===value.columns.length&&value.columns.every(k=>known.includes(k));
     const columns=valid?[...value.columns]:[...core().defaultColumns8];
-    if((!valid||value?.version!==2)&&!columns.includes("customerName"))columns.splice(columns.indexOf("orderNo")+1,0,"customerName");
-    return{version:2,columns,prefix:rules.prefix?String(value?.prefix??rules.prefix).slice(0,100):"",orderLabel:String(value?.orderLabel??rules.orderLabel).slice(0,120)};
+    if((!valid||![2,3].includes(value?.version))&&!columns.includes("customerName"))columns.splice(columns.indexOf("orderNo")+1,0,"customerName");
+    const jnext=rules.importerCode==="10";
+    const previousDefault=["orderNo","customerName",...core().defaultColumns8.slice(1)];
+    if(jnext&&value?.version!==3&&columns.join(",")===previousDefault.join(",")){
+      [columns[1],columns[2]]=[columns[2],columns[1]];
+    }
+    return{version:jnext?3:2,columns,prefix:rules.prefix?String(value?.prefix??rules.prefix).slice(0,100):"",orderLabel:String(value?.orderLabel??rules.orderLabel).slice(0,120)};
   }
   function remember(code,importerCode,value){
     const key=settingsKey(code,importerCode);
@@ -85,6 +90,8 @@
     try{state=await load(saleId)}catch(error){showToast(errorText(error),true);return}finally{opening=false}
     const rules=importerRules(state.sale.source_importer_code);
     const prefs=preferences(state.sale.customer_code,rules.importerCode),focusBefore=document.activeElement;
+    const jnext=rules.importerCode==="10";
+    const outputOptions=()=>({labels:{orderNo:prefs.orderLabel},sortByOrderNumber:jnext});
     let rows=normalizeCartons(state.rows,prefs.prefix),busy=false,dirty=false,appliedPrefix=prefs.prefix;
     const dialog=document.createElement("dialog");dialog.id="dde-dialog";dialog.className="dde-dialog";
     dialog.setAttribute("aria-labelledby","dde-title");
@@ -98,7 +105,7 @@
     }
     function renderPreview(){
       try{
-        const matrix=core().sheetRows(rows,prefs.columns,{labels:{orderNo:prefs.orderLabel}});
+        const matrix=core().sheetRows(rows,prefs.columns,outputOptions());
         dialog.querySelector("#dde-preview-table").innerHTML=`<table><thead><tr>${matrix[0].map(v=>`<th>${esc(v)}</th>`).join("")}</tr></thead><tbody>${matrix.slice(1).map(line=>`<tr>${line.map(v=>`<td${typeof v==="number"?' class="dde-number"':""}>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
       }catch(error){dialog.querySelector("#dde-preview-table").textContent=error.message}
     }
@@ -129,7 +136,10 @@
         if((rules.prefix&&!prefs.prefix.trim())||!prefs.orderLabel.trim()||!prefs.columns.length)throw new Error("固定表記・列名・出力列を確認してください。");
         rows=rows.map(r=>({...r,cartonNo:prefs.prefix&&/^\d+$/.test(String(r.cartonNo).trim())?core().cartonNumber(String(r.cartonNo).trim(),prefs.prefix):String(r.cartonNo).trim()}));
         core().validateRows(rows,{requireOrderNumber:kind!=="save",requireCarton:kind!=="save",requireCustomer:kind!=="save"});
-        if(kind!=="save")validateCartons(rows,prefs.prefix);
+        if(kind!=="save"){
+          validateCartons(rows,prefs.prefix);
+          if(jnext)DomesticDocuments.validateSale(state.sale);
+        }
         const expected=rows.map(r=>({...r}));
         const {error}=await supabaseClient.rpc("save_domestic_delivery_metadata",{p_sale_id:state.sale.id,p_lines:metadataRows(rows)});
         if(error)throw error;
@@ -139,8 +149,9 @@
         status.textContent=`${rows.length}明細 保存済み`;
         if(kind==="save")return;
         core().validateRows(rows,{requireOrderNumber:true,requireCarton:true,requireCustomer:true});validateCartons(rows,prefs.prefix);
+        if(jnext)DomesticDocuments.validateSale(state.sale);
         const stem=`納品書データ_${state.sale.sale_date}_${String(state.sale.sale_no).replace(/[\\/:*?"<>|]/g,"_")}`;
-        const options={labels:{orderNo:prefs.orderLabel}};
+        const options=outputOptions();
         if(kind==="csv")download(new Blob([core().csv(rows,prefs.columns,options)],{type:"text/csv;charset=utf-8"}),`${stem}.csv`);
         else{
           if(!root.ExcelJS)throw new Error("Excel出力ライブラリを読み込めませんでした。");

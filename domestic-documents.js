@@ -99,9 +99,17 @@
   function taxTable(bases,taxes,reference=false){
     return`<table class="tax-table"><caption>${reference?"納品書別金額・消費税額の合計（参考）":"税率別内訳"}</caption><thead><tr><th>税率</th><th>対象額（税抜）</th><th>消費税額</th><th>税込金額</th></tr></thead><tbody>${[8,10].map(rate=>`<tr><th>${rate}％${rate===8?"（軽減税率）":""}</th><td>${money(bases[rate])}円</td><td>${money(taxes[rate])}円</td><td>${money(bases[rate]+taxes[rate])}円</td></tr>`).join("")}</tbody></table>`;
   }
+  const caseNumberCollator=new Intl.Collator("ja",{numeric:true,sensitivity:"base"});
+  const caseNumberKey=value=>String(value??"").normalize("NFKC").trim().replace(/^JNX\/No,Y(?=\d+$)/i,"");
+  function compareDeliveryLines(a,b,caseNumbers){
+    const aCase=caseNumberKey(caseNumbers?.get(a.id));
+    const bCase=caseNumberKey(caseNumbers?.get(b.id));
+    if(Boolean(aCase)!==Boolean(bCase))return aCase?-1:1;
+    return caseNumberCollator.compare(aCase,bCase)||a.line_no-b.line_no;
+  }
   function delivery(sale,customer={},options={}){
     const {bases,taxes}=validateSale(sale),company=options.issuer||issuer;
-    const rows=[...sale.lines].sort((a,b)=>a.line_no-b.line_no).map(line=>`<tr><td class="center">${esc(line.line_no)}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}${Number(line.tax_rate)===8?' <span class="reduced">※</span>':""}</td><td class="num">${decimal(line.quantity)}</td><td class="center">${esc(line.unit)}</td><td class="num">${decimal(line.unit_price_jpy)}</td><td class="center">${esc(line.tax_rate)}％</td><td class="num">${money(line.net_amount_jpy)}</td></tr>`).join("");
+    const rows=[...sale.lines].sort((a,b)=>compareDeliveryLines(a,b,options.caseNumbers)).map(line=>`<tr><td class="center">${esc(line.line_no)}</td><td>${esc(line.product_code||"")}</td><td>${esc(line.product_name_snapshot)}${Number(line.tax_rate)===8?' <span class="reduced">※</span>':""}</td><td class="num">${decimal(line.quantity)}</td><td class="center">${esc(line.unit)}</td><td class="num">${decimal(line.unit_price_jpy)}</td><td class="center">${esc(line.tax_rate)}％</td><td class="num">${money(line.net_amount_jpy)}</td></tr>`).join("");
 return`<main class="document delivery-document"><h1 class="doc-title">${options.invoiceNo?"納品明細書":"納 品 書"}</h1><div class="doc-top"><div>${recipient(sale.customer_name_snapshot,customer)}<table class="meta"><tr><th>取引日</th><td>${esc(sale.sale_date)}</td></tr><tr><th>納品書番号</th><td>${esc(sale.sale_no)}</td></tr>${options.invoiceNo?`<tr><th>合計請求書番号</th><td>${esc(options.invoiceNo)}</td></tr>`:""}</table></div>${companyHtml(company,options.logoUrl)}</div><table class="lines"><colgroup><col style="width:5%"><col style="width:12%"><col><col style="width:8%"><col style="width:7%"><col style="width:12%"><col style="width:7%"><col style="width:15%"></colgroup><thead><tr><th>No.</th><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>単価（税抜）</th><th>税率</th><th>金額（税抜）</th></tr></thead><tbody>${rows}${Number(sale.shipping_amount_jpy)>0?`<tr><td></td><td></td><td>送料</td><td></td><td></td><td></td><td class="center">10％</td><td class="num">${money(sale.shipping_amount_jpy)}</td></tr>`:""}</tbody></table><p class="legend">※は軽減税率（8％）対象品目です。</p><div class="totals-block">${taxTable(bases,taxes)}<table class="summary"><tr><th>税抜合計</th><td>${money(sale.total_net_jpy)}円</td></tr><tr><th>消費税合計</th><td>${money(sale.tax_total_jpy)}円</td></tr><tr><th>税込合計</th><td>${money(sale.total_amount_jpy)}円</td></tr></table></div>${sale.memo?`<div class="note">備考　${esc(sale.memo)}</div>`:""}</main>`;
   }
   function invoice(closing,sales,customer={},options={}){

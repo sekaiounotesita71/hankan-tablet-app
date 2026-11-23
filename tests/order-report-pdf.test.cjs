@@ -20,6 +20,22 @@ test("report panel offers direct PDF separately from existing print and Excel ac
   assert.ok(html.includes('onclick="downloadSupplierReviewPurchaseOrder(${index})"'));
 });
 
+test("picking tickets distinguish importer codes 09 onward and preserve the established importer colors",()=>{
+  const ec=html.match(/^function esc\(v\).*$/m)[0];
+  const ctx={getMasters:()=>({importers:[{code:"09",name:"Warehouse Nine"},{code:"10",name:"TH/JNEXT"}]})};
+  vm.runInNewContext(ec+between("function normalizeImporterCode(","function parseContractPrices(")+between("function ticketImporterColorKey(","function printBaseCss("),ctx);
+  const colors=Array.from({length:91},(_,i)=>ctx.ticketColorForImporter({importerCode:String(i+9).padStart(2,"0")})[0]);
+  assert.equal(new Set(colors).size,colors.length);
+  assert.equal(ctx.ticketColorForImporter({importer_code:"０９"})[0],colors[0]);
+  assert.equal(ctx.ticketColorForImporter("Warehouse Nine")[0],colors[0]);
+  assert.equal(ctx.ticketColorForImporter("TH/JNEXT")[0],colors[1]);
+  assert.equal(ctx.ticketColorForImporter({importerCode:"01",importerName:"DIM-VEG"})[0],"#111111");
+  assert.equal(ctx.ticketColorForImporter("FBI-FZ")[0],"#0057d9");
+  assert.equal(ctx.ticketColorForImporter("EN")[0],"#f97316");
+  assert.equal(ctx.ticketColorForImporter("") [0],"#7c3aed");
+  assert.ok(ctx.ticketHtml({importerCode:"10"}).includes("--ticket-main:"+colors[1]));
+});
+
 test("supplier grouping keeps similar and same-name codes separate and refuses unassigned rows",()=>{
   const context={window:{}};
   vm.runInNewContext(pdfScript,context);

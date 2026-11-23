@@ -158,6 +158,8 @@
       return columnMap.get(key);
     });
   }
+  const orderNumberCollator=new Intl.Collator("ja",{numeric:true,sensitivity:"base"});
+  const orderNumberKey=row=>String(row.orderNo??"").normalize("NFKC").trim();
   function buildLayout(rows,columnKeys,options){
     validateRows(rows);
     const selected=selectedColumns(columnKeys);
@@ -168,7 +170,9 @@
     const data=[header],customerRows=new Set();
     const cartonIndex=selected.findIndex(column=>column.key==="cartonNo");
     const subrows=options.customerSubrows!==false&&cartonIndex>=0&&!selected.some(column=>column.key==="customerName");
-    for(const row of rows){
+    const ordered=options.sortByOrderNumber?[...rows].sort((a,b)=>
+      orderNumberCollator.compare(orderNumberKey(a),orderNumberKey(b))||a.lineNo-b.lineNo):rows;
+    for(const row of ordered){
       data.push(selected.map(({key})=>numericKeys.has(key)
         ?number(row[key],key,{optional:key==="weight"}):text(row[key],key)));
       if(subrows&&text(row.customerName,"customerName").trim()){

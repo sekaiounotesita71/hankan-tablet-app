@@ -7,14 +7,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./app-nav.js?v=20260806-2" defer></script>
 <script src="./domestic-payment-model.js?v=20260918-1"></script>
-<script src="./domestic-documents.js?v=20261104-1"></script>
+<script src="./domestic-documents.js?v=20261124-2"></script>
 <script src="./reference-sites.js?v=20260928-1"></script>
 <script src="./accounting-period-report.js?v=20261006-1"></script>
 <script src="./accounting-report-layout.js?v=20261106-1"></script>
 <script src="./domestic-receivable-report.js?v=20261106-1"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" defer></script>
-<script src="./domestic-delivery-export.js?v=20261123-1" defer></script>
-<script src="./domestic-delivery-export-app.js?v=20261123-2" defer></script>
+<script src="./domestic-delivery-export.js?v=20261124-2" defer></script>
+<script src="./domestic-delivery-export-app.js?v=20261124-2" defer></script>
 <link rel="stylesheet" href="./domestic-delivery-export.css?v=20261123-2">
 <title>国内販売管理</title>
 <style>
@@ -1603,12 +1603,31 @@ async function domesticSalesForCharges(charges){
   for(let start=0;start<ids.length;start+=5)result.push(...await Promise.all(ids.slice(start,start+5).map(domesticSaleForDocument)));
   return result;
 }
+async function domesticDeliveryCaseNumbers(sale){
+  const lines=sale.lines||[];
+  const ids=[...new Set(lines.filter(line=>!String(line.delivery_carton_no??"").trim())
+    .map(line=>line.source_sales_record_id).filter(Boolean))];
+  const sourceCases=new Map();
+  for(let start=0;start<ids.length;start+=100){
+    const part=ids.slice(start,start+100);
+    const sources=await fetchPaged(()=>{
+      let query=supabaseClient.from("sales_records").select("id,box_no").in("id",part);
+      if(sale.source_session_id)query=query.eq("session_id",sale.source_session_id);
+      if(sale.source_importer_code)query=query.eq("importer_code",sale.source_importer_code);
+      return query.order("id");
+    });
+    for(const row of sources)sourceCases.set(row.id,row.box_no);
+  }
+  return new Map(lines.map(line=>[line.id,String(line.delivery_carton_no??"").trim()||
+    String(sourceCases.get(line.source_sales_record_id)??"").trim()]));
+}
 async function printDomesticDeliveryNote(saleId){
   const printWindow=openDomesticPrintWindow("納品書を作成しています");if(!printWindow)return;
   try{
     const sale=await domesticSaleForDocument(saleId);
     const customer=customers.find(row=>row.customer_code===sale.customer_code)||{};
-    const body=DomesticDocuments.delivery(sale,customer,{logoUrl:new URL("./yumirume-logo.jpg",location.href).href});
+    const caseNumbers=await domesticDeliveryCaseNumbers(sale);
+    const body=DomesticDocuments.delivery(sale,customer,{caseNumbers,logoUrl:new URL("./yumirume-logo.jpg",location.href).href});
     writeDomesticPrintDocument(printWindow,`納品書 ${sale.sale_no}`,body);
   }catch(error){printWindow.close();showToast(friendlyError(error),true)}
 }
