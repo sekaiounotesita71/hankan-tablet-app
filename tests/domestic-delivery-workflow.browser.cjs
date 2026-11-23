@@ -1,0 +1,127 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.join(__dirname,'..');
+let chromium,ExcelJS;
+try{({chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright'));ExcelJS=require(process.env.EXCELJS_PATH||'exceljs')}catch{}
+const output=process.env.DELIVERY_TEST_OUTPUT;
+const options={skip:!chromium||!ExcelJS,timeout:120000};
+function financials(sale){return sale.lines.map(({id,quantity,unit,unit_price_jpy,net_amount_jpy})=>({id,quantity,unit,unit_price_jpy,net_amount_jpy}))}
+function parseCsv(text){
+  const rows=[];let row=[],cell='',quoted=false;
+  for(let i=1;i<text.length;i++){
+    const c=text[i];
+    if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++}else if(c==='"')quoted=false;else cell+=c}
+    else if(c==='"')quoted=true;
+    else if(c===','){row.push(cell);cell=''}
+    else if(c==='\r'){assert.equal(text[++i],'\n');row.push(cell);rows.push(row);row=[];cell=''}
+    else cell+=c;
+  }
+  assert.equal(quoted,false);assert.equal(cell,'');return rows;
+}
+async function setup(browser,viewport,importerCode='10'){
+  const context=await browser.newContext({viewport,acceptDownloads:true});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  const assets=new Map([
+    ['/tests/fixtures/domestic-delivery-export.html','tests/fixtures/domestic-delivery-export.html'],
+    ['/domestic-delivery-export.css','domestic-delivery-export.css'],
+    ['/domestic-delivery-export.js','domestic-delivery-export.js'],
+    ['/domestic-delivery-export-app.js','domestic-delivery-export-app.js'],
+    ['/yumirume-logo.jpg','yumirume-logo.jpg']
+  ]);
+  await page.route('**/*',async route=>{
+    const url=new URL(route.request().url());
+    if(url.hostname==='cdn.jsdelivr.net'&&url.pathname.endsWith('/exceljs.min.js')){
+      const file=path.join(path.dirname(require.resolve(process.env.EXCELJS_PATH||'exceljs')),'dist','exceljs.min.js');
+      return route.fulfill({path:file,contentType:'text/javascript'});
+    }
+    const file=assets.get(url.pathname);
+    if(url.hostname==='delivery.test'&&file)return route.fulfill({path:path.join(root,file)});
+    return route.abort();
+  });
+  await page.goto('http://delivery.test/tests/fixtures/domestic-delivery-export.html');
+  await page.evaluate(code=>{
+    demoSale.source_importer_code=code;
+    demoSources.forEach(row=>row.importer_code=code);
+    if(code!=='10')demoSources.forEach((row,index)=>row.box_no=['MAR-1','YUK/02-A','0012'][index]);
+  },importerCode);
+  await page.getByRole('button',{name:'見本を開く'}).click();
+  await page.locator('#dde-dialog').waitFor();
+  return {context,page,errors};
+}
+async function click(page,action){await page.locator(`[data-action="${action}"]`).click()}
+async function waitStatus(page,text){await page.waitForFunction(value=>document.getElementById('dde-status').textContent.includes(value),text)}
+test('dedicated delivery workflow preserves money, blocks incomplete exports, saves drafts and downloads identical Excel/CSV',options,async()=>{
+  const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
+  try{
+    const {context,page,errors}=await setup(browser,{width:1440,height:1000});
+    const original=await page.evaluate(()=>({sale:structuredClone(demoSale),sources:structuredClone(demoSources)}));
+    const order=page.locator('[data-index="0"] [data-field="orderNo"]');
+    const customer=page.locator('[data-index="1"] [data-field="customerName"]');
+    const carton=page.locator('[data-index="2"] [data-field="cartonNo"]');
+    await order.fill('');await customer.fill('');await carton.fill('');
+    await click(page,'csv');await waitStatus(page,'1行目の先方受注番号');
+    assert.equal(await order.getAttribute('aria-invalid'),'true');
+    assert.equal(await order.evaluate(el=>el===document.activeElement),true);
+    assert.equal(await page.locator('#test-message').textContent(),'');
+    await click(page,'save');await waitStatus(page,'保存済み');
+    assert.equal(await page.evaluate(()=>demoSale.lines[0].external_order_no),null);
+    await order.fill('0000123');await click(page,'csv');await waitStatus(page,'2行目の得意先');
+    await customer.fill('東京店');await click(page,'csv');await waitStatus(page,'3行目の提出用箱番号');
+    await carton.fill('0012');await carton.press('Tab');
+    assert.equal(await carton.inputValue(),'JNX/No,Y0012');
+    const csvPromise=page.waitForEvent('download');await click(page,'csv');const csvDownload=await csvPromise;
+    await waitStatus(page,'CSV出力済み');
+    const csvData=parseCsv(fs.readFileSync(await csvDownload.path(),'utf8'));
+    assert.equal(csvData[0].length,9);assert.equal(csvData.length,4);
+    assert.equal(csvData[1][0],'0000123');assert.equal(csvData[2][1],'東京店');assert.equal(csvData[3][2],'JNX/No,Y0012');
+    const excelPromise=page.waitForEvent('download');await click(page,'excel');const excelDownload=await excelPromise;
+    await waitStatus(page,'Excel出力済み');
+    const workbook=new ExcelJS.Workbook();await workbook.xlsx.readFile(await excelDownload.path());
+    const sheet=workbook.worksheets[0];
+    assert.deepEqual(sheet.getSheetValues().slice(1).map(row=>row.slice(1).map(String)),csvData);
+    assert.equal(typeof sheet.getCell('A2').value,'string');assert.equal(typeof sheet.getCell('I2').value,'number');
+    assert.equal(sheet.getCell('A2').numFmt,'@');assert.equal(sheet.getCell('I2').numFmt,'#,##0');
+    assert.deepEqual(financials(await page.evaluate(()=>demoSale)),financials(original.sale));
+    assert.deepEqual(await page.evaluate(()=>demoSources),original.sources);
+    if(output){fs.mkdirSync(output,{recursive:true});await csvDownload.saveAs(path.join(output,'納品書データ_確認.csv'));await excelDownload.saveAs(path.join(output,'納品書データ_確認.xlsx'));await page.screenshot({path:path.join(output,'desktop.png')})}
+    await page.locator('.dde-columns summary').click();
+    for(let i=0;i<8;i++)await page.locator('[data-key="amount"][data-move="-1"]').click();
+    const movedPromise=page.waitForEvent('download');await click(page,'csv');const moved=await movedPromise;await waitStatus(page,'CSV出力済み');
+    assert.equal(parseCsv(fs.readFileSync(await moved.path(),'utf8'))[0][0],'合計金額 円');
+    await click(page,'close');
+    await page.getByRole('button',{name:'見本を開く'}).click();
+    assert.equal(await page.locator('#dde-preview-table th').first().textContent(),'合計金額 円');
+    await click(page,'close');
+    await page.locator('#simulate-failure').check();await page.getByRole('button',{name:'見本を開く'}).click();
+    await order.fill('changed-but-not-saved');await click(page,'save');await waitStatus(page,'テスト保存エラー');
+    assert.equal(await order.inputValue(),'changed-but-not-saved');assert.equal(await page.evaluate(()=>demoSale.lines[0].external_order_no),'0000123');
+    page.once('dialog',dialog=>dialog.accept());await click(page,'close');
+    await page.locator('#simulate-failure').uncheck();await page.getByRole('button',{name:'見本を開く'}).click();
+    await page.evaluate(()=>{demoSale.lines[0].delivery_export_revision++});
+    await click(page,'save');await waitStatus(page,'他の端末');
+    assert.deepEqual(financials(await page.evaluate(()=>demoSale)),financials(original.sale));
+    assert.deepEqual(errors,[]);await context.close();
+    const mobile=await setup(browser,{width:390,height:844});
+    await mobile.page.locator('[data-index="0"] [data-field="customerName"]').fill('長い店舗名・東京中央市場第二営業部');
+    const bounds=await mobile.page.locator('#dde-dialog').evaluate(el=>({width:el.getBoundingClientRect().width,client:el.clientWidth,scroll:el.scrollWidth,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right}));
+    assert.ok(bounds.left>=0&&bounds.right<=390);assert.ok(bounds.scroll<=bounds.client+1,JSON.stringify(bounds));
+    if(output)await mobile.page.screenshot({path:path.join(output,'mobile.png')});
+    assert.deepEqual(mobile.errors,[]);await mobile.context.close();
+    const plain=await setup(browser,{width:1440,height:1000},'01');
+    assert.equal(await plain.page.locator('[data-setting="prefix"]').count(),0);
+    assert.equal(await plain.page.locator('[data-setting="orderLabel"]').inputValue(),'先方受注番号');
+    assert.deepEqual(await plain.page.locator('[data-field="cartonNo"]').evaluateAll(inputs=>inputs.map(el=>el.value)),['MAR-1','YUK/02-A','0012']);
+    await plain.page.locator('[data-index="2"] [data-field="cartonNo"]').fill('0009');
+    await plain.page.locator('[data-index="2"] [data-field="cartonNo"]').press('Tab');
+    const plainDownloadPromise=plain.page.waitForEvent('download');await click(plain.page,'csv');const plainDownload=await plainDownloadPromise;
+    await waitStatus(plain.page,'CSV出力済み');
+    const plainRows=parseCsv(fs.readFileSync(await plainDownload.path(),'utf8'));
+    assert.deepEqual(plainRows.slice(1).map(row=>row[2]),['MAR-1','YUK/02-A','0009']);
+    assert.equal(plainRows[0][0],'先方受注番号');
+    if(output)await plain.page.screenshot({path:path.join(output,'other-importer.png')});
+    assert.deepEqual(plain.errors,[]);await plain.context.close();
+  }finally{await browser.close()}
+});

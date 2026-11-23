@@ -38,6 +38,7 @@ function runtime(options = {}) {
     orders: [{productCode: '073', productName: 'Product', qty: '3', unit: 'Kg', supplierCode: '04'}],
     draftRows: [], confirmed: false, currentImportDraftId: '', currentOrderAttemptId: '',
     dbReady: true, dbLoadInFlight: false, currentUser: {id: 'user'}, appBusy: false,
+    validateOrderExternalNumbers() {},
     supabaseClient: {}, sharedLineDictionaryReady: true, console: {warn() {}},
     document: {getElementById: node, querySelector: () => null},
     window: {addEventListener: (name, fn) => {events[name] = fn;}},

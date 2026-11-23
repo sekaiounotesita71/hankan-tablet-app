@@ -1575,7 +1575,7 @@ const baseMasters={
 
 function today(){return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
-function blankOrder(){return{lineId:"",productCode:"",productName:"",englishName:"",qty:"",unit:"",unitPrice:"",unitPriceSource:"",supplierCode:"",supplierName:"",initialSupplierCode:"",initialSupplierName:"",supplierDecisionStatus:"provisional",supplierConfirmedAt:"",purchaseOrdered:false,purchaseOrderedAt:"",memo:""}}
+function blankOrder(){return{lineId:"",externalOrderNo:"",productCode:"",productName:"",englishName:"",qty:"",unit:"",unitPrice:"",unitPriceSource:"",supplierCode:"",supplierName:"",initialSupplierCode:"",initialSupplierName:"",supplierDecisionStatus:"provisional",supplierConfirmedAt:"",purchaseOrdered:false,purchaseOrderedAt:"",memo:""}}
 function blankAdvancePurchaseRow(){return{id:newAppUuid(),productCode:"",productName:"",origin:"",actualQty:"",actualUnit:"Kg",unitPrice:"",priceUnit:"Kg",taxRate:8,unitPriceSource:"",note:"",costScope:"",costImporterCode:"",sourceSalesIds:[],sourceSaleDates:{},sourceSaleImporters:{},invalid:false}}
 function val(id){return document.getElementById(id)?.value||""}
 function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||""))}
@@ -2408,6 +2408,7 @@ function dbBatchToBatch(row,lines){
     siteCode:row.site_code||"OSA",
     rows:(lines||[]).map(line=>({
       lineId:line.id||"",
+      externalOrderNo:line.external_order_no||"",
       productCode:line.product_code||"",
       productName:line.product_name_snapshot||"",
       englishName:line.english_name_snapshot||"",
@@ -2427,8 +2428,16 @@ function dbBatchToBatch(row,lines){
     }))
   };
 }
+function validateOrderExternalNumbers(rows){
+  (rows||[]).forEach((row,index)=>{
+    if(Array.from(String(row.externalOrderNo??"")).length>120){
+      throw new Error(`${index+1}行目の先方受注番号は120文字以内で入力してください。`);
+    }
+  });
+}
 async function saveConfirmedBatchToDb(batch){
   if(!dbReady||!supabaseClient)return null;
+  validateOrderExternalNumbers(batch.rows);
   prepareBatchPrices(batch);
   if(!isUuid(batch.id))batch.id=newAppUuid();
   const batchId=batch.id;
@@ -2453,6 +2462,7 @@ async function saveConfirmedBatchToDb(batch){
     line_no:index+1,
     product_code:dbText(row.productCode),
     product_name_snapshot:row.productName||"",
+    external_order_no:dbText(row.externalOrderNo),
     english_name_snapshot:dbText(row.englishName),
     order_qty:dbNumber(row.qty),
     order_unit:dbText(row.unit),
@@ -13210,7 +13220,7 @@ function markOrderSupplierProvisional(row){
 function syncOrderRow(i){
   const row=orders[i];
   if(!row)return;
-  ["productCode","productName","englishName","qty","unit","unitPrice","supplierCode","supplierName","memo"].forEach(field=>{
+  ["productCode","productName","externalOrderNo","englishName","qty","unit","unitPrice","supplierCode","supplierName","memo"].forEach(field=>{
     const el=document.querySelector(`[data-row="${i}"][data-field="${field}"]`);
     if(el&&document.activeElement!==el)el.value=row[field]||"";
   });
@@ -13466,7 +13476,7 @@ function render(){
   body.innerHTML=orders.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td><div class="lookup-cell"><input class="code ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
-    <td><input class="name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"></td>
+    <td><input class="name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"><label style="margin-top:4px;font-size:10px">先方受注番号<input style="height:28px;min-height:28px;max-width:180px" maxlength="120" autocomplete="off" data-order-input data-row="${i}" data-field="externalOrderNo" value="${esc(r.externalOrderNo)}" oninput="setRow(${i},'externalOrderNo',this.value)"></label></td>
     <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
     <td><input class="code ime-en" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
     <td><input class="price ime-en" inputmode="decimal" data-order-input data-row="${i}" data-field="unitPrice" value="${esc(r.unitPrice)}" oninput="setRow(${i},'unitPrice',this.value)" title="受注価格。未入力時は輸入社別契約価格、商品マスタ価格の順で補完します"></td>
@@ -13533,7 +13543,7 @@ function renderConfirmedOrders(){
   }
   box.innerHTML=batches.map(({batch:b,index:i})=>{
     const rows=b.rows||[];
-    const details=rows.map((r,idx)=>`<tr><td>${idx+1}</td><td>${esc(r.productCode)}</td><td>${esc(r.productName)}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.unitPrice)}</td><td>${esc(r.supplierName||r.supplierCode)}</td><td>${esc(r.memo)}</td></tr>`).join("");
+    const details=rows.map((r,idx)=>`<tr><td>${idx+1}</td><td>${esc(r.productCode)}</td><td>${esc(r.productName)}${r.externalOrderNo?`<div class="sub">先方受注番号 ${esc(r.externalOrderNo)}</div>`:""}</td><td>${esc(r.qty)}</td><td>${esc(r.unit)}</td><td>${esc(r.unitPrice)}</td><td>${esc(r.supplierName||r.supplierCode)}</td><td>${esc(r.memo)}</td></tr>`).join("");
     return `<div class="master-item" style="grid-template-columns:minmax(0,1fr) auto">
       <div>
         <b>${esc(batchLabel(b))}</b><br>
@@ -16155,6 +16165,7 @@ function orderItemFromCsvRow(row,headers,filename){
     row:{
       productCode:productCode||productMaster?.code||"",
       productName:productName||productMaster?.name||"",
+      externalOrderNo:orderCsvValue(row,headers,["external_order_no","先方受注番号","受注番号","オーダー番号","注文番号"]),
       englishName:orderCsvValue(row,headers,["english_name","english","英名","英語名","name of goods"])||productMaster?.englishName||"",
       qty,
       unit:orderCsvValue(row,headers,["unit","単位","注文単位","受注単位"]),
@@ -16949,6 +16960,7 @@ function importedBatchesFromGroups(grouped,sourceNames,sourceType){
 }
 async function saveImportedBatchesToDbAtomically(importedBatches){
   if(!dbReady||!supabaseClient)throw new Error("DBへ接続できていないため受注確定を中止しました。確認中の内容は画面に残っています。");
+  importedBatches.forEach(batch=>validateOrderExternalNumbers(batch.rows));
   const savedIds=[];
   try{
     for(const batch of importedBatches){

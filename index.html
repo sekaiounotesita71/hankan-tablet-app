@@ -1908,6 +1908,7 @@ function resolveCsvKey(header,type){
     importer_id:["輸入社id","輸入社ｉｄ","輸入社コード","輸入者id","輸入者コード","importerid","importer_id"],
     delivery_date:["配送希望日","納品希望日","希望日","deliverydate","delivery_date"],
     csv_memo:["備考"],
+    external_order_no:["external_order_no","先方受注番号","受注番号","オーダー番号","注文番号"],
     order_datetime:["注文日時","受注日時","発注日時","orderdatetime","order_datetime"],
     origin:["産地","origin"],
     unit_price:["売価","u/pricebyjpnyen"]
@@ -2131,6 +2132,7 @@ function rowToOrderLinePayload(r){
     product_name:r.product_name||null,
     ordered_qty:numberOrNull(r.csv_qty),
     ordered_unit:r.unit||null,
+    external_order_no:r.external_order_no==null?null:String(r.external_order_no),
     unit_price:numberOrNull(r.unit_price),
     english_name:r.en_name||null,
     scientific_name:r.sci_name||null,
@@ -2150,6 +2152,7 @@ function orderLineToLocalRow(dbRow,indexFallback=0){
   return{
     _idx:(dbRow.source_row_no||indexFallback+1)-1,
     _sourceOrderLineId:dbRow.source_order_line_id||null,
+    external_order_no:dbRow.external_order_no||"",
     _boxRouting:dbRow._boxRouting||null,
     _qty:dbRow.input_qty??"",
     _net:dbRow.net_weight??"",
@@ -2179,6 +2182,7 @@ function syncOrderRowsFromRows(){
     customer:r.customer,
     importer_id:r.importer_id,
     csv_memo:r._memo,
+    external_order_no:r.external_order_no||"",
     origin:r.origin,
     unit_price:r.unit_price
   }));
@@ -2196,6 +2200,7 @@ function upsertRemoteOrderLine(dbRow,indexFallback=0){
   const r=rows[idx],oldCountry=r.country,oldCustomer=r.customer;
   if(dbRow._boxRouting)r._boxRouting=dbRow._boxRouting;
   r._sourceOrderLineId=dbRow.source_order_line_id||r._sourceOrderLineId||null;
+  if(Object.prototype.hasOwnProperty.call(dbRow,"external_order_no"))r.external_order_no=dbRow.external_order_no||"";
   r._qty=dbRow.input_qty??"";
   r._unit=dbRow.input_unit||"Kg";
   r._net=dbRow.net_weight??"";
@@ -2451,6 +2456,7 @@ async function openSavedSession(sessionId){
   rows=(lineData||[]).map((r,i)=>({
     _idx:(r.source_row_no||i+1)-1,
     _sourceOrderLineId:r.source_order_line_id||null,
+    external_order_no:r.external_order_no||"",
     _boxRouting:r._boxRouting||null,
     _qty:r.input_qty??"",
     _net:r.net_weight??"",
@@ -2892,7 +2898,7 @@ function mergeAndRender(){
     const englishName=findFirstValue(r,["NAME OF GOODS"]);
     const orderOrigin=r.origin||findFirstValue(r,["産地","origin"]);
     const orderPrice=r.unit_price||findFirstValue(r,["売価","U/PRICE by JPN YEN"]);
-    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:workOriginRomanize(orderOrigin||m.origin||""),unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
+    return{_idx:i,_qty:"",_net:"",_box:"",_memo:r.csv_memo||"",_unit:"Kg",_stockout:false,external_order_no:r.external_order_no||"",customer:customer||"店舗名未取得",product_id:productId||"",product_name:japaneseName||r.product_name||"-",unit:r.unit||"",csv_qty:r.csv_qty||findFirstValue(r,["QNTY","QTY","数量"])||"",en_name:m.en_name||r.en_name||englishName||"",sci_name:m.sci_name||"",origin:workOriginRomanize(orderOrigin||m.origin||""),unit_price:resolveInitialUnitPrice(orderPrice,m,importerId),importer_id:importerId,country:countryCode(importerId)};
   });
   activeCountry=null;
   activeCustomer={};
@@ -3469,7 +3475,7 @@ function renderP15Importer(imp){
   const body=impRows.map((r,i)=>{
     const state=p15RowState(r);
     const rowClasses=[p15MasterPriceSelections.has(r._idx)?"p15-master-selected":"",state.complete?"":"p15-incomplete"].filter(Boolean).join(" ");
-    return `<tr id="p15-master-row-${r._idx}" class="${rowClasses}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}</td><td style="font-weight:800">${workProductCell(r)}</td><td>${esc(r.product_id)}</td>
+    return `<tr id="p15-master-row-${r._idx}" class="${rowClasses}"><td>${i+1}</td><td class="shop-name-cell">${esc(r.customer)}<label style="display:block;margin-top:5px;font-size:10px">先方受注番号<input class="p15-input" style="max-width:160px" maxlength="120" data-p15-order="${i*3-.5}" data-p15-col="external_order_no" aria-label="先方受注番号" value="${esc(r.external_order_no||"")}" onclick="event.stopPropagation()" onkeydown="handleP15Key(event,${r._idx},'external_order_no')" onblur="saveP15Field(${r._idx},'external_order_no',this.value)"></label></td><td style="font-weight:800">${workProductCell(r)}</td><td>${esc(r.product_id)}</td>
       <td>${p15QuantityInput(r,i*3)}</td>
       <td><input class="p15-input${state.missingOrigin?" p15-input-missing":""}" inputmode="text" lang="en" autocapitalize="none" autocomplete="off" spellcheck="false" data-p15-order="${i*3+1}" data-p15-col="origin" value="${esc(r.origin)}" placeholder="産地 未入力" onclick="event.stopPropagation()" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'origin')" onblur="saveP15Field(${r._idx},'origin',this.value)"></td>
       <td class="p15-price-cell"><div class="p15-price-line"><input class="p15-input p15-price${state.missingPrice?" p15-input-missing":""}" data-row-idx="${r._idx}" inputmode="decimal" pattern="[0-9.]*" lang="en" autocomplete="off" data-p15-order="${i*3+2}" data-p15-col="unit_price" value="${esc(r.unit_price)}" placeholder="売価 未入力" onclick="event.stopPropagation();showP15History(${r._idx},this)" onfocus="this.select()" onkeydown="handleP15Key(event,${r._idx},'unit_price')" onblur="saveP15Field(${r._idx},'unit_price',this.value)"><button class="p15-history-toggle" type="button" onclick="event.stopPropagation();toggleP15History(${r._idx})">履歴</button></div><div class="p15-history-suggestion" id="p15history-suggestion-${r._idx}">${p15HistorySuggestionHtml(r)}</div></td><td class="p15-source"><span class="p15-status ${state.complete?"complete":"incomplete"}">${state.label}</span></td><td><label class="p15-master-check"><input type="checkbox" ${p15MasterPriceSelections.has(r._idx)?"checked":""} onchange="toggleP15MasterPriceSelection(${r._idx},this.checked)"><span>候補</span></label></td></tr><tr class="p15-history-detail-row${p15HistoryOpenRowIdx===r._idx?" open":""}" id="p15history-row-${r._idx}"><td colspan="9" id="p15history-detail-${r._idx}">${p15HistoryDetailHtml(r)}</td></tr>`;
@@ -3528,8 +3534,9 @@ const p15PendingFields=new WeakMap();
 let p15QuantityChanged=false;
 async function saveP15Field(rowIdx,field,value){
   const row=rows.find(r=>r._idx===rowIdx);
-  if(!row||!["origin","unit_price","_qty"].includes(field))return false;
+  if(!row||!["origin","unit_price","_qty","external_order_no"].includes(field))return false;
   let next=String(value??"").trim();
+  if(field==="external_order_no"&&next.length>120){toast("先方受注番号は120文字以内で入力してください");scheduleP15Refresh();return false}
   if(field==="_qty"){
     if(row._stockout)return false;
     next=next.normalize("NFKC");
@@ -3550,7 +3557,7 @@ async function saveP15Field(rowIdx,field,value){
   row[field]=next;
   if(field==="_qty")p15QuantityChanged=true;
   const dbField=field==="_qty"?"input_qty":field;
-  const dbValue=field==="origin"?(next||null):numberOrNull(next);
+  const dbValue=["origin","external_order_no"].includes(field)?(next||null):numberOrNull(next);
   let saved=false;
   try{
     saved=!sessionId||await updateOrderLineFieldsToSupabase(row,{[dbField]:dbValue});
@@ -4655,6 +4662,7 @@ function salesRecordPayloadTrial(row,finalizedAt=""){
     origin:row.origin||null,
     ordered_qty:numberOrNull(row.csv_qty),
     ordered_unit:row.unit||null,
+    external_order_no:row.external_order_no==null?null:String(row.external_order_no),
     input_qty:qty,
     input_unit:row._unit||null,
     net_weight:numberOrNull(row._net),
@@ -6982,6 +6990,7 @@ function orderEntryLineToWorkRow(batch,line,index,externalWork=null){
   return {
     _idx:index,
     _sourceOrderLineId:line.id||null,
+    external_order_no:line.external_order_no||"",
     _boxRouting:line._boxRouting||null,
     _qty:externalWork?.input_qty??"",
     _net:externalWork?.net_weight??"",

@@ -12,6 +12,10 @@
 <script src="./accounting-period-report.js?v=20261006-1"></script>
 <script src="./accounting-report-layout.js?v=20261106-1"></script>
 <script src="./domestic-receivable-report.js?v=20261106-1"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" defer></script>
+<script src="./domestic-delivery-export.js?v=20261123-1" defer></script>
+<script src="./domestic-delivery-export-app.js?v=20261123-2" defer></script>
+<link rel="stylesheet" href="./domestic-delivery-export.css?v=20261123-2">
 <title>国内販売管理</title>
 <style>
 :root{--bg:#f4f6f7;--panel:#fff;--line:#d8dde3;--line2:#b5bec8;--text:#15181c;--muted:#64707d;--accent:#0f6848;--accent-bg:#e9f5ef;--blue:#174ea6;--blue-bg:#eaf2ff;--danger:#b42318;--danger-bg:#fff0ef;--warn:#8a5700;--warn-bg:#fff7e7}
@@ -894,7 +898,7 @@ function renderSalesReference(){
     const correctionButton=isAdmin()&&row.status==="confirmed"?`<button class="btn small" type="button" onclick="openDomesticSaleCorrection('${row.id}')">訂正</button>`:"";
     const cancelButton=isAdmin()&&row.status==="confirmed"?`<button class="btn small danger" type="button" onclick="cancelSale('${row.id}')">削除（取消）</button>`:"";
     const sourceBadge=generated?`<span class="status-chip confirmed" title="輸出作業から自動作成">輸出連動 ${esc(row.source_importer_code||"")}</span>`:"";
-    const deliveryButton=row.status==="confirmed"?`<button class="btn small blue" type="button" onclick="printDomesticDeliveryNote('${row.id}')">納品書</button>`:"";
+    const deliveryButton=row.status==="confirmed"?`<button class="btn small blue" type="button" onclick="printDomesticDeliveryNote('${row.id}')">納品書</button><button class="btn small" type="button" onclick="openDomesticDeliveryExport('${row.id}')">納品書データ</button>`:"";
     return `<tr><td>${esc(row.sale_date)}</td><td>${esc(row.sale_no)}</td><td>${esc(row.customer_code)} ${esc(row.customer_name_snapshot)}</td><td class="money">${money(row.product_subtotal_8_jpy)}</td><td class="money">${money(row.product_subtotal_10_jpy)}</td><td class="money">${money(row.shipping_amount_jpy)}</td><td class="money">${money(row.tax_total_jpy)}</td><td class="money">${money(row.total_amount_jpy)}</td><td><span class="status-chip ${row.status}">${row.status==="cancelled"?"取消済":"確定"}</span>${sourceBadge}</td><td class="sale-actions"><div class="doc-actions"><button class="btn small" type="button" onclick="toggleSaleDetail('${row.id}')">${expanded?"閉じる":"明細"}</button>${deliveryButton}${correctionButton}${cancelButton}</div></td></tr>${detail}`;
   }).join("");
 }
