@@ -44,6 +44,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .user-admin-layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:12px}.user-admin-form{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd}.user-site-checks{display:flex;align-items:center;gap:12px;min-height:38px}.user-site-checks label{flex-direction:row;align-items:center;gap:6px;color:var(--text)}.user-site-checks input{width:18px;height:18px;min-height:18px}.user-admin-actions{display:flex;gap:7px;flex-wrap:wrap}.user-admin-list-tools{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:8px;align-items:end}.user-admin-table-wrap{max-height:580px;overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:8px}.user-admin-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0}.user-admin-table th,.user-admin-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-size:12px}.user-admin-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.user-admin-table tbody tr{cursor:pointer}.user-admin-table tbody tr:hover td,.user-admin-table tbody tr.selected td{background:#eaf2ff}.user-admin-table tbody tr.inactive td{color:#7c8793;background:#f6f7f8}.user-admin-email{font-weight:900}.user-admin-meta{color:var(--muted);font-size:11px}.admin-only-hidden{display:none!important}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form-grid .wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:12px;font-weight:900}input,select,textarea{width:100%;min-height:38px;border:1px solid var(--line2);border-radius:7px;background:#fff;color:var(--text);padding:0 9px;font-weight:700}input[readonly]{background:#f3f5f7;color:#334155;border-color:var(--line)}textarea{min-height:96px;padding:9px;line-height:1.5;resize:vertical}.hint{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.6}
 .table-wrap{overflow:auto}.orders{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0}.orders th,.orders td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap}.orders th{position:sticky;top:0;background:#f7f9fb;z-index:1;color:var(--muted);font-size:12px;font-weight:900}.orders td{background:#fff}.orders input,.orders select{height:34px;min-height:34px;border-radius:6px}.orders .num{width:88px;text-align:right}.orders .price{width:96px;text-align:right;font-family:Consolas,monospace}.orders .code{width:88px;font-family:Consolas,monospace}.orders .name{min-width:180px}.orders .supplier{min-width:150px}.orders .memo{min-width:160px}.row-actions{display:flex;gap:6px}.small{height:34px;padding:0 9px;border-radius:7px;border:1px solid var(--line2);background:#fff;font-weight:900;cursor:pointer}.small.danger{border-color:#efb9b3;background:#fff5f4;color:var(--danger)}.lookup-cell{display:flex;gap:4px;align-items:center;position:relative}.lookup-cell .code{width:84px}.lookup-btn{width:34px;height:34px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;font-weight:900;cursor:pointer}.inline-product-suggest{position:fixed;z-index:40;width:min(430px,92vw);max-height:min(360px,70vh);overflow:auto;border:1px solid var(--line2);border-radius:7px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.16)}.inline-product-suggest button{display:grid;grid-template-columns:70px minmax(0,1fr) 115px;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;padding:5px 8px;min-height:34px;cursor:pointer}.inline-product-suggest button:hover,.inline-product-suggest button.active{background:#eaf2ff}.inline-product-suggest b{font-family:Consolas,monospace}.inline-product-suggest span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inline-product-suggest .subtext{color:var(--muted);font-size:12px}
+.orders .order-number{width:108px;padding-inline:6px}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
 .report-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end}.report-count{grid-column:span 2;align-self:end;display:flex;align-items:center;min-height:40px}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-parser #line-text{min-height:220px}.line-preview{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
@@ -340,7 +341,7 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="table-wrap">
       <table class="orders">
         <thead><tr>
-          <th>No.</th><th>商品コード</th><th>商品名</th><th>数量</th><th>単位</th><th>単価</th><th>仕入先コード</th><th>仕入先名</th><th>備考</th><th></th>
+          <th>No.</th><th>商品コード</th><th>商品名</th><th scope="col">先方受注番号</th><th>数量</th><th>単位</th><th>単価</th><th>仕入先コード</th><th>仕入先名</th><th>備考</th><th></th>
         </tr></thead>
         <tbody id="order-body"></tbody>
       </table>
@@ -13431,7 +13432,7 @@ function chooseInlineProduct(rowIndex,index){
   if(!item)return false;
   applyProductToRow(rowIndex,item);
   hideProductSuggestions(rowIndex);
-  focusOrderCell(rowIndex,"qty");
+  focusOrderCell(rowIndex,"externalOrderNo");
   return true;
 }
 function chooseFirstInlineProduct(rowIndex){
@@ -13476,7 +13477,8 @@ function render(){
   body.innerHTML=orders.map((r,i)=>`<tr>
     <td>${i+1}</td>
     <td><div class="lookup-cell"><input class="code ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productCode" value="${esc(r.productCode)}" oninput="setRow(${i},'productCode',this.value)" onchange="setRow(${i},'productCode',this.value)"><button class="lookup-btn" type="button" onclick="openProductLookup(${i})">+</button></div></td>
-    <td><input class="name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"><label style="margin-top:4px;font-size:10px">先方受注番号<input style="height:28px;min-height:28px;max-width:180px" maxlength="120" autocomplete="off" data-order-input data-row="${i}" data-field="externalOrderNo" value="${esc(r.externalOrderNo)}" oninput="setRow(${i},'externalOrderNo',this.value)"></label></td>
+    <td><input class="name ime-ja" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="productName" value="${esc(r.productName)}" oninput="setRow(${i},'productName',this.value)" onblur="finishOrderProductName(${i},this.value)" onchange="finishOrderProductName(${i},this.value)"></td>
+    <td><input class="order-number ime-en" aria-label="先方受注番号" maxlength="120" autocomplete="off" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="externalOrderNo" value="${esc(r.externalOrderNo)}" oninput="setRow(${i},'externalOrderNo',this.value)"></td>
     <td><input class="num" data-order-input data-row="${i}" data-field="qty" type="number" step="0.01" value="${esc(r.qty)}" oninput="setRow(${i},'qty',this.value)"></td>
     <td><input class="code ime-en" autocapitalize="off" spellcheck="false" data-order-input data-row="${i}" data-field="unit" value="${esc(r.unit)}" oninput="setRow(${i},'unit',this.value)"></td>
     <td><input class="price ime-en" inputmode="decimal" data-order-input data-row="${i}" data-field="unitPrice" value="${esc(r.unitPrice)}" oninput="setRow(${i},'unitPrice',this.value)" title="受注価格。未入力時は輸入社別契約価格、商品マスタ価格の順で補完します"></td>
@@ -13621,8 +13623,9 @@ async function deleteConfirmedBatch(index){
   saveConfirmedBatches();
   render();
 }
+const orderRowFields=["productCode","productName","externalOrderNo","qty","unit","unitPrice","supplierCode","supplierName","memo"];
 function moveOrderFocus(current){
-  const fields=["productCode","productName","qty","unit","unitPrice","supplierCode","supplierName","memo"];
+  const fields=orderRowFields;
   const rowIndex=Number(current.dataset.row);
   const field=current.dataset.field;
   const fieldIndex=fields.indexOf(field);
@@ -13638,7 +13641,7 @@ function moveOrderFocus(current){
   }
 }
 function moveOrderFocusPrevious(current){
-  const fields=["productCode","productName","qty","unit","unitPrice","supplierCode","supplierName","memo"];
+  const fields=orderRowFields;
   const rowIndex=Number(current.dataset.row);
   const field=current.dataset.field;
   const fieldIndex=fields.indexOf(field);
@@ -13903,7 +13906,7 @@ function chooseProductLookup(index){
   }else if(productLookupTarget.type==="reconciliation"){
     requestAnimationFrame(()=>document.getElementById("line-reconciliation-modal")?.focus?.());
   }else{
-    focusOrderCell(productLookupRowIndex,"qty");
+    focusOrderCell(productLookupRowIndex,"externalOrderNo");
   }
 }
 function handleProductLookupKey(e){
@@ -15212,7 +15215,7 @@ function applyQuickProductMasterTarget(item,target=quickProductMasterTarget){
     applyProductToReconciliationItem(target.itemId,item);
   }else{
     applyProductToRow(target?.index??productLookupRowIndex,item);
-    requestAnimationFrame(()=>focusOrderCell(target?.index??productLookupRowIndex,"qty"));
+    requestAnimationFrame(()=>focusOrderCell(target?.index??productLookupRowIndex,"externalOrderNo"));
   }
 }
 async function saveQuickProductMaster(event){
@@ -17294,7 +17297,7 @@ function applySearchResult(type,index){
   const rowIndex=targetOrderRow();
   if(type==="products"){
     applyProductToRow(rowIndex,selected);
-    focusOrderCell(rowIndex,"qty");
+    focusOrderCell(rowIndex,"externalOrderNo");
     return;
   }
   if(type==="suppliers"){
