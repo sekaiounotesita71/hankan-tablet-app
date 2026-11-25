@@ -17,13 +17,18 @@
     const known=core().columns.map(c=>c.key);
     const valid=Array.isArray(value?.columns)&&value.columns.length&&new Set(value.columns).size===value.columns.length&&value.columns.every(k=>known.includes(k));
     const columns=valid?[...value.columns]:[...core().defaultColumns8];
-    if((!valid||![2,3].includes(value?.version))&&!columns.includes("customerName"))columns.splice(columns.indexOf("orderNo")+1,0,"customerName");
+    if((!valid||![2,3,4].includes(value?.version))&&!columns.includes("customerName"))columns.splice(columns.indexOf("orderNo")+1,0,"customerName");
     const jnext=rules.importerCode==="10";
-    const previousDefault=["orderNo","customerName",...core().defaultColumns8.slice(1)];
-    if(jnext&&value?.version!==3&&columns.join(",")===previousDefault.join(",")){
-      [columns[1],columns[2]]=[columns[2],columns[1]];
+    if(jnext&&(!valid||value?.version!==4)){
+      const carton=columns.indexOf("cartonNo"),customer=columns.indexOf("customerName");
+      if(carton>=0&&customer>carton)[columns[carton],columns[customer]]=[columns[customer],columns[carton]];
+      if(!columns.includes("weight")){
+        const price=columns.indexOf("unitPrice");
+        columns.splice(price<0?columns.length:price,0,"weight");
+      }
+      if(!columns.includes("remarks"))columns.push("remarks");
     }
-    return{version:jnext?3:2,columns,prefix:rules.prefix?String(value?.prefix??rules.prefix).slice(0,100):"",orderLabel:String(value?.orderLabel??rules.orderLabel).slice(0,120)};
+    return{version:jnext?4:2,columns,prefix:rules.prefix?String(value?.prefix??rules.prefix).slice(0,100):"",orderLabel:String(value?.orderLabel??rules.orderLabel).slice(0,120)};
   }
   function remember(code,importerCode,value){
     const key=settingsKey(code,importerCode);
@@ -91,7 +96,8 @@
     const rules=importerRules(state.sale.source_importer_code);
     const prefs=preferences(state.sale.customer_code,rules.importerCode),focusBefore=document.activeElement;
     const jnext=rules.importerCode==="10";
-    const outputOptions=()=>({labels:{orderNo:prefs.orderLabel},sortByOrderNumber:jnext});
+    const outputLabels=()=>({orderNo:prefs.orderLabel,...(jnext?{weight:"NET重量 (kg)"}:{})});
+    const outputOptions=()=>({labels:outputLabels(),sortByOrderNumber:jnext});
     let rows=normalizeCartons(state.rows,prefs.prefix),busy=false,dirty=false,appliedPrefix=prefs.prefix;
     const dialog=document.createElement("dialog");dialog.id="dde-dialog";dialog.className="dde-dialog";
     dialog.setAttribute("aria-labelledby","dde-title");
@@ -101,7 +107,8 @@
     function markDirty(){dirty=true;status.textContent="未保存"}
     function renderColumns(){
       const order=[...prefs.columns,...core().columns.map(c=>c.key).filter(k=>!prefs.columns.includes(k))];
-      dialog.querySelector("#dde-column-list").innerHTML=order.map(key=>{const col=core().columns.find(c=>c.key===key),i=prefs.columns.indexOf(key);return`<div class="dde-column"><label><input type="checkbox" data-column="${key}" ${i>=0?"checked":""}>${esc(col.label.replace(/\n/g," "))}</label><span><button type="button" class="dde-icon" data-move="-1" data-key="${key}" ${i<=0?"disabled":""} title="上へ" aria-label="${esc(col.label)}を上へ">&#8593;</button><button type="button" class="dde-icon" data-move="1" data-key="${key}" ${i<0||i===prefs.columns.length-1?"disabled":""} title="下へ" aria-label="${esc(col.label)}を下へ">&#8595;</button></span></div>`}).join("");
+      const labels=outputLabels();
+      dialog.querySelector("#dde-column-list").innerHTML=order.map(key=>{const col=core().columns.find(c=>c.key===key),i=prefs.columns.indexOf(key),label=(labels[key]??col.label).replace(/\n/g," ");return`<div class="dde-column"><label><input type="checkbox" data-column="${key}" ${i>=0?"checked":""}>${esc(label)}</label><span><button type="button" class="dde-icon" data-move="-1" data-key="${key}" ${i<=0?"disabled":""} title="上へ" aria-label="${esc(label)}を上へ">&#8593;</button><button type="button" class="dde-icon" data-move="1" data-key="${key}" ${i<0||i===prefs.columns.length-1?"disabled":""} title="下へ" aria-label="${esc(label)}を下へ">&#8595;</button></span></div>`}).join("");
     }
     function renderPreview(){
       try{

@@ -14,7 +14,8 @@
     {key:"weight",label:"\u5546\u54c1\u91cd\u91cf",width:12},
     {key:"unitPrice",label:"\u5358\u4fa1 \u5186",width:12},
     {key:"amount",label:"\u5408\u8a08\u91d1\u984d \u5186",width:16},
-    {key:"customerName",label:"\u5f97\u610f\u5148\u30fb\u5e97\u8217\u540d",width:22}
+    {key:"customerName",label:"\u5f97\u610f\u5148\u30fb\u5e97\u8217\u540d",width:22},
+    {key:"remarks",label:"\u5099\u8003",width:20}
   ].map(column=>Object.freeze(column)));
   const defaultColumns8=Object.freeze(columns.slice(0,8).map(column=>column.key));
   const columnMap=new Map(columns.map(column=>[column.key,column]));
@@ -174,7 +175,7 @@
       orderNumberCollator.compare(orderNumberKey(a),orderNumberKey(b))||a.lineNo-b.lineNo):rows;
     for(const row of ordered){
       data.push(selected.map(({key})=>numericKeys.has(key)
-        ?number(row[key],key,{optional:key==="weight"}):text(row[key],key)));
+        ?number(row[key],key,{optional:key==="weight"}):text(key==="remarks"?row.cartonNo:row[key],key)));
       if(subrows&&text(row.customerName,"customerName").trim()){
         const subrow=selected.map(()=>"");
         subrow[cartonIndex]=text(row.customerName,"customerName");

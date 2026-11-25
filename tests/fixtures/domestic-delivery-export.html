@@ -6,13 +6,13 @@
 var demoSale={id:'sale-demo',status:'confirmed',sale_no:'LOCAL-20261119',sale_date:'2026-11-19',customer_code:'LOCAL',customer_name_snapshot:'J NEXT テスト',source_session_id:'session-demo',source_importer_code:'10',lines:[
 {id:'line-1',sale_id:'sale-demo',line_no:1,source_sales_record_id:'source-1',product_name_snapshot:'アサリ',quantity:1.13,unit:'Kg',unit_price_jpy:3050,net_amount_jpy:3447,external_order_no:'0005',delivery_carton_no:null,delivery_spec:null,delivery_customer_name:null,delivery_export_revision:0,delivery_metadata_saved:false},
 {id:'line-2',sale_id:'sale-demo',line_no:2,source_sales_record_id:'source-2',product_name_snapshot:'生本マグロ',quantity:3.3,unit:'Kg',unit_price_jpy:6200,net_amount_jpy:20460,external_order_no:'6',delivery_carton_no:null,delivery_spec:null,delivery_customer_name:null,delivery_export_revision:0,delivery_metadata_saved:false},
-{id:'line-3',sale_id:'sale-demo',line_no:3,source_sales_record_id:'source-3',product_name_snapshot:'養殖シマアジ(水)',quantity:1.4,unit:'Kg',unit_price_jpy:3000,net_amount_jpy:4200,external_order_no:'7',delivery_carton_no:null,delivery_spec:null,delivery_customer_name:null,delivery_export_revision:0,delivery_metadata_saved:false}]};
+{id:'line-3',sale_id:'sale-demo',line_no:3,source_sales_record_id:'source-3',product_name_snapshot:'養殖シマアジ(水)',quantity:2,unit:'尾',unit_price_jpy:2100,net_amount_jpy:4200,external_order_no:'7',delivery_carton_no:null,delivery_spec:null,delivery_customer_name:null,delivery_export_revision:0,delivery_metadata_saved:false}]};
 Object.assign(demoSale,{product_subtotal_8_jpy:28107,product_subtotal_10_jpy:0,shipping_amount_jpy:650,tax_8_jpy:2248,tax_10_jpy:65,total_net_jpy:28757,tax_total_jpy:2313,total_amount_jpy:31070});
 demoSale.lines.forEach(line=>line.tax_rate=8);
 var demoSources=[
 {id:'source-1',session_id:'session-demo',importer_code:'10',store_name:'FB(TMR10)',external_order_no:'0005',box_no:'9',origin:'北海道',net_weight:3,ordered_qty:3,ordered_unit:'kg',input_qty:3,input_unit:'Kg'},
 {id:'source-2',session_id:'session-demo',importer_code:'10',store_name:'Yamu Restaurant\nBangkok',external_order_no:'6',box_no:'6',origin:'大分',net_weight:3.3,ordered_qty:3,ordered_unit:'kg',input_qty:3.3,input_unit:'Kg'},
-{id:'source-3',session_id:'session-demo',importer_code:'10',store_name:'MISHO',external_order_no:'7',box_no:'11',origin:'愛媛',net_weight:1.4,ordered_qty:1,ordered_unit:'尾',input_qty:1.4,input_unit:'Kg'}];
+{id:'source-3',session_id:'session-demo',importer_code:'10',store_name:'MISHO',external_order_no:'7',box_no:'11',origin:'愛媛',net_weight:1.4,ordered_qty:2,ordered_unit:'尾',input_qty:2,input_unit:'尾'}];
 function domesticSaleForDocument(){return Promise.resolve(structuredClone(demoSale))}
 function showToast(message){document.getElementById('test-message').textContent=message}
 function fetchPaged(factory){return Promise.resolve(structuredClone(factory().data))}

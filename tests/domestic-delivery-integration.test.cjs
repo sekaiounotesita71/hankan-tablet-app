@@ -153,24 +153,27 @@ test('only planned importer 10 gets the J NEXT carton prefix; other importers re
   }
 });
 
-test('only importer 10 updates the old default column order to the supplied carton-before-customer layout',()=>{
+test('only importer 10 upgrades old exports to customer-before-carton, NET weight and carton remarks',()=>{
   const oldDefault=Array.from(appContext().preferences('code','01').columns);
-  const expected=['orderNo','cartonNo','customerName',...oldDefault.slice(3)];
+  const expected=[...oldDefault,'remarks'];
   assert.deepEqual(Array.from(appContext().preferences('code','10').columns),expected);
   const previous={version:2,columns:oldDefault,orderLabel:'J NEXT order'};
   const updated=appContext(previous).preferences('code','10');
-  assert.equal(updated.version,3);
+  assert.equal(updated.version,4);
   assert.deepEqual(Array.from(updated.columns),expected);
   assert.equal(updated.orderLabel,'J NEXT order');
   assert.deepEqual(Array.from(appContext(previous).preferences('code','01').columns),oldDefault);
-  assert.deepEqual(Array.from(appContext({...previous,version:3}).preferences('code','10').columns),oldDefault);
-  const custom=['customerName','orderNo','cartonNo','amount'];
-  assert.deepEqual(Array.from(appContext({...previous,columns:custom}).preferences('code','10').columns),custom);
+  const v3={...previous,version:3,columns:['orderNo','cartonNo','customerName',...oldDefault.slice(3)]};
+  assert.deepEqual(Array.from(appContext(v3).preferences('code','10').columns),expected);
+  const custom=['cartonNo','orderNo','customerName','amount','unitPrice'];
+  assert.deepEqual(Array.from(appContext({...v3,columns:custom}).preferences('code','10').columns),
+    ['customerName','orderNo','cartonNo','amount','weight','unitPrice','remarks']);
+  assert.deepEqual(Array.from(appContext({...v3,version:4,columns:custom}).preferences('code','10').columns),custom);
 });
 
 test('column and heading preferences are scoped to importer plus billing customer, not the customer alone',()=>{
   const stored=new Map([
-    ['domestic-delivery-export-v2:10:SAME',{version:2,columns:['amount','orderNo'],prefix:'JNX/No,Y',orderLabel:'J NEXT order'}],
+    ['domestic-delivery-export-v2:10:SAME',{version:4,columns:['amount','orderNo'],prefix:'JNX/No,Y',orderLabel:'J NEXT order'}],
     ['domestic-delivery-export-v2:01:SAME',{version:2,columns:['productName','cartonNo'],prefix:'JNX/No,Y',orderLabel:'Other order'}],
     ['domestic-delivery-export-v1:SAME',{version:2,columns:['amount'],prefix:'JNX/No,Y',orderLabel:'Unscoped legacy'}]
   ]);

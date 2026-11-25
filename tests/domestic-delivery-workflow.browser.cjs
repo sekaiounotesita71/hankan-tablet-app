@@ -76,8 +76,13 @@ test('importer 10 downloads one order-sorted sheet and uses the same persisted a
     const csvPromise=page.waitForEvent('download');await click(page,'csv');const csvDownload=await csvPromise;
     await waitStatus(page,'CSV出力済み');
     const csvData=parseCsv(fs.readFileSync(await csvDownload.path(),'utf8'));
-    assert.equal(csvData[0].length,9);assert.equal(csvData.length,4);
-    assert.equal(csvData[3][0],'0000123');assert.equal(csvData[1][2],'東京店');assert.equal(csvData[2][1],'JNX/No,Y0012');
+    assert.equal(csvData[0].length,10);assert.equal(csvData.length,4);
+    assert.deepEqual(csvData[0].slice(1,3),['得意先・店舗名','カートンNO']);
+    assert.equal(csvData[0][6],'NET重量 (kg)');
+    assert.equal(csvData[0][9],'備考');
+    assert.equal(csvData[3][0],'0000123');assert.equal(csvData[1][1],'東京店');assert.equal(csvData[2][2],'JNX/No,Y0012');
+    assert.deepEqual(csvData.slice(1).map(row=>row[6]),['3.3','1.4','1.13']);
+    assert.deepEqual(csvData.slice(1).map(row=>row[9]),csvData.slice(1).map(row=>row[2]));
     const excelPromise=page.waitForEvent('download');await click(page,'excel');const excelDownload=await excelPromise;
     await waitStatus(page,'Excel出力済み');
     const workbook=new ExcelJS.Workbook();await workbook.xlsx.readFile(await excelDownload.path());
@@ -86,11 +91,14 @@ test('importer 10 downloads one order-sorted sheet and uses the same persisted a
     assert.deepEqual(workbook.worksheets.map(s=>s.name),['納品明細']);
     assert.deepEqual(values(sheet),csvData);
     assert.equal(sheet.getCell('A4').value,'0000123');
+    assert.equal(sheet.getCell('G3').value,1.4);
     assert.equal(sheet.getCell('I4').value,3447);
+    assert.equal(sheet.getCell('J3').value,'JNX/No,Y0012');
     const printed=await page.evaluate(()=>DomesticDocuments.delivery(demoSale,{},{
       caseNumbers:new Map(demoSale.lines.map((line,i)=>[line.id,demoSources[i].box_no]))
     }));
     assert.match(printed,/<td class="num">3,447<\/td>/);
+    assert.doesNotMatch(printed,/NET重量|<th>備考<\/th>/);
     assert.equal([2,3,4].reduce((sum,i)=>sum+sheet.getCell(`I${i}`).value,0),28107);
     assert.equal(typeof sheet.getCell('A2').value,'string');assert.equal(typeof sheet.getCell('I2').value,'number');
     assert.equal(sheet.getCell('A2').numFmt,'@');assert.equal(sheet.getCell('I2').numFmt,'#,##0');
