@@ -1,5 +1,6 @@
 const DEFAULT_SUPABASE_URL = "https://bvgjscxyjosjqqhxutyk.supabase.co";
 const DEFAULT_APP_ORIGIN = "https://hankan-tablet-app.vercel.app";
+const { listAgencyUsers, createAgencyUser, setAgencyAccess } = require("../server/agency-auth.cjs");
 
 function sendJson(res, status, payload) {
   res.statusCode = status;
@@ -210,6 +211,23 @@ module.exports = async function handler(req, res) {
       return;
     }
     const payload = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    if (payload.action === "agency-list") {
+      sendJson(res, 200, { users: await listAgencyUsers() });
+      return;
+    }
+    if (payload.action === "agency-create") {
+      sendJson(res, 200, { user: await createAgencyUser(payload.email, payload.importerCode) });
+      return;
+    }
+    if (payload.action === "agency-assign" || payload.action === "agency-suspend") {
+      const importerCode = payload.action === "agency-suspend" ? null : payload.importerCode;
+      if (payload.action === "agency-assign" && importerCode == null) {
+        sendJson(res, 400, { error: "輸入社コードを選択してください。" });
+        return;
+      }
+      sendJson(res, 200, { user: await setAgencyAccess(payload.userId, importerCode) });
+      return;
+    }
     if (payload.action === "invite") {
       const userId = await inviteUser(payload, administrator.id);
       sendJson(res, 200, { ok: true, userId });

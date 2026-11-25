@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>売上参照 07 | ゆみるめ</title>
+  <link rel="stylesheet" href="/agency-sales.css">
+  <script src="/agency-sales.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topline">
+      <img src="/yumirume-logo.jpg" alt="ゆみるめ" width="42" height="42">
+      <span>営業代行</span>
+      <button id="logout" type="button" hidden>ログアウト</button>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="heading">
+      <h1>売上参照</h1>
+      <span class="scope">輸入社 07</span>
+    </div>
+    <p id="notice" class="notice" role="status">ログイン状態を確認中…</p>
+    <section id="login" aria-label="ログイン" hidden>
+      <form id="email-form" class="login-form">
+        <label for="email">メールアドレス</label>
+        <input id="email" type="email" maxlength="254" required autocomplete="email">
+        <button type="submit" class="primary">確認コードを送る</button>
+      </form>
+      <form id="code-form" class="login-form code-form" hidden>
+        <label for="code">メールの確認コード</label>
+        <input id="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code">
+        <button type="submit" class="primary">ログイン</button>
+      </form>
+    </section>
+    <section id="sales" aria-label="確定売上" hidden>
+      <form id="period" class="filters">
+        <label>開始日<input id="from" type="date" required></label>
+        <label>終了日<input id="to" type="date" required></label>
+        <label>商品名・商品コード<input id="product" type="search" maxlength="120"></label>
+        <label>得意先名<input id="customer" type="search" maxlength="120"></label>
+        <label><span id="site-label">拠点</span><select id="site" aria-labelledby="site-label"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+        <button type="submit" class="primary">検索</button>
+      </form>
+      <dl id="totals" class="totals" hidden>
+        <div><dt>純売上（税抜）</dt><dd id="net"></dd></div>
+        <div><dt>送料売上</dt><dd id="freight"></dd></div>
+        <div><dt>合計（税抜）</dt><dd id="total"></dd></div>
+      </dl>
+      <div id="results" hidden>
+        <div class="scroll" tabindex="0" aria-label="確定済み売上明細">
+          <table>
+            <thead><tr>
+              <th scope="col">日付</th><th scope="col">拠点</th><th scope="col">得意先</th>
+              <th scope="col">商品・区分</th><th scope="col" class="numeric">数量</th><th scope="col">単位</th>
+              <th scope="col" class="numeric">売価</th><th scope="col" class="numeric">金額（税抜）</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <nav id="pages" aria-label="ページ" class="pages">
+          <span id="page-counter"></span>
+          <button id="prev" type="button">前へ</button>
+          <button id="next" type="button">次へ</button>
+        </nav>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
