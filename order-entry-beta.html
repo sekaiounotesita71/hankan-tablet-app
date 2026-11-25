@@ -54,7 +54,16 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
 .agency-users .user-admin-table{min-width:420px}
 .agency-users .user-admin-table tbody tr{cursor:default}
 .summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff}.pill{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);font-weight:900;font-size:12px}.pill.warn{background:#fff6e6;color:var(--warn)}.pill.blue{background:var(--blue-bg);color:var(--blue)}
-.report-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end}.report-count{grid-column:span 2;align-self:end;display:flex;align-items:center;min-height:40px}
+.report-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end}
+.report-criteria{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:end}
+.report-criteria input,.report-criteria select{min-width:0}
+.report-count{grid-column:1/-1;display:flex;align-items:center;min-height:32px}
+.report-count .pill{min-width:0;overflow-wrap:anywhere}
+@media(max-width:900px){.report-criteria{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){
+  .report-print-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .report-print-actions .btn,.report-tools>.btn{height:auto;min-height:40px;padding:5px 8px;white-space:normal;overflow-wrap:anywhere}
+}
 .line-parser{display:grid;grid-template-columns:1fr;gap:8px}.line-parser #line-text{min-height:220px}.line-preview{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fbfcfd;padding:8px;font-size:12px;line-height:1.55;white-space:pre-wrap}
 #line-reconciliation-modal{z-index:60}#product-lookup-modal{z-index:70}#quick-product-master-modal{z-index:80}.modal.line-reconciliation-modal{width:min(1400px,100%)}.line-reconciliation-body{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;height:calc(88vh - 59px);max-height:calc(88vh - 59px);box-sizing:border-box;overflow:hidden}.line-reconciliation-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.line-reconciliation-context{margin-left:auto;color:var(--muted);font-size:12px;font-weight:900}.line-reconciliation-table-wrap{min-height:180px;max-height:64vh;overflow:auto;border:1px solid var(--line);border-radius:7px;background:#fff}.line-reconciliation-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}.line-reconciliation-table th,.line-reconciliation-table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12px}.line-reconciliation-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900;white-space:nowrap}.line-reconciliation-table tr.recon-match td{background:#f1faf4}.line-reconciliation-table tr.recon-mismatch td{background:#fff8e8}.line-reconciliation-table tr.recon-line-only td,.line-reconciliation-table tr.recon-unresolved td{background:#fff0ef}.line-reconciliation-table tr.recon-entered-only td{background:#eef6ff}.line-reconciliation-status{display:inline-flex;align-items:center;min-height:25px;padding:0 8px;border-radius:6px;font-weight:900;white-space:nowrap}.line-reconciliation-status.match{background:#dff3e7;color:#0f6b42}.line-reconciliation-status.mismatch{background:#ffedbd;color:#865700}.line-reconciliation-status.line-only,.line-reconciliation-status.unresolved{background:#ffdcd8;color:#a5271c}.line-reconciliation-status.entered-only{background:#dceaff;color:#174ea6}.line-reconciliation-line{font-weight:900;white-space:pre-wrap}.line-reconciliation-detail{margin-top:3px;color:var(--muted);font-size:11px;line-height:1.45}.line-reconciliation-check{display:flex;align-items:center;justify-content:center;gap:5px;color:var(--text);white-space:nowrap}.line-reconciliation-check input{width:17px;height:17px;min-height:17px}.line-reconciliation-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.line-reconciliation-empty{padding:28px 16px;text-align:center;color:var(--muted);font-weight:900}.line-dictionary-origin{display:inline-flex;margin-left:5px;padding:2px 5px;border-radius:5px;background:#eaf2ff;color:#174ea6;font-size:10px;font-weight:900}
 .workspace-panel.import-review-hidden{display:none!important}.import-review-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.import-review-search{height:38px;min-width:240px;flex:1;border:1px solid var(--line2);border-radius:7px;padding:0 9px;font-weight:700}.import-review-check{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:900}.import-review-check input{width:auto;min-height:auto}.import-review-table-wrap{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}.import-review-table{width:100%;min-width:1860px;border-collapse:separate;border-spacing:0}.import-review-table th,.import-review-table td{padding:6px 7px;border-bottom:1px solid var(--line);font-size:12px;white-space:nowrap}.import-review-table th{position:sticky;top:0;z-index:2;background:#f7f9fb;color:var(--muted);font-weight:900}.import-review-table tbody tr.review-error td{background:#fff0ef}.import-review-table tbody tr.review-warning td{background:#fff8e8}.import-review-table tbody tr.review-ready td{background:#f2faf5}.import-review-table input{height:34px;min-height:34px;border-radius:6px}.import-review-importer{width:110px;font-family:Consolas,monospace}.import-review-code{width:105px;font-family:Consolas,monospace;text-transform:uppercase}.import-review-customer-code{width:120px;font-family:Consolas,monospace}.import-review-customer{width:210px}.import-review-product{width:240px}.import-review-qty{width:82px;text-align:right}.import-review-unit{width:76px}.import-review-price{width:96px;text-align:right;font-family:Consolas,monospace}.import-review-supplier-code{width:110px;font-family:Consolas,monospace}.import-review-supplier{width:170px}.import-review-memo{width:220px}.import-review-status{font-weight:900}.import-review-status.error{color:#b42318}.import-review-status.warning{color:#a16207}.import-review-status.ready{color:#0f7a3b}.import-review-meta{color:var(--muted);font-weight:800;max-width:160px;overflow:hidden;text-overflow:ellipsis}
@@ -360,18 +369,20 @@ main{padding:12px;max-width:1480px;margin:0 auto}.layout{display:grid;grid-templ
     <div class="panel-head"><span>帳票出力</span></div>
     <div class="panel-body">
       <div class="report-tools">
-        <label>日付<input id="report-filter-date" type="date"></label>
-        <label>輸入社（任意）<input id="report-filter-importer" list="importer-code-list" placeholder="空欄 / ALL = 全輸入社"></label>
-        <label>発注先（任意）<input id="report-filter-supplier" list="supplier-code-list" placeholder="空欄 / ALL = 全発注先"></label>
-        <label>作業拠点<select id="report-filter-site"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
-        <div class="report-count"><span id="report-filter-count" class="pill warn">条件を指定してください</span></div>
+        <div class="report-criteria">
+          <label>日付<input id="report-filter-date" type="date"></label>
+          <label>輸入社（絞り込み）<input id="report-filter-importer" list="importer-code-list" placeholder="空欄 = 全輸入社"></label>
+          <label>輸入社（除外）<input id="report-filter-importer-exclude" list="importer-code-list" autocomplete="off" placeholder="例：07, 10"></label>
+          <label>発注先（任意）<input id="report-filter-supplier" list="supplier-code-list" placeholder="空欄 = 全発注先"></label>
+          <label>作業拠点<select id="report-filter-site"><option value="">全拠点</option><option value="OSA">大阪</option><option value="TYO">東京</option></select></label>
+        </div>
+        <div class="report-count"><span id="report-filter-count" class="pill warn" role="status">条件を指定してください</span></div>
         <button class="btn primary" type="button" onclick="downloadOrderReport('purchase')">発注書 PDF保存</button>
         <button class="btn primary" type="button" onclick="downloadOrderReport('ticket')">現品票 PDF保存</button>
         <button class="btn primary" type="button" onclick="downloadSupplierWorkStatements()">作業明細書 PDF保存</button>
         <button class="btn" type="button" onclick="exportSupplierWorkStatements()">作業明細書Excel</button>
       </div>
-      <div class="hint">日付必須。輸入社・発注先は任意。</div>
-      <div class="actions" style="margin-top:8px">
+      <div class="actions report-print-actions" style="margin-top:8px">
         <button class="btn" type="button" onclick="printPurchaseOrders()">発注書 印刷</button>
         <button class="btn" type="button" onclick="printPickingTickets()">現品票 印刷</button>
         <button class="btn" type="button" onclick="printSupplierWorkStatements()">作業明細書 印刷</button>
@@ -12859,6 +12870,7 @@ function reportFilter(){
   return {
     date:val("report-filter-date"),
     importer:normalizedImporter(val("report-filter-importer")),
+    importerExclude:[...new Set(normalizedImporter(val("report-filter-importer-exclude")).split(/[,、;]+/).map(value=>value.trim()).filter(Boolean))],
     supplier:normalizedImporter(val("report-filter-supplier")),
     site:val("report-filter-site")
   };
@@ -12874,6 +12886,8 @@ function filterReportRows(sourceRows,filter,showAlert=false){
     return [];
   }
   const allImporters=!filter.importer||["all","全て","すべて"].includes(filter.importer);
+  const excludedImporters=new Set(filter.importerExclude||[]);
+  const excludeAll=["all","全て","すべて"].some(value=>excludedImporters.has(value));
   const allSuppliers=!filter.supplier||["all","全て","すべて"].includes(filter.supplier);
   const rows=(sourceRows||[]).filter(r=>{
     const date=(r.orderDate||r.shipDate||"")===filter.date;
@@ -12883,7 +12897,9 @@ function filterReportRows(sourceRows,filter,showAlert=false){
     const supplier=normalizedImporter(supplierText);
     const supplierOk=allSuppliers||supplier.includes(filter.supplier);
     const siteOk=!filter.site||reportSiteCode(r)===filter.site;
-    return date&&(allImporters||code===filter.importer||name===filter.importer)&&supplierOk&&siteOk;
+    const importerOk=(allImporters||code===filter.importer||name===filter.importer)
+      &&!excludeAll&&!excludedImporters.has(code)&&!excludedImporters.has(name);
+    return date&&importerOk&&supplierOk&&siteOk;
   });
   if(showAlert&&!rows.length)alert("指定した条件に一致する明細がありません");
   return rows;
@@ -12956,7 +12972,10 @@ function renderReportFilterCount(){
   const allImporters=!filter.importer||["all","全て","すべて"].includes(filter.importer);
   const allSuppliers=!filter.supplier||["all","全て","すべて"].includes(filter.supplier);
   const siteLabel=filter.site?reportSiteName({siteCode:filter.site}):"全拠点";
-  badge.textContent=`対象 ${rows.length}明細 / ${siteLabel}${allImporters?" / 全輸入社":""}${allSuppliers?" / 全発注先":` / 発注先: ${val("report-filter-supplier")}`}`;
+  const conditionLabel=[siteLabel,allImporters?"全輸入社":`輸入社: ${val("report-filter-importer")}`,
+    filter.importerExclude.length?`除外: ${filter.importerExclude.map(value=>value.toUpperCase()).join("、")}`:"",
+    allSuppliers?"全発注先":`発注先: ${val("report-filter-supplier")}`].filter(Boolean).join(" / ");
+  badge.textContent=`対象 ${rows.length}明細 / ${conditionLabel}`;
   badge.className=rows.length?"pill blue":"pill warn";
   if(!supabaseClient||!currentUser)return;
   const filterKey=JSON.stringify(filter);
@@ -12966,7 +12985,7 @@ function renderReportFilterCount(){
     try{
       const dbRows=await reportRowsForPrint(false);
       if(requestId!==reportFilterCountRequest||filterKey!==JSON.stringify(reportFilter()))return;
-      badge.textContent=`対象 ${dbRows.length}明細 / ${siteLabel}${allImporters?" / 全輸入社":""}${allSuppliers?" / 全発注先":` / 発注先: ${val("report-filter-supplier")}`}`;
+      badge.textContent=`対象 ${dbRows.length}明細 / ${conditionLabel}`;
       badge.className=dbRows.length?"pill blue":"pill warn";
     }catch(error){
       if(requestId!==reportFilterCountRequest)return;
@@ -14592,7 +14611,8 @@ function pickingTicketPages(rows){
 }
 function reportPdfScope(filter){
   const importer=["all","全て","すべて"].includes(filter.importer)?"":filter.importer;
-  return [importer?.toUpperCase(),filter.site?reportSiteName({siteCode:filter.site}):""].filter(Boolean).join("_");
+  const excluded=(filter.importerExclude||[]).join("-").toUpperCase();
+  return [importer?.toUpperCase(),excluded?`除外-${excluded}`:"",filter.site?reportSiteName({siteCode:filter.site}):""].filter(Boolean).join("_");
 }
 async function downloadOrderReport(kind){
   const filter=reportFilter();
@@ -17375,7 +17395,7 @@ function applySearchResult(type,index){
     renderConfirmedOrders();
   });
 });
-["report-filter-date","report-filter-importer","report-filter-supplier","report-filter-site"].forEach(id=>{
+["report-filter-date","report-filter-importer","report-filter-importer-exclude","report-filter-supplier","report-filter-site"].forEach(id=>{
   document.addEventListener("input",e=>{
     if(e.target?.id!==id)return;
     renderReportFilterCount();

@@ -54,6 +54,59 @@ test("site filter combines with date, importer and supplier without merging line
   assert.equal(ctx.filterReportRows(rows,{...filter,date:""}).length,0);
 });
 
+test("importer exclusion matches exact codes or names and takes precedence over inclusion",()=>{
+  const values={
+    "report-filter-date":"2026-09-09",
+    "report-filter-importer":"ALL",
+    "report-filter-importer-exclude":" ０７、 10; ｄｉｍ, ０７ ",
+    "report-filter-supplier":"10",
+    "report-filter-site":"TYO"
+  };
+  const ctx=context({val:id=>values[id]||""});
+  const rows=[
+    sampleRow,
+    {...sampleRow,importerCode:"10",importerName:"OTHER"},
+    {...sampleRow,importerCode:"01",importerName:"DIM"},
+    {...sampleRow,importerCode:"070",importerName:"OTHER"},
+    {...sampleRow,importerCode:"090",siteCode:"OSA"},
+    {...sampleRow,importerCode:"090",supplierCode:"11"},
+    {...sampleRow,importerCode:"090",orderDate:"2026-09-10"}
+  ];
+  const filter=ctx.reportFilter();
+  assert.deepEqual(Array.from(filter.importerExclude),["07","10","dim"]);
+  assert.equal(ctx.filterReportRows(rows,filter).length,1);
+  assert.equal(ctx.filterReportRows(rows,filter)[0].importerCode,"070");
+  assert.equal(ctx.filterReportRows(rows,{...filter,importer:"jkt"}).length,0);
+  assert.equal(ctx.filterReportRows(rows,{...filter,importer:"070"}).length,1);
+  assert.equal(ctx.filterReportRows(rows,{...filter,importerExclude:["all"]}).length,0);
+  assert.equal(ctx.reportPdfScope(filter),"除外-07-10-DIM_東京");
+  values["report-filter-importer-exclude"]="";
+  assert.equal(ctx.filterReportRows(rows,ctx.reportFilter()).length,4);
+});
+
+test("preview and DB-backed output apply the same importer exclusions to saved and current rows",async()=>{
+  const date=sampleRow.orderDate;
+  const values={"order-date":date,"report-filter-date":date,"report-filter-importer-exclude":"07, 10","batch-importer-code":"10"};
+  const batches=["07","01","12"].map(code=>({
+    orderDate:date,siteCode:"TYO",importer:{code},
+    rows:[{...sampleRow,productCode:`P-${code}`}]
+  }));
+  const ctx=context({
+    confirmedBatches:batches,activeOrderRows:()=>[{...sampleRow,productCode:"DRAFT"}],
+    val:id=>values[id]||"",supabaseClient:{},currentUser:{id:"user"}
+  });
+  ctx.loadConfirmedReportBatchesFromDb=async requestedDate=>{
+    assert.equal(requestedDate,date);
+    return batches;
+  };
+  const codes=rows=>Array.from(rows,row=>row.productCode);
+  assert.deepEqual(codes(ctx.reportRows()),["P-01","P-12"]);
+  assert.deepEqual(codes(await ctx.reportRowsForPrint()),["P-01","P-12"]);
+  values["report-filter-importer"]="07";
+  assert.deepEqual(codes(ctx.reportRows()),[]);
+  assert.deepEqual(codes(await ctx.reportRowsForPrint()),[]);
+});
+
 test("purchase orders omit site labels without changing supplier grouping or product order",()=>{
   const ctx=context();
   const rows=[{...sampleRow,productCode:"010"},{...sampleRow,productCode:"002",siteCode:"OSA",importerCode:"01",importerName:"DIM"}];
@@ -102,9 +155,10 @@ test("printing and supplier review preserve every selected row but do not print 
   assert.equal(rows[0].siteCode,"TYO");
 });
 
-test("site selection triggers report count refresh",()=>{
+test("site and importer exclusion changes trigger report count refresh",()=>{
   assert.match(html,/id="report-filter-site"/);
-  assert.match(html,/\["report-filter-date","report-filter-importer","report-filter-supplier","report-filter-site"\]\.forEach/);
+  assert.match(html,/id="report-filter-importer-exclude" list="importer-code-list"/);
+  assert.match(html,/\["report-filter-date","report-filter-importer","report-filter-importer-exclude","report-filter-supplier","report-filter-site"\]\.forEach/);
 });
 
 if(process.env.REPORT_SITE_PREVIEW_DIR){
