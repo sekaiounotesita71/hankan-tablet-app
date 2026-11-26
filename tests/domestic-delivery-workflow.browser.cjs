@@ -76,12 +76,12 @@ test('importer 10 downloads one order-sorted sheet and uses the same persisted a
     const csvPromise=page.waitForEvent('download');await click(page,'csv');const csvDownload=await csvPromise;
     await waitStatus(page,'CSV出力済み');
     const csvData=parseCsv(fs.readFileSync(await csvDownload.path(),'utf8'));
-    assert.equal(csvData[0].length,9);assert.equal(csvData.length,4);
+    assert.equal(csvData[0].length,10);assert.equal(csvData.length,4);
     assert.deepEqual(csvData[0].slice(1,3),['得意先・店舗名','カートンNO']);
-    assert.equal(csvData[0][6],'NET重量 (kg)');
+    assert.deepEqual(csvData[0].slice(6,8),['数量','NET重量 (kg)']);
     assert.ok(!csvData[0].includes('備考'));
     assert.equal(csvData[3][0],'0000123');assert.equal(csvData[1][1],'東京店');assert.equal(csvData[2][2],'JNX/No,Y0012');
-    assert.deepEqual(csvData.slice(1).map(row=>row[6]),['3.3','1.4','1.13']);
+    assert.deepEqual(csvData.slice(1).map(row=>row.slice(6,8)),[['3.3','3.3'],['2','1.4'],['1.13','1.13']]);
     const excelPromise=page.waitForEvent('download');await click(page,'excel');const excelDownload=await excelPromise;
     await waitStatus(page,'Excel出力済み');
     const workbook=new ExcelJS.Workbook();await workbook.xlsx.readFile(await excelDownload.path());
@@ -90,8 +90,9 @@ test('importer 10 downloads one order-sorted sheet and uses the same persisted a
     assert.deepEqual(workbook.worksheets.map(s=>s.name),['納品明細']);
     assert.deepEqual(values(sheet),csvData);
     assert.equal(sheet.getCell('A4').value,'0000123');
-    assert.equal(sheet.getCell('G3').value,1.4);
-    assert.equal(sheet.getCell('I4').value,3447);
+    assert.equal(sheet.getCell('G3').value,2);
+    assert.equal(sheet.getCell('H3').value,1.4);
+    assert.equal(sheet.getCell('J4').value,3447);
     assert.equal(sheet.getCell('C3').value,'JNX/No,Y0012');
     const printed=await page.evaluate(()=>DomesticDocuments.css()+DomesticDocuments.delivery(demoSale,{},{
       caseNumbers:new Map(demoSale.lines.map((line,i)=>[line.id,line.delivery_carton_no||demoSources[i].box_no]))
@@ -107,14 +108,14 @@ test('importer 10 downloads one order-sorted sheet and uses the same persisted a
     assert.doesNotMatch(await printTable.textContent(),/NET重量/);
     assert.ok(await printTable.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
     await printPage.close();
-    assert.equal([2,3,4].reduce((sum,i)=>sum+sheet.getCell(`I${i}`).value,0),28107);
-    assert.equal(typeof sheet.getCell('A2').value,'string');assert.equal(typeof sheet.getCell('I2').value,'number');
-    assert.equal(sheet.getCell('A2').numFmt,'@');assert.equal(sheet.getCell('I2').numFmt,'#,##0');
+    assert.equal([2,3,4].reduce((sum,i)=>sum+sheet.getCell(`J${i}`).value,0),28107);
+    assert.equal(typeof sheet.getCell('A2').value,'string');assert.equal(typeof sheet.getCell('J2').value,'number');
+    assert.equal(sheet.getCell('A2').numFmt,'@');assert.equal(sheet.getCell('J2').numFmt,'#,##0');
     assert.deepEqual(financials(await page.evaluate(()=>demoSale)),financials(original.sale));
     assert.deepEqual(await page.evaluate(()=>demoSources),original.sources);
     if(output){fs.mkdirSync(output,{recursive:true});await csvDownload.saveAs(path.join(output,'納品書データ_確認.csv'));await excelDownload.saveAs(path.join(output,'納品書データ_確認.xlsx'));await page.screenshot({path:path.join(output,'desktop.png')})}
     await page.locator('.dde-columns summary').click();
-    for(let i=0;i<8;i++)await page.locator('[data-key="amount"][data-move="-1"]').click();
+    for(let i=0;i<9;i++)await page.locator('[data-key="amount"][data-move="-1"]').click();
     const movedPromise=page.waitForEvent('download');await click(page,'csv');const moved=await movedPromise;await waitStatus(page,'CSV出力済み');
     assert.equal(parseCsv(fs.readFileSync(await moved.path(),'utf8'))[0][0],'合計金額 円');
     await click(page,'close');

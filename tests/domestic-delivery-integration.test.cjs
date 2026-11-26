@@ -153,13 +153,13 @@ test('only planned importer 10 gets the J NEXT carton prefix; other importers re
   }
 });
 
-test('only importer 10 upgrades old exports to customer-before-carton and NET weight',()=>{
+test('only importer 10 upgrades old exports with quantity immediately before NET weight',()=>{
   const oldDefault=Array.from(appContext().preferences('code','01').columns);
-  const expected=oldDefault;
+  const expected=[...oldDefault.slice(0,6),'quantity',...oldDefault.slice(6)];
   assert.deepEqual(Array.from(appContext().preferences('code','10').columns),expected);
   const previous={version:2,columns:oldDefault,orderLabel:'J NEXT order'};
   const updated=appContext(previous).preferences('code','10');
-  assert.equal(updated.version,4);
+  assert.equal(updated.version,5);
   assert.deepEqual(Array.from(updated.columns),expected);
   assert.equal(updated.orderLabel,'J NEXT order');
   assert.deepEqual(Array.from(appContext(previous).preferences('code','01').columns),oldDefault);
@@ -167,21 +167,23 @@ test('only importer 10 upgrades old exports to customer-before-carton and NET we
   assert.deepEqual(Array.from(appContext(v3).preferences('code','10').columns),expected);
   const custom=['cartonNo','orderNo','customerName','amount','unitPrice'];
   assert.deepEqual(Array.from(appContext({...v3,columns:custom}).preferences('code','10').columns),
-    ['customerName','orderNo','cartonNo','amount','weight','unitPrice']);
-  assert.deepEqual(Array.from(appContext({...v3,version:4,columns:custom}).preferences('code','10').columns),custom);
+    ['customerName','orderNo','cartonNo','amount','quantity','weight','unitPrice']);
+  assert.deepEqual(Array.from(appContext({...v3,version:4,columns:custom}).preferences('code','10').columns),
+    ['cartonNo','orderNo','customerName','amount','quantity','weight','unitPrice']);
+  assert.deepEqual(Array.from(appContext({...v3,version:5,columns:custom}).preferences('code','10').columns),custom);
 });
 
 test('obsolete remarks are stripped without resetting saved delivery data columns',()=>{
   const previous={version:4,columns:['weight','remarks','customerName','cartonNo','orderNo'],orderLabel:'Client order'};
   const updated=appContext(previous).preferences('code','10');
-  assert.deepEqual(Array.from(updated.columns),['weight','customerName','cartonNo','orderNo']);
+  assert.deepEqual(Array.from(updated.columns),['quantity','weight','customerName','cartonNo','orderNo']);
   assert.equal(updated.orderLabel,'Client order');
   assert.ok(Array.from(appContext({...previous,columns:['remarks']}).preferences('code','10').columns).includes('weight'));
 });
 
 test('column and heading preferences are scoped to importer plus billing customer, not the customer alone',()=>{
   const stored=new Map([
-    ['domestic-delivery-export-v2:10:SAME',{version:4,columns:['amount','orderNo'],prefix:'JNX/No,Y',orderLabel:'J NEXT order'}],
+    ['domestic-delivery-export-v2:10:SAME',{version:5,columns:['amount','orderNo'],prefix:'JNX/No,Y',orderLabel:'J NEXT order'}],
     ['domestic-delivery-export-v2:01:SAME',{version:2,columns:['productName','cartonNo'],prefix:'JNX/No,Y',orderLabel:'Other order'}],
     ['domestic-delivery-export-v1:SAME',{version:2,columns:['amount'],prefix:'JNX/No,Y',orderLabel:'Unscoped legacy'}]
   ]);

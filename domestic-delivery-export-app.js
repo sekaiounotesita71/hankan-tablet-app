@@ -18,17 +18,22 @@
     const savedColumns=Array.isArray(value?.columns)?value.columns.filter(key=>key!=="remarks"):[];
     const valid=savedColumns.length&&new Set(savedColumns).size===savedColumns.length&&savedColumns.every(k=>known.includes(k));
     const columns=valid?savedColumns:[...core().defaultColumns8];
-    if((!valid||![2,3,4].includes(value?.version))&&!columns.includes("customerName"))columns.splice(columns.indexOf("orderNo")+1,0,"customerName");
+    if((!valid||![2,3,4,5].includes(value?.version))&&!columns.includes("customerName"))columns.splice(columns.indexOf("orderNo")+1,0,"customerName");
     const jnext=rules.importerCode==="10";
-    if(jnext&&(!valid||value?.version!==4)){
+    if(jnext&&(!valid||![4,5].includes(value?.version))){
       const carton=columns.indexOf("cartonNo"),customer=columns.indexOf("customerName");
       if(carton>=0&&customer>carton)[columns[carton],columns[customer]]=[columns[customer],columns[carton]];
+    }
+    if(jnext&&(!valid||value?.version!==5)){
       if(!columns.includes("weight")){
         const price=columns.indexOf("unitPrice");
         columns.splice(price<0?columns.length:price,0,"weight");
       }
+      const quantity=columns.indexOf("quantity");
+      if(quantity>=0)columns.splice(quantity,1);
+      columns.splice(columns.indexOf("weight"),0,"quantity");
     }
-    return{version:jnext?4:2,columns,prefix:rules.prefix?String(value?.prefix??rules.prefix).slice(0,100):"",orderLabel:String(value?.orderLabel??rules.orderLabel).slice(0,120)};
+    return{version:jnext?5:2,columns,prefix:rules.prefix?String(value?.prefix??rules.prefix).slice(0,100):"",orderLabel:String(value?.orderLabel??rules.orderLabel).slice(0,120)};
   }
   function remember(code,importerCode,value){
     const key=settingsKey(code,importerCode);

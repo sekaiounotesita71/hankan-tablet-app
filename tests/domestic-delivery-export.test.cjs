@@ -87,7 +87,7 @@ function workbookData(book){return book.worksheets[0].rows.map(row=>row.cells.ma
 test("exports the precise API and immutable column schema",()=>{
   assert.deepEqual(Object.keys(Export),["columns","defaultColumns8","makeRows","validateRows","cartonNumber","sheetRows","csv","createWorkbook"]);
   assert.deepEqual(Export.defaultColumns8,keys);
-  assert.deepEqual(Export.columns.map(column=>column.key),[...keys,"customerName"]);
+  assert.deepEqual(Export.columns.map(column=>column.key),[...keys,"customerName","quantity"]);
   assert.deepEqual(Export.columns.slice(0,8).map(column=>column.label),labels);
   assert.ok(Object.isFrozen(Export.columns));assert.ok(Object.isFrozen(Export.defaultColumns8));
   for(const column of Export.columns){
@@ -106,7 +106,7 @@ test("loads without Node or DOM dependencies as DomesticDeliveryExport",()=>{
 test("uses exact standardized keys and confirmed domestic product, quantity, price and persisted amount",()=>{
   assert.deepEqual(make(),[{
     id:"line-1",lineNo:1,orderNo:"00001230",cartonNo:"SUP-X/007",productName:product,spec:"4PC",origin,
-    weight:2.5,unitPrice:123.4567,amount:300.25,customerName:customer,sourceCartonNo:"SUP-X/007",revision:0
+    quantity:2.5,weight:2.5,unitPrice:123.4567,amount:300.25,customerName:customer,sourceCartonNo:"SUP-X/007",revision:0
   }]);
   assert.notEqual(make()[0].amount,2.5*123.4567);
   assert.deepEqual(make({net_amount_jpy:"123.45"})[0].amount,123.45);
@@ -133,7 +133,7 @@ test("requires a confirmed sale and actual domestic lines",()=>{
 test("joins ONLY by the exact source_sales_record_id, never product, order or position",()=>{
   const {sale,source}=fixture({source_sales_record_id:"missing",quantity:3,unit:"PC",product_code:"same"});
   const rows=Export.makeRows(sale,[{...source,product_id:"same",source_row_no:1}]);
-  assert.deepEqual(rows,[{id:"line-1",lineNo:1,orderNo:"",cartonNo:"",productName:product,spec:"",origin:"",weight:"",
+  assert.deepEqual(rows,[{id:"line-1",lineNo:1,orderNo:"",cartonNo:"",productName:product,spec:"",origin:"",quantity:3,weight:"",
     unitPrice:123.4567,amount:300.25,customerName:"",sourceCartonNo:"",revision:0}]);
   assert.equal(Export.makeRows({...sale,lines:[{...sale.lines[0],source_sales_record_id:"1"}]},[{...source,id:1}])[0].orderNo,"");
   assert.equal(Export.makeRows(sale)[0].spec,"");
@@ -308,6 +308,16 @@ test("the export keeps the submitted carton as text without substituting a count
     ["",customer]
   ]);
   assert.match(Export.csv(rows,selected),/\r\n"","JNX\/No,Y0007"\r\n/);
+});
+
+test("delivery quantity is numeric and separate from order spec and NET weight",()=>{
+  const rows=make({quantity:2,unit:"PC"},{ordered_qty:3,input_qty:2,input_unit:"PC",net_weight:1.4});
+  const selected=["spec","quantity","weight"];
+  assert.deepEqual(Export.sheetRows(rows,selected)[1],["3PC",2,1.4]);
+  const sheet=Export.createWorkbook(FakeExcelJS,rows,selected).worksheets[0];
+  assert.equal(sheet.getCell(2,2).value,2);
+  assert.equal(sheet.getCell(2,3).value,1.4);
+  assert.match(Export.csv(rows,selected),/"3PC",2,1\.4\r\n/);
 });
 
 test("custom selection keeps exact order and puts subrows under the selected carton position",()=>{

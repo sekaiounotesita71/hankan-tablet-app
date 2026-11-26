@@ -14,11 +14,12 @@
     {key:"weight",label:"\u5546\u54c1\u91cd\u91cf",width:12},
     {key:"unitPrice",label:"\u5358\u4fa1 \u5186",width:12},
     {key:"amount",label:"\u5408\u8a08\u91d1\u984d \u5186",width:16},
-    {key:"customerName",label:"\u5f97\u610f\u5148\u30fb\u5e97\u8217\u540d",width:22}
+    {key:"customerName",label:"\u5f97\u610f\u5148\u30fb\u5e97\u8217\u540d",width:22},
+    {key:"quantity",label:"\u6570\u91cf",width:10}
   ].map(column=>Object.freeze(column)));
   const defaultColumns8=Object.freeze(columns.slice(0,8).map(column=>column.key));
   const columnMap=new Map(columns.map(column=>[column.key,column]));
-  const numericKeys=new Set(["weight","unitPrice","amount"]);
+  const numericKeys=new Set(["quantity","weight","unitPrice","amount"]);
   const numericPattern=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
 
   function text(value,field){
@@ -104,6 +105,7 @@
         productName:requiredText(line.product_name_snapshot,"product_name_snapshot"),
         spec:text(spec,"delivery_spec"),
         origin:text(source?.origin,"origin"),
+        quantity,
         weight,
         unitPrice:number(line.unit_price_jpy,"unit_price_jpy"),
         // The confirmed domestic amount may deliberately differ from quantity * price.
