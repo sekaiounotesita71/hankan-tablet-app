@@ -15,8 +15,9 @@
     let value=memory.get(key);
     if(!value)try{value=JSON.parse(localStorage.getItem(key)||"null")}catch(_){}
     const known=core().columns.map(c=>c.key);
-    const valid=Array.isArray(value?.columns)&&value.columns.length&&new Set(value.columns).size===value.columns.length&&value.columns.every(k=>known.includes(k));
-    const columns=valid?[...value.columns]:[...core().defaultColumns8];
+    const savedColumns=Array.isArray(value?.columns)?value.columns.filter(key=>key!=="remarks"):[];
+    const valid=savedColumns.length&&new Set(savedColumns).size===savedColumns.length&&savedColumns.every(k=>known.includes(k));
+    const columns=valid?savedColumns:[...core().defaultColumns8];
     if((!valid||![2,3,4].includes(value?.version))&&!columns.includes("customerName"))columns.splice(columns.indexOf("orderNo")+1,0,"customerName");
     const jnext=rules.importerCode==="10";
     if(jnext&&(!valid||value?.version!==4)){
@@ -26,7 +27,6 @@
         const price=columns.indexOf("unitPrice");
         columns.splice(price<0?columns.length:price,0,"weight");
       }
-      if(!columns.includes("remarks"))columns.push("remarks");
     }
     return{version:jnext?4:2,columns,prefix:rules.prefix?String(value?.prefix??rules.prefix).slice(0,100):"",orderLabel:String(value?.orderLabel??rules.orderLabel).slice(0,120)};
   }

@@ -87,7 +87,7 @@ function workbookData(book){return book.worksheets[0].rows.map(row=>row.cells.ma
 test("exports the precise API and immutable column schema",()=>{
   assert.deepEqual(Object.keys(Export),["columns","defaultColumns8","makeRows","validateRows","cartonNumber","sheetRows","csv","createWorkbook"]);
   assert.deepEqual(Export.defaultColumns8,keys);
-  assert.deepEqual(Export.columns.map(column=>column.key),[...keys,"customerName","remarks"]);
+  assert.deepEqual(Export.columns.map(column=>column.key),[...keys,"customerName"]);
   assert.deepEqual(Export.columns.slice(0,8).map(column=>column.label),labels);
   assert.ok(Object.isFrozen(Export.columns));assert.ok(Object.isFrozen(Export.defaultColumns8));
   for(const column of Export.columns){
@@ -299,14 +299,15 @@ test("sheetRows defaults to eight columns, header first, numeric types, and cust
   assert.equal(typeof Export.sheetRows(rows)[1][6],"number");
 });
 
-test("remarks use the submitted carton as text and do not substitute a count for missing NET weight",()=>{
+test("the export keeps the submitted carton as text without substituting a count for missing NET weight",()=>{
   const rows=make({quantity:4,unit:"PC",delivery_carton_no:"JNX/No,Y0007",memo:"internal"},{input_qty:3});
-  const selected=["weight","remarks"];
+  const selected=["weight","cartonNo"];
   assert.deepEqual(Export.sheetRows(rows,selected,{labels:{weight:"NET (kg)"}}),[
-    ["NET (kg)",Export.columns.find(column=>column.key==="remarks").label],
-    ["","JNX/No,Y0007"]
+    ["NET (kg)",labels[1]],
+    ["","JNX/No,Y0007"],
+    ["",customer]
   ]);
-  assert.match(Export.csv(rows,selected),/\r\n"","JNX\/No,Y0007"\r\n$/);
+  assert.match(Export.csv(rows,selected),/\r\n"","JNX\/No,Y0007"\r\n/);
 });
 
 test("custom selection keeps exact order and puts subrows under the selected carton position",()=>{

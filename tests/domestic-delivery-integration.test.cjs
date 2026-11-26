@@ -153,9 +153,9 @@ test('only planned importer 10 gets the J NEXT carton prefix; other importers re
   }
 });
 
-test('only importer 10 upgrades old exports to customer-before-carton, NET weight and carton remarks',()=>{
+test('only importer 10 upgrades old exports to customer-before-carton and NET weight',()=>{
   const oldDefault=Array.from(appContext().preferences('code','01').columns);
-  const expected=[...oldDefault,'remarks'];
+  const expected=oldDefault;
   assert.deepEqual(Array.from(appContext().preferences('code','10').columns),expected);
   const previous={version:2,columns:oldDefault,orderLabel:'J NEXT order'};
   const updated=appContext(previous).preferences('code','10');
@@ -167,8 +167,16 @@ test('only importer 10 upgrades old exports to customer-before-carton, NET weigh
   assert.deepEqual(Array.from(appContext(v3).preferences('code','10').columns),expected);
   const custom=['cartonNo','orderNo','customerName','amount','unitPrice'];
   assert.deepEqual(Array.from(appContext({...v3,columns:custom}).preferences('code','10').columns),
-    ['customerName','orderNo','cartonNo','amount','weight','unitPrice','remarks']);
+    ['customerName','orderNo','cartonNo','amount','weight','unitPrice']);
   assert.deepEqual(Array.from(appContext({...v3,version:4,columns:custom}).preferences('code','10').columns),custom);
+});
+
+test('obsolete remarks are stripped without resetting saved delivery data columns',()=>{
+  const previous={version:4,columns:['weight','remarks','customerName','cartonNo','orderNo'],orderLabel:'Client order'};
+  const updated=appContext(previous).preferences('code','10');
+  assert.deepEqual(Array.from(updated.columns),['weight','customerName','cartonNo','orderNo']);
+  assert.equal(updated.orderLabel,'Client order');
+  assert.ok(Array.from(appContext({...previous,columns:['remarks']}).preferences('code','10').columns).includes('weight'));
 });
 
 test('column and heading preferences are scoped to importer plus billing customer, not the customer alone',()=>{

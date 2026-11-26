@@ -76,13 +76,12 @@ test('importer 10 downloads one order-sorted sheet and uses the same persisted a
     const csvPromise=page.waitForEvent('download');await click(page,'csv');const csvDownload=await csvPromise;
     await waitStatus(page,'CSV出力済み');
     const csvData=parseCsv(fs.readFileSync(await csvDownload.path(),'utf8'));
-    assert.equal(csvData[0].length,10);assert.equal(csvData.length,4);
+    assert.equal(csvData[0].length,9);assert.equal(csvData.length,4);
     assert.deepEqual(csvData[0].slice(1,3),['得意先・店舗名','カートンNO']);
     assert.equal(csvData[0][6],'NET重量 (kg)');
-    assert.equal(csvData[0][9],'備考');
+    assert.ok(!csvData[0].includes('備考'));
     assert.equal(csvData[3][0],'0000123');assert.equal(csvData[1][1],'東京店');assert.equal(csvData[2][2],'JNX/No,Y0012');
     assert.deepEqual(csvData.slice(1).map(row=>row[6]),['3.3','1.4','1.13']);
-    assert.deepEqual(csvData.slice(1).map(row=>row[9]),csvData.slice(1).map(row=>row[2]));
     const excelPromise=page.waitForEvent('download');await click(page,'excel');const excelDownload=await excelPromise;
     await waitStatus(page,'Excel出力済み');
     const workbook=new ExcelJS.Workbook();await workbook.xlsx.readFile(await excelDownload.path());
@@ -93,12 +92,21 @@ test('importer 10 downloads one order-sorted sheet and uses the same persisted a
     assert.equal(sheet.getCell('A4').value,'0000123');
     assert.equal(sheet.getCell('G3').value,1.4);
     assert.equal(sheet.getCell('I4').value,3447);
-    assert.equal(sheet.getCell('J3').value,'JNX/No,Y0012');
-    const printed=await page.evaluate(()=>DomesticDocuments.delivery(demoSale,{},{
-      caseNumbers:new Map(demoSale.lines.map((line,i)=>[line.id,demoSources[i].box_no]))
+    assert.equal(sheet.getCell('C3').value,'JNX/No,Y0012');
+    const printed=await page.evaluate(()=>DomesticDocuments.css()+DomesticDocuments.delivery(demoSale,{},{
+      caseNumbers:new Map(demoSale.lines.map((line,i)=>[line.id,line.delivery_carton_no||demoSources[i].box_no]))
     }));
     assert.match(printed,/<td class="num">3,447<\/td>/);
-    assert.doesNotMatch(printed,/NET重量|<th>備考<\/th>/);
+    const printPage=await context.newPage();
+    await printPage.setViewportSize({width:704,height:1032});
+    await printPage.emulateMedia({media:'print'});
+    await printPage.setContent(printed);
+    const printTable=printPage.locator('table.lines');
+    assert.equal(await printTable.locator('th').last().textContent(),'備考');
+    assert.deepEqual(await printTable.locator('tbody td:last-child').allTextContents(),['JNX/No,Y6','JNX/No,Y9','JNX/No,Y0012','']);
+    assert.doesNotMatch(await printTable.textContent(),/NET重量/);
+    assert.ok(await printTable.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+    await printPage.close();
     assert.equal([2,3,4].reduce((sum,i)=>sum+sheet.getCell(`I${i}`).value,0),28107);
     assert.equal(typeof sheet.getCell('A2').value,'string');assert.equal(typeof sheet.getCell('I2').value,'number');
     assert.equal(sheet.getCell('A2').numFmt,'@');assert.equal(sheet.getCell('I2').numFmt,'#,##0');

@@ -31,7 +31,7 @@ assert.match(sql, /extract\(day from p_sale_date\)::integer <= 10/);
 assert.match(sql, /daterange\(closing\.period_from,closing\.period_to,'\[\]'\)/);
 assert.match(sql, /Domestic 15-day first-cycle due date check failed/);
 
-test("regular delivery note prints case-number order with the exact saved amounts, without changing invoice defaults", async () => {
+test("regular delivery note prints cartons in line remarks in case-number order, without changing invoice defaults", async () => {
   const lines = [
     {id:"a",line_no:1,product_name_snapshot:"BOX-TEN",quantity:1.13,unit_price_jpy:3050,net_amount_jpy:3447,source_sales_record_id:"source-a"},
     {id:"b",line_no:2,product_name_snapshot:"BOX-TWO-FIRST",quantity:1,unit_price_jpy:100,net_amount_jpy:100,delivery_carton_no:"JNX/No,Y2",source_sales_record_id:"source-b"},
@@ -64,6 +64,14 @@ test("regular delivery note prints case-number order with the exact saved amount
   const printedOrder=body=>[...body.matchAll(/\b(BOX-(?:TWO-FIRST|TWO-SECOND|TEN)|NO-CASE)\b/g)].map(m=>m[0]);
   assert.deepEqual(printedOrder(result),["BOX-TWO-FIRST","BOX-TWO-SECOND","BOX-TEN","NO-CASE"]);
   assert.deepEqual(printedOrder(docs.delivery(sale)),["BOX-TEN","BOX-TWO-FIRST","NO-CASE","BOX-TWO-SECOND"]);
+  assert.match(result,/<th>備考<\/th>/);
+  assert.doesNotMatch(result,/NET重量/);
+  const bodyRows=[...result.match(/<tbody>(.*?)<\/tbody>/s)[1].matchAll(/<tr>(.*?)<\/tr>/gs)].map(row=>row[1]);
+  assert.deepEqual(bodyRows.map(row=>row.match(/<td>([^<>]*)<\/td>$/)?.[1]),["JNX/No,Y2","2","１０","",""]);
+  assert.deepEqual(bodyRows.map(row=>[...row.matchAll(/<td[ >]/g)].length),[9,9,9,9,9]);
+  assert.doesNotMatch(docs.delivery(sale),/<th>備考<\/th>/);
+  assert.doesNotMatch(docs.delivery(sale,{},{invoiceNo:"INV1",caseNumbers:new Map([["a","10"]])}),/<th>備考<\/th>/);
+  assert.match(docs.delivery(sale,{},{caseNumbers:new Map([["a","<box>&01"]])}),/&lt;box&gt;&amp;01/);
   assert.match(result,/<td class="num">3,447<\/td>/);
   assert.match(result,/税込合計<\/th><td>4,922円/);
   assert.deepEqual(lines.map(line=>line.line_no),[1,2,3,4]);
